@@ -1,0 +1,133 @@
+##################### default args #####################
+common:
+  thread_num: 8  # load and process data with multi-process
+  seed: 666 # init seed for numpy/torch/random/scipy and so on
+#  device: 3     # GPU device. if None, as CPU  # moved to s.yml
+
+  init_weights: ~  # None
+
+
+
+
+  init_bound: 0.35
+#  init_normal_std: 1e-4
+  result_table_format: 'github' # latex (https://pypi.org/project/tabulate/)
+
+
+dataset:
+
+
+
+#  max_tok_len : 1156
+#  max_sbtao_len : 400
+#  max_comment_len: 60
+
+#  max_tok_len : 100
+#  max_sbtao_len : 100
+#  max_comment_len: 13 # 因为实际还要考虑BOS或者EOS，所以实际上是 12 + 1
+
+  max_tok_len : 600
+  max_sbtao_len : 400
+  max_comment_len: 66 # 因为实际还要考虑BOS或者EOS，所以实际上是 12 + 1
+
+
+
+#  tree_leaf_subtoken: True
+  portion: ~ # 0.4 # train data portion, 0~1.0
+  leaf_path_k: ~
+  # if you need 2 or more than 2 languages to merge together before feeding networks, set it as True
+  # generally used for transfer reinforcement learning (TRL)
+#  merge_xlng: False
+  source:
+    dataset_lng:
+#      - 'python'
+      - 'ruby'
+#      - 'javascript'
+#      - 'php'
+#      - 'java'
+#      - 'go'
+
+    mode:
+      - 'train'
+      - 'valid'
+      - 'test'
+
+  target:
+    ~
+
+
+training:
+
+  padding_idx: ~
+#  padding_idx: 0
+
+  ##################### model args #####################
+  #  summarization: tok, ast, path sbt, sbt2
+  #  retrieval: code_tokens, docstring_tokens, method
+  code_modalities:
+    - tok
+    - sbtao
+
+
+  train_epoch: 50
+#  batch_size: 200
+  batch_size: 16
+  log_interval: 5 # write log info per log_interval iteration
+
+#  all_epoch: 1000
+
+  # network: encoder
+#  rnn_type: 'GRU' # RNN type: 'GRU','LSTM', LSTM as default
+#  rnn_layer_num: 1 # RNN layer num
+#  rnn_hidden_size: 512 # RNN hidden size # setted in naturalcodev2/src/module/summarization/codenn/decoder.py
+#  rnn_bidirectional: False
+#  embed_size: 300 # word-embedding size  # setted in naturalcodev2/src/module/summarization/codenn/decoder.py
+#  tree_lstm_cell_type: 'nary' # DGL tree LSTM cell, if nary -> TreeLSTMCell, else    -> ChildSumTreeLSTMCell
+#  code_modal_transform: True # code modalities transform with FCs
+#  conv2d_out_channels: 512
+#  conv2d_kernels:
+#    - 2
+#    - 3
+#    - 4
+#    - 5
+
+  # encoder RNN's output as decoder RNN's hidden_state(h, c)
+  # 1) None, for zero_init as decoder RNN's hidden_state
+  # 2) h, for only encoder RNN's output as decoder RNN's hidden_state(h)
+  # 3) c, for only encoder RNN's output as decoder RNN's hidden_state(c)
+  # 3) hc, for encoder RNN's output as decoder RNN's hidden_state(h, c)
+#  enc_hc2dec_hc: 'h'
+
+  # network: decoder
+#  attn_type: ~ # ~, general, dot, mlp, intra
+#  attn_unit: 512
+#  self_attn_size: 50
+#  intra_attn_eps: 1e-12
+  pointer: False # pointer-generator, True, False
+  max_predict_length: 65  # max generation length for decoder
+  dropout: 0 # no dropout
+
+
+
+# inference
+testing:
+  beam_size: 10
+#  max_predict_length: ~ # max generation length for decoder
+  metrics:
+    - 'bleu'
+    - 'cider'
+    - 'rouge'
+    - 'meteor'
+
+# supervised learning
+#sl:
+#  optim: 'Adam' # 论文代码中用的keras adam的默认参数 torch.optim.Adam(params, lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
+#  lr: 0.5
+#  lr_gamma: ~
+#  lr_milestones:  ~# epochs when lr => lr * lr_gamma
+##    - 20 # 1e-4
+##    - 40 # 1e-5
+#  warmup_factor: ~
+#  warmup_epochs: ~
+
+

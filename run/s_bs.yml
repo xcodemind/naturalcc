@@ -1,0 +1,30 @@
+# 100_small
+dir: '/data/sjd/d/p_d/fse20all/100_small'  # realdoctor
+dataset_dir: '/data/wanyao/ghproj_d/naturalcodev2/datasetv2/key/100_small' # realdoctor
+#dir: '/data/wy/ghproj_d/fse20all/100' # rtx
+#dataset_dir: '/data/wanyao/yang/ghproj_d/GitHub/datasetv2/key/100' # rtx
+
+#dir: '/data/sjd/d/p_d/fse20all/100'  # realdoctor
+#dataset_dir: '/data/wanyao/ghproj_d/naturalcodev2/datasetv2/key/100' # realdoctor
+
+# 200
+#dir: '/data/sjd/d/p_d/fse20all/200'  # realdoctor
+#dataset_dir: '/data/wanyao/ghproj_d/naturalcodev2/datasetv2/key/200' # realdoctor
+##dir: '/data/wy/ghproj_d/fse20all/200' # rtx
+#  dataset_dir: '/data/wanyao/yang/ghproj_d/GitHub/datasetv2/key/200' # rtx
+
+lang_mode: 'unilang'
+method_name: 'mm2seq'
+train_mode: 'train_sl'
+#train_mode: 'test'
+
+device: 1
+
+occupy_gpu: 3
+#occupy_gpu: 'no'
+
+yaml: 'ruby.yml'
+task: 'summarization'
+dataset_type: 'source'
+multi_processing: 0
+debug: 0
