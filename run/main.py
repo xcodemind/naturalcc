@@ -8,27 +8,25 @@ from run.util import *
 from src.utils.util_gpu import occupy_gpu
 import time
 
-if __name__ == '__main__':
+def main():
     args = get_args()
     # print(args)
     # assert False
     # while True:
     log_filename = get_log_filename(args)
-    while  os.path.exists(log_filename):
+    while os.path.exists(log_filename):
         time.sleep(1)
         log_filename = get_log_filename(args)
     # print(log_filename)
 
-
-
     appendix = ' '.join(['--{} {}'.format(key, value) for key, value in args.__dict__.items()])
 
-    if args.log_root_dir is not None :
+    if args.log_root_dir is not None:
         log_root_dir = args.log_root_dir
-        log_path =   os.path.join(log_root_dir,'log', args.task )
+        log_path = os.path.join(log_root_dir, 'log', args.task)
     else:
         log_root_dir = '/data/wanyao/ghproj_d/naturalcodev2/datasetv2/result'
-        log_path =  os.path.join(log_root_dir, args.task, 'log'  )
+        log_path = os.path.join(log_root_dir, args.task, 'log')
     if not os.path.exists(log_path):
         os.makedirs(log_path)
 
@@ -70,11 +68,14 @@ if __name__ == '__main__':
         print(err)
 
     if args.occupy_gpu != 'no':
-
         device, gb = args.occupy_gpu.split('-')
         # device = int(device[1:])
-        device = int(device )
+        device = int(device)
         # gb = int(gb[:-2])
         gb = float(gb)
-        print('Occupying GPU. Enter Ctrl+C to complete. gpu: {} gb: {}'.format(device,gb))
+        print('Occupying GPU. Enter Ctrl+C to complete. gpu: {} gb: {}'.format(device, gb))
         occupy_gpu(device, gb, compute=False)
+
+
+if __name__ == '__main__':
+    main()

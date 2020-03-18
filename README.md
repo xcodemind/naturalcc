@@ -1,12 +1,43 @@
-# naturalcodev2
+# NaturalCode-V3.0
+Naturalcode is a sequence modeling toolkit that allows researchers and developers to train custom models for many software engineering tasks, e.g., code summarization, code retrieval and code clone detection. Our vision is to bridge the gap between programming language and natural language via some machine learning techniques.
+
 ## Note
 This copy of code is private now, please do not distribute it. Thanks.
 
 We are planning to release part of this copy of code in the next year, after we submit a demo paper to ICSE2021.
 
-naturalcode version 2.0
-dataset from: https://github.com/github/CodeSearchNet
+## What's New:
+May 2020: support CodeBert.
 
+## Features:
+- CNN
+- LSTM
+- Transformer
+- Reinforcement Learning (e.g., policy gradient, self-critical training and actor-critic network)
+- GAN
+- AREL
+
+## Requirements and Installation
+- PyTorch version >= 1.4.0
+- Python version >= 3.6
+- For training new models, you'll also need an NVIDIA GPU and NCCL
+- For faster training install NVIDIA's apex library with the --cuda_ext and --deprecated_fused_adam options
+
+To install naturalcode:
+
+```
+pip install naturalcode
+```
+
+To install naturalcode from source and develop locally:
+
+```
+git clone https://github.com/whatsmyname/naturalcodev3
+cd naturalcodev3
+pip install --editable .
+```
+
+## Organization
 * [dataset](dataset): processed dataset file
 * [demo](demo): demo display
 * [doc](doc): some description about this program
@@ -40,20 +71,14 @@ dataset from: https://github.com/github/CodeSearchNet
 
 [src/utils](src/utils)只要是高频引用函数/变量就放进来，新建也没关系。日后，添加一个readme.md，将util的所有信息保存进来
 
+## Dataset
+dataset from: https://github.com/github/CodeSearchNet
 
-----------------------------------------------
 naturalcode v1.0: https://github.com/wanyao1992/naturalcode <br>
 This program handle our old dataset--including C, Python, Java, C#--crawled from github.com
 
-
-# Attention
-一些经验之谈<br>
-* 打算使用yaml作为输入参数。一般而言一个模型有多个不同的参数输入，建议建立一个文件夹，main.py作为run脚本的主体，*.yaml作为不同的参数。
-* BaseDataset是单一语言的某一个数据集（例如train）的；UniDataset是单一语言的train/valid/test的数据集；TLDataset是迁移学习数据集涉及source/target数据集
-* run/debug/sl.yml是测试样例。source有效，target=None时，就是baseline数据集；source有效，target!=None时，会自动将一些source的信息内容复制到target中
-
-
 100-small dataset
+
 ```
 dataset_dir: /data/wanyao/yang/ghproj_d/GitHub/datasetv2/key/100_small
 
@@ -163,3 +188,17 @@ avg comment len:
 "javascript":{"train":11.768729097,"valid":11.7257030094,"test":12.2791461412}
 }
 ```
+
+
+## 一些经验之谈<br>
+* 打算使用yaml作为输入参数。一般而言一个模型有多个不同的参数输入，建议建立一个文件夹，main.py作为run脚本的主体，*.yaml作为不同的参数。
+* BaseDataset是单一语言的某一个数据集（例如train）的；UniDataset是单一语言的train/valid/test的数据集；TLDataset是迁移学习数据集涉及source/target数据集
+* run/debug/sl.yml是测试样例。source有效，target=None时，就是baseline数据集；source有效，target!=None时，会自动将一些source的信息内容复制到target中
+
+
+## License
+naturalcode is MIT-licensed. The license applies to the pre-trained models as well.
+
+## Citation
+Please cite as:
+xxx
