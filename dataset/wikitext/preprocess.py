@@ -14,10 +14,11 @@ from multiprocessing import Pool
 import os
 import shutil
 import sys
-
-from fairseq import options, tasks, utils
-from fairseq.data import indexed_dataset
-from fairseq.binarizer import Binarizer
+sys.path.append('../..')
+from src import tasks #, utils #  options,
+# from fairseq.data import indexed_dataset
+import indexed_dataset
+from binarizer import Binarizer
 
 
 logging.basicConfig(
@@ -26,11 +27,31 @@ logging.basicConfig(
     level=logging.INFO,
     stream=sys.stdout,
 )
-logger = logging.getLogger('fairseq_cli.preprocess')
+logger = logging.getLogger('preprocess')
 
+def parse_alignment(line):
+    """
+    Parses a single line from the alingment file.
+
+    Args:
+        line (str): String containing the alignment of the format:
+            <src_idx_1>-<tgt_idx_1> <src_idx_2>-<tgt_idx_2> ..
+            <src_idx_m>-<tgt_idx_m>. All indices are 0 indexed.
+
+    Returns:
+        torch.IntTensor: packed alignments of shape (2 * m).
+    """
+    alignments = line.strip().split()
+    parsed_alignment = torch.IntTensor(2 * len(alignments))
+    for idx, alignment in enumerate(alignments):
+        src_idx, tgt_idx = alignment.split("-")
+        parsed_alignment[2 * idx] = int(src_idx)
+        parsed_alignment[2 * idx + 1] = int(tgt_idx)
+    return parsed_alignment
 
 def main(args):
-    utils.import_user_module(args)
+
+    # utils.import_user_module(args)
 
     os.makedirs(args.destdir, exist_ok=True)
 
@@ -354,11 +375,56 @@ def get_offsets(input_file, num_workers):
     return Binarizer.find_offsets(input_file, num_workers)
 
 
-def cli_main():
-    parser = options.get_preprocessing_parser()
-    args = parser.parse_args()
-    main(args)
+# def cli_main():
+#     parser = options.get_preprocessing_parser()
+#     args = parser.parse_args()
+#     main(args)
 
 
 if __name__ == "__main__":
-    cli_main()
+    # cli_main()
+    # parser = get_parser("Preprocessing", default_task)
+    parser = argparse.ArgumentParser()
+    group = parser.add_argument_group("Preprocessing")
+    # fmt: off
+    group.add_argument("-s", "--source-lang", default=None, metavar="SRC",
+                       help="source language")
+    group.add_argument("-t", "--target-lang", default=None, metavar="TARGET",
+                       help="target language")
+    group.add_argument("--trainpref", metavar="FP", default=None,
+                       help="train file prefix")
+    group.add_argument("--validpref", metavar="FP", default=None,
+                       help="comma separated, valid file prefixes")
+    group.add_argument("--testpref", metavar="FP", default=None,
+                       help="comma separated, test file prefixes")
+    group.add_argument("--align-suffix", metavar="FP", default=None,
+                       help="alignment file suffix")
+    group.add_argument("--destdir", metavar="DIR", default="data-bin",
+                       help="destination dir")
+    group.add_argument("--thresholdtgt", metavar="N", default=0, type=int,
+                       help="map words appearing less than threshold times to unknown")
+    group.add_argument("--thresholdsrc", metavar="N", default=0, type=int,
+                       help="map words appearing less than threshold times to unknown")
+    group.add_argument("--tgtdict", metavar="FP",
+                       help="reuse given target dictionary")
+    group.add_argument("--srcdict", metavar="FP",
+                       help="reuse given source dictionary")
+    group.add_argument("--nwordstgt", metavar="N", default=-1, type=int,
+                       help="number of target words to retain")
+    group.add_argument("--nwordssrc", metavar="N", default=-1, type=int,
+                       help="number of source words to retain")
+    group.add_argument("--alignfile", metavar="ALIGN", default=None,
+                       help="an alignment file (optional)")
+    parser.add_argument('--dataset-impl', metavar='FORMAT', default='mmap',
+                        choices=get_available_dataset_impl(),
+                        help='output dataset implementation')
+    group.add_argument("--joined-dictionary", action="store_true",
+                       help="Generate joined dictionary")
+    group.add_argument("--only-source", action="store_true",
+                       help="Only process the source language")
+    group.add_argument("--padding-factor", metavar="N", default=8, type=int,
+                       help="Pad dictionary size to be multiple of N")
+    group.add_argument("--workers", metavar="N", default=1, type=int,
+                       help="number of parallel workers")
+    args = parser.parse_args()
+    main(args)

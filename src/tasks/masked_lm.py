@@ -8,20 +8,33 @@ import os
 
 import numpy as np
 
-from fairseq.data import (
-    data_utils,
-    Dictionary,
-    IdDataset,
-    MaskTokensDataset,
-    NestedDictionaryDataset,
-    NumelDataset,
-    NumSamplesDataset,
-    PadDataset,
-    PrependTokenDataset,
-    SortDataset,
-    TokenBlockDataset,
-)
-from fairseq.tasks import FairseqTask, register_task
+# from fairseq.data import (
+#     data_utils,
+#     Dictionary,
+#     IdDataset,
+#     MaskTokensDataset,
+#     NestedDictionaryDataset,
+#     NumelDataset,
+#     NumSamplesDataset,
+#     PadDataset,
+#     PrependTokenDataset,
+#     SortDataset,
+#     TokenBlockDataset,
+# )
+from src.data import data_utils
+from src.data.dictionary import Dictionary
+from src.data.id_dataset import IdDataset
+from src.data.mask_tokens_dataset import MaskTokensDataset
+from src.data.nested_dictionary_dataset import NestedDictionaryDataset
+from src.data.numel_dataset import NumelDataset
+from src.data.num_samples_dataset import NumSamplesDataset
+from src.data.pad_dataset import PadDataset
+from src.data.prepend_token_dataset import PrependTokenDataset
+from src.data.sort_dataset import SortDataset
+from src.data.token_block_dataset import TokenBlockDataset
+
+from fairseq_task import FairseqTask
+import register_task
 from fairseq.data.encoders.utils import get_whole_word_mask
 from fairseq import utils
 
