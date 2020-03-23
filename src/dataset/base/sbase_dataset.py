@@ -11,7 +11,7 @@ import random
 import ujson
 import math
 
-from src.utils.util import *
+from src.utils.utils import *
 from src.utils.util_data import *
 from src.utils.util_file import *
 from src.data import _Dict

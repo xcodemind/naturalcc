@@ -11,7 +11,7 @@ import ujson
 
 from src.utils.constants import *
 from src.data.dict import Dict as _Dict
-from src.utils.util import *
+from src.utils.utils import *
 from dataset.utils.constants import MAX_TOKEN_SIZE
 
 

@@ -9,7 +9,7 @@ from src.data import *
 import glob
 import ujson
 
-from src.utils.util import *
+from src.utils.utils import *
 from src.utils.util_data import *
 from src.utils.util_file import *
 

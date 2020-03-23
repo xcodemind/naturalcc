@@ -33,10 +33,10 @@ from src.data.prepend_token_dataset import PrependTokenDataset
 from src.data.sort_dataset import SortDataset
 from src.data.token_block_dataset import TokenBlockDataset
 
-from fairseq_task import FairseqTask
-import register_task
-from fairseq.data.encoders.utils import get_whole_word_mask
-from fairseq import utils
+from .fairseq_task import FairseqTask
+from . import register_task
+from src.data.encoder.utils import get_whole_word_mask
+from src.utils import utils
 
 
 logger = logging.getLogger(__name__)

@@ -8,10 +8,13 @@ from functools import lru_cache
 import numpy as np
 import torch
 
-from fairseq.data import data_utils, Dictionary
-
-from . import BaseWrapperDataset, LRUCacheDataset
-
+# from fairseq.data import data_utils, Dictionary
+# from .data_utils import data_utils
+from . import data_utils
+from .dictionary import Dictionary
+from .base_wrapper_dataset import BaseWrapperDataset
+from .lru_cache_dataset import LRUCacheDataset
+# from . import BaseWrapperDataset, LRUCacheDataset
 
 class MaskTokensDataset(BaseWrapperDataset):
     """

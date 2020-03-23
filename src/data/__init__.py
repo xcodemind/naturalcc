@@ -6,7 +6,7 @@ sys.path.append('.')
 
 from src.data.dict import Dict as _Dict
 from src.data.token_dicts import TokenDicts
-
+from src.data.dictionary import Dictionary
 __all__ = [
-    '_Dict', 'TokenDicts',
+    '_Dict', 'TokenDicts', 'Dictionary'
 ]

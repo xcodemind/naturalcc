@@ -6,7 +6,7 @@ sys.path.append('.')
 
 from src import *
 
-from src.utils.util import mpool
+from src.utils.utils import mpool
 from src.utils.util_file import load_config, load_config_kd
 from src.dataset.base import *
 from src.dataset import *

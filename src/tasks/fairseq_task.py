@@ -8,8 +8,9 @@ import warnings
 import torch
 
 from src.utils import tokenizer # , utils # metrics, search,
-from dataset.wikitext import data_utils, iterators
-from dataset.wikitext.dictionary import Dictionary
+from src.data import data_utils
+from src.data import iterators
+from src.data.dictionary import Dictionary
 from src.dataset.fairseq_dataset import FairseqDataset
 
 class FairseqTask(object):

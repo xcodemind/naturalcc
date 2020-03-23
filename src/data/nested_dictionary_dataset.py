@@ -8,7 +8,7 @@ from collections import OrderedDict
 import torch
 from torch.utils.data.dataloader import default_collate
 
-from . import FairseqDataset
+from .fairseq_dataset import FairseqDataset
 
 
 def _flatten(dico, prefix=None):

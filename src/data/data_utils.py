@@ -63,8 +63,8 @@ def load_indexed_dataset(path, dictionary, dataset_impl=None, combine=False, def
             combine 'data-bin/train', 'data-bin/train1', ... and return a
             single ConcatDataset instance.
     """
-    from fairseq.data.concat_dataset import ConcatDataset
-    import fairseq.data.indexed_dataset as indexed_dataset
+    from src.data.concat_dataset import ConcatDataset
+    import src.data.indexed_dataset as indexed_dataset
 
     datasets = []
     for k in itertools.count():
@@ -218,7 +218,7 @@ def batch_by_size(
             be a multiple of N (default: 1).
     """
     try:
-        from fairseq.data.data_utils_fast import batch_by_size_fast
+        from src.data.data_utils_fast import batch_by_size_fast
     except ImportError:
         raise ImportError(
             'Please build Cython components with: `pip install --editable .` '

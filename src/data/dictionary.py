@@ -8,8 +8,8 @@ from collections import Counter
 from multiprocessing import Pool
 
 import torch
-from binarizer import safe_readline
-import data_utils
+from .binarizer import safe_readline
+from . import data_utils
 from src.utils.file_io import PathManager
 from src.utils.tokenizer import tokenize_line
 

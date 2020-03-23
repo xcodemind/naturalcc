@@ -9,8 +9,9 @@ import os
 
 import numpy as np
 import torch
-
-from . import data_utils
+import sys
+sys.path.append('../..')
+from src.data import data_utils
 
 
 class CountingIterator(object):

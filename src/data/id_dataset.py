@@ -5,7 +5,7 @@
 
 import torch
 
-from . import FairseqDataset
+from .fairseq_dataset import FairseqDataset
 
 
 class IdDataset(FairseqDataset):

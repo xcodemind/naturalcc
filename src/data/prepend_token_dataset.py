@@ -6,7 +6,7 @@
 import numpy as np
 import torch
 
-from . import BaseWrapperDataset
+from .base_wrapper_dataset import BaseWrapperDataset
 
 
 class PrependTokenDataset(BaseWrapperDataset):

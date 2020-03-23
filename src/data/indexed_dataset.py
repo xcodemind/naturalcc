@@ -11,7 +11,7 @@ import struct
 import numpy as np
 import torch
 
-from fairseq_dataset import FairseqDataset
+from .fairseq_dataset import FairseqDataset
 
 
 def __best_fitting_dtype(vocab_size=None):

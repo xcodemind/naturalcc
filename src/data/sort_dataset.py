@@ -5,7 +5,7 @@
 
 import numpy as np
 
-from . import BaseWrapperDataset
+from .base_wrapper_dataset import BaseWrapperDataset
 
 
 class SortDataset(BaseWrapperDataset):

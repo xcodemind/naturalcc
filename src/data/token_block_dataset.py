@@ -6,9 +6,9 @@
 import numpy as np
 import torch
 
-from fairseq.data import FairseqDataset, plasma_utils
-
-
+# from fairseq.data import FairseqDataset, plasma_utils
+from .fairseq_dataset import FairseqDataset
+from . import plasma_utils
 class TokenBlockDataset(FairseqDataset):
     """Break a Dataset of tokens into blocks.
 
@@ -43,7 +43,7 @@ class TokenBlockDataset(FairseqDataset):
         document_sep_len=1,
     ):
         try:
-            from fairseq.data.token_block_utils_fast import (
+            from src.data.token_block_utils_fast import (
                 _get_slice_indices_fast,
                 _get_block_to_dataset_index_fast,
             )
