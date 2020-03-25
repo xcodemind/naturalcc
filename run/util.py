@@ -4,14 +4,14 @@ import sys
 
 sys.path.append('.')
 
-from src import *
+from ncc import *
 
-from src.utils.utils import mpool
-from src.utils.util_file import load_config, load_config_kd
-from src.dataset.base import *
-from src.dataset import *
-from src.utils.util_name import time_id, md5_id
-from src.model.template import *
+from ncc.utils.utils import mpool
+from ncc.utils.util_file import load_config, load_config_kd
+from ncc.dataset.base import *
+from ncc.dataset import *
+from ncc.utils.util_name import time_id, md5_id
+from ncc.model.template import *
 
 
 def CONST_TIME_CODE(debug):

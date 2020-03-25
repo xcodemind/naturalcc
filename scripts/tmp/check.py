@@ -3,19 +3,19 @@ import sys
 
 sys.path.append('.')
 
-from src import *
-from src.data import *
+from ncc import *
+from ncc.data import *
 
 import glob
 import random
 import ujson
 import math
 
-from src.utils.utils import *
-from src.utils.util_data import *
-from src.utils.util_file import *
-from src.data import _Dict
-from src.utils.util_data import build_graph
+from ncc.utils.utils import *
+from ncc.utils.util_data import *
+from ncc.utils.util_file import *
+from ncc.data import _Dict
+from ncc.utils.util_data import build_graph
 
 import json
 def load_json(path):

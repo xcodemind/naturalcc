@@ -15,12 +15,12 @@ import os
 import shutil
 import sys
 sys.path.append('../..')
-from src import tasks #, utils #  options,
+from ncc import tasks #, utils #  options,
 # from fairseq.data import indexed_dataset
-from src.data import indexed_dataset
+from ncc.data import indexed_dataset
 from binarizer import Binarizer
 import argparse
-from src.data.indexed_dataset import get_available_dataset_impl
+from ncc.data.indexed_dataset import get_available_dataset_impl
 
 
 logging.basicConfig(
@@ -429,7 +429,7 @@ if __name__ == "__main__":
     parser.add_argument('--all-gather-list-size', default=16384, type=int,
                         help='number of bytes reserved for gathering stats from workers')
 
-    from src.registry import REGISTRIES
+    from ncc.registry import REGISTRIES
 
     for registry_name, REGISTRY in REGISTRIES.items():
         parser.add_argument(
@@ -439,7 +439,7 @@ if __name__ == "__main__":
         )
 
     # Task definitions can be found under fairseq/tasks/
-    from src.tasks import TASK_REGISTRY
+    from ncc.tasks import TASK_REGISTRY
 
     parser.add_argument('--task', metavar='TASK', default="translation",
                         choices=TASK_REGISTRY.keys(),

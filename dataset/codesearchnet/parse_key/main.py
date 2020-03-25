@@ -6,7 +6,7 @@ import sys
 sys.path.append(os.path.abspath('.'))
 
 from dataset.utils.util_ast import *
-from src.utils.constants import *
+from ncc.utils.constants import *
 
 import random
 

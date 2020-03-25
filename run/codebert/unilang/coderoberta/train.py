@@ -17,14 +17,14 @@ import numpy as np
 import torch
 
 # from fairseq import checkpoint_utils, distributed_utils, options, tasks, utils
-from src.utils import checkpoint_utils, distributed_utils, utils
-from src import tasks #, utils #  options,
-from src.data import iterators
-from src.log import meters, metrics, progress_bar
-from src.trainer import Trainer
+from ncc.utils import checkpoint_utils, distributed_utils, utils
+from ncc import tasks #, utils #  options,
+from ncc.data import iterators
+from ncc.log import meters, metrics, progress_bar
+from ncc.trainer import Trainer
 import argparse
 from typing import Callable, List, Optional
-from src.data.indexed_dataset import get_available_dataset_impl
+from ncc.data.indexed_dataset import get_available_dataset_impl
 
 
 logging.basicConfig(
@@ -79,7 +79,7 @@ def get_parser(desc, default_task="masked_lm"):
     parser.add_argument('--all-gather-list-size', default=16384, type=int,
                         help='number of bytes reserved for gathering stats from workers')
 
-    from src.registry import REGISTRIES
+    from ncc.registry import REGISTRIES
     for registry_name, REGISTRY in REGISTRIES.items():
         parser.add_argument(
             '--' + registry_name.replace('_', '-'),
@@ -88,7 +88,7 @@ def get_parser(desc, default_task="masked_lm"):
         )
 
     # Task definitions can be found under fairseq/tasks/
-    from src.tasks import TASK_REGISTRY
+    from ncc.tasks import TASK_REGISTRY
     parser.add_argument('--task', metavar='TASK', default=default_task,
                         choices=TASK_REGISTRY.keys(),
                         help='task')
@@ -313,7 +313,7 @@ def add_model_args(parser):
     # 1) model defaults (lowest priority)
     # 2) --arch argument
     # 3) --encoder/decoder-* arguments (highest priority)
-    from src.model import ARCH_MODEL_REGISTRY
+    from ncc.model import ARCH_MODEL_REGISTRY
     group.add_argument('--arch', '-a', default='fconv', metavar='ARCH',
                        choices=ARCH_MODEL_REGISTRY.keys(),
                        help='Model Architecture')
@@ -439,7 +439,7 @@ def parse_args_and_arch(
             **{k: v for k, v in vars(args).items() if v is not None}
         )
 
-    from src.model import ARCH_MODEL_REGISTRY, ARCH_CONFIG_REGISTRY
+    from ncc.model import ARCH_MODEL_REGISTRY, ARCH_CONFIG_REGISTRY
 
     # Before creating the true parser, we need to import optional user module
     # in order to eagerly import custom tasks, optimizers, architectures, etc.
@@ -468,7 +468,7 @@ def parse_args_and_arch(
         ARCH_MODEL_REGISTRY[args.arch].add_args(model_specific_group)
 
     # Add *-specific args to parser.
-    from src.registry import REGISTRIES
+    from ncc.registry import REGISTRIES
 
     for registry_name, REGISTRY in REGISTRIES.items():
         choice = getattr(args, registry_name, None)
@@ -477,12 +477,12 @@ def parse_args_and_arch(
             if hasattr(cls, "add_args"):
                 cls.add_args(parser)
     if hasattr(args, "task"):
-        from src.tasks import TASK_REGISTRY
+        from ncc.tasks import TASK_REGISTRY
 
         TASK_REGISTRY[args.task].add_args(parser)
     if getattr(args, "use_bmuf", False):
         # hack to support extra args for block distributed data parallelism
-        from src.optim.bmuf import FairseqBMUF
+        from ncc.optim.bmuf import FairseqBMUF
 
         FairseqBMUF.add_args(parser)
 

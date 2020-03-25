@@ -9,9 +9,9 @@ from typing import *
 import itertools
 import ujson
 
-from src.utils.constants import *
-from src.data.dict import Dict as _Dict
-from src.utils.utils import *
+from ncc.utils.constants import *
+from ncc.data.dict import Dict as _Dict
+from ncc.utils.utils import *
 from dataset.utils.constants import MAX_TOKEN_SIZE
 
 

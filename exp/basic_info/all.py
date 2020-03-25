@@ -12,7 +12,7 @@ import ujson
 import itertools
 from pprint import pprint
 from collections import Counter
-from src.utils.constants import LANUAGES, MODES
+from ncc.utils.constants import LANUAGES, MODES
 import gzip
 import jsonlines
 

@@ -4,7 +4,7 @@ import sys
 
 sys.path.append('.')
 
-from src import *
+from ncc import *
 import glob
 import ujson
 

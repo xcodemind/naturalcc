@@ -4,13 +4,13 @@ import sys
 sys.path.append('.')
 
 from run.util import *
-from src.metric.base import *
-from src.model.summarization.unilang import *
-from src.trainer.summarization.xlang import *
-from src.trainer.summarization.unilang import *
-from src.metric.summarization.loss import PGCriterion_REINFORCE
-from src.eval import *
-from src.utils.util_file  import load_args8yml,load_yaml
+from ncc.metric.base import *
+from ncc.model.summarization.unilang import *
+from ncc.trainer.summarization.xlang import *
+from ncc.trainer.summarization.unilang import *
+from ncc.metric.summarization.loss import PGCriterion_REINFORCE
+from ncc.eval import *
+from ncc.utils.util_file  import load_args8yml,load_yaml
 from tabulate import tabulate
 
 

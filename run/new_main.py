@@ -5,8 +5,8 @@ import sys
 sys.path.append('./')
 
 from run.util import *
-from src.utils.util_gpu import occupy_gpu_new
-from src.utils.util_file import load_yaml
+from ncc.utils.util_gpu import occupy_gpu_new
+from ncc.utils.util_file import load_yaml
 import time
 import subprocess
 

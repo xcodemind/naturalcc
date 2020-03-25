@@ -7,7 +7,7 @@ sys.path.append('.')
 from typing import *
 
 import glob
-from src.utils.constants import MODES
+from ncc.utils.constants import MODES
 import itertools
 import ujson
 

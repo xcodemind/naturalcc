@@ -10,7 +10,7 @@ from typing import *
 from dataset.utils.util import *
 from dataset.utils.util_ast import *
 from dataset.utils.util_dict import *
-from src.data.dict import Dict as _Dict
+from ncc.data.dict import Dict as _Dict
 
 
 def merge_counters(counter_list: List[Counter]) -> Dict:

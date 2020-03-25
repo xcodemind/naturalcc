@@ -4,12 +4,12 @@ import sys
 sys.path.append('.')
 
 from run.util import *
-from src.metric.base import *
-from src.model.retrieval.unilang import *
-from src.trainer.retrieval.unilang import *
-from src.eval import *
+from ncc.metric.base import *
+from ncc.model.retrieval.unilang import *
+from ncc.trainer.retrieval.unilang import *
+from ncc.eval import *
 
-from src.eval.evaluator import *
+from ncc.eval.evaluator import *
 
 
 def main():

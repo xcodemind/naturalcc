@@ -5,8 +5,8 @@ from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import os
 import copy
 # from brokenaxes import brokenaxes # 坐标轴截断
-# from src.utils.util_vis import  plot_2subfig_bleu_meteor_rougeL_cider
-# from  src.utils.util  import load_json
+# from ncc.utils.util_vis import  plot_2subfig_bleu_meteor_rougeL_cider
+# from  ncc.utils.util  import load_json
 import json
 from matplotlib import gridspec
 

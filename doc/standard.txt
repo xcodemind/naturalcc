@@ -27,8 +27,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_packed_sequence
 +++++++++++++++第二部分为我们项目src的包
-import src.data.codesum.constants
-from src.utils.util import to_cuda, init_linear_wt, init_wt_normal
+import ncc.data.codesum.constants
+from ncc.utils.util import to_cuda, init_linear_wt, init_wt_normal
 +++++++++++++++第三部分为第三方工具包
 import numpy as np
 -----------------------------------------

@@ -5,7 +5,7 @@ import sys
 sys.path.append('.')
 
 from dataset.utils.util_ast import *
-from src.utils.constants import *
+from ncc.utils.constants import *
 import ujson
 import glob
 

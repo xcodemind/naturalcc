@@ -9,7 +9,7 @@ from typing import *
 import os
 from collections import OrderedDict
 from copy import deepcopy
-from src.utils.util_gpu import occupy_gpu_new
+from ncc.utils.util_gpu import occupy_gpu_new
 
 # PORTIONs = [1.0, 0.8, 0.6, 0.4, 0.2, 0.01]
 # PORTIONs = [  0.8, 0.6, 0.4, 0.2, 0.01]

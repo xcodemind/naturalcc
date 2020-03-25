@@ -42,22 +42,22 @@ class NumpyExtension(Extension):
 
 extensions = [
     Extension(
-        'nc.libbleu',
+        'ncc.libbleu',
         sources=[
-            'src/clib/libbleu/libbleu.cpp',
-            'src/clib/libbleu/module.cpp',
+            'ncc/clib/libbleu/libbleu.cpp',
+            'ncc/clib/libbleu/module.cpp',
         ],
         extra_compile_args=extra_compile_args,
     ),
     NumpyExtension(
-        'nc.data.data_utils_fast',
-        sources=['src/dataset/data_utils_fast.pyx'],
+        'ncc.data.data_utils_fast',
+        sources=['ncc/data/data_utils_fast.pyx'],
         language='c++',
         extra_compile_args=extra_compile_args,
     ),
     NumpyExtension(
-        'nc.data.token_block_utils_fast',
-        sources=['src/dataset/token_block_utils_fast.pyx'],
+        'ncc.data.token_block_utils_fast',
+        sources=['ncc/data/token_block_utils_fast.pyx'],
         language='c++',
         extra_compile_args=extra_compile_args,
     ),
@@ -72,9 +72,9 @@ try:
     from torch.utils import cpp_extension
     extensions.extend([
         cpp_extension.CppExtension(
-            'nc.libnat',
+            'ncc.libnat',
             sources=[
-                'src/clib/libnat/edit_dist.cpp',
+                'ncc/clib/libnat/edit_dist.cpp',
             ],
         )
     ])
@@ -82,10 +82,10 @@ try:
     if 'CUDA_HOME' in os.environ:
         extensions.extend([
             cpp_extension.CppExtension(
-                'nc.libnat_cuda',
+                'ncc.libnat_cuda',
                 sources=[
-                    'src/clib/libnat_cuda/edit_dist.cu',
-                    'src/clib/libnat_cuda/binding.cpp'
+                    'ncc/clib/libnat_cuda/edit_dist.cu',
+                    'ncc/clib/libnat_cuda/binding.cpp'
                 ],
             )])
     cmdclass['build_ext'] = cpp_extension.BuildExtension
@@ -98,10 +98,10 @@ if 'clean' in sys.argv[1:]:
     # Source: https://bit.ly/2NLVsgE
     print("deleting Cython files...")
     import subprocess
-    subprocess.run(['rm -f src/*.so src/**/*.so src/*.pyd src/**/*.pyd'], shell=True)
+    subprocess.run(['rm -f ncc/*.so ncc/**/*.so ncc/*.pyd ncc/**/*.pyd'], shell=True)
 
 setup(
-    name='nc',
+    name='ncc',
     version='3.0',
     description='NaturalCode: A Benchmark towards Understanding theNaturalness of Source Code and Comment',
     url='https://github.com/whatsmyname/naturalcodev3',
@@ -133,7 +133,7 @@ setup(
     # test_suite='tests',
     entry_points={
         'console_scripts': [
-            'nc-run = run.main:main',
+            'ncc-run = run.main:main',
         ],
     },
     cmdclass=cmdclass,

@@ -11,7 +11,7 @@ from joblib import dump as jdump
 from joblib import load as jload
 
 import logging
-from src.log import *
+from ncc.log import *
 
 LOGGER = get_logger(level=logging.DEBUG)  # INFO, DEBUG
 

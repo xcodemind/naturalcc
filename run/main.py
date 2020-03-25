@@ -5,7 +5,7 @@ import sys
 sys.path.append('./')
 
 from run.util import *
-from src.utils.util_gpu import occupy_gpu
+from ncc.utils.util_gpu import occupy_gpu
 import time
 
 def main():

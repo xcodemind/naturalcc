@@ -18,6 +18,6 @@ print(sys.path)
 昨天讨论的import错误这样可以彻底解决，即使我们run的xx-run.py文件，其实运行的是mmrcn-icse20.py，所以我们在这个开始的时候把sys.path设置一下即可。
 设置后的sys.path:
 sys.path:  ['/data/wanyao/Dropbox/ghproj-titan/naturalcode/src', '/home/wanyao/anaconda3/envs/py37-1.2/lib/python37.zip', '/home/wanyao/anaconda3/envs/py37-1.2/lib/python3.7', '/home/wanyao/anaconda3/envs/py37-1.2/lib/python3.7/lib-dynload', '/home/wanyao/anaconda3/envs/py37-1.2/lib/python3.7/site-packages', '/data/wanyao/Dropbox/ghproj-titan/naturalcode']
-包括了naturalcode根目录 和naturalcode/src，所以此时所有包都可以这样调用from src.xxx import xxx
+包括了naturalcode根目录 和naturalcode/src，所以此时所有包都可以这样调用from ncc.xxx import xxx
 最后发布开源代码的时候，install会自动配置这个path变量
 -----------------------------------------

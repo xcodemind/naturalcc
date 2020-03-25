@@ -9,8 +9,8 @@ from typing import *
 import os
 from collections import OrderedDict
 from copy import deepcopy
-from src.utils.util_gpu import occupy_gpu_new
-from src.utils.constants import LANUAGES
+from ncc.utils.util_gpu import occupy_gpu_new
+from ncc.utils.constants import LANUAGES
 
 
 def occupy_gpu(deivce=0, memory=10, ):
