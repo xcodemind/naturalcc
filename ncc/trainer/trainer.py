@@ -17,6 +17,7 @@ import torch
 
 # from fairseq import checkpoint_utils, distributed_utils, models, optim, utils
 from ncc.utils import checkpoint_utils, distributed_utils, utils
+from ncc import optim
 from ncc.model import DistributedFairseqModel
 
 from ncc.utils.file_io import PathManager
@@ -244,6 +245,7 @@ class Trainer(object):
         shard_batch_itr=True,
     ):
         """Return an EpochBatchIterator over the training set for a given epoch."""
+        print('load_dataset: ', load_dataset)
         if load_dataset:
             logger.info("loading train data for epoch {}".format(epoch))
             self.task.load_dataset(

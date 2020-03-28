@@ -370,6 +370,15 @@ def run_init_kd(yml_filename: str, config=None) -> Dict:
     LOGGER.info('# ------------ env init ------------ #')
     return config
 
+# def load_config(args: namedtuple, config=None):
+#     print('args-: ', type(args), args)
+#     if config is None:
+#         config = run_init(args.yaml)
+#     else:
+#         config = run_init(args.yaml, config=config)
+#
+#     return config
+
 
 def load_config_dataset(args: namedtuple,
                         dataloader: Union[XlangDataloader, UnilangDataloader],

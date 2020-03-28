@@ -7,7 +7,7 @@ from ncc import *
 from ncc.module.code2vec.base import *
 from ncc.module.attention import *
 from ncc.utils.util_data import *
-from ncc.utils.util import *
+from ncc.utils.utils import *
 from ncc.data import *
 from eval.summarization import *
 from ncc.utils.constants import *

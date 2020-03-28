@@ -68,8 +68,9 @@ for file in os.listdir(tasks_dir):
         and (file.endswith('.py') or os.path.isdir(path))
     ):
         task_name = file[:file.find('.py')] if file.endswith('.py') else file
+        # print('task_name: ', task_name)
         importlib.import_module('ncc.tasks.' + task_name)
-
+        # print('TASK_REGISTRY: ', TASK_REGISTRY)
         # expose `task_parser` for sphinx
         if task_name in TASK_REGISTRY:
             parser = argparse.ArgumentParser(add_help=False)
@@ -82,4 +83,4 @@ for file in os.listdir(tasks_dir):
             TASK_REGISTRY[task_name].add_args(group_args)
             globals()[task_name + '_parser'] = parser
 
-print('TASK_REGISTRY-init: ', TASK_REGISTRY)
+# print('TASK_REGISTRY-init: ', TASK_REGISTRY)

@@ -13,7 +13,7 @@ from eval.summarization.cider.cider import Cider
 from eval.summarization.meteor.meteor import Meteor
 from eval.summarization.rouge.rouge import Rouge
 
-from ncc.utils.util import *
+from ncc.utils.utils import *
 
 from ncc.data.token_dicts import TokenDicts
 import ujson

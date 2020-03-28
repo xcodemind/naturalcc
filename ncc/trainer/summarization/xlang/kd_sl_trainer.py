@@ -11,7 +11,7 @@ from ncc.utils.util_eval import *
 from ncc.utils.util_optimizer import create_scheduler
 from torch.optim import lr_scheduler
 from ncc.eval.evaluator import Evaluator
-from ncc.utils.util import save_json
+from ncc.utils.utils import save_json
 import datetime
 import os
 import time

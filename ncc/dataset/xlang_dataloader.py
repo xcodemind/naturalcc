@@ -11,7 +11,7 @@ import ujson
 from joblib import Parallel, delayed
 from multiprocessing import cpu_count
 from ncc.dataset.base import *
-# from ncc.utils.util import mpool
+# from ncc.utils.utils import mpool
 from ncc.utils.util_file import *
 from ncc.utils.utils import *
 from ncc.utils.util_data import *

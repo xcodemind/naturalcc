@@ -404,7 +404,7 @@ def load_embedding(embed_dict, vocab, embedding):
 
 
 def replace_unk(hypo_str, src_str, alignment, align_dict, unk):
-    from fairseq import tokenizer
+    from ncc import tokenizer
 
     # Tokens are strings here
     hypo_tokens = tokenizer.tokenize_line(hypo_str)

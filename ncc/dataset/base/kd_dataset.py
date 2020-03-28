@@ -13,7 +13,7 @@ sys.path.append('.')
 # import ujson
 # import math
 #
-# from ncc.utils.util import *
+# from ncc.utils.utils import *
 # from ncc.utils.util_data import *
 # from ncc.utils.util_file import *
 # from ncc.data import _Dict

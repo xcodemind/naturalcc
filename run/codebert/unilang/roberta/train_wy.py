@@ -1,5 +1,5 @@
 #!/usr/bin/env python3 -u
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) NaturalCC, Inc. and its affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -25,15 +25,39 @@ from ncc.trainer import Trainer
 import argparse
 from typing import Callable, List, Optional
 from ncc.data.indexed_dataset import get_available_dataset_impl
+from run.util import * #get_args
+from ncc.utils.util_file import load_yaml
 
+# logging.basicConfig(
+#     format='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
+#     datefmt='%Y-%m-%d %H:%M:%S',
+#     level=logging.INFO,
+#     stream=sys.stdout,
+# )
+# logger = logging.getLogger('fairseq_cli.train')
 
-logging.basicConfig(
-    format='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    level=logging.INFO,
-    stream=sys.stdout,
-)
-logger = logging.getLogger('fairseq_cli.train')
+def main_wy():
+    args = get_args()
+
+    LOGGER.info(args)
+    # print(type(args.multi_processing))
+    # assert False
+    print('args: ', type(args))
+    # config = run_init(args.yaml, config=None)
+    yaml_file = os.path.join(sys.path[0], args.yaml)
+    LOGGER.info('Load arguments in {}'.format(yaml_file))
+    config = load_yaml(yaml_file)
+
+    LOGGER.info(config)
+    sys.exit()
+
+    # SAVE_DIR = get_save_dir(config, args)
+    # LOGGER.debug(SAVE_DIR)
+
+    # # unilang-language
+    # src_lng = config['dataset'][args.dataset_type]['dataset_lng'][0]
+    # unilang_dataset = dataset[args.dataset_type][src_lng]
+    # LOGGER.info(unilang_dataset)
 
 
 def get_parser(desc, default_task="masked_lm"):
@@ -172,12 +196,12 @@ def parse_args_and_arch(
             if hasattr(cls, "add_args"):
                 cls.add_args(parser)
     if hasattr(args, "task"):
-        from fairseq.tasks import TASK_REGISTRY
+        from ncc.tasks import TASK_REGISTRY
 
         TASK_REGISTRY[args.task].add_args(parser)
     if getattr(args, "use_bmuf", False):
         # hack to support extra args for block distributed data parallelism
-        from fairseq.optim.bmuf import FairseqBMUF
+        from ncc.optim.bmuf import FairseqBMUF
 
         FairseqBMUF.add_args(parser)
 
@@ -516,7 +540,7 @@ def parse_args_and_arch(
 
 
 def main(args, init_distributed=False):
-    utils.import_user_module(args)
+    # utils.import_user_module(args) # TODO: delete
 
     assert args.max_tokens is not None or args.max_sentences is not None, \
         'Must specify batch size either with --max-tokens or --max-sentences'
@@ -578,7 +602,7 @@ def main(args, init_distributed=False):
     ):
         # train for one epoch
         train(args, trainer, task, epoch_itr)
-
+        sys.exit()
         if not args.disable_validation and epoch_itr.epoch % args.validate_interval == 0:
             valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
         else:
@@ -819,4 +843,5 @@ def cli_main(modify_parser=None):
 
 
 if __name__ == '__main__':
-    cli_main()
+    # cli_main()
+    main_wy()

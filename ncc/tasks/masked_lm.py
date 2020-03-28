@@ -83,6 +83,7 @@ class MaskedLMTask(FairseqTask):
     @classmethod
     def setup_task(cls, args, **kwargs):
         paths = utils.split_paths(args.data)
+        print('paths: ', paths)
         assert len(paths) > 0
         dictionary = Dictionary.load(os.path.join(paths[0], 'dict.txt'))
         logger.info('dictionary: {} types'.format(len(dictionary)))

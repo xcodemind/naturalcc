@@ -41,14 +41,23 @@ def main():
     '''
     2. nohup python -u *.py > *.log 
     '''
-    command = 'nohup python -u {} {} | tee {}'.format(
-        os.path.join(sys.path[0], args.task, args.lang_mode, args.method_name, 'main.py', ),
+    command = 'nohup python -u {} {} > {}'.format(
+        os.path.join(sys.path[0], args.task, args.lang_mode, args.method_name, 'train_wy.py', ),
         appendix,
         os.path.join(log_path, log_filename, )
     )
 
     '''
-    3. nohup python -u *.py > *.log 2>&1 &
+    3. nohup python -u *.py | tee *.log 
+    '''
+    # command = 'nohup python -u {} {} | tee {}'.format(
+    #     os.path.join(sys.path[0], args.task, args.lang_mode, args.method_name, 'main.py', ),
+    #     appendix,
+    #     os.path.join(log_path, log_filename, )
+    # )
+
+    '''
+    4. nohup python -u *.py > *.log 2>&1 &
     '''
     # command = 'nohup python -u {} {} > {} 2>&1 &'.format(
     #     os.path.join(sys.path[0], args.task, args.lang_mode, args.method_name, 'main.py', ),
@@ -57,8 +66,9 @@ def main():
     # )
 
     try:
+        # print('xxxxx')
         print(command)
-
+        # sys.exit()
         run_code = os.system(command)
         if run_code == 0:
             print("finished.")

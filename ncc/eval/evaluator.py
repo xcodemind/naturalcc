@@ -12,7 +12,7 @@ from ncc.utils.util_data import batch_to_cuda
 from ncc.utils.util_eval import eval_metrics, calculate_scores_multi_dataset, eval_per_metrics, \
     normalize, ACC, MAP, MRR, NDCG, IDCG
 from ncc.metric.base import *
-from ncc.utils.util import save_json
+from ncc.utils.utils import save_json
 from tabulate import tabulate
 from ncc.utils.constants import METRICS
 from tqdm import tqdm
