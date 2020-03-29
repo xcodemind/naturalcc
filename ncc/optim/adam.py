@@ -26,11 +26,12 @@ class FairseqAdam(FairseqOptimizer):
     analogous to torch.optim.AdamW from PyTorch.
     """
 
-    def __init__(self, args, params):
-        super().__init__(args)
+    def __init__(self, config, params):
+        super().__init__(config)
         fused_adam_cls = get_fused_adam_class()
         use_fused_adam = (
-            not getattr(args, 'use_old_adam', False)
+            # not getattr(args, 'use_old_adam', False)
+            not config['optimization']['adam']['use_old_adam']
             and fused_adam_cls is not None
             and torch.cuda.is_available()
         )
@@ -40,25 +41,25 @@ class FairseqAdam(FairseqOptimizer):
         else:
             self._optimizer = Adam(params, **self.optimizer_config)
 
-    @staticmethod
-    def add_args(parser):
-        """Add optimizer-specific arguments to the parser."""
-        # fmt: off
-        parser.add_argument('--adam-betas', default='(0.9, 0.999)', metavar='B',
-                            help='betas for Adam optimizer')
-        parser.add_argument('--adam-eps', type=float, default=1e-8, metavar='D',
-                            help='epsilon for Adam optimizer')
-        parser.add_argument('--weight-decay', '--wd', default=0.0, type=float, metavar='WD',
-                            help='weight decay')
-        # Maintain backward compatibility with old checkpoints that have stored
-        # optimizer state as fairseq.optim.adam.Adam.
-        parser.add_argument(
-            "--use-old-adam",
-            action='store_true',
-            default=False,
-            help="Use fairseq.optim.adam.Adam",
-        )
-        # fmt: on
+    # @staticmethod
+    # def add_args(parser):
+    #     """Add optimizer-specific arguments to the parser."""
+    #     # fmt: off
+    #     parser.add_argument('--adam-betas', default='(0.9, 0.999)', metavar='B',
+    #                         help='betas for Adam optimizer')
+    #     parser.add_argument('--adam-eps', type=float, default=1e-8, metavar='D',
+    #                         help='epsilon for Adam optimizer')
+    #     parser.add_argument('--weight-decay', '--wd', default=0.0, type=float, metavar='WD',
+    #                         help='weight decay')
+    #     # Maintain backward compatibility with old checkpoints that have stored
+    #     # optimizer state as fairseq.optim.adam.Adam.
+    #     parser.add_argument(
+    #         "--use-old-adam",
+    #         action='store_true',
+    #         default=False,
+    #         help="Use fairseq.optim.adam.Adam",
+    #     )
+    #     # fmt: on
 
     @property
     def optimizer_config(self):
@@ -68,11 +69,12 @@ class FairseqAdam(FairseqOptimizer):
         resume training using a different set of optimizer args, e.g., with a
         different learning rate.
         """
+        print("self.config['optimization']['lr']: ", self.config['optimization']['lr'])
         return {
-            'lr': self.args.lr[0],
-            'betas': eval(self.args.adam_betas),
-            'eps': self.args.adam_eps,
-            'weight_decay': self.args.weight_decay,
+            'lr': self.config['optimization']['lr'][0],
+            'betas': eval(self.config['optimization']['adam']['adam_betas']),
+            'eps': self.config['optimization']['adam']['adam_eps'],
+            'weight_decay': self.config['optimization']['adam']['weight_decay'],
         }
 
     def average_params(self):

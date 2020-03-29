@@ -41,11 +41,14 @@ def main():
     '''
     2. nohup python -u *.py > *.log 
     '''
+    # for codebert
+    appendix = ' '.join(['--{} {}'.format(key, value) for key, value in {'yaml': args.yaml}.items()])
     command = 'nohup python -u {} {} > {}'.format(
         os.path.join(sys.path[0], args.task, args.lang_mode, args.method_name, 'train_wy.py', ),
         appendix,
         os.path.join(log_path, log_filename, )
     )
+
 
     '''
     3. nohup python -u *.py | tee *.log 

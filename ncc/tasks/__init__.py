@@ -14,8 +14,8 @@ TASK_REGISTRY = {}
 TASK_CLASS_NAMES = set()
 
 
-def setup_task(args, **kwargs):
-    return TASK_REGISTRY[args.task].setup_task(args, **kwargs)
+def setup_task(config, **kwargs):
+    return TASK_REGISTRY[config['common']['task']].setup_task(config, **kwargs)
 
 
 def register_task(name):
@@ -72,15 +72,15 @@ for file in os.listdir(tasks_dir):
         importlib.import_module('ncc.tasks.' + task_name)
         # print('TASK_REGISTRY: ', TASK_REGISTRY)
         # expose `task_parser` for sphinx
-        if task_name in TASK_REGISTRY:
-            parser = argparse.ArgumentParser(add_help=False)
-            group_task = parser.add_argument_group('Task name')
-            # fmt: off
-            group_task.add_argument('--task', metavar=task_name,
-                                    help='Enable this task with: ``--task=' + task_name + '``')
-            # fmt: on
-            group_args = parser.add_argument_group('Additional command-line arguments')
-            TASK_REGISTRY[task_name].add_args(group_args)
-            globals()[task_name + '_parser'] = parser
+        # if task_name in TASK_REGISTRY:
+        #     parser = argparse.ArgumentParser(add_help=False)
+        #     group_task = parser.add_argument_group('Task name')
+        #     # fmt: off
+        #     group_task.add_argument('--task', metavar=task_name,
+        #                             help='Enable this task with: ``--task=' + task_name + '``')
+        #     # fmt: on
+        #     group_args = parser.add_argument_group('Additional command-line arguments')
+        #     TASK_REGISTRY[task_name].add_args(group_args)
+        #     globals()[task_name + '_parser'] = parser
 
 # print('TASK_REGISTRY-init: ', TASK_REGISTRY)

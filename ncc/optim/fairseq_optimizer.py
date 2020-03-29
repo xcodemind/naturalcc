@@ -10,9 +10,9 @@ from ncc.utils import utils
 
 class FairseqOptimizer(object):
 
-    def __init__(self, args):
+    def __init__(self, config):
         super().__init__()
-        self.args = args
+        self.config = config
 
     @staticmethod
     def add_args(parser):

@@ -36,8 +36,8 @@ class FairseqTask(object):
         """
         return criterion.logging_outputs_can_be_summed()
 
-    def __init__(self, args):
-        self.args = args
+    def __init__(self, config):
+        self.config = config
         self.datasets = {}
         self.dataset_to_epoch_iter = {}
 
@@ -75,13 +75,13 @@ class FairseqTask(object):
         return d
 
     @classmethod
-    def setup_task(cls, args, **kwargs):
+    def setup_task(cls, config, **kwargs):
         """Setup the task (e.g., load dictionaries).
 
         Args:
             args (argparse.Namespace): parsed command-line arguments
         """
-        return cls(args, **kwargs)
+        return cls(config, **kwargs)
 
     def load_dataset(self, split, combine=False, **kwargs):
         """Load a given dataset split.
@@ -205,43 +205,43 @@ class FairseqTask(object):
         self.dataset_to_epoch_iter[dataset] = epoch_iter
         return epoch_iter
 
-    def build_model(self, args):
+    def build_model(self, config):
         """
         Build the :class:`~fairseq.models.BaseFairseqModel` instance for this
         task.
 
         Args:
-            args (argparse.Namespace): parsed command-line arguments
+            config (argparse.Namespace): parsed command-line arguments
 
         Returns:
             a :class:`~fairseq.models.BaseFairseqModel` instance
         """
         from ncc import model
 
-        return model.build_model(args, self)
+        return model.build_model(config, self)
 
-    def build_criterion(self, args):
+    def build_criterion(self, config):
         """
         Build the :class:`~fairseq.criterions.FairseqCriterion` instance for
         this task.
 
         Args:
-            args (argparse.Namespace): parsed command-line arguments
+            config (argparse.Namespace): parsed command-line arguments
 
         Returns:
             a :class:`~fairseq.criterions.FairseqCriterion` instance
         """
         from ncc import criterions
 
-        return criterions.build_criterion(args, self)
+        return criterions.build_criterion(config, self)
 
-    # def build_generator(self, args):
-    #     if getattr(args, "score_reference", False):
+    # def build_generator(self, config):
+    #     if getattr(config, "score_reference", False):
     #         from fairseq.sequence_scorer import SequenceScorer
     #
     #         return SequenceScorer(
     #             self.target_dictionary,
-    #             compute_alignment=getattr(args, "print_alignment", False),
+    #             compute_alignment=getattr(config, "print_alignment", False),
     #         )
     #
     #     from fairseq.sequence_generator import (
@@ -250,13 +250,13 @@ class FairseqTask(object):
     #     )
     #
     #     # Choose search strategy. Defaults to Beam Search.
-    #     sampling = getattr(args, "sampling", False)
-    #     sampling_topk = getattr(args, "sampling_topk", -1)
-    #     sampling_topp = getattr(args, "sampling_topp", -1.0)
-    #     diverse_beam_groups = getattr(args, "diverse_beam_groups", -1)
-    #     diverse_beam_strength = getattr(args, "diverse_beam_strength", 0.5)
-    #     match_source_len = getattr(args, "match_source_len", False)
-    #     diversity_rate = getattr(args, "diversity_rate", -1)
+    #     sampling = getattr(config, "sampling", False)
+    #     sampling_topk = getattr(config, "sampling_topk", -1)
+    #     sampling_topp = getattr(config, "sampling_topp", -1.0)
+    #     diverse_beam_groups = getattr(config, "diverse_beam_groups", -1)
+    #     diverse_beam_strength = getattr(config, "diverse_beam_strength", 0.5)
+    #     match_source_len = getattr(config, "match_source_len", False)
+    #     diversity_rate = getattr(config, "diversity_rate", -1)
     #     if (
     #         sum(
     #             int(cond)
@@ -299,23 +299,23 @@ class FairseqTask(object):
     #     else:
     #         search_strategy = search.BeamSearch(self.target_dictionary)
     #
-    #     if getattr(args, "print_alignment", False):
+    #     if getattr(config, "print_alignment", False):
     #         seq_gen_cls = SequenceGeneratorWithAlignment
     #     else:
     #         seq_gen_cls = SequenceGenerator
     #
     #     return seq_gen_cls(
     #         self.target_dictionary,
-    #         beam_size=getattr(args, "beam", 5),
-    #         max_len_a=getattr(args, "max_len_a", 0),
-    #         max_len_b=getattr(args, "max_len_b", 200),
-    #         min_len=getattr(args, "min_len", 1),
-    #         normalize_scores=(not getattr(args, "unnormalized", False)),
-    #         len_penalty=getattr(args, "lenpen", 1),
-    #         unk_penalty=getattr(args, "unkpen", 0),
-    #         temperature=getattr(args, "temperature", 1.0),
-    #         match_source_len=getattr(args, "match_source_len", False),
-    #         no_repeat_ngram_size=getattr(args, "no_repeat_ngram_size", 0),
+    #         beam_size=getattr(config, "beam", 5),
+    #         max_len_a=getattr(config, "max_len_a", 0),
+    #         max_len_b=getattr(config, "max_len_b", 200),
+    #         min_len=getattr(config, "min_len", 1),
+    #         normalize_scores=(not getattr(config, "unnormalized", False)),
+    #         len_penalty=getattr(config, "lenpen", 1),
+    #         unk_penalty=getattr(config, "unkpen", 0),
+    #         temperature=getattr(config, "temperature", 1.0),
+    #         match_source_len=getattr(config, "match_source_len", False),
+    #         no_repeat_ngram_size=getattr(config, "no_repeat_ngram_size", 0),
     #         search_strategy=search_strategy,
     #     )
 

@@ -46,48 +46,48 @@ logger = logging.getLogger(__name__)
 class MaskedLMTask(FairseqTask):
     """Task for training masked language models (e.g., BERT, RoBERTa)."""
 
-    @staticmethod
-    def add_args(parser):
-        """Add task-specific arguments to the parser."""
-        parser.add_argument('data', help='colon separated path to data directories list, \
-                            will be iterated upon during epochs in round-robin manner')
-        parser.add_argument('--sample-break-mode', default='complete',
-                            choices=['none', 'complete', 'complete_doc', 'eos'],
-                            help='If omitted or "none", fills each sample with tokens-per-sample '
-                                 'tokens. If set to "complete", splits samples only at the end '
-                                 'of sentence, but may include multiple sentences per sample. '
-                                 '"complete_doc" is similar but respects doc boundaries. '
-                                 'If set to "eos", includes only one sentence per sample.')
-        parser.add_argument('--tokens-per-sample', default=512, type=int,
-                            help='max number of total tokens over all segments '
-                                 'per sample for BERT dataset')
-        parser.add_argument('--mask-prob', default=0.15, type=float,
-                            help='probability of replacing a token with mask')
-        parser.add_argument('--leave-unmasked-prob', default=0.1, type=float,
-                            help='probability that a masked token is unmasked')
-        parser.add_argument('--random-token-prob', default=0.1, type=float,
-                            help='probability of replacing a token with a random token')
-        parser.add_argument('--freq-weighted-replacement', default=False, action='store_true',
-                            help='sample random replacement words based on word frequencies')
-        parser.add_argument('--mask-whole-words', default=False, action='store_true',
-                            help='mask whole words; you may also want to set --bpe')
+    # @staticmethod
+    # def add_args(parser):
+    #     """Add task-specific arguments to the parser."""
+    #     parser.add_argument('data', help='colon separated path to data directories list, \
+    #                         will be iterated upon during epochs in round-robin manner')
+    #     parser.add_argument('--sample-break-mode', default='complete',
+    #                         choices=['none', 'complete', 'complete_doc', 'eos'],
+    #                         help='If omitted or "none", fills each sample with tokens-per-sample '
+    #                              'tokens. If set to "complete", splits samples only at the end '
+    #                              'of sentence, but may include multiple sentences per sample. '
+    #                              '"complete_doc" is similar but respects doc boundaries. '
+    #                              'If set to "eos", includes only one sentence per sample.')
+    #     parser.add_argument('--tokens-per-sample', default=512, type=int,
+    #                         help='max number of total tokens over all segments '
+    #                              'per sample for BERT dataset')
+    #     parser.add_argument('--mask-prob', default=0.15, type=float,
+    #                         help='probability of replacing a token with mask')
+    #     parser.add_argument('--leave-unmasked-prob', default=0.1, type=float,
+    #                         help='probability that a masked token is unmasked')
+    #     parser.add_argument('--random-token-prob', default=0.1, type=float,
+    #                         help='probability of replacing a token with a random token')
+    #     parser.add_argument('--freq-weighted-replacement', default=False, action='store_true',
+    #                         help='sample random replacement words based on word frequencies')
+    #     parser.add_argument('--mask-whole-words', default=False, action='store_true',
+    #                         help='mask whole words; you may also want to set --bpe')
 
-    def __init__(self, args, dictionary):
-        super().__init__(args)
+    def __init__(self, config, dictionary):
+        super().__init__(config)
         self.dictionary = dictionary
-        self.seed = args.seed
+        self.seed = config['common']['seed']
 
         # add mask token
         self.mask_idx = dictionary.add_symbol('<mask>')
 
     @classmethod
-    def setup_task(cls, args, **kwargs):
-        paths = utils.split_paths(args.data)
+    def setup_task(cls, config, **kwargs):
+        paths = utils.split_paths(config['task']['data'])
         print('paths: ', paths)
         assert len(paths) > 0
         dictionary = Dictionary.load(os.path.join(paths[0], 'dict.txt'))
         logger.info('dictionary: {} types'.format(len(dictionary)))
-        return cls(args, dictionary)
+        return cls(config, dictionary)
 
     def load_dataset(self, split, epoch=1, combine=False, **kwargs):
         """Load a given dataset split.
@@ -95,7 +95,7 @@ class MaskedLMTask(FairseqTask):
         Args:
             split (str): name of the split (e.g., train, valid, test)
         """
-        paths = utils.split_paths(self.args.data)
+        paths = utils.split_paths(self.config['task']['data'])
         assert len(paths) > 0
         data_path = paths[(epoch - 1) % len(paths)]
         split_path = os.path.join(data_path, split)
@@ -103,7 +103,7 @@ class MaskedLMTask(FairseqTask):
         dataset = data_utils.load_indexed_dataset(
             split_path,
             self.source_dictionary,
-            self.args.dataset_impl,
+            self.config['dataset']['dataset_impl'],
             combine=combine,
         )
         if dataset is None:
@@ -113,10 +113,10 @@ class MaskedLMTask(FairseqTask):
         dataset = TokenBlockDataset(
             dataset,
             dataset.sizes,
-            self.args.tokens_per_sample - 1,  # one less for <s>
+            self.config['task']['tokens_per_sample'] - 1,  # one less for <s>
             pad=self.source_dictionary.pad(),
             eos=self.source_dictionary.eos(),
-            break_mode=self.args.sample_break_mode,
+            break_mode=self.config['task']['sample_break_mode'],
         )
         logger.info('loaded {} blocks from: {}'.format(len(dataset), split_path))
 
@@ -124,23 +124,23 @@ class MaskedLMTask(FairseqTask):
         dataset = PrependTokenDataset(dataset, self.source_dictionary.bos())
 
         # create masked input and targets
-        mask_whole_words = get_whole_word_mask(self.args, self.source_dictionary) \
-            if self.args.mask_whole_words else None
+        mask_whole_words = get_whole_word_mask(self.config, self.source_dictionary) \
+            if self.config['task']['mask_whole_words'] else None
 
         src_dataset, tgt_dataset = MaskTokensDataset.apply_mask(
             dataset,
             self.source_dictionary,
             pad_idx=self.source_dictionary.pad(),
             mask_idx=self.mask_idx,
-            seed=self.args.seed,
-            mask_prob=self.args.mask_prob,
-            leave_unmasked_prob=self.args.leave_unmasked_prob,
-            random_token_prob=self.args.random_token_prob,
-            freq_weighted_replacement=self.args.freq_weighted_replacement,
+            seed=self.config['common']['seed'],
+            mask_prob=self.config['task']['mask_prob'],
+            leave_unmasked_prob=self.config['task']['leave_unmasked_prob'],
+            random_token_prob=self.config['task']['random_token_prob'],
+            freq_weighted_replacement=self.config['task']['freq_weighted_replacement'],
             mask_whole_words=mask_whole_words,
         )
 
-        with data_utils.numpy_seed(self.args.seed + epoch):
+        with data_utils.numpy_seed(self.config['common']['seed'] + epoch):
             shuffle = np.random.permutation(len(src_dataset))
 
         self.datasets[split] = SortDataset(
@@ -176,7 +176,7 @@ class MaskedLMTask(FairseqTask):
             TokenBlockDataset(
                 src_tokens,
                 src_lengths,
-                self.args.tokens_per_sample - 1,  # one less for <s>
+                self.config['task']['tokens_per_sample'] - 1,  # one less for <s>
                 pad=self.source_dictionary.pad(),
                 eos=self.source_dictionary.eos(),
                 break_mode='eos',

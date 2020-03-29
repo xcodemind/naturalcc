@@ -110,7 +110,7 @@ def save_checkpoint(args, trainer, epoch_itr, val_loss):
                 os.remove(old_chk)
 
 
-def load_checkpoint(args, trainer, **passthrough_args):
+def load_checkpoint(config, trainer, **passthrough_args):
     """
     Load a checkpoint and restore the training iterator.
 
@@ -118,31 +118,31 @@ def load_checkpoint(args, trainer, **passthrough_args):
     ``trainer.get_train_iterator``.
     """
     # only one worker should attempt to create the required dir
-    if args.distributed_rank == 0:
-        os.makedirs(args.save_dir, exist_ok=True)
+    if config['distributed_training']['distributed_rank'] == 0:
+        os.makedirs(config['checkpoint']['save_dir'], exist_ok=True)
 
-    if args.restore_file == "checkpoint_last.pt":
-        checkpoint_path = os.path.join(args.save_dir, "checkpoint_last.pt")
+    if config['checkpoint']['restore_file'] == "checkpoint_last.pt":
+        checkpoint_path = os.path.join(config['checkpoint']['save_dir'], "checkpoint_last.pt")
     else:
-        checkpoint_path = args.restore_file
+        checkpoint_path = config['checkpoint']['restore_file']
 
     extra_state = trainer.load_checkpoint(
         checkpoint_path,
-        args.reset_optimizer,
-        args.reset_lr_scheduler,
-        eval(args.optimizer_overrides),
-        reset_meters=args.reset_meters,
+        config['checkpoint']['reset_optimizer'],
+        config['checkpoint']['reset_lr_scheduler'],
+        eval(config['checkpoint']['optimizer_overrides']),
+        reset_meters=config['checkpoint']['reset_meters'],
     )
 
     if (
         extra_state is not None
         and "best" in extra_state
-        and not args.reset_optimizer
-        and not args.reset_meters
+        and not config['checkpoint']['reset_optimizer']
+        and not config['checkpoint']['reset_meters']
     ):
         save_checkpoint.best = extra_state["best"]
 
-    if extra_state is not None and not args.reset_dataloader:
+    if extra_state is not None and not config['checkpoint']['reset_dataloader']:
         # restore iterator from checkpoint
         itr_state = extra_state["train_iterator"]
         epoch_itr = trainer.get_train_iterator(

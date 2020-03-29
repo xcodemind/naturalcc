@@ -11,11 +11,13 @@ from ncc.criterions.fairseq_criterion import FairseqCriterion, LegacyFairseqCrit
 
 
 build_criterion, register_criterion, CRITERION_REGISTRY = registry.setup_registry(
-    '--criterion',
+    'criterion',
     base_class=FairseqCriterion,
     default='cross_entropy',
 )
-
+print('build_criterion: ', build_criterion)
+print('criterions.py')
+print('CRITERION_REGISTRY: ', CRITERION_REGISTRY)
 
 # automatically import any Python files in the criterions/ directory
 for file in os.listdir(os.path.dirname(__file__)):

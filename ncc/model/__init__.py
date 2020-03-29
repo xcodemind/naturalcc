@@ -63,8 +63,8 @@ __all__ = [
 ]
 
 
-def build_model(args, task):
-    return ARCH_MODEL_REGISTRY[args.arch].build_model(args, task)
+def build_model(config, task):
+    return ARCH_MODEL_REGISTRY[config['model']['arch']].build_model(config, task)
 
 
 def register_model(name):
@@ -108,11 +108,11 @@ def register_model_architecture(model_name, arch_name):
     For example::
 
         @register_model_architecture('lstm', 'lstm_luong_wmt_en_de')
-        def lstm_luong_wmt_en_de(args):
-            args.encoder_embed_dim = getattr(args, 'encoder_embed_dim', 1000)
+        def lstm_luong_wmt_en_de(config):
+            config.encoder_embed_dim = getattr(config, 'encoder_embed_dim', 1000)
             (...)
 
-    The decorated function should take a single argument *args*, which is a
+    The decorated function should take a single argument *config*, which is a
     :class:`argparse.Namespace` of arguments parsed from the command-line. The
     decorated function should modify these arguments in-place to match the
     desired architecture.

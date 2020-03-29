@@ -213,49 +213,51 @@ class FP16Optimizer(_FP16OptimizerMixin, optim.FairseqOptimizer):
     Wrap an *optimizer* to support FP16 (mixed precision) training.
     """
 
-    def __init__(self, args, params, fp32_optimizer, fp32_params):
-        super().__init__(args)
+    def __init__(self, config, params, fp32_optimizer, fp32_params):
+        super().__init__(config)
         self.fp16_params = params
         self.fp32_optimizer = fp32_optimizer
         self.fp32_params = fp32_params
 
-        if getattr(args, 'fp16_scale_window', None) is None:
-            if len(args.update_freq) > 1:
+        # if getattr(args, 'fp16_scale_window', None) is None:
+        if config['common']['fp16_scale_window'] is None:
+            if len(config['optimization']['update_freq']) > 1:
                 raise ValueError(
                     '--fp16-scale-window must be given explicitly when using a '
                     'custom --update-freq schedule'
                 )
-            scale_window = int(2**14 / args.distributed_world_size / args.update_freq[0])
+            scale_window = int(2**14 / config['distributed_training']['distributed_world_size'] / config['optimization']['update_freq'][0])
         else:
-            scale_window = args.fp16_scale_window
+            scale_window = config['common']['fp16_scale_window']
 
         self.scaler = DynamicLossScaler(
-            init_scale=args.fp16_init_scale,
+            init_scale=config['common']['fp16_init_scale'],
             scale_window=scale_window,
-            tolerance=args.fp16_scale_tolerance,
-            threshold=args.threshold_loss_scale,
+            tolerance=config['common']['fp16_scale_tolerance'],
+            threshold=config['common']['threshold_loss_scale'],
         )
-        self.min_loss_scale = self.args.min_loss_scale
+        self.min_loss_scale = self.config['common']['min_loss_scale']
 
     @classmethod
-    def build_optimizer(cls, args, params):
+    def build_optimizer(cls, config, params):
         """
         Args:
             args (argparse.Namespace): fairseq args
             params (iterable): iterable of parameters to optimize
         """
-        flatten = not getattr(args, 'fp16_no_flatten_grads', False)
+        # flatten = not getattr(args, 'fp16_no_flatten_grads', False)
+        flatten = not config['common']['fp16_no_flatten_grads']
         fp32_params = cls.build_fp32_params(params, flatten=flatten)
         if flatten:
-            fp32_optimizer = optim.build_optimizer(args, [fp32_params])
+            fp32_optimizer = optim.build_optimizer(config, [fp32_params])
         else:
-            fp32_optimizer = optim.build_optimizer(args, fp32_params)
+            fp32_optimizer = optim.build_optimizer(config, fp32_params)
         if flatten and not fp32_optimizer.supports_flat_params:
             raise RuntimeError(
                 'chosen optimizer does not support flat params, '
                 'please set --fp16-no-flatten-grads'
             )
-        return cls(args, params, fp32_optimizer, fp32_params)
+        return cls(config, params, fp32_optimizer, fp32_params)
 
     @property
     def optimizer(self):

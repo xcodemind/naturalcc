@@ -26,16 +26,16 @@ class PolynomialDecaySchedule(FairseqLRScheduler):
         self.power = args.power
         self.optimizer.set_lr(self.warmup_factor * self.lr)
 
-    @staticmethod
-    def add_args(parser):
-        """Add arguments to the parser for this LR scheduler."""
-        parser.add_argument('--force-anneal', '--fa', type=int, metavar='N',
-                            help='force annealing at specified epoch')
-        parser.add_argument('--warmup-updates', default=0, type=int, metavar='N',
-                            help='warmup the learning rate linearly for the first N updates')
-        parser.add_argument('--end-learning-rate', default=0.0, type=float)
-        parser.add_argument('--power', default=1.0, type=float)
-        parser.add_argument('--total-num-update', default=1000000, type=int)
+    # @staticmethod
+    # def add_args(parser):
+    #     """Add arguments to the parser for this LR scheduler."""
+    #     parser.add_argument('--force-anneal', '--fa', type=int, metavar='N',
+    #                         help='force annealing at specified epoch')
+    #     parser.add_argument('--warmup-updates', default=0, type=int, metavar='N',
+    #                         help='warmup the learning rate linearly for the first N updates')
+    #     parser.add_argument('--end-learning-rate', default=0.0, type=float)
+    #     parser.add_argument('--power', default=1.0, type=float)
+    #     parser.add_argument('--total-num-update', default=1000000, type=int)
 
     def get_next_lr(self, epoch):
         lrs = self.args.lr

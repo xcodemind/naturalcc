@@ -11,7 +11,7 @@ from ncc.optim.lr_scheduler.fairseq_lr_scheduler import FairseqLRScheduler
 
 
 build_lr_scheduler, register_lr_scheduler, LR_SCHEDULER_REGISTRY = registry.setup_registry(
-    '--lr-scheduler',
+    'lr_scheduler',
     base_class=FairseqLRScheduler,
     default='fixed',
 )

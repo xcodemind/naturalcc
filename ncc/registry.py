@@ -14,8 +14,9 @@ def setup_registry(
     base_class=None,
     default=None,
 ):
-    assert registry_name.startswith('--')
-    registry_name = registry_name[2:].replace('-', '_')
+    # assert registry_name.startswith('--')
+    # registry_name = registry_name[2:].replace('-', '_')
+    registry_name = registry_name.replace('-', '_')
 
     REGISTRY = {}
     REGISTRY_CLASS_NAMES = set()
@@ -28,17 +29,20 @@ def setup_registry(
         'default': default,
     }
 
-    def build_x(args, *extra_args, **extra_kwargs):
-        choice = getattr(args, registry_name, None)
+    def build_x(config, *extra_args, **extra_kwargs):
+        # choice = getattr(config, registry_name, None)
+        choice = config[registry_name] if registry_name in config else None
+        print('choice: ', choice)
         if choice is None:
             return None
+        print('REGISTRY: ', REGISTRY)
         cls = REGISTRY[choice]
         if hasattr(cls, 'build_' + registry_name):
             builder = getattr(cls, 'build_' + registry_name)
         else:
             builder = cls
-        set_defaults(args, cls)
-        return builder(args, *extra_args, **extra_kwargs)
+        set_defaults(config, cls)
+        return builder(config, *extra_args, **extra_kwargs)
 
     def register_x(name):
 
@@ -62,19 +66,20 @@ def setup_registry(
     return build_x, register_x, REGISTRY
 
 
-def set_defaults(args, cls):
+def set_defaults(config, cls):
     """Helper to set default arguments based on *add_args*."""
-    if not hasattr(cls, 'add_args'):
-        return
-    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, allow_abbrev=False)
-    cls.add_args(parser)
-    # copied from argparse.py:
-    defaults = argparse.Namespace()
-    for action in parser._actions:
-        if action.dest is not argparse.SUPPRESS:
-            if not hasattr(defaults, action.dest):
-                if action.default is not argparse.SUPPRESS:
-                    setattr(defaults, action.dest, action.default)
-    for key, default_value in vars(defaults).items():
-        if not hasattr(args, key):
-            setattr(args, key, default_value)
+    pass
+    # if not hasattr(cls, 'add_args'):
+    #     return
+    # parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, allow_abbrev=False)
+    # cls.add_args(parser)
+    # # copied from argparse.py:
+    # defaults = argparse.Namespace()
+    # for action in parser._actions:
+    #     if action.dest is not argparse.SUPPRESS:
+    #         if not hasattr(defaults, action.dest):
+    #             if action.default is not argparse.SUPPRESS:
+    #                 setattr(defaults, action.dest, action.default)
+    # for key, default_value in vars(defaults).items():
+    #     if not hasattr(args, key):
+    #         setattr(args, key, default_value)
