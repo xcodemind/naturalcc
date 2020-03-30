@@ -282,8 +282,12 @@ def distributed_main(i, config, start_rank=0):
 
 
 def cli_main():
-    args = get_args()
+    # args = get_args()
+    # dataset_dir = None, dataset_type = None, debug = 0, device = 0, lang_mode = None, log_root_dir = None, method_name = None, multi_processing = 0, occupy_gpu = 'no', save_dir = None, task = None, train_mode = None, yaml = 'wiki.yml'
+    # Argues = namedtuple('Argues', 'yaml task lang_mode method_name train_mode dataset_type multi_processing')
+    Argues = namedtuple('Argues', 'yaml')
 
+    args = Argues('wiki.yml')  # train_sl
     LOGGER.info(args)
     # print(type(args.multi_processing))
     # assert False
@@ -294,6 +298,7 @@ def cli_main():
     config = load_yaml(yaml_file)
 
     LOGGER.info(config)
+    print('test')
 
     if config['distributed_training']['distributed_init_method'] is None:
         distributed_utils.infer_init_method(config)
