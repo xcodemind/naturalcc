@@ -11,13 +11,13 @@ from ncc import registry
 
 
 build_tokenizer, register_tokenizer, TOKENIZER_REGISTRY = registry.setup_registry(
-    '--tokenizer',
+    'tokenizer',
     default=None,
 )
 
 
 build_bpe, register_bpe, BPE_REGISTRY = registry.setup_registry(
-    '--bpe',
+    'bpe',
     default=None,
 )
 

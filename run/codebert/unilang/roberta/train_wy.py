@@ -298,7 +298,6 @@ def cli_main():
     config = load_yaml(yaml_file)
 
     LOGGER.info(config)
-    print('test')
 
     if config['distributed_training']['distributed_init_method'] is None:
         distributed_utils.infer_init_method(config)

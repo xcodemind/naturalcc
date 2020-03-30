@@ -291,7 +291,7 @@ def split_paths(paths: str) -> List[str]:
 
 
 def load_ensemble_for_inference(filenames, task, model_arg_overrides=None):
-    from fairseq import checkpoint_utils
+    from ncc.utils import checkpoint_utils
 
     deprecation_warning(
         "utils.load_ensemble_for_inference is deprecated. "

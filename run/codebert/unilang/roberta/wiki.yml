@@ -2,6 +2,8 @@
 criterion: masked_lm
 optimizer: 'adam'
 lr_scheduler: 'polynomial_decay'
+tokenizer: ~ # default=None
+bpe: ~ # default=None
 
 ##################### default args #####################
 common:
@@ -44,8 +46,7 @@ dataset:
   num_shards: 1 # default=1, type=int, metavar='N', help='shard generation over N shards'
   shard_id: 0 # default=0, type=int, metavar='ID', help='id of the shard to generate (id < num_shards)'
 
-  tokenizer: ~ # default=None
-  bpe: ~ # default=None
+
 
 distributed_training:
   distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
@@ -144,7 +145,7 @@ optimization:
     log-keys: '' # type=str, default=None, help='output keys to log'
 
 checkpoint:
-  save_dir: checkpoints # default='checkpoints', help='path to save checkpoints'
+  save_dir: /data/wanyao/ghproj_d/naturalcodev3/wikitext-103-raw/checkpoints # default='checkpoints', help='path to save checkpoints'
   restore_file: checkpoint_last.pt # default='checkpoint_last.pt', help='filename from which to load checkpoint (default: <save-dir>/checkpoint_last.pt'
   reset_dataloader: ~ # action='store_true', help='if set, does not reload dataloader state from the checkpoint'
   reset_lr_scheduler: ~ # action='store_true', help='if set, does not load lr scheduler state from the checkpoint'

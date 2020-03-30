@@ -54,42 +54,42 @@ class RobertaModel(FairseqLanguageModel):
 
         self.classification_heads = nn.ModuleDict()
 
-    @staticmethod
-    def add_args(parser):
-        """Add model-specific arguments to the parser."""
-        parser.add_argument('--encoder-layers', type=int, metavar='L',
-                            help='num encoder layers')
-        parser.add_argument('--encoder-embed-dim', type=int, metavar='H',
-                            help='encoder embedding dimension')
-        parser.add_argument('--encoder-ffn-embed-dim', type=int, metavar='F',
-                            help='encoder embedding dimension for FFN')
-        parser.add_argument('--encoder-attention-heads', type=int, metavar='A',
-                            help='num encoder attention heads')
-        parser.add_argument('--activation-fn',
-                            choices=utils.get_available_activation_fns(),
-                            help='activation function to use')
-        parser.add_argument('--pooler-activation-fn',
-                            choices=utils.get_available_activation_fns(),
-                            help='activation function to use for pooler layer')
-        parser.add_argument('--encoder-normalize-before', action='store_true',
-                            help='apply layernorm before each encoder block')
-        parser.add_argument('--dropout', type=float, metavar='D',
-                            help='dropout probability')
-        parser.add_argument('--attention-dropout', type=float, metavar='D',
-                            help='dropout probability for attention weights')
-        parser.add_argument('--activation-dropout', type=float, metavar='D',
-                            help='dropout probability after activation in FFN')
-        parser.add_argument('--pooler-dropout', type=float, metavar='D',
-                            help='dropout probability in the masked_lm pooler layers')
-        parser.add_argument('--max-positions', type=int,
-                            help='number of positional embeddings to learn')
-        parser.add_argument('--load-checkpoint-heads', action='store_true',
-                            help='(re-)register and load heads when loading checkpoints')
-        # args for "Reducing Transformer Depth on Demand with Structured Dropout" (Fan et al., 2019)
-        parser.add_argument('--encoder-layerdrop', type=float, metavar='D', default=0,
-                            help='LayerDrop probability for encoder')
-        parser.add_argument('--encoder-layers-to-keep', default=None,
-                            help='which layers to *keep* when pruning as a comma-separated list')
+    # @staticmethod
+    # def add_args(parser):
+    #     """Add model-specific arguments to the parser."""
+    #     parser.add_argument('--encoder-layers', type=int, metavar='L',
+    #                         help='num encoder layers')
+    #     parser.add_argument('--encoder-embed-dim', type=int, metavar='H',
+    #                         help='encoder embedding dimension')
+    #     parser.add_argument('--encoder-ffn-embed-dim', type=int, metavar='F',
+    #                         help='encoder embedding dimension for FFN')
+    #     parser.add_argument('--encoder-attention-heads', type=int, metavar='A',
+    #                         help='num encoder attention heads')
+    #     parser.add_argument('--activation-fn',
+    #                         choices=utils.get_available_activation_fns(),
+    #                         help='activation function to use')
+    #     parser.add_argument('--pooler-activation-fn',
+    #                         choices=utils.get_available_activation_fns(),
+    #                         help='activation function to use for pooler layer')
+    #     parser.add_argument('--encoder-normalize-before', action='store_true',
+    #                         help='apply layernorm before each encoder block')
+    #     parser.add_argument('--dropout', type=float, metavar='D',
+    #                         help='dropout probability')
+    #     parser.add_argument('--attention-dropout', type=float, metavar='D',
+    #                         help='dropout probability for attention weights')
+    #     parser.add_argument('--activation-dropout', type=float, metavar='D',
+    #                         help='dropout probability after activation in FFN')
+    #     parser.add_argument('--pooler-dropout', type=float, metavar='D',
+    #                         help='dropout probability in the masked_lm pooler layers')
+    #     parser.add_argument('--max-positions', type=int,
+    #                         help='number of positional embeddings to learn')
+    #     parser.add_argument('--load-checkpoint-heads', action='store_true',
+    #                         help='(re-)register and load heads when loading checkpoints')
+    #     # args for "Reducing Transformer Depth on Demand with Structured Dropout" (Fan et al., 2019)
+    #     parser.add_argument('--encoder-layerdrop', type=float, metavar='D', default=0,
+    #                         help='LayerDrop probability for encoder')
+    #     parser.add_argument('--encoder-layers-to-keep', default=None,
+    #                         help='which layers to *keep* when pruning as a comma-separated list')
 
     @classmethod
     def build_model(cls, config, task):
@@ -141,7 +141,7 @@ class RobertaModel(FairseqLanguageModel):
 
     @classmethod
     def from_pretrained(cls, model_name_or_path, checkpoint_file='model.pt', data_name_or_path='.', bpe='gpt2', **kwargs):
-        from fairseq import hub_utils
+        from ncc.utils import hub_utils
         x = hub_utils.from_pretrained(
             model_name_or_path,
             checkpoint_file,
