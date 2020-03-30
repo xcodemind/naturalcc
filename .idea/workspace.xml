@@ -2,13 +2,23 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="6cd4cc8e-cfd0-4c47-bc01-8b590238eee3" name="Default Changelist" comment="debug config">
-      <change afterPath="$PROJECT_DIR$/ncc/utils/hub_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ncc/data/encoder/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/data/encoder/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ncc/model/roberta/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/model/roberta/model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ncc/tasks/fairseq_task.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/tasks/fairseq_task.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ncc/utils/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/utils/utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run/codebert/unilang/roberta/train_wy.py" beforeDir="false" afterPath="$PROJECT_DIR$/run/codebert/unilang/roberta/train_wy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run/codebert/unilang/roberta/wiki.yml" beforeDir="false" afterPath="$PROJECT_DIR$/run/codebert/unilang/roberta/wiki.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ncc/config/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ncc/config/bert/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ncc/config/bert/configuration_bert.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ncc/config/bert/configuration_roberta.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ncc/data/tokenizer/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ncc/data/tokenizer/tokenization_bert.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ncc/data/tokenizer/tokenization_roberta.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ncc/model/bert/modeling_bert.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ncc/model/bert/modeling_roberta.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/run/codebert/unilang/run_language_modeling.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ncc/model/roberta/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/model/bert/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ncc/model/roberta/alignment_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/model/bert/alignment_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ncc/model/roberta/hub_interface.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/model/bert/hub_interface.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ncc/model/roberta/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/model/bert/model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ncc/model/roberta/model_camembert.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/model/bert/model_camembert.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ncc/model/roberta/model_xlmr.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/model/bert/model_xlmr.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -35,11 +45,23 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/run/codebert/unilang/roberta/train_wy.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="310">
-              <caret line="220" column="5" selection-start-line="220" selection-start-column="5" selection-end-line="220" selection-end-column="5" />
+            <state relative-caret-position="376">
+              <caret line="223" column="9" selection-start-line="223" selection-start-column="9" selection-end-line="223" selection-end-column="9" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/run/codebert/unilang/run_language_modeling.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="311">
+              <caret line="106" lean-forward="true" selection-start-line="106" selection-end-line="106" />
+              <folding>
+                <element signature="e#972#987#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -167,6 +189,13 @@
       </file>
     </leaf>
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
   <component name="FindInProjectRecents">
     <findStrings>
       <find>device_id</find>
@@ -191,10 +220,13 @@
       <find>encoder</find>
       <find>apex</find>
       <find>apply_bert_init</find>
+      <find>model.rober</find>
+      <find>hubinterface</find>
     </findStrings>
     <dirStrings>
       <dir>$PROJECT_DIR$/ncc</dir>
       <dir>$PROJECT_DIR$</dir>
+      <dir>$PROJECT_DIR$/ncc/model/roberta</dir>
     </dirStrings>
   </component>
   <component name="Git.Settings">
@@ -249,30 +281,17 @@
               <item name="naturalcodev3" type="b2602c69:ProjectViewProjectNode" />
               <item name="naturalcodev3" type="462c0819:PsiDirectoryNode" />
               <item name="ncc" type="462c0819:PsiDirectoryNode" />
+              <item name="data" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="naturalcodev3" type="b2602c69:ProjectViewProjectNode" />
+              <item name="naturalcodev3" type="462c0819:PsiDirectoryNode" />
+              <item name="ncc" type="462c0819:PsiDirectoryNode" />
               <item name="model" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="naturalcodev3" type="b2602c69:ProjectViewProjectNode" />
               <item name="naturalcodev3" type="462c0819:PsiDirectoryNode" />
-              <item name="ncc" type="462c0819:PsiDirectoryNode" />
-              <item name="module" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="naturalcodev3" type="b2602c69:ProjectViewProjectNode" />
-              <item name="naturalcodev3" type="462c0819:PsiDirectoryNode" />
-              <item name="ncc" type="462c0819:PsiDirectoryNode" />
-              <item name="module" type="462c0819:PsiDirectoryNode" />
-              <item name="codebert" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="naturalcodev3" type="b2602c69:ProjectViewProjectNode" />
-              <item name="naturalcodev3" type="462c0819:PsiDirectoryNode" />
-              <item name="ncc" type="462c0819:PsiDirectoryNode" />
-              <item name="utils" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="naturalcodev3" type="b2602c69:ProjectViewProjectNode" />
-              <item name="naturalcodev3" type="462c0819:PsiDirectoryNode" />
               <item name="run" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
@@ -287,14 +306,6 @@
               <item name="run" type="462c0819:PsiDirectoryNode" />
               <item name="codebert" type="462c0819:PsiDirectoryNode" />
               <item name="unilang" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="naturalcodev3" type="b2602c69:ProjectViewProjectNode" />
-              <item name="naturalcodev3" type="462c0819:PsiDirectoryNode" />
-              <item name="run" type="462c0819:PsiDirectoryNode" />
-              <item name="codebert" type="462c0819:PsiDirectoryNode" />
-              <item name="unilang" type="462c0819:PsiDirectoryNode" />
-              <item name="roberta" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -325,7 +336,11 @@
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/ncc/utils" />
+      <recent name="$PROJECT_DIR$/run/codebert/unilang" />
+      <recent name="$PROJECT_DIR$/ncc/model/bert" />
+      <recent name="$PROJECT_DIR$/ncc/data/tokenizer" />
+      <recent name="$PROJECT_DIR$/ncc/config/bert" />
+      <recent name="$PROJECT_DIR$/ncc/model/roberta" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -382,7 +397,7 @@
       <workItem from="1585543874361" duration="3441000" />
       <workItem from="1585553189142" duration="252000" />
       <workItem from="1585553452372" duration="54000" />
-      <workItem from="1585553516070" duration="14103000" />
+      <workItem from="1585553516070" duration="14946000" />
     </task>
     <task id="LOCAL-00001" summary="debug config">
       <created>1585552818865</created>
@@ -395,7 +410,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="17850000" />
+    <option name="totallyTimeSpent" value="18693000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -410,19 +425,19 @@
     <frame x="985" y="23" width="935" height="1057" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2967525" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.3012318" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
       <window_info anchor="bottom" id="Run" order="2" />
-      <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.49945295" visible="true" weight="0.25796178" />
+      <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.49945295" weight="0.25796178" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.32908705" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.32908705" />
-      <window_info anchor="bottom" id="File Transfer" order="9" weight="0.32908705" />
+      <window_info anchor="bottom" id="File Transfer" order="9" visible="true" weight="0.32908705" />
       <window_info anchor="bottom" id="Database Changes" order="10" />
       <window_info anchor="bottom" id="Terminal" order="11" weight="0.32908705" />
       <window_info anchor="bottom" id="Event Log" order="12" sideWeight="0.50054705" side_tool="true" weight="0.39808917" />
@@ -804,7 +819,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ncc/model/roberta/model.py">
+    <entry file="file://$PROJECT_DIR$/ncc/model/bert/model.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="297">
           <caret line="138" column="32" lean-forward="true" selection-start-line="138" selection-start-column="32" selection-end-line="138" selection-end-column="32" />
@@ -835,8 +850,18 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/run/codebert/unilang/roberta/train_wy.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="310">
-          <caret line="220" column="5" selection-start-line="220" selection-start-column="5" selection-end-line="220" selection-end-column="5" />
+        <state relative-caret-position="376">
+          <caret line="223" column="9" selection-start-line="223" selection-start-column="9" selection-end-line="223" selection-end-column="9" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/run/codebert/unilang/run_language_modeling.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="311">
+          <caret line="106" lean-forward="true" selection-start-line="106" selection-end-line="106" />
+          <folding>
+            <element signature="e#972#987#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
