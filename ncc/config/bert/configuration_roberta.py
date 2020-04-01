@@ -18,7 +18,7 @@
 
 import logging
 
-from .configuration_bert import BertConfig
+from ncc.config.bert.configuration_bert import BertConfig
 
 
 logger = logging.getLogger(__name__)

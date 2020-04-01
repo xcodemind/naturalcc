@@ -13,6 +13,7 @@ from pprint import pprint
 import logging
 from ncc.log import *
 
+
 LOGGER = get_logger(level=logging.INFO)  # INFO, DEBUG
 # LOGGER = get_logger(level=logging.DEBUG )  # INFO, DEBUG
 
@@ -51,8 +52,9 @@ __all__ = [
     'abc',
     'pprint', 'deepcopy', 'random', 'np', 'namedtuple',
     'TimeAnalyzer',
+    '__version__'
     ]
-__version__ = '0.9.0'
+__version__ = '3.0.0'
 
 # __all__ = [
 #     'os', 'sys',
