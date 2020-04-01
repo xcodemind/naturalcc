@@ -2,26 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="6cd4cc8e-cfd0-4c47-bc01-8b590238eee3" name="Default Changelist" comment="debug config">
-      <change afterPath="$PROJECT_DIR$/.idea/webServers.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ncc/optim/optimization.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ncc/utils/activations.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ncc/utils/configuration_utils.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ncc/utils/file_utils_fair.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ncc/utils/modeling_utils.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ncc/utils/tokenization_utils.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/run/codebert/unilang/roberta/main_wy.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/run/codebert/unilang/roberta/wiki_fair.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/deployment.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/naturalcodev3.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/naturalcodev3.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/remote-mappings.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ncc/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ncc/config/bert/configuration_bert.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/config/bert/configuration_bert.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ncc/config/bert/configuration_roberta.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/config/bert/configuration_roberta.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ncc/model/bert/modeling_bert.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/model/bert/modeling_bert.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ncc/model/bert/modeling_roberta.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/model/bert/modeling_roberta.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ncc/utils/file_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/utils/file_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run/codebert/unilang/roberta/wiki.yml" beforeDir="false" afterPath="$PROJECT_DIR$/run/codebert/unilang/roberta/wiki.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ncc/data/tokenizer/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/data/tokenization/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ncc/data/tokenizer/tokenization_bert.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/data/tokenization/tokenization_bert.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ncc/data/tokenizer/tokenization_roberta.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/data/tokenization/tokenization_roberta.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ncc/tasks/fairseq_task.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/tasks/fairseq_task.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ncc/tasks/masked_lm.py" beforeDir="false" afterPath="$PROJECT_DIR$/ncc/tasks/masked_lm.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/run/codebert/unilang/run_language_modeling.py" beforeDir="false" afterPath="$PROJECT_DIR$/run/codebert/unilang/run_language_modeling.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -32,6 +19,7 @@
   </component>
   <component name="CoverageDataManager">
     <SUITE FILE_PATH="coverage/naturalcodev3$train_wy.coverage" NAME="train_wy Coverage Results" MODIFIED="1585554114483" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/run/codebert/unilang/roberta" />
+    <SUITE FILE_PATH="coverage/naturalcodev3$main_wy.coverage" NAME="main_wy Coverage Results" MODIFIED="1585735365411" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/run/codebert/unilang/roberta" />
   </component>
   <component name="DatabaseView">
     <option name="SHOW_INTERMEDIATE" value="true" />
@@ -48,14 +36,14 @@
     <select />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.2846395">
+    <splitter split-orientation="horizontal" split-proportion="0.35810378">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
           <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/run/codebert/unilang/roberta/train_wy.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="207">
-                  <caret line="186" selection-start-line="186" selection-end-line="335" selection-end-column="14" />
+                <state relative-caret-position="279">
+                  <caret line="101" column="14" lean-forward="true" selection-start-line="101" selection-start-column="14" selection-end-line="101" selection-end-column="14" />
                   <folding>
                     <element signature="e#922#3517#0" />
                     <element signature="e#3555#3761#0" />
@@ -69,32 +57,53 @@
               </provider>
             </entry>
           </file>
-          <file pinned="false" current-in-tab="true">
-            <entry file="file://$PROJECT_DIR$/run/codebert/unilang/roberta/wiki.yml">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="342">
-                  <caret line="66" column="30" selection-start-line="66" selection-start-column="30" selection-end-line="66" selection-end-column="30" />
-                </state>
-              </provider>
-            </entry>
-          </file>
           <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/ncc/model/bert/modeling_bert.py">
+            <entry file="file://$PROJECT_DIR$/run/codebert/unilang/run_language_modeling.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="3982">
-                  <caret line="192" column="13" selection-start-line="192" selection-start-column="13" selection-end-line="192" selection-end-column="13" />
+                <state relative-caret-position="373">
+                  <caret line="734" column="25" lean-forward="true" selection-start-line="734" selection-start-column="25" selection-end-line="734" selection-end-column="25" />
                   <folding>
-                    <element signature="e#738#752#0" expanded="true" />
+                    <element signature="e#972#987#0" expanded="true" />
+                    <element signature="e#2734#4647#0" />
+                    <element signature="e#4686#5942#0" />
+                    <element signature="e#5986#6813#0" />
+                    <element signature="e#6882#7296#0" />
+                    <element signature="e#7577#8258#0" />
+                    <element signature="e#8353#9018#0" />
+                    <element signature="e#9139#10977#0" />
+                    <element signature="e#11093#20274#0" />
+                    <element signature="e#20376#22547#0" />
+                    <element signature="e#30323#30619#0" />
                   </folding>
                 </state>
               </provider>
             </entry>
           </file>
           <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/ncc/model/bert/modeling_roberta.py">
+            <entry file="file://$PROJECT_DIR$/run/codebert/unilang/roberta/wiki.yml">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="395">
-                  <caret line="25" column="30" selection-start-line="25" selection-start-column="30" selection-end-line="25" selection-end-column="30" />
+                <state relative-caret-position="297">
+                  <caret line="82" column="4" selection-start-line="82" selection-end-line="82" selection-end-column="4" />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/ncc/model/bert/modeling_bert.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="344">
+                  <caret line="743" lean-forward="true" selection-start-line="743" selection-end-line="743" />
+                  <folding>
+                    <element signature="e#738#752#0" expanded="true" />
+                    <element signature="e#7486#9338#0" />
+                    <element signature="e#9381#12839#0" />
+                    <element signature="e#12879#13405#0" />
+                    <element signature="e#13444#15344#0" />
+                    <element signature="e#22430#23362#0" />
+                    <element signature="e#23388#24016#0" />
+                    <element signature="e#24042#27320#0" />
+                    <element signature="e#27518#28217#1" />
+                  </folding>
                 </state>
               </provider>
             </entry>
@@ -111,8 +120,8 @@
           <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/ncc/model/bert/model.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="880">
-                  <caret line="40" column="10" selection-start-line="40" selection-start-column="10" selection-end-line="40" selection-end-column="10" />
+                <state relative-caret-position="532">
+                  <caret line="105" column="25" lean-forward="true" selection-start-line="105" selection-start-column="25" selection-end-line="105" selection-end-column="25" />
                   <folding>
                     <element signature="e#1594#1609#0" />
                   </folding>
@@ -164,22 +173,86 @@
       <split-second>
         <leaf>
           <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/run/codebert/unilang/run_language_modeling.py">
+            <entry file="file://$PROJECT_DIR$/run/codebert/unilang/roberta/main_wy.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="282">
-                  <caret line="486" column="11" lean-forward="true" selection-start-line="486" selection-start-column="11" selection-end-line="486" selection-end-column="11" />
-                  <folding>
-                    <element signature="e#972#987#0" expanded="true" />
-                  </folding>
+                <state relative-caret-position="405">
+                  <caret line="112" column="29" lean-forward="true" selection-start-line="112" selection-start-column="29" selection-end-line="112" selection-end-column="29" />
                 </state>
               </provider>
             </entry>
           </file>
           <file pinned="false" current-in-tab="true">
-            <entry file="file://$PROJECT_DIR$/run/codebert/unilang/roberta/main_wy.py">
+            <entry file="file://$PROJECT_DIR$/ncc/tasks/summarization.py">
+              <provider selected="true" editor-type-id="text-editor" />
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/ncc/tasks/masked_lm.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="290">
-                  <caret line="32" column="20" selection-start-line="32" selection-start-column="20" selection-end-line="32" selection-end-column="20" />
+                <state relative-caret-position="205">
+                  <caret line="172" lean-forward="true" selection-start-line="172" selection-end-line="172" />
+                  <folding>
+                    <element signature="e#1397#1412#0" />
+                    <element signature="e#4081#7301#0" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/ncc/tasks/fairseq_task.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="156">
+                  <caret line="207" lean-forward="true" selection-start-line="207" selection-end-line="207" />
+                  <folding>
+                    <element signature="e#178#193#0" expanded="true" />
+                    <element signature="e#1721#2541#0" />
+                    <element signature="e#2611#2788#0" />
+                    <element signature="e#2858#3019#0" />
+                    <element signature="e#3059#3817#0" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/ncc/model/__init__.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="508">
+                  <caret line="72" column="9" selection-start-line="72" selection-start-column="9" selection-end-line="72" selection-end-column="9" />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/ncc/data/binarizer.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="220">
+                  <caret line="10" lean-forward="true" selection-start-line="10" selection-end-line="10" />
+                  <folding>
+                    <element signature="e#178#187#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/ncc/data/tokenizer.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="220">
+                  <caret line="10" column="17" selection-start-line="10" selection-start-column="4" selection-end-line="10" selection-end-column="17" />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$USER_HOME$/Library/Caches/PyCharm2018.3/remote_sources/-103749995/-1058996331/tokenize.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="268">
+                  <caret line="448" column="26" selection-start-line="448" selection-start-column="26" selection-end-line="448" selection-end-column="26" />
+                  <folding>
+                    <element signature="e#14764#14858#1" />
+                  </folding>
                 </state>
               </provider>
             </entry>
@@ -197,20 +270,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>split_paths</find>
-      <find>get_available_dataset_impl</find>
-      <find>dataset_impl</find>
-      <find>IndexedRawTextDataset</find>
-      <find>hub_utils</find>
-      <find>PathManager</find>
-      <find>bisect</find>
-      <find>source_dictionary</find>
-      <find>encoder_layers_to_keep</find>
-      <find>hub_models</find>
-      <find>init_bert_params</find>
-      <find>encoders</find>
-      <find>utils</find>
-      <find>TransformerSentenceEncoder</find>
       <find>create_position_ids_from_input_ids</find>
       <find>encoder</find>
       <find>apply_bert_init</find>
@@ -218,7 +277,6 @@
       <find>hubinterface</find>
       <find>apex</find>
       <find>BertConfig</find>
-      <find>tokenizer</find>
       <find>gelu</find>
       <find>RobertaConfig</find>
       <find>__version__</find>
@@ -227,6 +285,21 @@
       <find>roberta</find>
       <find>batch_size</find>
       <find>fp16</find>
+      <find>tokenize_line</find>
+      <find>ncc.data</find>
+      <find>tokenization</find>
+      <find>GPT2Config</find>
+      <find>mlm</find>
+      <find>set_seed</find>
+      <find>MODEL_CLASSES</find>
+      <find>args</find>
+      <find>setup_task</find>
+      <find>dictionary</find>
+      <find>build_dataset_for_inference</find>
+      <find>tokenizer</find>
+      <find>criterion</find>
+      <find>config</find>
+      <find>build_model</find>
     </findStrings>
     <dirStrings>
       <dir>$PROJECT_DIR$/ncc</dir>
@@ -250,7 +323,6 @@
         <option value="$PROJECT_DIR$/ncc/utils/utils.py" />
         <option value="$PROJECT_DIR$/ncc/utils/hub_utils.py" />
         <option value="$PROJECT_DIR$/ncc/data/encoder/__init__.py" />
-        <option value="$PROJECT_DIR$/ncc/tasks/fairseq_task.py" />
         <option value="$PROJECT_DIR$/ncc/model/roberta/model.py" />
         <option value="$PROJECT_DIR$/ncc/model/bert/modeling_bert.py" />
         <option value="$PROJECT_DIR$/ncc/utils/file_utils.py" />
@@ -259,14 +331,16 @@
         <option value="$PROJECT_DIR$/ncc/config/bert/configuration_bert.py" />
         <option value="$PROJECT_DIR$/ncc/config/bert/configuration_roberta.py" />
         <option value="$PROJECT_DIR$/run/codebert/unilang/roberta/wiki_fair.yml" />
-        <option value="$PROJECT_DIR$/run/codebert/unilang/run_language_modeling.py" />
-        <option value="$PROJECT_DIR$/run/codebert/unilang/roberta/main_wy.py" />
         <option value="$PROJECT_DIR$/run/codebert/unilang/roberta/wiki.yml" />
+        <option value="$PROJECT_DIR$/run/codebert/unilang/run_language_modeling.py" />
+        <option value="$PROJECT_DIR$/ncc/tasks/masked_lm.py" />
+        <option value="$PROJECT_DIR$/run/codebert/unilang/roberta/main_wy.py" />
+        <option value="$PROJECT_DIR$/ncc/tasks/fairseq_task.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="50" />
+  <component name="ProjectFrameBounds">
+    <option name="x" value="985" />
     <option name="y" value="23" />
     <option name="width" value="935" />
     <option name="height" value="1057" />
@@ -303,6 +377,33 @@
               <item name="naturalcodev3" type="462c0819:PsiDirectoryNode" />
               <item name="ncc" type="462c0819:PsiDirectoryNode" />
               <item name="model" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="naturalcodev3" type="b2602c69:ProjectViewProjectNode" />
+              <item name="naturalcodev3" type="462c0819:PsiDirectoryNode" />
+              <item name="ncc" type="462c0819:PsiDirectoryNode" />
+              <item name="model" type="462c0819:PsiDirectoryNode" />
+              <item name="bert" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="naturalcodev3" type="b2602c69:ProjectViewProjectNode" />
+              <item name="naturalcodev3" type="462c0819:PsiDirectoryNode" />
+              <item name="ncc" type="462c0819:PsiDirectoryNode" />
+              <item name="model" type="462c0819:PsiDirectoryNode" />
+              <item name="retrieval" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="naturalcodev3" type="b2602c69:ProjectViewProjectNode" />
+              <item name="naturalcodev3" type="462c0819:PsiDirectoryNode" />
+              <item name="ncc" type="462c0819:PsiDirectoryNode" />
+              <item name="model" type="462c0819:PsiDirectoryNode" />
+              <item name="summarization" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="naturalcodev3" type="b2602c69:ProjectViewProjectNode" />
+              <item name="naturalcodev3" type="462c0819:PsiDirectoryNode" />
+              <item name="ncc" type="462c0819:PsiDirectoryNode" />
+              <item name="tasks" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="naturalcodev3" type="b2602c69:ProjectViewProjectNode" />
@@ -377,7 +478,29 @@
       </list>
     </option>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Python.main_wy">
+    <configuration name="main_wy" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="naturalcodev3" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run/codebert/unilang/roberta" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run/codebert/unilang/roberta/main_wy.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="train_wy" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="naturalcodev3" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -402,6 +525,7 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.main_wy" />
         <item itemvalue="Python.train_wy" />
       </list>
     </recent_temporary>
@@ -422,7 +546,7 @@
       <workItem from="1585553516070" duration="15666000" />
       <workItem from="1585621009343" duration="648000" />
       <workItem from="1585660830213" duration="3720000" />
-      <workItem from="1585716964952" duration="4302000" />
+      <workItem from="1585716964952" duration="9744000" />
     </task>
     <task id="LOCAL-00001" summary="debug config">
       <created>1585552818865</created>
@@ -435,7 +559,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="28083000" />
+    <option name="totallyTimeSpent" value="33525000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -450,19 +574,19 @@
     <frame x="50" y="23" width="1870" height="1057" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.1274617" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.14606127" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
       <window_info anchor="bottom" id="Run" order="2" />
-      <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.49945295" weight="0.25796178" />
+      <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.49945295" visible="true" weight="0.28768578" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.32908705" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.32908705" />
-      <window_info anchor="bottom" id="File Transfer" order="9" visible="true" weight="0.32908705" />
+      <window_info anchor="bottom" id="File Transfer" order="9" weight="0.32908705" />
       <window_info anchor="bottom" id="Database Changes" order="10" />
       <window_info anchor="bottom" id="Terminal" order="11" weight="0.32908705" />
       <window_info anchor="bottom" id="Event Log" order="12" sideWeight="0.50054705" side_tool="true" weight="0.39808917" />
@@ -543,7 +667,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/run/codebert/unilang/roberta/main_wy.py</url>
-          <line>141</line>
+          <line>144</line>
           <option name="timeStamp" value="4" />
         </line-breakpoint>
       </breakpoints>
@@ -599,58 +723,6 @@
     </expressions>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/ncc/utils/distributed_utils.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-383">
-          <caret line="43" column="62" selection-start-line="43" selection-start-column="62" selection-end-line="43" selection-end-column="62" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/Library/Caches/PyCharm2018.3/remote_sources/1655964402/-2142378454/ncc/utils/util_file.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="127">
-          <caret line="62" column="25" lean-forward="true" selection-start-line="62" selection-start-column="25" selection-end-line="62" selection-end-column="25" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ncc/utils/checkpoint_utils.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="400">
-          <caret line="499" selection-start-line="499" selection-end-line="499" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ncc/utils/util_file.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="214">
-          <caret line="12" column="16" lean-forward="true" selection-start-line="12" selection-start-column="16" selection-end-line="12" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ncc/data/plasma_utils.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1240">
-          <caret line="11" column="44" selection-start-line="11" selection-start-column="44" selection-end-line="11" selection-end-column="44" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ncc/tasks/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="308">
-          <caret line="17" column="36" selection-start-line="17" selection-start-column="36" selection-end-line="17" selection-end-column="36" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ncc/data/encoder/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="36">
-          <caret line="12" column="14" lean-forward="true" selection-start-line="12" selection-start-column="14" selection-end-line="12" selection-end-column="14" />
-          <folding>
-            <element signature="e#179#195#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ncc/data/token_block_utils_fast.pyx">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="132">
@@ -716,13 +788,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ncc/model/fairseq_model.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="140">
-          <caret line="204" column="14" lean-forward="true" selection-start-line="204" selection-start-column="14" selection-end-line="204" selection-end-column="14" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ncc/module/transformer_sentence_encoder.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="199">
@@ -748,13 +813,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="873">
           <caret line="83" column="26" selection-start-line="83" selection-start-column="26" selection-end-line="83" selection-end-column="26" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ncc/tasks/fairseq_task.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="220">
-          <caret line="10" column="27" selection-start-line="10" selection-start-column="27" selection-end-line="10" selection-end-column="27" />
         </state>
       </provider>
     </entry>
@@ -792,13 +850,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ncc/model/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="873">
-          <caret line="66" column="30" selection-start-line="66" selection-start-column="11" selection-end-line="66" selection-end-column="30" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ncc/data/dictionary.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="873">
@@ -819,17 +870,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ncc/tasks/masked_lm.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="873">
-          <caret line="203" selection-start-line="203" selection-end-line="203" />
-          <folding>
-            <element signature="e#1397#1412#0" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ncc/data/tokenizer/tokenization_roberta.py">
+    <entry file="file://$PROJECT_DIR$/ncc/data/tokenization/tokenization_roberta.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="114">
           <caret line="57" column="21" selection-start-line="57" selection-start-column="21" selection-end-line="57" selection-end-column="21" />
@@ -891,30 +932,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ncc/model/bert/modeling_bert.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3982">
-          <caret line="192" column="13" selection-start-line="192" selection-start-column="13" selection-end-line="192" selection-end-column="13" />
-          <folding>
-            <element signature="e#738#752#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ncc/model/bert/model_xlmr.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="330">
           <caret line="15" selection-start-line="15" selection-end-line="15" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ncc/model/bert/model.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="880">
-          <caret line="40" column="10" selection-start-line="40" selection-start-column="10" selection-end-line="40" selection-end-column="10" />
-          <folding>
-            <element signature="e#1594#1609#0" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -949,13 +970,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ncc/model/bert/modeling_roberta.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="395">
-          <caret line="25" column="30" selection-start-line="25" selection-start-column="30" selection-end-line="25" selection-end-column="30" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/run/codebert/unilang/roberta/wiki_fair.yml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="286">
@@ -970,10 +984,44 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$USER_HOME$/Library/Caches/PyCharm2018.3/remote_sources/-103749995/-1058996331/tokenize.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="268">
+          <caret line="448" column="26" selection-start-line="448" selection-start-column="26" selection-end-line="448" selection-end-column="26" />
+          <folding>
+            <element signature="e#14764#14858#1" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ncc/data/tokenizer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="220">
+          <caret line="10" column="17" selection-start-line="10" selection-start-column="4" selection-end-line="10" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ncc/data/binarizer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="220">
+          <caret line="10" lean-forward="true" selection-start-line="10" selection-end-line="10" />
+          <folding>
+            <element signature="e#178#187#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Library/Caches/PyCharm2018.3/remote_sources/-103749995/-1058996331/codecs.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="237">
+          <caret line="321" selection-start-line="321" selection-end-line="321" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/run/codebert/unilang/roberta/train_wy.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="207">
-          <caret line="186" selection-start-line="186" selection-end-line="335" selection-end-column="14" />
+        <state relative-caret-position="279">
+          <caret line="101" column="14" lean-forward="true" selection-start-line="101" selection-start-column="14" selection-end-line="101" selection-end-column="14" />
           <folding>
             <element signature="e#922#3517#0" />
             <element signature="e#3555#3761#0" />
@@ -986,29 +1034,133 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/run/codebert/unilang/run_language_modeling.py">
+    <entry file="file://$PROJECT_DIR$/run/codebert/unilang/roberta/train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="282">
-          <caret line="486" column="11" lean-forward="true" selection-start-line="486" selection-start-column="11" selection-end-line="486" selection-end-column="11" />
-          <folding>
-            <element signature="e#972#987#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="237">
+          <caret line="48" column="16" selection-start-line="48" selection-start-column="16" selection-end-line="48" selection-end-column="16" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/run/codebert/unilang/roberta/wiki.yml">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="342">
-          <caret line="66" column="30" selection-start-line="66" selection-start-column="30" selection-end-line="66" selection-end-column="30" />
+        <state relative-caret-position="297">
+          <caret line="82" column="4" selection-start-line="82" selection-end-line="82" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ncc/model/fairseq_model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="298">
+          <caret line="40" lean-forward="true" selection-start-line="40" selection-end-line="40" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ncc/model/bert/modeling_roberta.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="362">
+          <caret line="77" column="17" lean-forward="true" selection-start-line="77" selection-start-column="17" selection-end-line="77" selection-end-column="17" />
+          <folding>
+            <element signature="e#741#755#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ncc/model/bert/model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="532">
+          <caret line="105" column="25" lean-forward="true" selection-start-line="105" selection-start-column="25" selection-end-line="105" selection-end-column="25" />
+          <folding>
+            <element signature="e#1594#1609#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ncc/model/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="508">
+          <caret line="72" column="9" selection-start-line="72" selection-start-column="9" selection-end-line="72" selection-end-column="9" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/run/codebert/unilang/run_language_modeling.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="373">
+          <caret line="734" column="25" lean-forward="true" selection-start-line="734" selection-start-column="25" selection-end-line="734" selection-end-column="25" />
+          <folding>
+            <element signature="e#972#987#0" expanded="true" />
+            <element signature="e#2734#4647#0" />
+            <element signature="e#4686#5942#0" />
+            <element signature="e#5986#6813#0" />
+            <element signature="e#6882#7296#0" />
+            <element signature="e#7577#8258#0" />
+            <element signature="e#8353#9018#0" />
+            <element signature="e#9139#10977#0" />
+            <element signature="e#11093#20274#0" />
+            <element signature="e#20376#22547#0" />
+            <element signature="e#30323#30619#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ncc/tasks/masked_lm.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="205">
+          <caret line="172" lean-forward="true" selection-start-line="172" selection-end-line="172" />
+          <folding>
+            <element signature="e#1397#1412#0" />
+            <element signature="e#4081#7301#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ncc/tasks/fairseq_task.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="156">
+          <caret line="207" lean-forward="true" selection-start-line="207" selection-end-line="207" />
+          <folding>
+            <element signature="e#178#193#0" expanded="true" />
+            <element signature="e#1721#2541#0" />
+            <element signature="e#2611#2788#0" />
+            <element signature="e#2858#3019#0" />
+            <element signature="e#3059#3817#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ncc/model/summarization/unilang/code2seq.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="360">
+          <caret line="41" lean-forward="true" selection-start-line="41" selection-end-line="41" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ncc/model/bert/modeling_bert.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="344">
+          <caret line="743" lean-forward="true" selection-start-line="743" selection-end-line="743" />
+          <folding>
+            <element signature="e#738#752#0" expanded="true" />
+            <element signature="e#7486#9338#0" />
+            <element signature="e#9381#12839#0" />
+            <element signature="e#12879#13405#0" />
+            <element signature="e#13444#15344#0" />
+            <element signature="e#22430#23362#0" />
+            <element signature="e#23388#24016#0" />
+            <element signature="e#24042#27320#0" />
+            <element signature="e#27518#28217#1" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/run/codebert/unilang/roberta/main_wy.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="290">
-          <caret line="32" column="20" selection-start-line="32" selection-start-column="20" selection-end-line="32" selection-end-column="20" />
+        <state relative-caret-position="405">
+          <caret line="112" column="29" lean-forward="true" selection-start-line="112" selection-start-column="29" selection-end-line="112" selection-end-column="29" />
         </state>
       </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ncc/tasks/summarization.py">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
   </component>
 </project>

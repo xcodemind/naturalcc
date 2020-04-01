@@ -19,7 +19,6 @@ GPT and GPT-2 are fine-tuned using a causal language modeling (CLM) loss while B
 using a masked language modeling (MLM) loss.
 """
 
-
 import argparse
 import glob
 import logging
@@ -36,38 +35,24 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, Dataset, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
+from ncc.model.bert.modeling_bert import BertForMaskedLM
+from ncc.model.bert.modeling_roberta import RobertaForMaskedLM
+from ncc.config.bert.configuration_bert import BertConfig
+from ncc.config.bert.configuration_roberta import RobertaConfig
+from ncc.data.tokenizer.tokenization_bert import BertTokenizer
+from ncc.data.tokenizer.tokenization_roberta import RobertaTokenizer
+from ncc.utils.modeling_utils import PreTrainedModel
+from ncc.utils.tokenization_utils import PreTrainedTokenizer
+from ncc.utils.file_utils import WEIGHTS_NAME
+from ncc.optim.optimization import get_linear_schedule_with_warmup
+from ncc.optim.optimization import AdamW
+
+
 from tokenizers import ByteLevelBPETokenizer
 from tokenizers.implementations import ByteLevelBPETokenizer
 from tokenizers.processors import BertProcessing
 from pathlib import Path
 import sys
-
-from transformers import (
-    WEIGHTS_NAME,
-    AdamW,
-    BertConfig,
-    BertForMaskedLM,
-    BertTokenizer,
-    CamembertConfig,
-    CamembertForMaskedLM,
-    CamembertTokenizer,
-    DistilBertConfig,
-    DistilBertForMaskedLM,
-    DistilBertTokenizer,
-    GPT2Config,
-    GPT2LMHeadModel,
-    GPT2Tokenizer,
-    OpenAIGPTConfig,
-    OpenAIGPTLMHeadModel,
-    OpenAIGPTTokenizer,
-    PreTrainedModel,
-    PreTrainedTokenizer,
-    RobertaConfig,
-    RobertaForMaskedLM,
-    RobertaTokenizer,
-    get_linear_schedule_with_warmup,
-)
-
 
 try:
     from torch.utils.tensorboard import SummaryWriter
@@ -79,12 +64,12 @@ logger = logging.getLogger(__name__)
 
 
 MODEL_CLASSES = {
-    "gpt2": (GPT2Config, GPT2LMHeadModel, GPT2Tokenizer),
-    "openai-gpt": (OpenAIGPTConfig, OpenAIGPTLMHeadModel, OpenAIGPTTokenizer),
+    # "gpt2": (GPT2Config, GPT2LMHeadModel, GPT2Tokenizer),
+    # "openai-gpt": (OpenAIGPTConfig, OpenAIGPTLMHeadModel, OpenAIGPTTokenizer),
     "bert": (BertConfig, BertForMaskedLM, BertTokenizer),
     "roberta": (RobertaConfig, RobertaForMaskedLM, RobertaTokenizer),
-    "distilbert": (DistilBertConfig, DistilBertForMaskedLM, DistilBertTokenizer),
-    "camembert": (CamembertConfig, CamembertForMaskedLM, CamembertTokenizer),
+    # "distilbert": (DistilBertConfig, DistilBertForMaskedLM, DistilBertTokenizer),
+    # "camembert": (CamembertConfig, CamembertForMaskedLM, CamembertTokenizer),
 }
 
 

@@ -221,6 +221,11 @@ class FairseqTask(object):
 
         return model.build_model(config, self)
 
+    def build_model_config(self, config):
+        from ncc import config
+
+        return config.build_config(config, self)
+
     def build_criterion(self, config):
         """
         Build the :class:`~fairseq.criterions.FairseqCriterion` instance for

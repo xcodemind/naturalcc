@@ -171,38 +171,38 @@ class MaskedLMTask(FairseqTask):
             ],
         )
 
-    def build_dataset_for_inference(self, src_tokens, src_lengths, sort=True):
-        src_dataset = PadDataset(
-            TokenBlockDataset(
-                src_tokens,
-                src_lengths,
-                self.config['task']['tokens_per_sample'] - 1,  # one less for <s>
-                pad=self.source_dictionary.pad(),
-                eos=self.source_dictionary.eos(),
-                break_mode='eos',
-            ),
-            pad_idx=self.source_dictionary.pad(),
-            left_pad=False,
-        )
-        src_dataset = PrependTokenDataset(src_dataset, self.source_dictionary.bos())
-        src_dataset = NestedDictionaryDataset(
-            {
-                'id': IdDataset(),
-                'net_input': {
-                    'src_tokens': src_dataset,
-                    'src_lengths': NumelDataset(src_dataset, reduce=False),
-                },
-            },
-            sizes=src_lengths,
-        )
-        if sort:
-            src_dataset = SortDataset(src_dataset, sort_order=[src_lengths])
-        return src_dataset
-
-    @property
-    def source_dictionary(self):
-        return self.dictionary
-
-    @property
-    def target_dictionary(self):
-        return self.dictionary
+    # def build_dataset_for_inference(self, src_tokens, src_lengths, sort=True):
+    #     src_dataset = PadDataset(
+    #         TokenBlockDataset(
+    #             src_tokens,
+    #             src_lengths,
+    #             self.config['task']['tokens_per_sample'] - 1,  # one less for <s>
+    #             pad=self.source_dictionary.pad(),
+    #             eos=self.source_dictionary.eos(),
+    #             break_mode='eos',
+    #         ),
+    #         pad_idx=self.source_dictionary.pad(),
+    #         left_pad=False,
+    #     )
+    #     src_dataset = PrependTokenDataset(src_dataset, self.source_dictionary.bos())
+    #     src_dataset = NestedDictionaryDataset(
+    #         {
+    #             'id': IdDataset(),
+    #             'net_input': {
+    #                 'src_tokens': src_dataset,
+    #                 'src_lengths': NumelDataset(src_dataset, reduce=False),
+    #             },
+    #         },
+    #         sizes=src_lengths,
+    #     )
+    #     if sort:
+    #         src_dataset = SortDataset(src_dataset, sort_order=[src_lengths])
+    #     return src_dataset
+    #
+    # @property
+    # def source_dictionary(self):
+    #     return self.dictionary
+    #
+    # @property
+    # def target_dictionary(self):
+    #     return self.dictionary
