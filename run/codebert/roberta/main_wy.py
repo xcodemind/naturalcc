@@ -6,26 +6,21 @@
 """
 Train a new model on one or across multiple GPUs.
 """
-
-import sys
-sys.path.append('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3')
-import logging
-import math
 import os
+import sys
+import math
 import random
 import numpy as np
+from collections import namedtuple
 import torch
-from ncc.utils import checkpoint_utils, distributed_utils, utils
-from ncc import tasks #, utils #  options,
-from ncc.data import iterators
-from ncc.logging import meters, metrics, progress_bar
-from ncc.trainer import Trainer
-import argparse
-from typing import Callable, List, Optional
-from ncc.data.indexed_dataset import get_available_dataset_impl
-# from run.util import * #get_args
+from ncc import LOGGER
+from ncc import tasks
+from ncc.logging import meters
+from ncc.trainer.fair_trainer import Trainer
+from ncc.utils import checkpoint_utils, distributed_utils
 from ncc.utils.util_file import load_yaml
-sys.exit()
+
+
 def single_main(config, init_distributed=False):
     # utils.import_user_module(config) # TODO: delete
 

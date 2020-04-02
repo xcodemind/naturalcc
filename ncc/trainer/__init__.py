@@ -1,10 +1,6 @@
-# -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc.trainer.trainer import Trainer
-
-__all__ = [
-    'Trainer',
-]
+# # -*- coding: utf-8 -*-
+# from .trainer import Trainer
+#
+# __all__ = [
+#     'Trainer',
+# ]
