@@ -2,6 +2,7 @@
 from torch.nn import Module
 from ncc.model.template.model_template import IModel
 
+
 class Encoder2Decoder(IModel):
     def __init__(self, encoder: Module, decoder: Module, ):
         super(Encoder2Decoder, self).__init__()

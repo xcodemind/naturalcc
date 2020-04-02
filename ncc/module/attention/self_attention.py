@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Any
 
+
 class SelfAttention(nn.Module):
     """
     reference: https://github.com/fastnlp/fastNLP/blob/master/fastNLP/modules/encoder/attention.py

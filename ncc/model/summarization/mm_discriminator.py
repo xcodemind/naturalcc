@@ -11,6 +11,7 @@ from ncc.metric import BaseLoss
 from ncc.utils.constants import *
 from typing import Dict, Any
 
+
 class MMDiscriminator(CodeEnc_CmntEnc):
 
     def __init__(self, config: Dict, ) -> None:

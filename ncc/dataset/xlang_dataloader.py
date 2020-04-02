@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
+import os
+import sys
 import ujson
 from joblib import Parallel, delayed
-import pprint
+from pprint import pprint
 from ncc import LOGGER
-from ncc.data import *
-from ncc.dataset.base import *
-from ncc.utils.util_file import *
-from ncc.utils.util_data import *
+from ncc.data import TokenDicts
+from ncc.dataset.base import sBaseDataset, rBaseDataset, sbase_collate_fn, rbase_collate_fn
+from ncc.utils.util_file import load_config
+from ncc.utils.util_data import merge_data
 from ncc.dataset.unilang_dataloader import UnilangDataloader
-from typing import Dict, List, Any
+from typing import Dict, List, Union, Any
+
 
 def get_tree_max_pad_len(dst_dir: str, xlang: List[str], ) -> int:
     file_name = os.path.join(dst_dir, 'info.txt')

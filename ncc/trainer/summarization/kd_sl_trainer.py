@@ -1,28 +1,19 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.dataset.base import *
-from ncc.dataset import *
-from ncc.utils.util_data import batch_to_cuda
-from ncc.utils.util_eval import *
-from ncc.utils.util_optimizer import create_scheduler
-from torch.optim import lr_scheduler
-from ncc.eval.evaluator import Evaluator
-from ncc.utils.utils import save_json
+import numpy as np
 import datetime
-import os
 import time
 import torch
-import numpy as np
+from ncc import LOGGER
+from ncc.utils.util_data import batch_to_cuda, output2topk
+from ncc.utils.util_optimizer import create_scheduler
+from ncc.utils.constants import *
+from ncc.dataset.base import TeacherOutputDataset
+from ncc.dataset import KDDataloader
+from ncc.eval.evaluator import Evaluator
 
-from  ncc.utils.constants import *
-from  ncc.utils.util_data  import  output2topk
 
 class KDSLTrainer(object):
-    def __init__(self,args,config,model ,  dataset:KDDataloader ):
+    def __init__(self, args, config, model, dataset: KDDataloader):
         self.args = args
         self.config = config
         self.model = model
@@ -78,7 +69,7 @@ class KDSLTrainer(object):
         #     self.evaluator = Evaluator(self.model, self.val_dataset, self.val_dataloader, (self.dict_code, self.dict_comment),
         #                           trainer_type = self.trainer_type)
 
-    def train(self,  criterion, optim,  start_time=None):
+    def train(self, criterion, optim, start_time=None):
         
 
         if start_time is None:
@@ -107,14 +98,14 @@ class KDSLTrainer(object):
         #         -1, avg_loss, score_Bleu_1, score_Meteor, score_Rouge, score_Cider))
 
 
-        for epoch in range(1,1+self.train_epoch):
+        for epoch in range(1,1 + self.train_epoch):
             self.model.train()
             iteration, total_loss = 0, 0
             train_data_iter = iter(self.train_dataloader)
 
             # debug_expert_outputs = [None for _ in range(len(self.train_dataset))] # for debug TODO
 
-            for iteration in range(1,1+ len(self.train_dataloader)):
+            for iteration in range(1,1 + len(self.train_dataloader)):
             # for iteration in range(1,3): # for debug TODO
             #     LOGGER.info("use partial data!!!! for debug ")
                 # batch = data_iter.__next__()

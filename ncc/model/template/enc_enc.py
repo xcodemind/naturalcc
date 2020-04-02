@@ -4,6 +4,7 @@ from torch.nn import Module
 from ncc.model.template.model_template import IModel
 from typing import Dict, Any, Union, List
 
+
 class CodeEnc_CmntEnc(IModel):
     '''
     code retrieval

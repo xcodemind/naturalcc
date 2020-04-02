@@ -5,6 +5,7 @@ import torch.nn as nn
 from ncc.module.code2vec.base import Encoder_Emb
 from typing import Dict, Any, Tuple
 
+
 class TreeLSTMCell(nn.Module):
     def __init__(self, x_size: int, h_size: int) -> None:
         super(TreeLSTMCell, self).__init__()

@@ -2,6 +2,7 @@
 import torch
 from typing import Any
 
+
 def pooling1d(input_emb: torch.Tensor, input_mask: torch.Tensor, pooling: str) -> torch.Tensor:
     if pooling == 'mean':
         input_emb = input_emb.sum(dim=1) / input_mask.sum(-1, keepdim=True)

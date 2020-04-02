@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class Critic(nn.Module):
     def __init__(self, wemb, opt): #code_encoder
         super(Critic, self).__init__()

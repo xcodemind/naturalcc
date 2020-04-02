@@ -6,24 +6,18 @@
 """
 Train a network across multiple GPUs.
 """
-
+import sys
 import contextlib
 from itertools import chain
 import logging
-import sys
-from typing import Any, Dict, List
-
 import torch
-
-# from fairseq import checkpoint_utils, distributed_utils, models, optim, utils
 from ncc.utils import checkpoint_utils, distributed_utils, utils
 from ncc import optim
-from ncc.model import DistributedFairseqModel
-
 from ncc.utils.file_io import PathManager
 from ncc.logging import meters, metrics
 from ncc.utils.nan_detector import NanDetector
 from ncc.optim import lr_scheduler
+from typing import Any, Dict, List
 
 
 logger = logging.getLogger(__name__)

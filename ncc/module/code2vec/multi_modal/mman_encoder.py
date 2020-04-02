@@ -8,6 +8,7 @@ from ncc.module.code2vec.encoder_ast import Encoder_EmbTreeRNN, Encoder_EmbPathR
 from ncc.module.attention import HirarchicalAttention
 from typing import Dict, Any
 
+
 class CodeEnocder_MM(Module):
     '''
     Multi-modalities code encoder

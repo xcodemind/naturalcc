@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from ncc.module.code2vec.base import Encoder_Emb, Encoder_Conv1d, pooling1d
 from typing import Dict, Any
 
+
 class Encoder_EmbResConv1d(Module):
 
     def __init__(self, token_num: int, embed_size: int,

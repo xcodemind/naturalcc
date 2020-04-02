@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.trainer import *
-from ncc.model import *
-from ncc.model.template import *
-from ncc.dataset import *
-from ncc.metric import *
-from ncc.utils.util_data import batch_to_cuda
-from ncc.utils.util_eval import *
-from ncc.eval import *
-from collections import OrderedDict
+import os
+import datetime
 import ujson
+import time
+from collections import OrderedDict
+import torch
+from torch.optim.optimizer import Optimizer
+from ncc import LOGGER
+from ncc.trainer import Trainer
+from ncc.model.template import IModel
+from ncc.dataset import UnilangDataloader
+from ncc.metric import BaseLoss
+from ncc.utils.util_data import batch_to_cuda
+from ncc.utils.utils import clean_up_sentence, indices_to_words
+from typing import Dict
 
 
 class DiscTrainer(Trainer):
@@ -96,11 +96,11 @@ class DiscTrainer(Trainer):
 
             for iteration in range(1, 1 + len(dataset['train'])):
                 batch = train_data_iter.__next__()
-                if critic.config['common']['device'] is not None:
+                if disc.config['common']['device'] is not None:
                     batch = batch_to_cuda(batch)
 
                 disc_loss = disc.train_sl(batch, criterion)
-                LOGGER.debug('{} batch loss: {:.8f}'.format(self.__class__.__name__, critic_loss.item()))
+                LOGGER.debug('{} batch loss: {:.8f}'.format(self.__class__.__name__, disc_loss.item()))
                 disc_optimizer.zero_grad()
                 disc_loss.backward()
                 total_loss += disc_loss.item()
@@ -121,7 +121,7 @@ class DiscTrainer(Trainer):
                         disc.config['training']['attn_type'],
                         disc.config['training']['pointer'], epoch)
                     model_path = os.path.join(SAVE_DIR, '{}.pt'.format(model_name), )
-                    torch.save(critic.state_dict(), model_path)
+                    torch.save(disc.state_dict(), model_path)
                     LOGGER.info('Dumping disc in {}'.format(model_path))
                 # Evaluator.summarization_eval(critic, dataset['valid'], dataset.token_dicts, )
             else:

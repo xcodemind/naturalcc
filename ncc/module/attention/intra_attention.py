@@ -5,6 +5,7 @@ import torch.nn as nn
 from torch.nn import Module
 from ncc.utils.constants import *
 
+
 class IntraAttention_Encoder(Module):
     def __init__(self, hidden_size, intra_encoder=True):
         super(IntraAttention_Encoder, self).__init__()

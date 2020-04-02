@@ -8,6 +8,7 @@ from ncc.module.code2vec.multi_modal import *
 from ncc.module.code2vec.base import *
 from typing import Dict, Any
 
+
 class MMRewardModel(CodeEnc_CmntEnc):
 
     def __init__(self, config: Dict, ) -> None:

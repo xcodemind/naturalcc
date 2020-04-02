@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 # ref: https://github.com/eric-xw/AREL
-import sys
-
-sys.path.append('.')
-
-from ncc import *
+import torch
+import torch.nn as nn
+from torch.optim.optimizer import Optimizer
+from ncc import LOGGER
 from ncc.trainer import *
 from ncc.model import *
 from ncc.model.template import *
@@ -12,7 +11,6 @@ from ncc.dataset import *
 from ncc.metric import *
 from ncc.utils.util_data import batch_to_cuda
 from ncc.utils.util_eval import *
-from ncc.eval import *
 from ncc.utils.util_gan import AlterFlag
 
 class ARELTrainer(Trainer):
@@ -85,8 +83,8 @@ class ARELTrainer(Trainer):
                     gen_score = disc(batch, seq)
                     print('gen_score: ', type(gen_score), gen_score.size())
                     print(gen_score)
-                    print('normed_seq_log_probs: ', type(normed_seq_log_probs), normed_seq_log_probs.size())
-                    print(normed_seq_log_probs)
+                    # print('normed_seq_log_probs: ', type(normed_seq_log_probs), normed_seq_log_probs.size())
+                    # print(normed_seq_log_probs)
                     rewards = gen_score - 0.001 * normed_seq_log_probs
                     print('rewards: ', type(rewards), rewards.size())
                     print(rewards)

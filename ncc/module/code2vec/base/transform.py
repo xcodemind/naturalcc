@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from torch.nn import Module
 
+
 class Transform(Module):
     '''
     transform layer: linear -> activate func -> linear

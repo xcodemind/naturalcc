@@ -1,23 +1,21 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.trainer import *
-from ncc.model import *
-from ncc.model.template import *
-from ncc.dataset import *
-from ncc.metric import *
-from ncc.utils.util_data import *
-from ncc.utils.util_eval import *
-from ncc.eval import *
-from ncc.utils.util_optimizer import create_scheduler
-from torch.optim import lr_scheduler
-from ncc.metric.base import *
-from ncc.dataset.base import *
+import os
+import datetime
+import time
 from tabulate import tabulate
-
+import torch
+from torch.optim.optimizer import Optimizer
+from ncc import LOGGER
+from ncc.trainer import Trainer
+from ncc.model.template import IModel
+from ncc.dataset import XlangDataloader
+from ncc.metric import BaseLoss
+from ncc.utils.util_data import batch_to_cuda, merge_data
+from ncc.utils.util_optimizer import create_scheduler
+from ncc.metric.base import LMLoss
+from ncc.dataset.base import sbase_collate_fn
+from ncc.eval.evaluator import Evaluator
+from typing import Dict
 
 class DTRLTrainer(Trainer):
     '''

@@ -1,10 +1,11 @@
 import os
 import json
-from ncc.data import *
+from ncc.data import TokenDicts
 from ncc import LOGGER
-from ncc.dataset.base import *
+from ncc.dataset.base import sBaseDataset, TeacherOutputDataset, ConcatDataset, KdCodeSumDataset
 from typing import Any
 from torch.utils.data import DataLoader
+
 
 class KDDataloader(object):
     def __init__(self, *args: Any, **kwargs: Any ) -> None:

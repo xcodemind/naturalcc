@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from ncc.module.code2vec.base import Encoder_Emb
 from typing import Dict, Any
 
+
 class Encoder_EmbMaxpool(nn.Module):
     '''
     for code/comment embedding

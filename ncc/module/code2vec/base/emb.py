@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from typing import Dict, Any
 
+
 class Encoder_Emb(nn.Module):
     '''
     neural bag of words

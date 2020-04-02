@@ -8,6 +8,7 @@ from ncc.metric import BaseLoss
 from ncc.data import TokenDicts
 from typing import Dict, Tuple, Any
 
+
 class MM2Seq(Encoder2Decoder):
 
     def __init__(self, config: Dict) -> None:

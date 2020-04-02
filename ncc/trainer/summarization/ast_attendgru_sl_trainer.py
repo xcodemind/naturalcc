@@ -1,9 +1,11 @@
+import os
 import datetime
 import time
+import torch
+import torch.nn as nn
 from ncc.utils.util_data import batch_to_cuda
 from ncc.eval.evaluator import Evaluator
-from ncc import *
-from torch.optim.lr_scheduler import LambdaLR
+from ncc import LOGGER
 from ncc.utils.util_optimizer import create_scheduler
 
 class AstAttendGruSLTrainer(object):
@@ -114,9 +116,6 @@ class AstAttendGruSLTrainer(object):
 
             LOGGER.info("Epoch: {} best_bleu1: {} best_bleu1_epoch:{} best_cider:{} best_cider_epoch:{} ".format(
                 epoch , self.best_bleu1,self.best_bleu1_epoch,self.best_cider,self.best_cider_epoch))
-
-
-
 
             torch.save(self.model.state_dict(), model_name)
             LOGGER.info("Save model as %s" % model_name)

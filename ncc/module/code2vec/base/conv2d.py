@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Dict, Any, List
 
+
 class Encoder_Conv2d(nn.Module):
     '''
     CodeSearchNet baseline:

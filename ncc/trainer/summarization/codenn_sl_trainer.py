@@ -1,9 +1,12 @@
+import os
+import torch
 import datetime
 import time
 from ncc.utils.util_data import batch_to_cuda
 from ncc.eval.evaluator import Evaluator
-from ncc import *
+from ncc import LOGGER
 from torch.optim.lr_scheduler import LambdaLR
+
 
 class CodeNNSLTrainer(object):
     def __init__(self,config, model, dataset ): #eval_data

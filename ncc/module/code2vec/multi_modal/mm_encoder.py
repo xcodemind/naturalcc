@@ -8,6 +8,7 @@ from ncc.module.code2vec.encoder_tok import *
 from ncc.module.code2vec.encoder_ast import *
 from typing import Dict, Any, Tuple
 
+
 class MMEncoder_EmbRNN(Module):
     def __init__(self, config: Dict, ):
         super(MMEncoder_EmbRNN, self).__init__()

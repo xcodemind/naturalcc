@@ -5,6 +5,7 @@ from ncc import LOGGER
 from ncc.module.code2vec.base.util import *
 from typing import Dict, Any
 
+
 class Encoder_Conv1d(nn.Module):
     '''
     CodeSearchNet baseline:

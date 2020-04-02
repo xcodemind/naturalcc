@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.trainer import *
-from ncc.model import *
-from ncc.model.template import *
-from ncc.dataset import *
-from ncc.metric import *
-from ncc.utils.util_data import batch_to_cuda
-from ncc.utils.util_eval import *
-from ncc.eval import *
-from ncc.utils.util_optimizer import create_scheduler
-from torch.optim import lr_scheduler
+import os
+import datetime
+import time
 from tabulate import tabulate
+import torch
+import torch.nn as nn
+from torch.optim.optimizer import Optimizer
+from ncc import LOGGER
+from ncc.trainer import Trainer
+from ncc.model.template import IModel
+from ncc.dataset import UnilangDataloader
+from ncc.metric import BaseLoss
+from ncc.utils.util_data import batch_to_cuda
+from ncc.utils.util_optimizer import create_scheduler
+from ncc.trainer.summarization.sl_trainer import SLTrainer
+from ncc.eval.evaluator import Evaluator
+from typing import Dict
 
 
 class SLTrainer(Trainer):

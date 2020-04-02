@@ -4,8 +4,8 @@ import torch.nn as nn
 from torch.nn import Module
 from ncc.module.code2vec.base import pooling1d
 from ncc.module.code2vec.encoder_tok import Encoder_EmbRNN
-
 from typing import Dict, Any
+
 
 class CodeEncoder_DeepCS(Module):
     def __init__(self, config: Dict, ):

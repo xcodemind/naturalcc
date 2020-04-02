@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from torch.nn import Module
 
+
 class HirarchicalAttention(Module):
     '''
     ref: Hierarchical Attention Networks for Document Classiﬁcation
