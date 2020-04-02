@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import sys
-
-sys.path.append('.')
-
+import os
+# sys.path.append('.')
+import torch
 from run.util import *
 from ncc.metric.base import *
 from ncc.model.retrieval.unilang import *

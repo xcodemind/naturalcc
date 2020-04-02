@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
+import torch
+import torch.nn as nn
 from torch.autograd import Function
 
 # ref: https://github.com/IBM/pytorch-seq2seq/blob/master/seq2seq/models/attention.py

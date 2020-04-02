@@ -2,12 +2,11 @@
 
 import sys
 
-sys.path.append('.')
-
-from ncc import *
+# from ncc import *
 from ncc.utils.constants import POS_INF
 import itertools
 import ujson
+from typing import Any, Dict, Tuple, List, Union, Optional
 
 
 class Dict(object):

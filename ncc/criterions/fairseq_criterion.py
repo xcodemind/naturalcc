@@ -9,7 +9,7 @@ from typing import Any, Dict, List
 from torch.nn.modules.loss import _Loss
 
 # from src import metrics
-from ncc.log import metrics
+from ncc.logging import metrics
 from ncc.utils import utils
 
 

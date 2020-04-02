@@ -1,17 +1,14 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
+import numpy as np
+import torch.nn as nn
+from torch.nn import Module
+from torch.optim.optimizer import Optimizer
 from ncc.model.template import *
-from ncc.module.code2vec.encoder_tok import *
-from ncc.metric import *
-from ncc.model.retrieval.unilang.ahn.util import *
+from ncc.metric import BaseLoss
+from ncc.model.retrieval.ahn.util import *
 
 from ncc.module.code2vec.base.emb import Encoder_Emb
-
+from typing import Dict, Any, List
 
 class AHN_NBOW(CodeEnc_CmntEnc):
     def __init__(self, config: Dict, TRAIN_NUM: int, gamma=1, eta=1, ):

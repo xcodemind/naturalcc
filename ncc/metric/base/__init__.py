@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
 from ncc.metric.base.lm_loss import LMLoss
 from ncc.metric.base.triple_loss import TripletLoss
 from ncc.metric.base.trl_loss import TRLLoss

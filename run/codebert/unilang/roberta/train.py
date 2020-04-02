@@ -20,7 +20,7 @@ import torch
 from ncc.utils import checkpoint_utils, distributed_utils, utils
 from ncc import tasks #, utils #  options,
 from ncc.data import iterators
-from ncc.log import meters, metrics, progress_bar
+from ncc.logging import meters, metrics, progress_bar
 from ncc.trainer import Trainer
 import argparse
 from typing import Callable, List, Optional

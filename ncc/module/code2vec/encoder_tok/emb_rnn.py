@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.module.code2vec.base import *
+import torch
+import torch.nn as nn
+from torch.nn import Module
+import torch.nn.functional as F
+from ncc import LOGGER
+from ncc.module.code2vec.base import Encoder_Emb, Encoder_RNN
+from typing import Dict, Any
 
 
 class Encoder_EmbRNN(Module):
@@ -32,7 +33,7 @@ class Encoder_EmbRNN(Module):
         if self.bidirectional:
             self.reduce_hs = nn.ModuleList(  [nn.Linear(2*hidden_size,hidden_size)] * self.layer_num)
             if self.rnn_type!='GRU':
-                self.reduce_cs  =nn.ModuleList(  [ nn.Linear(2*hidden_size,hidden_size)] * self.layer_num)
+                self.reduce_cs  =nn.ModuleList([ nn.Linear(2*hidden_size,hidden_size)] * self.layer_num)
             # self.reduce_h  = nn.Linear(2*hidden_size,hidden_size)
             # if self.rnn_type!='GRU':
             #     self.reduce_c  = nn.Linear(2*hidden_size,hidden_size)

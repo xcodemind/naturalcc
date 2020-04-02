@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('./')
-
-from ncc import *
+import torch
+import torch.nn as nn
 from ncc.model.template import *
 from ncc.module.code2vec.base import Encoder_Emb
 from ncc.metric import *
 from ncc.module.code2vec.base.util import *
-
+from typing import Dict, Any
 
 class NBOW(CodeEnc_CmntEnc):
 

@@ -1,20 +1,12 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.eval import *
-from ncc.model.template import *
-from ncc.module.code2vec.multi_modal import *
-from ncc.module.summarization import *
-from ncc.model import *
-from ncc.dataset import *
-from ncc.metric import *
-from ncc.utils.util_data import batch_to_cuda
-from ncc.data import *
-
+import torch
+from ncc import LOGGER
+from ncc.model.template import Encoder2Decoder
+from ncc.module.code2vec.multi_modal import MMEncoder_EmbRNN
+from ncc.module.summarization import SeqDecoder
+from ncc.metric import BaseLoss
+from ncc.data import TokenDicts
+from typing import Dict, Tuple, Any
 
 class MM2Seq(Encoder2Decoder):
 

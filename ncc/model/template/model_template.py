@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-
+from torch.nn import Module
+from typing import Dict, Any
+import abc
 
 class IModel(Module):
     '''

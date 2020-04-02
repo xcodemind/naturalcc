@@ -14,7 +14,7 @@ from ncc.utils.util_data import batch_to_cuda
 from ncc.utils.util_eval import *
 from ncc.eval import *
 from ncc.utils.util_eval import *
-from ncc.trainer.summarization.unilang.sl_trainer import SLTrainer
+from ncc.trainer.summarization.sl_trainer import SLTrainer
 from ncc.utils.util_optimizer import create_scheduler
 from tabulate import tabulate
 

@@ -18,10 +18,10 @@ from ncc.utils.utils import *
 from ncc.data.token_dicts import TokenDicts
 import ujson
 
-from ncc.log.log import get_logger
-
-LOGGER = get_logger()
-
+# from ncc.log.log import get_logger
+#
+# LOGGER = get_logger()
+from ncc import LOGGER
 
 def dump_preds(src_comments: List, trg_comments: List, pred_comments: List,
                src_code_all: List, pred_filename: str, ) -> None:

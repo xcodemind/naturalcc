@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.module.code2vec.base import *
-from ncc.module.attention import *
-from ncc.utils.util_data import *
-from ncc.utils.utils import *
-from ncc.data import *
-from eval.summarization import *
+import numpy as np
+from ncc import LOGGER
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from ncc.module.code2vec.base import Encoder_Emb, Encoder_RNN
+from ncc.module.attention import GlobalAttention, IntraAttention, SelfAttention
+from ncc.data import TokenDicts
+from ncc.utils.utils import indices_to_words, clean_up_sentence
+from eval.summarization import Bleu, Cider, Rouge
 from ncc.utils.constants import *
+from typing import Dict, List, Any, Tuple
 
 
-class SeqDecoder(Module):
+class SeqDecoder(nn.Module):
     def __init__(self, token_num: int, embed_size: int,
                  rnn_type: str, hidden_size: int, layer_num: int, dropout: float, bidirectional: bool,
                  attn_type: str, pointer: bool, max_predict_length: int, code_modalities: List,
@@ -314,7 +314,7 @@ class SeqDecoder(Module):
         sample_max, seq_length = sample_opt.get('sample_max', 1), sample_opt.get('seq_length',
                                                                                  self.opt.max_predict_length)
         batch_size = dec_hidden[0].size(1)
-        input = torch.zeros(1, batch_size).long().fill_(constants.BOS)
+        input = torch.zeros(1, batch_size).long().fill_(BOS)
         input = to_cuda(self.opt, input)
         mask = torch.LongTensor(batch_size).fill_(
             1).cuda()  # Values that indicate whether [STOP] token has already been encountered; 1 => Not encountered, 0 otherwise
@@ -355,7 +355,7 @@ class SeqDecoder(Module):
                 mask == 1] = 1  # If [STOP] is not encountered till previous time step, mask_t = 1 else mask_t = 0
 
             mask[(mask == 1).int() + (
-                    input.squeeze() == constants.EOS).int() == 2] = 0  # If [STOP] is not encountered till previous time step and current word is [STOP], make mask = 0
+                    input.squeeze() == EOS).int() == 2] = 0  # If [STOP] is not encountered till previous time step and current word is [STOP], make mask = 0
             # print('forward_pg-mask-: ', mask.type(), mask.size())
             # print(mask)
             seq_padding_mask.append(mask_t)

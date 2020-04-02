@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('./')
-
-from ncc import *
+import torch
 from ncc.model.template import *
 from ncc.module.code2vec.encoder_tok import *
 from ncc.metric import *
+from typing import Dict, Any
 
 
 class RNNSelfAttn(CodeEnc_CmntEnc):

@@ -1,16 +1,10 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('./')
-
-from ncc import *
-from ncc.module.code2vec.base.util import *
-
 from ncc.utils.constants import PAD
+import torch
+import torch.nn as nn
+from typing import Dict, Any
 
-
-class Encoder_Emb(Module):
+class Encoder_Emb(nn.Module):
     '''
     neural bag of words
     for code/comment embedding

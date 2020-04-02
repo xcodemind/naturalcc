@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-
-from ncc.module.code2vec.encoder_tok import *
-from ncc.module.code2vec.encoder_ast import *
+import torch
+from torch.nn import Module
+from ncc import LOGGER
+from ncc.module.code2vec.encoder_tok import Encoder_EmbRNN
+from typing import Dict, Any
 
 
 class AstAttendGruEncoder(Module):

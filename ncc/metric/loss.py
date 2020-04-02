@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('./')
-
-from ncc import *
-from ncc.metric import *
+import torch
+import torch.nn as nn
+from ncc import LOGGER
+from typing import Any
 
 
-class BaseLoss(Module):
+class BaseLoss(nn.Module):
     __slots__ = ('_base', '_device',)
 
-    def __init__(self, base: Module, device: bool, ) -> None:
+    def __init__(self, base: nn.Module, device: bool, ) -> None:
         '''
         :param base: loss base
         :param device: False -> 'CPU' | True -> 'GPU'

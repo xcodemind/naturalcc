@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
+import torch
+import torch.nn as nn
+from torch.nn import Module
+import torch.nn.functional as F
+from ncc import LOGGER
 from ncc.module.code2vec.base import *
 from ncc.utils.util_file import *
 from ncc.data import *

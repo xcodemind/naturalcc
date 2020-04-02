@@ -1,21 +1,15 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.eval import *
-from ncc.model.template import *
-from ncc.module.code2vec.multi_modal import *
-from ncc.module.code2vec.base import *
-from ncc.module.summarization import *
-from ncc.model import *
-from ncc.dataset import *
-from ncc.metric import *
-from ncc.utils.util_data import batch_to_cuda
-from ncc.data import *
-
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.nn.utils.rnn import pack_padded_sequence
+from ncc import LOGGER
+from ncc.model.template import CodeEnc_CmntEnc, IModel
+from ncc.module.code2vec.multi_modal import MMEncoder_EmbRNN
+from ncc.module.code2vec.base import Encoder_Conv2d
+from ncc.metric import BaseLoss
+from ncc.utils.constants import *
+from typing import Dict, Any
 
 class MMDiscriminator(CodeEnc_CmntEnc):
 
@@ -154,7 +148,7 @@ class Discriminator_LSTM_(nn.Module):
 
         self.opt = opt
         self.linear = nn.Linear(opt.nhid, 2)
-        self.wemb = nn.Embedding(dict_comment.size(), opt.ninp, padding_idx=constants.PAD)
+        self.wemb = nn.Embedding(dict_comment.size(), opt.ninp, padding_idx=PAD)
         self.rnn = getattr(nn, opt.decoder_rnn_type)(opt.ninp, opt.nhid, opt.nlayers, dropout=opt.dropout)
 
     def init_hidden(self, bsz):
@@ -199,7 +193,7 @@ class Discriminator_LSTM(nn.Module):
 
         self.opt = opt
         self.linear = nn.Linear(opt.nhid, 2)
-        self.wemb = nn.Embedding(dict_comment.size(), opt.ninp, padding_idx=constants.PAD)
+        self.wemb = nn.Embedding(dict_comment.size(), opt.ninp, padding_idx=PAD)
         self.rnn = getattr(nn, opt.decoder_rnn_type)(opt.ninp, opt.nhid, opt.nlayers, dropout=opt.dropout)
 
     def init_hidden(self, bsz):

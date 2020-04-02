@@ -6,7 +6,7 @@
 import math
 
 # from fairseq import metrics, utils
-from ncc.log import metrics
+from ncc.logging import metrics
 from ncc.utils import utils
 from ncc.criterions import register_criterion
 

@@ -21,7 +21,7 @@ from typing import List, Optional
 from tokenizers.processors import RobertaProcessing
 
 from .tokenization_gpt2 import GPT2Tokenizer, GPT2TokenizerFast
-
+from ncc.data.tokenizer import register_tokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES = {
     "roberta-large-openai-detector": 512,
 }
 
-
+@register_tokenizer('roberta_tokenizer')
 class RobertaTokenizer(GPT2Tokenizer):
     """
     Constructs a RoBERTa BPE tokenizer, derived from the GPT-2 tokenizer. Peculiarities:
@@ -241,6 +241,7 @@ class RobertaTokenizer(GPT2Tokenizer):
         return text
 
 
+@register_tokenizer('roberta_tokenizer_fast')
 class RobertaTokenizerFast(GPT2TokenizerFast):
     vocab_files_names = VOCAB_FILES_NAMES
     pretrained_vocab_files_map = PRETRAINED_VOCAB_FILES_MAP

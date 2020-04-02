@@ -2,13 +2,14 @@
 
 import sys
 
-sys.path.append('./')
+# sys.path.append('./')
 
 from run.util import *
 from ncc.utils.util_gpu import occupy_gpu_new
 from ncc.utils.util_file import load_yaml
 import time
 import subprocess
+import os
 
 if __name__ == '__main__':
     arg = get_args_new()

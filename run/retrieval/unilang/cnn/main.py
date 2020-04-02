@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 import sys
 
-sys.path.append('.')
+# sys.path.append('.')
+from collections import namedtuple
+import os
+import torch
 
 from run.util import *
 from ncc.metric.base import *

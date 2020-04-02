@@ -37,7 +37,14 @@ from .fairseq_task import FairseqTask
 from . import register_task
 from ncc.data.encoder.utils import get_whole_word_mask
 from ncc.utils import utils
-
+from ncc.model.bert.modeling_bert import BertForMaskedLM
+from ncc.model.bert.modeling_roberta import RobertaForMaskedLM
+from ncc.config.bert.configuration_bert import BertConfig
+from ncc.config.bert.configuration_roberta import RobertaConfig
+from ncc.data.tokenizer.tokenization_bert import BertTokenizer
+from ncc.data.tokenizer.tokenization_roberta import RobertaTokenizer
+from ncc.utils.modeling_utils import PreTrainedModel
+from ncc.utils.tokenization_utils import PreTrainedTokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -72,24 +79,26 @@ class MaskedLMTask(FairseqTask):
     #     parser.add_argument('--mask-whole-words', default=False, action='store_true',
     #                         help='mask whole words; you may also want to set --bpe')
 
-    def __init__(self, config, dictionary):
+    def __init__(self, config, tokenizer):
         super().__init__(config)
-        self.dictionary = dictionary
-        self.seed = config['common']['seed']
+        # self.dictionary = dictionary
+        # self.seed = config['common']['seed']
 
-        # add mask token
-        self.mask_idx = dictionary.add_symbol('<mask>')
+        # # add mask token
+        # self.mask_idx = dictionary.add_symbol('<mask>')、
+        self.tokenizer = tokenizer
 
     @classmethod
     def setup_task(cls, config, **kwargs):
-        paths = utils.split_paths(config['task']['data'])
-        print('paths: ', paths)
-        assert len(paths) > 0
-        dictionary = Dictionary.load(os.path.join(paths[0], 'dict.txt'))
-        logger.info('dictionary: {} types'.format(len(dictionary)))
-        return cls(config, dictionary)
+        # paths = utils.split_paths(config['task']['data'])
+        # print('paths: ', paths)
+        # assert len(paths) > 0
+        # dictionary = Dictionary.load(os.path.join(paths[0], 'dict.txt'))
+        # logger.info('dictionary: {} types'.format(len(dictionary)))
+        tokenizer = BertTokenizer.from_pretrained(config['dataset']['tokenizer_name'], cache_dir=config['checkpoint']['cache_dir'])
+        return cls(config, tokenizer)
 
-    def load_dataset(self, split, epoch=1, combine=False, **kwargs):
+    def load_dataset_(self, split, epoch=1, combine=False, **kwargs):
         """Load a given dataset split.
 
         Args:

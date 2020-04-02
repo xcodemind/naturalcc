@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('./')
-
-from ncc import *
-
+import torch
+from typing import Any
 
 def pooling1d(input_emb: torch.Tensor, input_mask: torch.Tensor, pooling: str) -> torch.Tensor:
     if pooling == 'mean':

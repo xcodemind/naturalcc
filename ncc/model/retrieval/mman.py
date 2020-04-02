@@ -1,20 +1,10 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.eval import *
+import torch
 from ncc.model.template import *
-from ncc.module.code2vec.base import *
 from ncc.module.code2vec.encoder_tok import *
 from ncc.module.code2vec.multi_modal import *
-from ncc.module.summarization import *
-from ncc.model import *
-from ncc.dataset import *
-from ncc.metric import *
-from ncc.utils.util_data import batch_to_cuda
+from ncc.metric import BaseLoss
+from typing import Dict, Any
 
 
 class MMAN(CodeEnc_CmntEnc):

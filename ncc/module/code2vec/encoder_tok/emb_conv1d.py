@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.module.code2vec.base import *
-
+import torch
+from torch.nn import Module
+import torch.nn.functional as F
+from ncc.module.code2vec.base import Encoder_Emb, Encoder_Conv1d, pooling1d
+from typing import Dict, Any
 
 class Encoder_EmbResConv1d(Module):
 

@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.metric import *
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from ncc.metric import BaseLoss
 
 '''
 this file contains losses from Github: CodeSearchNet

@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-
+import torch
 
 def calc_sim_mat(batch_input1: torch.Tensor, batch_input2: torch.Tensor, ) -> torch.Tensor:
     # calculate the similar matrix

@@ -6,7 +6,7 @@
 import os
 from collections import Counter
 
-from .tokenizer import tokenize_line
+from .tokenizer_fair import tokenize_line
 import torch
 
 

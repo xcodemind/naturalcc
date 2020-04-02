@@ -1,15 +1,10 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
+from ncc import LOGGER
 from ncc.model.template import *
 from ncc.module.code2vec.multi_modal import *
 from ncc.module.summarization import *
 from ncc.metric import *
-
+from typing import Dict, Tuple, Any
 
 
 class AstAttendGru(Encoder2Decoder):

@@ -1,21 +1,12 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.eval import *
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from ncc import LOGGER
 from ncc.model.template import *
 from ncc.module.code2vec.multi_modal import *
 from ncc.module.code2vec.base import *
-from ncc.module.summarization import *
-from ncc.model import *
-from ncc.dataset import *
-from ncc.metric import *
-from ncc.utils.util_data import batch_to_cuda
-from ncc.data import *
-
+from typing import Dict, Any
 
 class MMRewardModel(CodeEnc_CmntEnc):
 
@@ -107,7 +98,8 @@ class MMRewardModel_(nn.Module):
             self.activation = nn.Tanh()
 
     def forward(self, story, feature):
-        embedding = Variable(self.emb(story).data)  # (batch_size, seq_length, embed_dim)
+        # embedding = Variable(self.emb(story).data)  # (batch_size, seq_length, embed_dim)
+        embedding = self.emb(story) # (batch_size, seq_length, embed_dim)
 
         self.convs = [model.cuda() for model in self.convs]
 

@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.module.code2vec.base import Encoder_Emb
-
 import dgl
-
+import torch
+import torch.nn as nn
+from ncc.module.code2vec.base import Encoder_Emb
+from typing import Dict, Any, Tuple
 
 class TreeLSTMCell(nn.Module):
     def __init__(self, x_size: int, h_size: int) -> None:

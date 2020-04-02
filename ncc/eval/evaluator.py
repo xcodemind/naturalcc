@@ -1,21 +1,22 @@
 # -*- coding: utf-8 -*-
+import os
+import random
+import numpy as np
+from tabulate import tabulate
 
-import sys
-
-sys.path.append('.')
-
+import torch
+import torch.nn.functional as F
+from torch.utils.data import DataLoader
 from ncc import *
 from ncc.data import *
 from ncc.metric import *
 from ncc.model.template import *
 from ncc.utils.util_data import batch_to_cuda
 from ncc.utils.util_eval import eval_metrics, calculate_scores_multi_dataset, eval_per_metrics, \
-    normalize, ACC, MAP, MRR, NDCG, IDCG
-from ncc.metric.base import *
+    normalize, ACC, MAP, MRR, NDCG
 from ncc.utils.utils import save_json
-from tabulate import tabulate
 from ncc.utils.constants import METRICS
-from tqdm import tqdm
+from typing import Any
 
 
 def load_data(model, datatype):

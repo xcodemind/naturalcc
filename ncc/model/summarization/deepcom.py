@@ -1,24 +1,12 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.eval import *
-from ncc.model.template import *
-from ncc.module.code2vec.multi_modal import *
-from ncc.module.code2vec.encoder_tok import *
-from ncc.module.summarization import *
-from ncc.model import *
-from ncc.dataset import *
-from ncc.metric import *
-from ncc.utils.util_data import batch_to_cuda
-from ncc.data import *
-
+from ncc import LOGGER
+from ncc.model.template import Encoder2Decoder
+from ncc.module.code2vec.encoder_tok import DeepComEncoder_EmbRNN
+from ncc.module.summarization import SeqDecoder
+from ncc.metric import BaseLoss
+from typing import Dict, Any, Tuple
 
 class DeepCom(Encoder2Decoder):
-
     def __init__(self, config: Dict) -> None:
         LOGGER.debug('building {}...'.format(self.__class__.__name__))
         super(DeepCom, self).__init__(

@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
-import sys
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from ncc.module.code2vec.base import Encoder_Emb
+from typing import Dict, Any
 
-sys.path.append('./')
-
-from ncc import *
-from ncc.module.code2vec.base import *
-
-
-class Encoder_EmbMaxpool(Module):
+class Encoder_EmbMaxpool(nn.Module):
     '''
     for code/comment embedding
     ref: DeepCodeSeach and CodeResearchNet

@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-
-from ncc import *
-from ncc.metric import *
-from ncc.metric.base import *
-
+import torch
+from torch.nn import Module
+from ncc.metric import BaseLoss
+from typing import Any
 
 class OHEMLoss(BaseLoss):
     '''

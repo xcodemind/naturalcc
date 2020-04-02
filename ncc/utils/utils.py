@@ -277,7 +277,7 @@ from typing import Callable, Dict, List, Optional
 import numpy as np
 import torch
 import torch.nn.functional as F
-from ncc.log.meters import safe_round
+from ncc.logging.meters import safe_round
 from ncc.module.gelu import gelu, gelu_accurate
 from ncc.module.attention.multihead_attention import MultiheadAttention
 from torch import Tensor

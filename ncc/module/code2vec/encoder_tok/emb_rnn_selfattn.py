@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from ncc.module.code2vec.base import *
 from ncc.module.attention import *
+from typing import Dict, Any
 
 
-class Encoder_EmbRNNSelfAttn(Module):
+class Encoder_EmbRNNSelfAttn(nn.Module):
 
     def __init__(self, token_num: int, embed_size: int,
                  rnn_type: str, hidden_size: int, layer_num: int, dropout: float, bidirectional: bool,

@@ -1,14 +1,9 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('./')
-
-from ncc import *
+import torch
 from ncc.model.template import *
 from ncc.metric import *
 from ncc.module.code2vec.encoder_tok import Encoder_EmbResConv1d
-
+from typing import Dict, Any
 
 class ResConv1d(CodeEnc_CmntEnc):
 

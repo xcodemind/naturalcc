@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import sys
 
-sys.path.append('./')
-
-from ncc import *
+# from ncc import *
+from ncc import LOGGER
+from typing import Any, Dict, Tuple, List, Union, Optional
 
 from ncc.utils.util_file import load_config
 from ncc.data.dict import Dict as _Dict

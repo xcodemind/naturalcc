@@ -1,19 +1,13 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.module.code2vec.base import *
-from ncc.module.attention import *
-from ncc.utils.util_data import *
-from ncc.utils.utils import *
-from ncc.data import *
-from eval.summarization import *
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from ncc import LOGGER
+from ncc.module.code2vec.base import Encoder_Emb, Encoder_RNN
 from ncc.utils.constants import *
+from typing import Tuple
 
-
-class AstAttendGruDecoder(Module):
+class AstAttendGruDecoder(nn.Module):
     def __init__(self, config,token_num) -> None:
         super(AstAttendGruDecoder, self).__init__()
         # embedding params
@@ -172,7 +166,7 @@ class AstAttendGruDecoder(Module):
 
         return seq, seq_logprobs
 
-class AstAttendGruV3Decoder(Module):
+class AstAttendGruV3Decoder(nn.Module):
     def __init__(self, config,token_num) -> None:
         super(AstAttendGruV3Decoder, self).__init__()
         # embedding params

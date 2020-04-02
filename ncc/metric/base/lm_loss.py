@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.metric import *
+import torch
+from torch.nn import Module
+from ncc.metric import BaseLoss
 from ncc.utils.constants import PAD
 
 

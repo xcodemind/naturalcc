@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
+import numpy as np
+import torch
+import torch.nn as nn
+from torch.nn import Module
+from torch.optim.optimizer import Optimizer
 from ncc.model.template import *
 from ncc.module.code2vec.encoder_tok import *
 from ncc.metric import *
-from ncc.module.code2vec.multi_modal.mman_encoder import CodeEnocder_MM
-
+from typing import Dict, Any, List
 
 class AHN(CodeEnc_CmntEnc):
 

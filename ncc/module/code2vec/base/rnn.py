@@ -1,16 +1,10 @@
 # -*- coding: utf-8 -*-
-
-
-import sys
-
-sys.path.append('./')
-
-from ncc import *
-
+import torch
+import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+from typing import Dict, Any
 
-
-class Encoder_RNN(Module):
+class Encoder_RNN(nn.Module):
 
     def __init__(self, rnn_type: str, input_size: int, hidden_size: int, layer_num: int, dropout: float,
                  bidirectional: bool, ) -> None:

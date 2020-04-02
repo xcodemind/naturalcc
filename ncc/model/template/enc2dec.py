@@ -1,12 +1,6 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
+from torch.nn import Module
 from ncc.model.template.model_template import IModel
-
 
 class Encoder2Decoder(IModel):
     def __init__(self, encoder: Module, decoder: Module, ):

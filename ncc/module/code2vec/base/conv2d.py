@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
+from ncc.module.code2vec.base import Encoder_Emb
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from typing import Dict, Any, List
 
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.module.code2vec.base import *
-from ncc.module.code2vec.base.util import *
-
-
-class Encoder_Conv2d(Module):
+class Encoder_Conv2d(nn.Module):
     '''
     CodeSearchNet baseline:
     conv1d -> activation func -> dropout

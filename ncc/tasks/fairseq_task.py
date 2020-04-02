@@ -9,7 +9,7 @@ import torch
 
 from ncc.utils import tokenizer # , utils # metrics, search,
 from ncc.utils import utils
-from ncc.log import metrics
+from ncc.logging import metrics
 from ncc.data import data_utils
 from ncc.data import iterators
 from ncc.data.dictionary import Dictionary
@@ -240,6 +240,21 @@ class FairseqTask(object):
         from ncc import criterions
 
         return criterions.build_criterion(config, self)
+
+    def build_tokenizer(self, config):
+        """
+        Build the :class:`~fairseq.criterions.FairseqCriterion` instance for
+        this task.
+
+        Args:
+            config (argparse.Namespace): parsed command-line arguments
+
+        Returns:
+            a :class:`~fairseq.criterions.FairseqCriterion` instance
+        """
+        from ncc.data import tokenization
+
+        return tokenization.build_tokenization(config, self)
 
     # def build_generator(self, config):
     #     if getattr(config, "score_reference", False):

@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
 from ncc.utils.constants import NEG_INF
-
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from typing import Any
 
 class SelfAttention(nn.Module):
     """

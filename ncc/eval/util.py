@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
 import math
 import numpy as np
 

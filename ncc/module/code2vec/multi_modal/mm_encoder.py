@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-
+import torch
+import torch.nn as nn
+from torch.nn import Module
+import torch.nn.functional as F
+from ncc import LOGGER
 from ncc.module.code2vec.encoder_tok import *
 from ncc.module.code2vec.encoder_ast import *
-
+from typing import Dict, Any, Tuple
 
 class MMEncoder_EmbRNN(Module):
     def __init__(self, config: Dict, ):

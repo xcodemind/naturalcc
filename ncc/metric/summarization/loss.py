@@ -1,17 +1,9 @@
 # -*- coding: utf-8 -*-
-
-
-import sys
-
-sys.path.append('.')
-
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
 from ncc.utils.constants import *
 
-from ncc.log.log import get_logger
+# from ncc.log.log import get_logger
 
 # LOGGER = get_logger()
 

@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-import sys
 # reference: https://github.com/rohithreddy024/Text-Summarizer-Pytorch
-
-sys.path.append('.')
-from ncc import *
+import torch
+import torch.nn as nn
+from torch.nn import Module
 from ncc.utils.constants import *
 
 class IntraAttention_Encoder(Module):

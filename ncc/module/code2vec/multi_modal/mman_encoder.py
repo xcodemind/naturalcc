@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-
-from ncc import *
-from ncc.module.code2vec.base import *
-from ncc.module.code2vec.encoder_tok import *
-from ncc.module.code2vec.encoder_ast import *
-from ncc.module.attention import *
-
+import torch
+import torch.nn as nn
+from torch.nn import Module
+from ncc import LOGGER
+from ncc.module.code2vec.encoder_tok import Encoder_EmbRNN
+from ncc.module.code2vec.encoder_ast import Encoder_EmbTreeRNN, Encoder_EmbPathRNN
+from ncc.module.attention import HirarchicalAttention
+from typing import Dict, Any
 
 class CodeEnocder_MM(Module):
     '''

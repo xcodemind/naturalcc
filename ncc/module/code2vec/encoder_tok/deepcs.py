@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
+import torch
+import torch.nn as nn
+from torch.nn import Module
+from ncc.module.code2vec.base import pooling1d
+from ncc.module.code2vec.encoder_tok import Encoder_EmbRNN
 
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.module.code2vec.base import *
-from ncc.module.code2vec.encoder_tok import *
-
+from typing import Dict, Any
 
 class CodeEncoder_DeepCS(Module):
     def __init__(self, config: Dict, ):

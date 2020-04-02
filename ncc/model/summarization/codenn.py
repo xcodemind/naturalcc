@@ -1,15 +1,10 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.model.template import *
-from ncc.module.code2vec.base import *
-from ncc.module.summarization import *
-from ncc.metric import *
-
+from ncc import LOGGER
+from ncc.model.template import Encoder2Decoder
+from ncc.module.code2vec.base import Encoder_Emb
+from ncc.module.summarization import CodeNNSeqDecoder
+from ncc.metric import BaseLoss
+from typing import Dict, Any, Tuple
 
 
 class CodeNN(Encoder2Decoder):

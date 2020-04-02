@@ -23,7 +23,7 @@ from typing import List, Optional
 
 from tokenizers import BertWordPieceTokenizer
 
-from .tokenization_utils import PreTrainedTokenizer, PreTrainedTokenizerFast
+from .pretrained_tokenizer import PreTrainedTokenizer, PreTrainedTokenizerFast
 
 
 logger = logging.getLogger(__name__)

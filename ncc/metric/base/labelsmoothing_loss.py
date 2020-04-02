@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
+from ncc import LOGGER
+import torch
+from torch.nn import Module
+import torch.nn.functional as F
 from ncc.metric import *
 from ncc.utils.constants import PAD
 
@@ -184,7 +183,7 @@ class _PGCriterionReinforceLabelSmoothKD(Module):
             topk_idx, topk_prob = teacher_output
             topk_idx = topk_idx.reshape(-1, topk_idx.shape[-1])
             # TODO verify：  reshape  最后一个维度是 topk_idx.shape[-1] ，然后topk_idx就给net_output_lprobs_t来gather了？
-            non_pad_mask_dataset = topk_idx.reshape(-1, 1).data.gt(constants.PAD)
+            non_pad_mask_dataset = topk_idx.reshape(-1, 1).data.gt(PAD)
             topk_prob = topk_prob.reshape(-1, topk_prob.shape[-1])
             topk_prob = F.softmax(topk_prob / self.distill_temp, -1)
             distill_loss = - (net_output_lprobs_t.gather(dim=-1, index=topk_idx) * topk_prob).sum(dim=-1, keepdim=True)

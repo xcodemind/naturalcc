@@ -18,14 +18,14 @@ import torch
 from ncc.utils import checkpoint_utils, distributed_utils, utils
 from ncc import tasks #, utils #  options,
 from ncc.data import iterators
-from ncc.log import meters, metrics, progress_bar
+from ncc.logging import meters, metrics, progress_bar
 from ncc.trainer import Trainer
 import argparse
 from typing import Callable, List, Optional
 from ncc.data.indexed_dataset import get_available_dataset_impl
-from run.util import * #get_args
+# from run.util import * #get_args
 from ncc.utils.util_file import load_yaml
-
+sys.exit()
 def single_main(config, init_distributed=False):
     # utils.import_user_module(config) # TODO: delete
 
@@ -53,6 +53,7 @@ def single_main(config, init_distributed=False):
     # Load valid dataset (we load training data below, based on the latest checkpoint)
     for valid_sub_split in config['dataset']['valid_subset'].split(','):
         task.load_dataset(valid_sub_split, combine=False, epoch=1)
+    sys.exit()
 
     # Build model and criterion
     model = task.build_model(config)
@@ -65,7 +66,7 @@ def single_main(config, init_distributed=False):
         sum(p.numel() for p in model.parameters()),
         sum(p.numel() for p in model.parameters() if p.requires_grad),
     ))
-
+    sys.exit()
     # Build trainer
     trainer = Trainer(config, task, model, criterion)
     LOGGER.info('training on {} GPUs'.format(config['distributed_training']['distributed_world_size']))

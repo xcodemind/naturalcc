@@ -1,14 +1,8 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# from ncc.utils.util import to_cuda,clean_up_sentence
 from ncc.utils.utils import masked_softmax
-
 from ncc.utils.constants import *
 
 class DotSimiAttn(nn.Module):

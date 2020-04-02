@@ -11,12 +11,12 @@ from joblib import dump as jdump
 from joblib import load as jload
 
 import logging
-from ncc.log import *
+from ncc.logging import *
 
-LOGGER = get_logger(level=logging.DEBUG)  # INFO, DEBUG
+# LOGGER = get_logger(level=logging.DEBUG)  # INFO, DEBUG
 
 __all__ = [
     'np', 'json',
     'Parallel', 'delayed', 'jdump', 'jload',
-    'LOGGER',
+    # 'LOGGER',
 ]

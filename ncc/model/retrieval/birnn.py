@@ -1,14 +1,9 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('./')
-
-from ncc import *
+import torch
 from ncc.model.template import *
 from ncc.module.code2vec.encoder_tok import Encoder_EmbRNN
 from ncc.metric import *
-
+from typing import Dict, Any
 
 class BiRNN(CodeEnc_CmntEnc):
 

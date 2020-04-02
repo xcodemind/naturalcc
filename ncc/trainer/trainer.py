@@ -21,7 +21,7 @@ from ncc import optim
 from ncc.model import DistributedFairseqModel
 
 from ncc.utils.file_io import PathManager
-from ncc.log import meters, metrics
+from ncc.logging import meters, metrics
 from ncc.utils.nan_detector import NanDetector
 from ncc.optim import lr_scheduler
 

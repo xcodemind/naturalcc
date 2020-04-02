@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('./')
-
-from ncc import *
-from ncc.metric import *
+import torch
 from torch.nn import MarginRankingLoss, SoftMarginLoss
 from torch.autograd import Variable
+from ncc.metric import BaseLoss
 
 
 def euclidean_dist(tensor1: torch.Tensor, tensor2: torch.Tensor, ) -> torch.Tensor:

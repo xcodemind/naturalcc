@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.model.template import *
-from ncc.module.code2vec.encoder_ast import *
-from ncc.module.summarization import *
-from ncc.metric import *
+from ncc import LOGGER
+from ncc.model.template import Encoder2Decoder
+from ncc.module.code2vec.encoder_ast import Encoder_EmbPathRNN
+from ncc.module.summarization import SeqDecoder
+from ncc.metric import BaseLoss
+from typing import Any, Dict, Tuple
 
 
 class Code2Seq(Encoder2Decoder):

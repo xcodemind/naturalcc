@@ -19,6 +19,7 @@ GPT and GPT-2 are fine-tuned using a causal language modeling (CLM) loss while B
 using a masked language modeling (MLM) loss.
 """
 
+
 import argparse
 import glob
 import logging
@@ -47,12 +48,6 @@ from ncc.utils.file_utils import WEIGHTS_NAME
 from ncc.optim.optimization import get_linear_schedule_with_warmup
 from ncc.optim.optimization import AdamW
 
-
-from tokenizers import ByteLevelBPETokenizer
-from tokenizers.implementations import ByteLevelBPETokenizer
-from tokenizers.processors import BertProcessing
-from pathlib import Path
-import sys
 
 try:
     from torch.utils.tensorboard import SummaryWriter
@@ -113,36 +108,6 @@ class TextDataset(Dataset):
     def __getitem__(self, item):
         return torch.tensor(self.examples[item], dtype=torch.long)
 
-class EsperantoDataset(Dataset):
-    def __init__(self, evaluate: bool = False):
-        tokenizer = ByteLevelBPETokenizer(
-            "/data/wanyao/ghproj_d/transformers/models/EsperBERTo-small/vocab.json",
-            "/data/wanyao/ghproj_d/transformers/models/EsperBERTo-small/merges.txt",
-        )
-        tokenizer._tokenizer.post_processor = BertProcessing(
-            ("</s>", tokenizer.token_to_id("</s>")),
-            ("<s>", tokenizer.token_to_id("<s>")),
-        )
-        tokenizer.enable_truncation(max_length=512)
-        # or use the RobertaTokenizer from `transformers` directly.
-
-        self.examples = []
-
-        # src_files = Path("./data/").glob("*-eval.txt") if evaluate else Path("./data/").glob("*-train.txt")
-        src_files = Path("/data/wanyao/ghproj_d/transformers/eo_data/").glob("*.txt")
-        # src_files = ['/data/wanyao/ghproj_d/transformers/eo_data/eo.txt']
-
-        for src_file in src_files:
-            print("xxxx", src_file)
-            lines = src_file.read_text(encoding="utf-8").splitlines()
-            self.examples += [x.ids for x in tokenizer.encode_batch(lines)]
-
-    def __len__(self):
-        return len(self.examples)
-
-    def __getitem__(self, i):
-        # We’ll pad at the batch level.
-        return torch.tensor(self.examples[i])
 
 class LineByLineTextDataset(Dataset):
     def __init__(self, tokenizer: PreTrainedTokenizer, args, file_path: str, block_size=512):
@@ -166,13 +131,10 @@ class LineByLineTextDataset(Dataset):
 
 def load_and_cache_examples(args, tokenizer, evaluate=False):
     file_path = args.eval_data_file if evaluate else args.train_data_file
-    print('args.line_by_line: ', args.line_by_line)
-    # sys.exit()
     if args.line_by_line:
         return LineByLineTextDataset(tokenizer, args, file_path=file_path, block_size=args.block_size)
     else:
-        # return TextDataset(tokenizer, args, file_path=file_path, block_size=args.block_size)
-        return EsperantoDataset(evaluate)
+        return TextDataset(tokenizer, args, file_path=file_path, block_size=args.block_size)
 
 
 def set_seed(args):
@@ -508,16 +470,16 @@ def main():
 
     # Required parameters
     parser.add_argument(
-        "--train_data_file", default='/data/wanyao/ghproj_d/transformers/eo_data/eo.txt', type=str, help="The input training data file (a text file)."
+        "--train_data_file", default=None, type=str, required=True, help="The input training data file (a text file)."
     )
     parser.add_argument(
         "--output_dir",
         type=str,
-        default='/data/wanyao/ghproj_d/transformers/models/EsperBERTo-small-v1',
+        required=True,
         help="The output directory where the model predictions and checkpoints will be written.",
     )
     parser.add_argument(
-        "--model_type", type=str, default='roberta', help="The model architecture to be trained or fine-tuned.",
+        "--model_type", type=str, required=True, help="The model architecture to be trained or fine-tuned.",
     )
 
     # Other parameters
@@ -543,7 +505,7 @@ def main():
     )
 
     parser.add_argument(
-        "--mlm", action="store_true", default=True, help="Train with masked-language modeling loss instead of language modeling."
+        "--mlm", action="store_true", help="Train with masked-language modeling loss instead of language modeling."
     )
     parser.add_argument(
         "--mlm_probability", type=float, default=0.15, help="Ratio of tokens to mask for masked language modeling loss"
@@ -551,13 +513,13 @@ def main():
 
     parser.add_argument(
         "--config_name",
-        default='/data/wanyao/ghproj_d/transformers/models/EsperBERTo-small',
+        default=None,
         type=str,
         help="Optional pretrained config name or path if not the same as model_name_or_path. If both are None, initialize a new config.",
     )
     parser.add_argument(
         "--tokenizer_name",
-        default='/data/wanyao/ghproj_d/transformers/models/EsperBERTo-small',
+        default=None,
         type=str,
         help="Optional pretrained tokenizer name or path if not the same as model_name_or_path. If both are None, initialize a new tokenizer.",
     )
@@ -575,13 +537,13 @@ def main():
         "The training dataset will be truncated in block of this size for training."
         "Default to the model max input length for single sentence inputs (take into account special tokens).",
     )
-    parser.add_argument("--do_train", action="store_true", default=True, help="Whether to run training.")
+    parser.add_argument("--do_train", action="store_true", help="Whether to run training.")
     parser.add_argument("--do_eval", action="store_true", help="Whether to run eval on the dev set.")
     parser.add_argument(
-        "--evaluate_during_training", action="store_true", default=True, help="Run evaluation during training at each logging step."
+        "--evaluate_during_training", action="store_true", help="Run evaluation during training at each logging step."
     )
 
-    parser.add_argument("--per_gpu_train_batch_size", default=16, type=int, help="Batch size per GPU/CPU for training.")
+    parser.add_argument("--per_gpu_train_batch_size", default=4, type=int, help="Batch size per GPU/CPU for training.")
     parser.add_argument(
         "--per_gpu_eval_batch_size", default=4, type=int, help="Batch size per GPU/CPU for evaluation."
     )
@@ -591,12 +553,12 @@ def main():
         default=1,
         help="Number of updates steps to accumulate before performing a backward/update pass.",
     )
-    parser.add_argument("--learning_rate", default=1e-4, type=float, help="The initial learning rate for Adam.")
+    parser.add_argument("--learning_rate", default=5e-5, type=float, help="The initial learning rate for Adam.")
     parser.add_argument("--weight_decay", default=0.0, type=float, help="Weight decay if we apply some.")
     parser.add_argument("--adam_epsilon", default=1e-8, type=float, help="Epsilon for Adam optimizer.")
     parser.add_argument("--max_grad_norm", default=1.0, type=float, help="Max gradient norm.")
     parser.add_argument(
-        "--num_train_epochs", default=5, type=float, help="Total number of training epochs to perform."
+        "--num_train_epochs", default=1.0, type=float, help="Total number of training epochs to perform."
     )
     parser.add_argument(
         "--max_steps",
@@ -607,11 +569,11 @@ def main():
     parser.add_argument("--warmup_steps", default=0, type=int, help="Linear warmup over warmup_steps.")
 
     parser.add_argument("--logging_steps", type=int, default=500, help="Log every X updates steps.")
-    parser.add_argument("--save_steps", type=int, default=2000, help="Save checkpoint every X updates steps.")
+    parser.add_argument("--save_steps", type=int, default=500, help="Save checkpoint every X updates steps.")
     parser.add_argument(
         "--save_total_limit",
         type=int,
-        default=2,
+        default=None,
         help="Limit the total amount of checkpoints, delete the older checkpoints in the output_dir, does not delete by default",
     )
     parser.add_argument(
@@ -712,14 +674,12 @@ def main():
     # Set seed
     set_seed(args)
 
-    print('args: ', args)
-
     # Load pretrained model and tokenizer
     if args.local_rank not in [-1, 0]:
         torch.distributed.barrier()  # Barrier to make sure only the first process in distributed training download model & vocab
 
     config_class, model_class, tokenizer_class = MODEL_CLASSES[args.model_type]
-    print('args.config_name: ', args.config_name)
+
     if args.config_name:
         config = config_class.from_pretrained(args.config_name, cache_dir=args.cache_dir)
     elif args.model_name_or_path:
@@ -753,8 +713,6 @@ def main():
     else:
         logger.info("Training new model from scratch")
         model = model_class(config=config)
-        print('model: ', model)
-        # sys.exit()
 
     model.to(args.device)
 

@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-from ncc.metric import *
+import numpy as np
+import torch
+from torch.nn import Module
+from ncc.metric import BaseLoss
 
 
 class _HashLoss(Module):

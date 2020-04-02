@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
+import torch
+import torch.nn as nn
+from ncc import LOGGER
 from ncc.module.code2vec.base.util import *
+from typing import Dict, Any
 
-
-class Encoder_Conv1d(Module):
+class Encoder_Conv1d(nn.Module):
     '''
     CodeSearchNet baseline:
     conv1d -> activation func -> dropout
