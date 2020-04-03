@@ -8,10 +8,10 @@ from ncc.utils.constants import *
 from typing import Tuple
 
 class AstAttendGruDecoder(nn.Module):
-    def __init__(self, config,token_num) -> None:
+    def __init__(self, args, token_num) -> None:
         super(AstAttendGruDecoder, self).__init__()
         # embedding params
-        self.config = config
+        self.args = args
         self.token_num = token_num
         self.embed_size = 100
         # rnn params
@@ -20,7 +20,7 @@ class AstAttendGruDecoder(nn.Module):
         self.dropout =  0
         self.rnn_type = 'GRU'
         self.bidirectional = False
-        self.max_comment_len =  config['dataset']['max_comment_len']
+        self.max_comment_len = args['dataset']['max_comment_len']
         # self.max_predict_length = max_predict_length  # decoder predict length
 
 
@@ -31,7 +31,7 @@ class AstAttendGruDecoder(nn.Module):
 
         self.wemb = torch.nn.Embedding(num_embeddings=self.token_num ,
                                           embedding_dim=self.embed_size,
-                                       padding_idx=self.config['training']['padding_idx'],
+                                       padding_idx=self.args['training']['padding_idx'],
                                          max_norm=None, norm_type=2, scale_grad_by_freq=False, sparse=False)
 
         self.rnn = torch.nn.GRU(  input_size=100, hidden_size=self.hidden_size ,  num_layers=self.layer_num,
@@ -167,22 +167,22 @@ class AstAttendGruDecoder(nn.Module):
         return seq, seq_logprobs
 
 class AstAttendGruV3Decoder(nn.Module):
-    def __init__(self, config,token_num) -> None:
+    def __init__(self, args, token_num) -> None:
         super(AstAttendGruV3Decoder, self).__init__()
         # embedding params
-        self.config = config
+        self.args = args
         self.token_num = token_num
         # self.embed_size = 100
-        self.embed_size = config['training']['tok_embed_size']
+        self.embed_size = args['training']['tok_embed_size']
         # rnn params
         # self.hidden_size = 256
-        self.hidden_size = config['training']['rnn_hidden_size']
+        self.hidden_size = args['training']['rnn_hidden_size']
         self.layer_num = 1
         self.dropout =  0
         self.rnn_type = 'GRU'
         self.bidirectional = False
-        # self.max_comment_len =  config['dataset']['max_comment_len']
-        self.max_predict_length = self.config['training']['max_predict_length']
+        # self.max_comment_len =  args['dataset']['max_comment_len']
+        self.max_predict_length = self.args['training']['max_predict_length']
 
 
         # self.wemb = Encoder_Emb(self.token_num, self.embed_size, )
@@ -192,7 +192,7 @@ class AstAttendGruV3Decoder(nn.Module):
 
         # self.wemb = torch.nn.Embedding(num_embeddings=self.token_num ,
         #                                   embedding_dim=self.embed_size,
-        #                                padding_idx=self.config['training']['padding_idx'],
+        #                                padding_idx=self.args['training']['padding_idx'],
         #                                  max_norm=None, norm_type=2, scale_grad_by_freq=False, sparse=False)
         #
         # self.rnn = torch.nn.GRU(  input_size=100, hidden_size=self.hidden_size ,  num_layers=self.layer_num,

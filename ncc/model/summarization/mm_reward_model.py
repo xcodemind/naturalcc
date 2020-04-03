@@ -11,43 +11,40 @@ from typing import Dict, Any
 
 class MMRewardModel(CodeEnc_CmntEnc):
 
-    def __init__(self, config: Dict, ) -> None:
+    def __init__(self, args: Dict, ) -> None:
         LOGGER.debug('building {}...'.format(self.__class__.__name__))
         super(MMRewardModel, self).__init__(
-            config=config,
-            code_encoder=MMEncoder_EmbRNN.load_from_config(config),
-            comment_encoder=Encoder_Conv2d.load_from_config(config),
+            args=args,
+            code_encoder=MMEncoder_EmbRNN.load_from_config(args),
+            comment_encoder=Encoder_Conv2d.load_from_config(args),
         )
-        self.config = config
+        self.args = args
 
-        # self.out_dim = len(config['training']['conv2d_kernels']) * config['training']['conv2d_out_channels'] + config['training']['embed_size']
+        self.proj = nn.Linear(args['training']['rnn_hidden_size'], args['training']['rnn_hidden_size'])
+        self.fc = nn.Linear(len(args['training']['conv2d_kernels']) * args['training']['conv2d_out_channels'] + args['training']['rnn_hidden_size'], 1, bias=True)
+        self.dropout = args['arel']['reward_model_dropout']
 
-        # self.value = nn.Linear(config['rnn_hidden_size'], 1)
-        self.proj = nn.Linear(config['training']['rnn_hidden_size'], config['training']['rnn_hidden_size'])
-        self.fc = nn.Linear(len(config['training']['conv2d_kernels']) * config['training']['conv2d_out_channels'] + config['training']['rnn_hidden_size'], 1, bias=True)
-        self.dropout = config['arel']['reward_model_dropout']
-
-        if config['arel']['reward_model_activation'] == 'linear':
+        if args['arel']['reward_model_activation'] == 'linear':
             self.activation = None
-        elif config['arel']['reward_model_activation'] == 'sign':
+        elif args['arel']['reward_model_activation'] == 'sign':
             self.activation = nn.Softsign()
-        elif config['arel']['reward_model_activation'] == 'tahn':
+        elif args['arel']['reward_model_activation'] == 'tahn':
             self.activation = nn.Tanh()
 
     def forward(self, batch, comment, ) -> Any:
         # _, comment_logprobs, _, _, _, = self.train_pipeline(batch)
-        # if self.config['training']['pointer']:
+        # if self.args['training']['pointer']:
         #     code_dict_comment, comment_extend_vocab, pointer_extra_zeros, code_oovs = batch['pointer']
         # else:
         #     code_oovs = None
         # enc_output, dec_hidden, enc_mask = model.encoder.forward(batch)
-        # sample_opt = {'sample_max': 0, 'seq_length': self.config['max_predict_length']}
+        # sample_opt = {'sample_max': 0, 'seq_length': self.args['max_predict_length']}
         # comment, comment_logprobs, comment_logp_gathered, comment_padding_mask, reward, comment_lprob_sum, \
         # dec_output, dec_hidden, = model.decoder.forward_pg(batch, enc_output, dec_hidden, enc_mask, token_dicts,
         #                                                    sample_opt, reward_func, code_oovs)
         # critic
         enc_output, dec_hidden, enc_mask = self.code_encoder.forward(batch)
-        # sample_opt = {'sample_max': 0, 'seq_length': self.config['training']['max_predict_length']}
+        # sample_opt = {'sample_max': 0, 'seq_length': self.args['training']['max_predict_length']}
         # comment, comment_logprobs, comment_logp_gathered, comment_padding_mask, comment_lprob_sum, dec_hidden,
         # comment_critic, comment_logprobs_critic, comment_logp_gathered_critic, comment_padding_mask_critic, comment_lprob_sum, \
         # dec_output_critic, dec_hidden_critic, = self.decoder.forward(batch, enc_output_critic, dec_hidden_critic,

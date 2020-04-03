@@ -11,8 +11,8 @@ class CodeEnc_CmntEnc(IModel):
     double encoder for code/comment
     '''
 
-    def __init__(self, config: Dict, code_encoder: Union[Module, List], comment_encoder: Union[Module, List], ):
-        self.config = config
+    def __init__(self, args: Dict, code_encoder: Union[Module, List], comment_encoder: Union[Module, List], ):
+        self.args = args
         super(CodeEnc_CmntEnc, self).__init__()
         self.code_encoder = code_encoder
         self.comment_encoder = comment_encoder

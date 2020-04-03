@@ -13,13 +13,13 @@ class MMAN(CodeEnc_CmntEnc):
     ref: Multi-Modal Attention Network Learning for Semantic Source Code Retrieval
     '''
 
-    def __init__(self, config: Dict, ):
+    def __init__(self, args: Dict, ):
         super(MMAN, self).__init__(
-            config=config,
-            code_encoder=CodeEnocder_MM(config),
-            # code_encoder=MMEncoder_EmbRNN(config),
+            args=args,
+            code_encoder=CodeEnocder_MM(args),
+            # code_encoder=MMEncoder_EmbRNN(args),
             # RNN -> tanh
-            comment_encoder=Encoder_EmbRNN.load_from_config(config, modal='comment'),
+            comment_encoder=Encoder_EmbRNN.load_from_config(args, modal='comment'),
         )
 
     def code_forward(self, batch_data: Dict, ) -> torch.Tensor:

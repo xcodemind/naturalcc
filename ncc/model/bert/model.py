@@ -45,9 +45,9 @@ class RobertaModel(FairseqLanguageModel):
             'roberta.large.wsc': 'http://dl.fbaipublicfiles.com/fairseq/models/roberta.large.wsc.tar.gz',
         }
 
-    def __init__(self, config, encoder):
+    def __init__(self, args, encoder):
         super().__init__(encoder)
-        self.config = config
+        self.args = args
 
         # We follow BERT's random weight initialization
         self.apply(init_bert_params)
@@ -92,18 +92,18 @@ class RobertaModel(FairseqLanguageModel):
     #                         help='which layers to *keep* when pruning as a comma-separated list')
 
     @classmethod
-    def build_model(cls, config, task):
+    def build_model(cls, args, task):
         """Build a new model instance."""
 
         # make sure all arguments are present
-        base_architecture(config)
+        base_architecture(args)
 
-        # if not hasattr(config, 'max_positions'):
-        if 'max_positions' not in config['model']:
-            config['model']['max_positions'] = config['task']['tokens_per_sample']
+        # if not hasattr(args, 'max_positions'):
+        if 'max_positions' not in args['model']:
+            args['model']['max_positions'] = args['task']['tokens_per_sample']
 
-        encoder = RobertaEncoder(config, task.source_dictionary)
-        return cls(config, encoder)
+        encoder = RobertaEncoder(args, task.source_dictionary)
+        return cls(args, encoder)
 
     def forward(self, src_tokens, features_only=False, return_all_hiddens=False, classification_head_name=None, **kwargs):
         if classification_head_name is not None:
@@ -128,11 +128,11 @@ class RobertaModel(FairseqLanguageModel):
                     )
                 )
         self.classification_heads[name] = RobertaClassificationHead(
-            self.config['model']['encoder_embed_dim'],
-            inner_dim or self.config['model']['encoder_embed_dim'],
+            self.args['model']['encoder_embed_dim'],
+            inner_dim or self.args['model']['encoder_embed_dim'],
             num_classes,
-            self.config['task']['pooler_activation_fn'],
-            self.config['model']['pooler_dropout'],
+            self.args['task']['pooler_activation_fn'],
+            self.args['model']['pooler_dropout'],
         )
 
     @property
@@ -171,7 +171,7 @@ class RobertaModel(FairseqLanguageModel):
             inner_dim = state_dict[prefix + 'classification_heads.' + head_name + '.dense.weight'].size(0)
 
             # if getattr(self.args, 'load_checkpoint_heads', False):
-            if 'load_checkpoint_heads' in self.config['model']:
+            if 'load_checkpoint_heads' in self.args['model']:
                 if head_name not in current_head_names:
                     self.register_classification_head(head_name, num_classes, inner_dim)
             else:
@@ -258,39 +258,39 @@ class RobertaEncoder(FairseqDecoder):
     by :class:`~fairseq.models.FairseqLanguageModel`.
     """
 
-    def __init__(self, config, dictionary):
+    def __init__(self, args, dictionary):
         super().__init__(dictionary)
-        self.config = config
+        self.args = args
 
         # RoBERTa is a sentence encoder model, so users will intuitively trim
         # encoder layers. However, the implementation uses the fairseq decoder,
         # so we fix here.
-        if config['model']['encoder_layers_to_keep']:
-            config['model']['encoder_layers'] = len(config['model']['encoder_layers_to_keep'].split(","))
-            config['model']['decoder_layers_to_keep'] = config['model']['encoder_layers_to_keep']
-            config['model']['encoder_layers_to_keep'] = None
+        if args['model']['encoder_layers_to_keep']:
+            args['model']['encoder_layers'] = len(args['model']['encoder_layers_to_keep'].split(","))
+            args['model']['decoder_layers_to_keep'] = args['model']['encoder_layers_to_keep']
+            args['model']['encoder_layers_to_keep'] = None
 
         self.sentence_encoder = TransformerSentenceEncoder(
             padding_idx=dictionary.pad(),
             vocab_size=len(dictionary),
-            num_encoder_layers=config['model']['encoder_layers'],
-            embedding_dim=config['model']['encoder_embed_dim'],
-            ffn_embedding_dim=config['model']['encoder_ffn_embed_dim'],
-            num_attention_heads=config['model']['encoder_attention_heads'],
-            dropout=config['model']['dropout'],
-            attention_dropout=config['model']['attention_dropout'],
-            activation_dropout=config['model']['activation_dropout'],
-            layerdrop=config['model']['encoder_layerdrop'],
-            max_seq_len=config['model']['max_positions'],
+            num_encoder_layers=args['model']['encoder_layers'],
+            embedding_dim=args['model']['encoder_embed_dim'],
+            ffn_embedding_dim=args['model']['encoder_ffn_embed_dim'],
+            num_attention_heads=args['model']['encoder_attention_heads'],
+            dropout=args['model']['dropout'],
+            attention_dropout=args['model']['attention_dropout'],
+            activation_dropout=args['model']['activation_dropout'],
+            layerdrop=args['model']['encoder_layerdrop'],
+            max_seq_len=args['model']['max_positions'],
             num_segments=0,
             encoder_normalize_before=True,
             apply_bert_init=True,
-            activation_fn=config['model']['activation_fn'],
+            activation_fn=args['model']['activation_fn'],
         )
         self.lm_head = RobertaLMHead(
-            embed_dim=config['model']['encoder_embed_dim'],
+            embed_dim=args['model']['encoder_embed_dim'],
             output_dim=len(dictionary),
-            activation_fn=config['model']['activation_fn'],
+            activation_fn=args['model']['activation_fn'],
             weight=self.sentence_encoder.embed_tokens.weight,
         )
 
@@ -329,45 +329,45 @@ class RobertaEncoder(FairseqDecoder):
 
     def max_positions(self):
         """Maximum output length supported by the encoder."""
-        return self.config['model']['max_positions']
+        return self.args['model']['max_positions']
 
 
 @register_model_architecture('roberta', 'roberta')
-def base_architecture(config):
-    config['model']['encoder_layers'] = 12
-    config['model']['encoder_embed_dim'] = 768
-    config['model']['encoder_ffn_embed_dim'] = 3072
-    config['model']['encoder_attention_heads'] = 12
+def base_architecture(args):
+    args['model']['encoder_layers'] = 12
+    args['model']['encoder_embed_dim'] = 768
+    args['model']['encoder_ffn_embed_dim'] = 3072
+    args['model']['encoder_attention_heads'] = 12
 
-    config['model']['activation_fn'] = 'gelu'
-    config['model']['pooler_activation_fn'] = 'tanh'
+    args['model']['activation_fn'] = 'gelu'
+    args['model']['pooler_activation_fn'] = 'tanh'
 
-    config['model']['dropout'] = 0.1
-    config['model']['attention_dropout'] = 0.1
-    config['model']['activation_dropout'] = 0.0
-    config['model']['pooler_dropout'] = 0.0
-    config['model']['encoder_layers_to_keep'] = None
-    config['model']['encoder_layerdrop'] = 0.0
+    args['model']['dropout'] = 0.1
+    args['model']['attention_dropout'] = 0.1
+    args['model']['activation_dropout'] = 0.0
+    args['model']['pooler_dropout'] = 0.0
+    args['model']['encoder_layers_to_keep'] = None
+    args['model']['encoder_layerdrop'] = 0.0
 
 @register_model_architecture('roberta', 'roberta_base')
-def roberta_base_architecture(config):
-    base_architecture(config)
+def roberta_base_architecture(args):
+    base_architecture(args)
 
 
 @register_model_architecture('roberta', 'roberta_large')
-def roberta_large_architecture(config):
-    base_architecture(config)
-    config['model']['encoder_layers'] = 24
-    config['model']['encoder_embed_dim'] = 1024
-    config['model']['encoder_ffn_embed_dim'] = 4096
-    config['model']['encoder_attention_heads'] = 16
+def roberta_large_architecture(args):
+    base_architecture(args)
+    args['model']['encoder_layers'] = 24
+    args['model']['encoder_embed_dim'] = 1024
+    args['model']['encoder_ffn_embed_dim'] = 4096
+    args['model']['encoder_attention_heads'] = 16
 
 
 @register_model_architecture('roberta', 'xlm')
-def xlm_architecture(config):
-    base_architecture(config)
-    config['model']['encoder_layers'] = 16
-    config['model']['encoder_embed_dim'] = 1280
-    config['model']['encoder_ffn_embed_dim'] = 1280*4
-    config['model']['encoder_attention_heads'] = 16
+def xlm_architecture(args):
+    base_architecture(args)
+    args['model']['encoder_layers'] = 16
+    args['model']['encoder_embed_dim'] = 1280
+    args['model']['encoder_ffn_embed_dim'] = 1280*4
+    args['model']['encoder_attention_heads'] = 16
 

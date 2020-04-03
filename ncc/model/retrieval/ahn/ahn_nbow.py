@@ -3,31 +3,32 @@ import numpy as np
 import torch.nn as nn
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
+from ncc import LOGGER
 from ncc.model.template import *
 from ncc.metric import BaseLoss
 from ncc.model.retrieval.ahn.util import *
-
 from ncc.module.code2vec.base.emb import Encoder_Emb
 from typing import Dict, Any, List
 
+
 class AHN_NBOW(CodeEnc_CmntEnc):
-    def __init__(self, config: Dict, TRAIN_NUM: int, gamma=1, eta=1, ):
+    def __init__(self, args: Dict, TRAIN_NUM: int, gamma=1, eta=1, ):
         super(AHN_NBOW, self).__init__(
-            config=config,
-            # code_encoder=CodeEnocder_MMAN(config),
-            code_encoder=Encoder_Emb.load_from_config(config, modal='code_tokens'),
-            comment_encoder=Encoder_Emb.load_from_config(config, modal='comment'),
+            args=args,
+            # code_encoder=CodeEnocder_MMAN(args),
+            code_encoder=Encoder_Emb.load_from_config(args, modal='code_tokens'),
+            comment_encoder=Encoder_Emb.load_from_config(args, modal='comment'),
         )
         self.TRAIN_NUM = TRAIN_NUM
-        self.BATCH_SIZE = self.config['training']['batch_size']
-        self.BIT = self.config['hash']['bit']
+        self.BATCH_SIZE = self.args['training']['batch_size']
+        self.BIT = self.args['hash']['bit']
         self.gamma = gamma
         self.eta = eta
 
         # discriminator for code modal
         # if modal from code, return True; else(modal from comment), return false
         self.code_discriminator = nn.Sequential(
-            nn.Linear(self.config['training']['embed_size'], 512),
+            nn.Linear(self.args['training']['embed_size'], 512),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
             nn.Linear(512, 256),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
@@ -36,7 +37,7 @@ class AHN_NBOW(CodeEnc_CmntEnc):
 
         # hash
         self.hash_encoder = nn.Sequential(
-            nn.Linear(self.config['training']['embed_size'], self.BIT),
+            nn.Linear(self.args['training']['embed_size'], self.BIT),
             # nn.Tanh()
         )
 
@@ -50,7 +51,7 @@ class AHN_NBOW(CodeEnc_CmntEnc):
         self.ONES = torch.ones(self.BATCH_SIZE, 1)
         self.ONES_ = torch.ones(self.TRAIN_NUM - self.BATCH_SIZE, 1)
 
-        if config['common']['device'] is not None:
+        if args['common']['device'] is not None:
             # self.label = self.label.cuda()
             self.code_buffer = self.code_buffer.cuda()
             self.cmnt_buffer = self.cmnt_buffer.cuda()
@@ -92,8 +93,8 @@ class AHN_NBOW(CodeEnc_CmntEnc):
 
         code_optimizer.zero_grad()
         loss.backward()
-        if self.config['sl']['max_grad_norm'] != -1:
-            nn.utils.clip_grad_norm_(self.code_parameters(), self.config['sl']['max_grad_norm'])
+        if self.args['sl']['max_grad_norm'] != -1:
+            nn.utils.clip_grad_norm_(self.code_parameters(), self.args['sl']['max_grad_norm'])
         code_optimizer.step()
         # LOGGER.info(self.code_buffer[update_ind, :][0])
         return loss
@@ -130,8 +131,8 @@ class AHN_NBOW(CodeEnc_CmntEnc):
 
         cmnt_optimizer.zero_grad()
         loss.backward()
-        if self.config['sl']['max_grad_norm'] != -1:
-            nn.utils.clip_grad_norm_(self.cmnt_parameters(), self.config['sl']['max_grad_norm'])
+        if self.args['sl']['max_grad_norm'] != -1:
+            nn.utils.clip_grad_norm_(self.cmnt_parameters(), self.args['sl']['max_grad_norm'])
         cmnt_optimizer.step()
         return loss
 

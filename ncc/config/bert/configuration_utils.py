@@ -22,13 +22,14 @@ import logging
 import os
 from typing import Dict, Optional, Tuple
 
-from .file_utils import CONFIG_NAME, cached_path, hf_bucket_url, is_remote_url
+from ncc.utils.file_utils import CONFIG_NAME, cached_path, hf_bucket_url, is_remote_url
+from ncc.mconfig.fairseq_mconfig import FairseqMConfig
 
 
 logger = logging.getLogger(__name__)
 
 
-class PretrainedConfig(object):
+class PretrainedConfig(FairseqMConfig):
     r""" Base class for all configuration classes.
         Handles a few parameters common to all models' configurations as well as methods for loading/downloading/saving configurations.
 
@@ -343,6 +344,10 @@ class PretrainedConfig(object):
         with open(json_file, "r", encoding="utf-8") as reader:
             text = reader.read()
         return json.loads(text)
+
+    @classmethod
+    def build_config(cls, config, task):  # TODO: task is unnecessary here.
+        return cls.from_pretrained(config['model']['config_name'])
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

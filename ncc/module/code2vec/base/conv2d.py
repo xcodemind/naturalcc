@@ -36,12 +36,12 @@ class Encoder_Conv2d(nn.Module):
 
 
     @classmethod
-    def load_from_config(cls, config: Dict) -> Any:
+    def load_from_config(cls, args: Dict) -> Any:
         instance = cls(
-            token_num=config['training']['token_num']['comment'],
-            in_channels=config['training']['embed_size'],
-            out_channels=config['training']['conv2d_out_channels'],
-            kernels=config['training']['conv2d_kernels'],
+            token_num=args['training']['token_num']['comment'],
+            in_channels=args['training']['embed_size'],
+            out_channels=args['training']['conv2d_out_channels'],
+            kernels=args['training']['conv2d_kernels'],
         )
         return instance
 

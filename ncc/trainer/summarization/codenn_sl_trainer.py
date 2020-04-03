@@ -9,8 +9,8 @@ from torch.optim.lr_scheduler import LambdaLR
 
 
 class CodeNNSLTrainer(object):
-    def __init__(self,config, model, dataset ): #eval_data
-        self.config = config
+    def __init__(self, args, model, dataset ): #eval_data
+        self.args = args
         self.model = model
         self.dataset = dataset
         self.train_dataloader = dataset['train']
@@ -21,28 +21,21 @@ class CodeNNSLTrainer(object):
         self.best_bleu1_epoch = 0
         self.best_cider = 0
         self.best_cider_epoch = 0
-
-        # self.all_epoch = config['training']['all_epoch']
-
         self.lr = 0.5
         self.optimizer = torch.optim.SGD(model.parameters(),  self.lr)
         self.decay_coeff = 0.8
         self.max_grad = 5
         lambda1 = lambda epoch: self.decay_coeff ** epoch
-        self.scheduler  = LambdaLR(self.optimizer, lr_lambda=lambda1)
+        self.scheduler = LambdaLR(self.optimizer, lr_lambda=lambda1)
 
-        self.lng = self.config['dataset']['source']['dataset_lng'][0]
+        self.lng = self.args['dataset']['source']['dataset_lng'][0]
 
-        # self.evaluator = Evaluator(self.model, self.val_dataset, self.val_dataloader,  self.dict_comment, self.opt)
-
-    def train(self, criterion,   start_time=None,SAVE_DIR=None ):
+    def train(self, criterion, start_time=None, SAVE_DIR=None ):
         if start_time is None:
             self.start_time = time.time()
         else:
             self.start_time = start_time
 
-
-        # for epoch in range(1,1+self.all_epoch):
         epoch = 1
         while True :
             self.model.train()
@@ -52,7 +45,7 @@ class CodeNNSLTrainer(object):
             for iteration in range(1,1+ len(self.train_dataloader)):
 
                 batch = train_data_iter.__next__()
-                if self.config['common']['device'] is not None:
+                if self.args['common']['device'] is not None:
                     batch = batch_to_cuda(batch)
                 sl_loss = self.model.train_sl(batch, criterion)
                 LOGGER.debug('{} batch loss: {:.8f}'.format(self.__class__.__name__, sl_loss.item()))
@@ -70,7 +63,7 @@ class CodeNNSLTrainer(object):
 
 
 
-                if iteration % self.config['training']['log_interval'] == 0 and iteration > 0:
+                if iteration % self.args['training']['log_interval'] == 0 and iteration > 0:
                     LOGGER.info('Epoch: {} , batches: {:0>3d}/{:0>3d}, avg_loss: {:.8f}; lr: {}, time: {}'.format(
                         epoch,  iteration, len(self.train_dataloader),
                         total_loss / iteration, self.scheduler.get_lr()[0] ,
@@ -98,13 +91,7 @@ class CodeNNSLTrainer(object):
                 self.best_cider_epoch = epoch 
             LOGGER.info("Epoch: {} best_bleu1: {} best_bleu1_epoch:{} best_cider:{} best_cider_epoch:{} ".format(
                 epoch , self.best_bleu1,self.best_bleu1_epoch,self.best_cider,self.best_cider_epoch))
-            model_name = os.path.join(SAVE_DIR ,"model_sl_codenn_e{}_lng_{}.pt".format(epoch,self.lng ) )
-
-            #
-            # if epoch <  self.config['training']['train_epoch'] :
-            #     torch.save(self.model.state_dict(), model_name)
-            #     LOGGER.info("Save model as %s" % model_name)
-
+            model_name = os.path.join(SAVE_DIR ,"model_sl_codenn_e{}_lng_{}.pt".format(epoch,self.lng ))
 
             torch.save(self.model.state_dict(), model_name)
             LOGGER.info("Save model as %s" % model_name)

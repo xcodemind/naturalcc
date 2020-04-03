@@ -1,126 +1,120 @@
 # -*- coding: utf-8 -*-
 import sys
-
-sys.path.append('.')
-
 from run.util import *
 from ncc.metric.base import *
 from ncc.model.summarization.unilang import *
 from ncc.trainer.summarization.xlang import *
 from ncc.trainer.summarization.unilang import *
 from ncc.metric.summarization.loss import PGCriterion_REINFORCE
-from ncc.eval import *
-from ncc.utils.util_file  import load_args8yml,load_yaml
+from ncc.utils.util_file import load_args8yml,load_yaml
 from tabulate import tabulate
+from ncc.eval.evaluator import Evaluator
 
 
 def main():
-    args = get_args()
-    LOGGER.info(args)
+    args_ = get_args()
+    LOGGER.info(args_)
 
-    # config  = load_args8yml(args)
-    yaml_file = os.path.join(sys.path[0], args.yaml)
-    print("load_args8yml yaml_file: ",yaml_file)
-    config = load_yaml(yaml_file)
+    # args  = load_args8yml(args)
+    yaml_file = os.path.join(sys.path[0], args_.yaml)
+    print("load_args8yml yaml_file: ", yaml_file)
+    args = load_yaml(yaml_file)
 
+    args = run_init_kd(args_.yaml, args=args)
 
-    config = run_init_kd(args.yaml,config=config)
+    LOGGER.info("args['kd']['all_lng']: {}".format(args['kd']['all_lng']))
+    args['kd']['kd_path'] = args['dataset']['save_dir'].replace('/result','/kd_path/{}'.format(args['kd']['all_lng']))
+    args['dataset']['save_dir'] = os.path.join(args['dataset']['save_dir'], args['kd']['all_lng'])
+    os.makedirs(args['kd']['kd_path'], exist_ok=True)
+    os.makedirs(args['dataset']['save_dir'] , exist_ok=True)
 
+    args, dataset = load_args_dataset_kd(args_, base_dataset=sBaseDataset, args=args)
 
-    LOGGER.info("config['kd']['all_lng']: {}".format(config['kd']['all_lng']))
-    config['kd']['kd_path'] = config['dataset']['save_dir'].replace('/result','/kd_path/{}'.format(config['kd']['all_lng']))
-    config['dataset']['save_dir'] = os.path.join(config['dataset']['save_dir'],config['kd']['all_lng'])
-    os.makedirs(config['kd']['kd_path'], exist_ok=True)
-    os.makedirs(config['dataset']['save_dir'] , exist_ok=True)
+    args = get_model_path(args_, args)
+    LOGGER.info("args: {}".format(args))
 
-    config,  dataset    = load_config_dataset_kd(args,  base_dataset=sBaseDataset,config=config)
+    model = build_model_kd(args, args_.dataset_type, MM2Seq(args))
 
-    config = get_model_path(args, config)
-    LOGGER.info("config: {}".format(config ))
+    assert args_.dataset_type == 'source'
 
-    model = build_model_kd(config, args.dataset_type, MM2Seq(config ))
-
-
-    assert args.dataset_type == 'source'
-
-    if args.train_mode in [ 'train_sl_ft','train_sc_ft','test']:
+    if args_.train_mode in [ 'train_sl_ft','train_sc_ft','test']:
         # unilang-language
-        src_lng = config['dataset']['target_domain']['source']['dataset_lng'][0]
+        src_lng = args['dataset']['target_domain']['source']['dataset_lng'][0]
         LOGGER.info("use {} dataset ".format(src_lng))
         unilang_dataset = dataset['source'][src_lng]
 
-    if args.train_mode in [ 'train_sl']:
-        if config['kd']['distill']:
-            lm_criterion = LMCriterionLabelSmoothKD(device=config['common']['device'] is not None,
-                            label_smooth_rate=config['kd']['label_smooth_rate'],distill_temp=config['kd']['distill_temp'])
+    if args_.train_mode in [ 'train_sl']:
+        if args['kd']['distill']:
+            lm_criterion = LMCriterionLabelSmoothKD(device=args['common']['device'] is not None,
+                            label_smooth_rate=args['kd']['label_smooth_rate'],distill_temp=args['kd']['distill_temp'])
         else:
-            lm_criterion = LMCriterionLabelSmooth(device=config['common']['device'] is not None,
-                                                  label_smooth_rate=config['kd']['label_smooth_rate'])
-         # optim = torch.optim.Adam(model.parameters(), config[args.dataset_type]['lr'])
-        optimizer = getattr(torch.optim, config['sl']['optim']) \
-            (model.parameters(), config['sl']['lr'])
+            lm_criterion = LMCriterionLabelSmooth(device=args['common']['device'] is not None,
+                                                  label_smooth_rate=args['kd']['label_smooth_rate'])
+         # optim = torch.optim.Adam(model.parameters(), args[args.dataset_type]['lr'])
+        optimizer = getattr(torch.optim, args['sl']['optim']) \
+            (model.parameters(), args['sl']['lr'])
         print('created model sucessfully....................')
-        sl_trainer = KDSLTrainer(args,config,model,dataset )
+        sl_trainer = KDSLTrainer(args_, args, model, dataset )
         sl_trainer.train(lm_criterion, optimizer)
 
-    elif args.train_mode == 'train_sl_ft':
-        lm_criterion = LMLoss(device=config['common']['device'] is not None, )
-        optimizer = getattr(torch.optim, config['sl']['optim']) \
-            (model.parameters(), config['sl']['lr'])
-        # save_dir = os.path.join(config['dataset']['save_dir'], model.__class__.__name__.lower(),
-        #                         '-'.join(config['dataset'][args.dataset_type]['dataset_lng']), args.train_mode)
+    elif args_.train_mode == 'train_sl_ft':
+        lm_criterion = LMLoss(device=args['common']['device'] is not None, )
+        optimizer = getattr(torch.optim, args['sl']['optim']) \
+            (model.parameters(), args['sl']['lr'])
+        # save_dir = os.path.join(args['dataset']['save_dir'], model.__class__.__name__.lower(),
+        #                         '-'.join(args['dataset'][args_.dataset_type]['dataset_lng']), args_.train_mode)
         #
-        # if config['training']['tuning']:
-        #     save_dir = os.path.join(save_dir, config['training']['tuning'])
+        # if args['training']['tuning']:
+        #     save_dir = os.path.join(save_dir, args['training']['tuning'])
         # os.makedirs(save_dir, exist_ok=True)
         # LOGGER.info('save_dir: {}'.format(save_dir))
-        sl_trainer = SLTrainer(config)
+        sl_trainer = SLTrainer(args)
         model_name_prefix = '{}-bs{}-lr{}-attn{}-pointer{}-orin-{}-bi{}-pr{}-kd-train_sl_ft-'.format(
-            '8'.join(config['training']['code_modalities']),
-            config['training']['batch_size'],
-            config['sl']['lr'],
-            config['training']['attn_type'],
-            config['training']['pointer'],config['sl']['oriname2finetune'],config['training']['rnn_bidirectional'],
-        config['dataset']['portion'])
+            '8'.join(args['training']['code_modalities']),
+            args['training']['batch_size'],
+            args['sl']['lr'],
+            args['training']['attn_type'],
+            args['training']['pointer'], args['sl']['oriname2finetune'], args['training']['rnn_bidirectional'],
+        args['dataset']['portion'])
         sl_trainer.train(model, unilang_dataset, lm_criterion,
-                         optimizer, SAVE_DIR=config['dataset']['save_dir'],
-                         model_name_prefix= model_name_prefix )
+                         optimizer, SAVE_DIR=args['dataset']['save_dir'],
+                         model_name_prefix=model_name_prefix )
 
-    elif args.train_mode == 'train_sc_ft' :
+    elif args_.train_mode == 'train_sc_ft' :
         pg_criterion = PGCriterion_REINFORCE().cuda()  # TODO: to optimized like LMLoss
-        lm_criterion = LMLoss(device=config['common']['device'] is not None, )
-        optimizer = getattr(torch.optim, config['sc']['optim']) \
-            (model.parameters(), config['sc']['lr'])
-        # save_dir = os.path.join(config['dataset']['save_dir'], model.__class__.__name__.lower(),
-        #                         '-'.join(config['dataset']['source']['dataset_lng']), args.train_mode)
+        lm_criterion = LMLoss(device=args['common']['device'] is not None, )
+        optimizer = getattr(torch.optim, args['sc']['optim']) \
+            (model.parameters(), args['sc']['lr'])
+        # save_dir = os.path.join(args['dataset']['save_dir'], model.__class__.__name__.lower(),
+        #                         '-'.join(args['dataset']['source']['dataset_lng']), args_.train_mode)
         # os.makedirs(save_dir, exist_ok=True)
         # LOGGER.info('save_dir: {}'.format(save_dir))
-        sc_trainer = SCTrainer(config)
+        sc_trainer = SCTrainer(args)
         model_name_prefix = '{}-bs{}-lr{}-attn{}-pointer{}-orin-{}-bi{}-pr{}-kd-train_sc_ft-'.format(
-            '8'.join(config['training']['code_modalities']),
-            config['training']['batch_size'],
-            config['sl']['lr'],
-            config['training']['attn_type'],
-            config['training']['pointer'],config['sc']['oriname2finetune'],config['training']['rnn_bidirectional'],
-        config['dataset']['portion'])
+            '8'.join(args['training']['code_modalities']),
+            args['training']['batch_size'],
+            args['sl']['lr'],
+            args['training']['attn_type'],
+            args['training']['pointer'], args['sc']['oriname2finetune'], args['training']['rnn_bidirectional'],
+        args['dataset']['portion'])
         sc_trainer.train(model, unilang_dataset, lm_criterion, pg_criterion, optimizer,
-                         config['sc']['reward_func'], SAVE_DIR=config['dataset']['save_dir'],
+                         args['sc']['reward_func'], SAVE_DIR=args['dataset']['save_dir'],
                          model_name_prefix=model_name_prefix )
 
 
 
-    elif args.train_mode == 'test':
+    elif args_.train_mode == 'test':
 
-        criterion = LMLoss(device=config['common']['device'] is not None, )
+        criterion = LMLoss(device=args['common']['device'] is not None, )
         bleu1, bleu2, bleu3, bleu4, meteor, rouge1, rouge2, rouge3, rouge4, rougel, cider = \
             Evaluator.summarization_eval(model,  unilang_dataset['test'], dataset.token_dicts,
-                                     criterion =criterion ,model_filename=config['model_path'] ,
+                                     criterion =criterion ,model_filename=args['model_path'] ,
                                          metrics=['bleu', 'meteor', 'rouge', 'cider'])
         headers = ['B1', 'B2', 'B3', 'B4', 'Meteor', 'R1', 'R2', 'R3', 'R4', 'RL', 'Cider']
         result_table = [[round(i, 4) for i in [bleu1, bleu2, bleu3, bleu4, meteor,
                                                rouge1, rouge2, rouge3, rouge4, rougel, cider]]]
         LOGGER.info('Evaluation results:\n{}'.format(tabulate(result_table, headers=headers,
-                                                              tablefmt=model.config['common'][
+                                                              tablefmt=model.args['common'][
                                                                   'result_table_format'])))
         print("\n")
         print(headers)

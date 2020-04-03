@@ -26,12 +26,12 @@ class FairseqAdam(FairseqOptimizer):
     analogous to torch.optim.AdamW from PyTorch.
     """
 
-    def __init__(self, config, params):
-        super().__init__(config)
+    def __init__(self, args, params):
+        super().__init__(args)
         fused_adam_cls = get_fused_adam_class()
         use_fused_adam = (
             # not getattr(args, 'use_old_adam', False)
-            not config['optimization']['adam']['use_old_adam']
+            not args['optimization']['adam']['use_old_adam']
             and fused_adam_cls is not None
             and torch.cuda.is_available()
         )
@@ -69,12 +69,12 @@ class FairseqAdam(FairseqOptimizer):
         resume training using a different set of optimizer args, e.g., with a
         different learning rate.
         """
-        print("self.config['optimization']['lr']: ", self.config['optimization']['lr'])
+        print("self.args['optimization']['lr']: ", self.args['optimization']['lr'])
         return {
-            'lr': self.config['optimization']['lr'][0],
-            'betas': eval(self.config['optimization']['adam']['adam_betas']),
-            'eps': self.config['optimization']['adam']['adam_eps'],
-            'weight_decay': self.config['optimization']['adam']['weight_decay'],
+            'lr': self.args['optimization']['lr'][0],
+            'betas': eval(self.args['optimization']['adam']['adam_betas']),
+            'eps': self.args['optimization']['adam']['adam_eps'],
+            'weight_decay': self.args['optimization']['adam']['weight_decay'],
         }
 
     def average_params(self):

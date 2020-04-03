@@ -29,9 +29,9 @@ def setup_registry(
         'default': default,
     }
 
-    def build_x(config, *extra_args, **extra_kwargs):
-        # choice = getattr(config, registry_name, None)
-        choice = config[registry_name] if registry_name in config else None
+    def build_x(args, *extra_args, **extra_kwargs):
+        # choice = getattr(args, registry_name, None)
+        choice = args[registry_name] if registry_name in args else None
         print('choice: ', choice)
         if choice is None:
             return None
@@ -41,8 +41,8 @@ def setup_registry(
             builder = getattr(cls, 'build_' + registry_name)
         else:
             builder = cls
-        set_defaults(config, cls)
-        return builder(config, *extra_args, **extra_kwargs)
+        set_defaults(args, cls)
+        return builder(args, *extra_args, **extra_kwargs)
 
     def register_x(name):
 
@@ -66,7 +66,7 @@ def setup_registry(
     return build_x, register_x, REGISTRY
 
 
-def set_defaults(config, cls):
+def set_defaults(args, cls):
     """Helper to set default arguments based on *add_args*."""
     pass
     # if not hasattr(cls, 'add_args'):

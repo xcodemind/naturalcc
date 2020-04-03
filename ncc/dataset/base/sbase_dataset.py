@@ -36,8 +36,8 @@ def load_data(dataset_files: Dict, mode: str) -> Dict:
 
 class sBaseDataset(Dataset):
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self._construct(*args, **kwargs)
+    def __init__(self, *argss: Any, **kwargs: Any) -> None:
+        self._construct(*argss, **kwargs)
 
     @classmethod
     def multiprocessing(cls, **params: Dict, ) -> Any:
@@ -326,24 +326,24 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError
     yaml_file = os.path.join(run_dir, 'python.yml')
-    config = load_config(yaml_file)
+    args = load_args(yaml_file)
 
     CUR_SCRIPT = sys.argv[0].split('/')[-1].split('.')[0]
     LOGGER.info("Start {}.py ... =>  PID: {}".format(CUR_SCRIPT, os.getpid()))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
 
-    file_dir = config['dataset']['dataset_dir']
-    # data_lng = config['dataset']['source']['dataset_lng'][0]
+    file_dir = args['dataset']['dataset_dir']
+    # data_lng = args['dataset']['source']['dataset_lng'][0]
     data_lng = 'php'
-    code_modalities = config['training']['code_modalities']
-    # mode = config['dataset']['source']['mode'][-1]
+    code_modalities = args['training']['code_modalities']
+    # mode = args['dataset']['source']['mode'][-1]
     mode = 'valid'
-    # token_dicts = TokenDicts(config['dicts'])
+    # token_dicts = TokenDicts(args['dicts'])
     token_dicts = None
 
-    portion = config['dataset']['portion']
-    leaf_path_k = config['dataset']['leaf_path_k']
-    pointer_gen = config['training']['pointer']
+    portion = args['dataset']['portion']
+    leaf_path_k = args['dataset']['leaf_path_k']
+    pointer_gen = args['training']['pointer']
 
     dataset = sBaseDataset.multiprocessing(**{
         'file_dir': file_dir,

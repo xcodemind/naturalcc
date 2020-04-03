@@ -12,42 +12,44 @@ from ncc.metric import *
 from ncc.utils.util_data import batch_to_cuda
 from ncc.utils.util_eval import *
 from ncc.utils.util_gan import AlterFlag
+from ncc.trainer.trainer_ import Trainer
+
 
 class ARELTrainer(Trainer):
     '''
     Adversarial Reward Learning Trainer
     '''
 
-    def __init__(self, config: Dict, ) -> None:
-        super(ARELTrainer, self).__init__(config)
+    def __init__(self, args: Dict, ) -> None:
+        super(ARELTrainer, self).__init__(args)
 
     def train(self, model: IModel, disc: IModel, dataset: UnilangDataloader, pg_criterion, lm_criterion: BaseLoss,
               disc_criterion, optimizer: Optimizer, disc_optimizer: Optimizer, SAVE_DIR=None, start_time=None, ):
         super().train()
         start_time = time.time() if start_time is None else start_time
-        alter_flag = AlterFlag(D_iters=model.config['arel']['D_iter'], G_iters=model.config['arel']['G_iter'],
-                               always=model.config['arel']['always'])
+        alter_flag = AlterFlag(D_iters=model.args['arel']['D_iter'], G_iters=model.args['arel']['G_iter'],
+                               always=model.args['arel']['always'])
 
-        for epoch in range(1, 1 + model.config['arel']['train_epoch_arel']):
+        for epoch in range(1, 1 + model.args['arel']['train_epoch_arel']):
             model.train(), disc.train()
             train_data_iter = iter(dataset['train'])
             total_loss = 0.0
 
             for iteration in range(1, 1 + len(dataset['train'])):
                 batch = train_data_iter.__next__()
-                if model.config['common']['device'] is not None:
+                if model.args['common']['device'] is not None:
                     batch = batch_to_cuda(batch)
 
-                # if model.config['training']['pointer']:
+                # if model.args['training']['pointer']:
                 #     code_dict_comment, comment_extend_vocab, pointer_extra_zeros, code_oovs = batch['pointer']
                 # else:
                 #     code_oovs = None
-                comment_target = batch['comment'][2][:, :model.config['training']['max_predict_length']]
+                comment_target = batch['comment'][2][:, :model.args['training']['max_predict_length']]
 
                 LOGGER.info('alter_flag.flag: {}'.format(alter_flag.flag))
                 if alter_flag.flag == 'disc':
                     enc_output, dec_hidden, enc_mask = model.encoder.forward(batch)
-                    sample_opt = {'sample_max': 0, 'seq_length': model.config['training']['max_predict_length']}
+                    sample_opt = {'sample_max': 0, 'seq_length': model.args['training']['max_predict_length']}
                     # seq, seq_logprobs, seq_logp_gathered, seq_padding_mask, seq_lprob_sum, dec_output, dec_hidden, \
                     #     = model.decoder.forward(batch, enc_output, dec_hidden, enc_mask, sample_opt)
                     seq, seq_logprobs, seq_logp_gathered, seq_lprob_sum, comment_target_padded, = \
@@ -67,7 +69,7 @@ class ARELTrainer(Trainer):
                     avg_neg_score = torch.mean(gen_score)
                     LOGGER.info("pos reward {} neg reward {}".format(avg_pos_score, avg_neg_score))
                     disc_loss.backward()
-                    nn.utils.clip_grad_norm(disc.parameters(), disc.config['arel']['grad_clip'], norm_type=2)
+                    nn.utils.clip_grad_norm(disc.parameters(), disc.args['arel']['grad_clip'], norm_type=2)
                     disc_optimizer.step()
                     assert False
                 elif alter_flag.flag == 'gen':
@@ -104,18 +106,18 @@ class ARELTrainer(Trainer):
                     nn.utils.clip_grad_norm(model.parameters(), opt.grad_clip, norm_type=2)
                     optimizer.step()
 
-                if iteration % model.config['training']['log_interval'] == 0 and iteration > 0:
+                if iteration % model.args['training']['log_interval'] == 0 and iteration > 0:
                     LOGGER.info('Epoch: {:0>3d}/{:0>3d}, batches: {:0>3d}/{:0>3d}, avg_loss: {:.8f}; time: {}'.format(
-                        epoch, model.config['all_epoch'], iteration, len(dataset['train']), total_loss / iteration,
+                        epoch, model.args['all_epoch'], iteration, len(dataset['train']), total_loss / iteration,
                         str(datetime.timedelta(seconds=int(time.time() - start_time)))))
 
-            if epoch <= model.config['arel']['train_epoch_arel']:
+            if epoch <= model.args['arel']['train_epoch_arel']:
                 if SAVE_DIR is not None:
-                    model_name = '{}-bs{}-lr{}-attn{}-pointer{}-ep{}'.format('8'.join(model.config['code_modalities']),
-                                                                                    model.config['batch_size'],
-                                                                                    model.config['rl']['lr_critic'],
-                                                                                    model.config['attn_type'],
-                                                                                    model.config['pointer'], epoch)
+                    model_name = '{}-bs{}-lr{}-attn{}-pointer{}-ep{}'.format('8'.join(model.args['code_modalities']),
+                                                                                    model.args['batch_size'],
+                                                                                    model.args['rl']['lr_critic'],
+                                                                                    model.args['attn_type'],
+                                                                                    model.args['pointer'], epoch)
                     model_path = os.path.join(SAVE_DIR, '{}.pt'.format(model_name), )
                     torch.save(model.state_dict(), model_path)
                     LOGGER.info('Dumping arel model in {}'.format(model_path))

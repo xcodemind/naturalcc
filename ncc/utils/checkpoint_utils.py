@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 
 
 def save_checkpoint(args, trainer, epoch_itr, val_loss):
-    from fairseq import distributed_utils, meters
-
+    from ncc import meters
+    from ncc.utils import distributed_utils
     prev_best = getattr(save_checkpoint, "best", val_loss)
     if val_loss is not None:
         best_function = max if args.maximize_best_checkpoint_metric else min
@@ -110,7 +110,7 @@ def save_checkpoint(args, trainer, epoch_itr, val_loss):
                 os.remove(old_chk)
 
 
-def load_checkpoint(config, trainer, **passthrough_args):
+def load_checkpoint(args, trainer, **passthrough_args):
     """
     Load a checkpoint and restore the training iterator.
 
@@ -118,31 +118,31 @@ def load_checkpoint(config, trainer, **passthrough_args):
     ``trainer.get_train_iterator``.
     """
     # only one worker should attempt to create the required dir
-    if config['distributed_training']['distributed_rank'] == 0:
-        os.makedirs(config['checkpoint']['save_dir'], exist_ok=True)
+    if args['distributed_training']['distributed_rank'] == 0:
+        os.makedirs(args['checkpoint']['save_dir'], exist_ok=True)
 
-    if config['checkpoint']['restore_file'] == "checkpoint_last.pt":
-        checkpoint_path = os.path.join(config['checkpoint']['save_dir'], "checkpoint_last.pt")
+    if args['checkpoint']['restore_file'] == "checkpoint_last.pt":
+        checkpoint_path = os.path.join(args['checkpoint']['save_dir'], "checkpoint_last.pt")
     else:
-        checkpoint_path = config['checkpoint']['restore_file']
+        checkpoint_path = args['checkpoint']['restore_file']
 
     extra_state = trainer.load_checkpoint(
         checkpoint_path,
-        config['checkpoint']['reset_optimizer'],
-        config['checkpoint']['reset_lr_scheduler'],
-        eval(config['checkpoint']['optimizer_overrides']),
-        reset_meters=config['checkpoint']['reset_meters'],
+        args['checkpoint']['reset_optimizer'],
+        args['checkpoint']['reset_lr_scheduler'],
+        eval(args['checkpoint']['optimizer_overrides']),
+        reset_meters=args['checkpoint']['reset_meters'],
     )
 
     if (
         extra_state is not None
         and "best" in extra_state
-        and not config['checkpoint']['reset_optimizer']
-        and not config['checkpoint']['reset_meters']
+        and not args['checkpoint']['reset_optimizer']
+        and not args['checkpoint']['reset_meters']
     ):
         save_checkpoint.best = extra_state["best"]
 
-    if extra_state is not None and not config['checkpoint']['reset_dataloader']:
+    if extra_state is not None and not args['checkpoint']['reset_dataloader']:
         # restore iterator from checkpoint
         itr_state = extra_state["train_iterator"]
         epoch_itr = trainer.get_train_iterator(
@@ -190,7 +190,7 @@ def load_model_ensemble(filenames, arg_overrides=None, task=None, strict=True):
 
 
 def load_model_ensemble_and_task(filenames, arg_overrides=None, task=None, strict=True):
-    from fairseq import tasks
+    from ncc import tasks
 
     ensemble = []
     for filename in filenames:
@@ -262,7 +262,7 @@ def save_state(
     optim_history=None,
     extra_state=None,
 ):
-    from fairseq import utils
+    from ncc.utils import utils
 
     if optim_history is None:
         optim_history = []
@@ -295,7 +295,7 @@ def save_state(
 
 def _upgrade_state_dict(state):
     """Helper for upgrading old model checkpoints."""
-    from fairseq import models, registry, tasks
+    from ncc import model, registry, tasks
 
     # add optimizer_history
     if "optimizer_history" not in state:
@@ -361,7 +361,7 @@ def _upgrade_state_dict(state):
 
     # set any missing default values in the task, model or other registries
     registry.set_defaults(state["args"], tasks.TASK_REGISTRY[state["args"].task])
-    registry.set_defaults(state["args"], models.ARCH_MODEL_REGISTRY[state["args"].arch])
+    registry.set_defaults(state["args"], model.ARCH_MODEL_REGISTRY[state["args"].arch])
     for registry_name, REGISTRY in registry.REGISTRIES.items():
         choice = getattr(state["args"], registry_name, None)
         if choice is not None:

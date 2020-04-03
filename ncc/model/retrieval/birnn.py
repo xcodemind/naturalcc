@@ -7,11 +7,11 @@ from typing import Dict, Any
 
 class BiRNN(CodeEnc_CmntEnc):
 
-    def __init__(self, config: Dict):
+    def __init__(self, args: Dict):
         super(BiRNN, self).__init__(
-            config=config,
-            code_encoder=Encoder_EmbRNN.load_from_config(config, modal='tok'),
-            comment_encoder=Encoder_EmbRNN.load_from_config(config, modal='tok'),
+            args=args,
+            code_encoder=Encoder_EmbRNN.load_from_config(args, modal='tok'),
+            comment_encoder=Encoder_EmbRNN.load_from_config(args, modal='tok'),
         )
 
     def code_forward(self, batch_data: Dict, ) -> Any:

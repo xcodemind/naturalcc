@@ -1,7 +1,7 @@
 # step1 
 download and precess dataset from [CodeSearchNet](https://github.com/github/CodeSearchNet)
 
-* you can set your config at this file [download_and_process_dataset.py](./download_and_process_dataset.py)
+* you can set your args at this file [download_and_process_dataset.py](./download_and_process_dataset.py)
 
 ```
 python download_and_process_dataset.py

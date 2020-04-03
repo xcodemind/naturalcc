@@ -35,7 +35,7 @@ from .file_utils import (
     hf_bucket_url,
     is_remote_url,
 )
-
+from ncc.model.fairseq_model import BaseFairseqModel
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class ModuleUtilsMixin:
         return sum(p.numel() for p in params)
 
 
-class PreTrainedModel(nn.Module, ModuleUtilsMixin):
+class PreTrainedModel(BaseFairseqModel, ModuleUtilsMixin):
     r""" Base class for all models.
 
         :class:`~transformers.PreTrainedModel` takes care of storing the configuration of the models and handles methods for loading/downloading/saving models

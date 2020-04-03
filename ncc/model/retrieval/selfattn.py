@@ -8,11 +8,11 @@ from typing import Dict, Any
 
 class RNNSelfAttn(CodeEnc_CmntEnc):
 
-    def __init__(self, config: Dict):
+    def __init__(self, args: Dict):
         super(RNNSelfAttn, self).__init__(
-            config=config,
-            code_encoder=Encoder_EmbRNNSelfAttn.load_from_config(config, modal='tok'),
-            comment_encoder=Encoder_EmbRNNSelfAttn.load_from_config(config, modal='tok'),
+            args=args,
+            code_encoder=Encoder_EmbRNNSelfAttn.load_from_config(args, modal='tok'),
+            comment_encoder=Encoder_EmbRNNSelfAttn.load_from_config(args, modal='tok'),
         )
 
     def code_forward(self, batch_data: Dict, ) -> Any:

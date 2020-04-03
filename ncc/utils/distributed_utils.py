@@ -22,13 +22,13 @@ from . import utils
 logger = logging.getLogger(__name__)
 
 
-def is_master(config):
-    return config['distributed_training']['distributed_rank'] == 0
+def is_master(args):
+    return args['distributed_training']['distributed_rank'] == 0
 
 
-def infer_init_method(config):
+def infer_init_method(args):
     print('infer_init_method..')
-    if config['distributed_training']['distributed_init_method'] is not None:
+    if args['distributed_training']['distributed_init_method'] is not None:
         return
 
     # support torch.distributed.launch
@@ -36,12 +36,12 @@ def infer_init_method(config):
         'MASTER_ADDR', 'MASTER_PORT', 'WORLD_SIZE', 'RANK'
     ]):
         print('infer_init_method-if...')
-        config['distributed_training']['distributed_init_method'] = 'env://'
-        config['distributed_training']['distributed_world_size'] = int(os.environ['WORLD_SIZE'])
-        config['distributed_training']['distributed_rank'] = int(os.environ['RANK'])
+        args['distributed_training']['distributed_init_method'] = 'env://'
+        args['distributed_training']['distributed_world_size'] = int(os.environ['WORLD_SIZE'])
+        args['distributed_training']['distributed_rank'] = int(os.environ['RANK'])
 
     # we can determine the init method automatically for Slurm
-    elif config['distributed_training']['distributed_port'] > 0:
+    elif args['distributed_training']['distributed_port'] > 0:
         print('infer_init_method-else...')
         node_list = os.environ.get('SLURM_STEP_NODELIST')
         if node_list is None:
@@ -49,9 +49,9 @@ def infer_init_method(config):
         if node_list is not None:
             try:
                 hostnames = subprocess.check_output(['scontrol', 'show', 'hostnames', node_list])
-                config['distributed_training']['distributed_init_method'] = 'tcp://{host}:{port}'.format(
+                args['distributed_training']['distributed_init_method'] = 'tcp://{host}:{port}'.format(
                     host=hostnames.split()[0].decode('utf-8'),
-                    port=config['distributed_training']['distributed_port'],
+                    port=args['distributed_training']['distributed_port'],
                 )
                 nnodes = int(os.environ.get('SLURM_NNODES'))
                 ntasks_per_node = os.environ.get('SLURM_NTASKS_PER_NODE')
@@ -63,39 +63,39 @@ def infer_init_method(config):
                     assert ntasks % nnodes == 0
                     ntasks_per_node = int(ntasks / nnodes)
                 if ntasks_per_node == 1:
-                    assert config['distributed_training']['distributed_world_size'] % nnodes == 0
-                    gpus_per_node = config['distributed_training']['distributed_world_size'] // nnodes
+                    assert args['distributed_training']['distributed_world_size'] % nnodes == 0
+                    gpus_per_node = args['distributed_training']['distributed_world_size'] // nnodes
                     node_id = int(os.environ.get('SLURM_NODEID'))
-                    config['distributed_training']['distributed_rank'] = node_id * gpus_per_node
+                    args['distributed_training']['distributed_rank'] = node_id * gpus_per_node
                 else:
-                    assert ntasks_per_node == config['distributed_training']['distributed_world_size'] // nnodes
-                    config['distributed_training']['distributed_no_spawn'] = True
-                    config['distributed_training']['distributed_rank'] = int(os.environ.get('SLURM_PROCID'))
-                    config['distributed_training']['device_id'] = int(os.environ.get('SLURM_LOCALID'))
+                    assert ntasks_per_node == args['distributed_training']['distributed_world_size'] // nnodes
+                    args['distributed_training']['distributed_no_spawn'] = True
+                    args['distributed_training']['distributed_rank'] = int(os.environ.get('SLURM_PROCID'))
+                    args['distributed_training']['device_id'] = int(os.environ.get('SLURM_LOCALID'))
             except subprocess.CalledProcessError as e:  # scontrol failed
                 raise e
             except FileNotFoundError:  # Slurm is not installed
                 pass
 
 
-def distributed_init(config):
-    if config['distributed_training']['distributed_world_size'] == 1:
+def distributed_init(args):
+    if args['distributed_training']['distributed_world_size'] == 1:
         raise ValueError('Cannot initialize distributed with distributed_world_size=1')
 
     if torch.distributed.is_initialized():
         warnings.warn('Distributed is already initialized, cannot initialize twice!')
     else:
         logger.info('distributed init (rank {}): {}'.format(
-            config['distributed_training']['distributed_rank'], config['distributed_training']['distributed_init_method'],
+            args['distributed_training']['distributed_rank'], args['distributed_training']['distributed_init_method'],
         ))
         dist.init_process_group(
-            backend=config['distributed_training']['distributed_backend'],
-            init_method=config['distributed_training']['distributed_init_method'],
-            world_size=config['distributed_training']['distributed_world_size'],
-            rank=config['distributed_training']['distributed_rank'],
+            backend=args['distributed_training']['distributed_backend'],
+            init_method=args['distributed_training']['distributed_init_method'],
+            world_size=args['distributed_training']['distributed_world_size'],
+            rank=args['distributed_training']['distributed_rank'],
         )
         logger.info('initialized host {} as rank {}'.format(
-            socket.gethostname(), config['distributed_training']['distributed_rank'],
+            socket.gethostname(), args['distributed_training']['distributed_rank'],
         ))
 
         # perform a dummy all-reduce to initialize the NCCL communicator
@@ -104,13 +104,13 @@ def distributed_init(config):
         else:
             dist.all_reduce(torch.zeros(1))
 
-        if is_master(config):
+        if is_master(args):
             logging.getLogger().setLevel(logging.INFO)
         else:
             logging.getLogger().setLevel(logging.WARNING)
 
-    config['distributed_training']['distributed_rank'] = torch.distributed.get_rank()
-    return config['distributed_training']['distributed_rank']
+    args['distributed_training']['distributed_rank'] = torch.distributed.get_rank()
+    return args['distributed_training']['distributed_rank']
 
 
 def get_rank():

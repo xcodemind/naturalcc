@@ -7,11 +7,11 @@ from typing import Dict, Any
 
 class ResConv1d(CodeEnc_CmntEnc):
 
-    def __init__(self, config: Dict):
+    def __init__(self, args: Dict):
         super(ResConv1d, self).__init__(
-            config=config,
-            code_encoder=Encoder_EmbResConv1d.load_from_config(config, modal='tok'),
-            comment_encoder=Encoder_EmbResConv1d.load_from_config(config, modal='comment'),
+            args=args,
+            code_encoder=Encoder_EmbResConv1d.load_from_config(args, modal='tok'),
+            comment_encoder=Encoder_EmbResConv1d.load_from_config(args, modal='comment'),
         )
 
     def code_forward(self, batch_data: Dict, ) -> Any:

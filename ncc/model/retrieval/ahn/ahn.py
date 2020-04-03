@@ -11,21 +11,21 @@ from typing import Dict, Any, List
 
 class AHN(CodeEnc_CmntEnc):
 
-    def __init__(self, config: Dict, TRAIN_NUM: int, ):
+    def __init__(self, args: Dict, TRAIN_NUM: int, ):
         super(AHN, self).__init__(
-            config=config,
+            args=args,
             # code_encoder=CodeEnocder_MMAN(config),
-            code_encoder=Encoder_EmbRNN.load_from_config(config, modal='tok'),
-            comment_encoder=Encoder_EmbRNN.load_from_config(config, modal='comment'),
+            code_encoder=Encoder_EmbRNN.load_from_config(args, modal='tok'),
+            comment_encoder=Encoder_EmbRNN.load_from_config(args, modal='comment'),
         )
         self.TRAIN_NUM = TRAIN_NUM
-        self.BATCH_SIZE = self.config['training']['batch_size']
-        self.BIT = self.config['hash']['bit']
+        self.BATCH_SIZE = self.args['training']['batch_size']
+        self.BIT = self.args['hash']['bit']
 
         # discriminator for code modal
         # if modal from code, return True; else(modal from comment), return false
         self.code_discriminator = nn.Sequential(
-            nn.Linear(self.config['training']['rnn_hidden_size'], 256),
+            nn.Linear(self.args['training']['rnn_hidden_size'], 256),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
             nn.Linear(256, 64),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
@@ -33,8 +33,8 @@ class AHN(CodeEnc_CmntEnc):
         )
         # feed a modal feature, return a corresponding hash code
         self.hash_encoder = nn.Sequential(
-            nn.Linear(self.config['training']['rnn_hidden_size'], self.config['hash']['bit'], ),
-            nn.BatchNorm1d(self.config['hash']['bit']),
+            nn.Linear(self.args['training']['rnn_hidden_size'], self.args['hash']['bit'], ),
+            nn.BatchNorm1d(self.args['hash']['bit']),
             nn.Tanh(),
         )
         # CODE/COMMENT buffer for temporarily store code/comment hash code
@@ -146,7 +146,7 @@ class AHN(CodeEnc_CmntEnc):
         balance = torch.sum(torch.pow(
             torch.mm(code_hash.t(), self.ONES) + torch.mm(self.CODE_buffer[unupdate_ind].t(), self.ONES_),
             2))
-        loss = neg_log_loss + self.config['gamma'] * quantization + self.config['eta'] * balance
+        loss = neg_log_loss + self.args['gamma'] * quantization + self.args['eta'] * balance
         loss /= self.BATCH_SIZE * self.TRAIN_NUM
 
         optimizer.zero_grad()
@@ -177,7 +177,7 @@ class AHN(CodeEnc_CmntEnc):
         balance = torch.sum(torch.pow(
             torch.mm(cmnt_hash.t(), self.ONES) + torch.mm(self.CODE_buffer[unupdate_ind].t(), self.ONES_),
             2))
-        loss = neg_log_loss + self.config['gamma'] * quantization + self.config['eta'] * balance
+        loss = neg_log_loss + self.args['gamma'] * quantization + self.args['eta'] * balance
         loss /= self.BATCH_SIZE * self.TRAIN_NUM
 
         optimizer.zero_grad()
@@ -198,7 +198,7 @@ class AHN(CodeEnc_CmntEnc):
             torch.pow(self.binary_hash - self.CODE_buffer, 2) + torch.pow(self.binary_hash - self.CMNT_buffer, 2)
         )
         balance = torch.sum(torch.pow(self.CODE_buffer.sum(dim=0), 2) + torch.pow(self.CMNT_buffer.sum(dim=0), 2))
-        loss = neg_log_loss + self.config['gamma'] * quantization + self.config['eta'] * balance
+        loss = neg_log_loss + self.args['gamma'] * quantization + self.args['eta'] * balance
         # LOGGER.debug(loss)
         loss /= self.TRAIN_NUM * self.BATCH_SIZE
         # LOGGER.debug(self.TRAIN_NUM * self.BATCH_SIZE)
@@ -221,8 +221,8 @@ class AHN(CodeEnc_CmntEnc):
 
         # 2) hashing
         sim_mat = torch.randn(self.TRAIN_NUM, self.TRAIN_NUM, ).to(code_emb.device)
-        F_buffer = torch.randn(self.TRAIN_NUM, self.config['hash_code_len']).to(code_emb.device)
-        G_buffer = torch.randn(self.TRAIN_NUM, self.config['hash_code_len']).to(code_emb.device)
+        F_buffer = torch.randn(self.TRAIN_NUM, self.args['hash_code_len']).to(code_emb.device)
+        G_buffer = torch.randn(self.TRAIN_NUM, self.args['hash_code_len']).to(code_emb.device)
         B_mat = torch.sign(F_buffer + G_buffer)  # [N, bit]
 
     def disc_parameters(self) -> List:

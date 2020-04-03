@@ -7,7 +7,7 @@ from collections import OrderedDict
 import torch
 from torch.optim.optimizer import Optimizer
 from ncc import LOGGER
-from ncc.trainer import Trainer
+from ncc.trainer.trainer_ import Trainer
 from ncc.model.template import IModel
 from ncc.dataset import UnilangDataloader
 from ncc.metric import BaseLoss
@@ -21,8 +21,8 @@ class DiscTrainer(Trainer):
     Discriminator Trainer
     '''
 
-    def __init__(self, config: Dict, ) -> None:
-        super(DiscTrainer, self).__init__(config)
+    def __init__(self, args: Dict, ) -> None:
+        super(DiscTrainer, self).__init__(args)
 
     def generate_training_pairs(self, model: IModel, dataset: UnilangDataloader, filepath: str):
         model.eval()
@@ -33,14 +33,14 @@ class DiscTrainer(Trainer):
             predictions_dict = {}
             for iteration in range(1, 1 + len(dataset['train'])):  # 1 + len(dataset['train'])
                 batch = train_data_iter.__next__()
-                if model.config['common']['device'] is not None:
+                if model.args['common']['device'] is not None:
                     batch = batch_to_cuda(batch)
 
                 comment, comment_input, comment_target, comment_len, raw_comment = batch['comment']
                 batch_size = comment.size(0)
 
                 enc_output, dec_hidden, enc_mask = model.encoder.forward(batch)
-                sample_opt = {'sample_max': 1, 'seq_length': model.config['training']['max_predict_length']}
+                sample_opt = {'sample_max': 1, 'seq_length': model.args['training']['max_predict_length']}
                 # seq, seq_logprobs, seq_logp_gathered, seq_padding_mask, seq_lprob_sum, dec_output, dec_hidden, \
                 #     = model.decoder.forward(batch, enc_output, dec_hidden, enc_mask, sample_opt)
                 seq, seq_logprobs, seq_logp_gathered, seq_lprob_sum, comment_target_padded, = \
@@ -89,14 +89,14 @@ class DiscTrainer(Trainer):
         super().train()
         start_time = time.time() if start_time is None else start_time
 
-        for epoch in range(1, 1 + disc.config['gan']['train_epoch_disc']):
+        for epoch in range(1, 1 + disc.args['gan']['train_epoch_disc']):
             disc.train()
             train_data_iter = iter(dataset['train'])
             total_loss = 0.0
 
             for iteration in range(1, 1 + len(dataset['train'])):
                 batch = train_data_iter.__next__()
-                if disc.config['common']['device'] is not None:
+                if disc.args['common']['device'] is not None:
                     batch = batch_to_cuda(batch)
 
                 disc_loss = disc.train_sl(batch, criterion)
@@ -106,20 +106,20 @@ class DiscTrainer(Trainer):
                 total_loss += disc_loss.item()
                 disc_optimizer.step()
 
-                if iteration % disc.config['training']['log_interval'] == 0 and iteration > 0:
+                if iteration % disc.args['training']['log_interval'] == 0 and iteration > 0:
                     LOGGER.info('Epoch: {:0>3d}/{:0>3d}, batches: {:0>3d}/{:0>3d}, avg_loss: {:.8f}; time: {}'.format(
-                        epoch, disc.config['gan']['train_epoch_critic'], iteration, len(dataset['train']),
+                        epoch, disc.args['gan']['train_epoch_critic'], iteration, len(dataset['train']),
                         total_loss / iteration,
                         str(datetime.timedelta(seconds=int(time.time() - start_time)))))
 
-            if epoch <= disc.config['gan']['train_epoch_disc']:
+            if epoch <= disc.args['gan']['train_epoch_disc']:
                 if SAVE_DIR is not None:
                     model_name = 'disc-{}-bs{}-lr{}-attn{}-pointer{}-ep{}'.format(
-                        '8'.join(disc.config['training']['code_modalities']),
-                        disc.config['training']['batch_size'],
-                        disc.config['gan']['lr_disc'],
-                        disc.config['training']['attn_type'],
-                        disc.config['training']['pointer'], epoch)
+                        '8'.join(disc.args['training']['code_modalities']),
+                        disc.args['training']['batch_size'],
+                        disc.args['gan']['lr_disc'],
+                        disc.args['training']['attn_type'],
+                        disc.args['training']['pointer'], epoch)
                     model_path = os.path.join(SAVE_DIR, '{}.pt'.format(model_name), )
                     torch.save(disc.state_dict(), model_path)
                     LOGGER.info('Dumping disc in {}'.format(model_path))

@@ -13,11 +13,11 @@ class DeepCodeSearch(CodeEnc_CmntEnc):
     ref: https://github.com/guxd/deep-code-search
     '''
 
-    def __init__(self, config: Dict) -> None:
+    def __init__(self, args: Dict) -> None:
         super(DeepCodeSearch, self).__init__(
-            config=config,
-            code_encoder=CodeEncoder_DeepCS(config),
-            comment_encoder=CmntEncoder_DeepCS(config)
+            args=args,
+            code_encoder=CodeEncoder_DeepCS(args),
+            comment_encoder=CmntEncoder_DeepCS(args)
         )
         LOGGER.debug('building {}...'.format(self.__class__.__name__))
 

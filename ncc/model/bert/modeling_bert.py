@@ -28,6 +28,7 @@ from ncc.utils.activations import gelu, gelu_new, swish
 from ncc.config.bert.configuration_bert import BertConfig
 from ncc.utils.file_utils import add_start_docstrings, add_start_docstrings_to_callable
 from ncc.utils.modeling_utils import PreTrainedModel, prune_linear_layer
+from ncc.model import register_model
 
 
 logger = logging.getLogger(__name__)
@@ -587,6 +588,7 @@ BERT_INPUTS_DOCSTRING = r"""
 """
 
 
+@register_model('bert')
 @add_start_docstrings(
     "The bare Bert Model transformer outputting raw hidden-states without any specific head on top.",
     BERT_START_DOCSTRING,

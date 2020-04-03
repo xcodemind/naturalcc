@@ -9,11 +9,11 @@ from typing import Dict, Any
 
 class NBOW(CodeEnc_CmntEnc):
 
-    def __init__(self, config: Dict):
+    def __init__(self, args: Dict):
         super(NBOW, self).__init__(
-            config=config,
-            code_encoder=Encoder_Emb.load_from_config(config, modal='tok'),
-            comment_encoder=Encoder_Emb.load_from_config(config, modal='comment'),
+            args=args,
+            code_encoder=Encoder_Emb.load_from_config(args, modal='tok'),
+            comment_encoder=Encoder_Emb.load_from_config(args, modal='comment'),
         )
 
     def code_forward(self, batch_data: Dict, ) -> Any:

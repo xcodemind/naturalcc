@@ -41,9 +41,9 @@ from .distributed_fairseq_model import DistributedFairseqModel
 
 
 MODEL_REGISTRY = {}
-ARCH_MODEL_REGISTRY = {}
-ARCH_MODEL_INV_REGISTRY = {}
-ARCH_CONFIG_REGISTRY = {}
+# ARCH_MODEL_REGISTRY = {}
+# ARCH_MODEL_INV_REGISTRY = {}
+# ARCH_CONFIG_REGISTRY = {}
 
 
 __all__ = [
@@ -62,8 +62,8 @@ __all__ = [
 ]
 
 
-def build_model(config, task):
-    return ARCH_MODEL_REGISTRY[config['model']['arch']].build_model(config, task)
+def build_model(args, task):
+    return MODEL_REGISTRY[args['model']['arch']].build_model(args, task)
 
 
 def register_model(name):
@@ -122,19 +122,19 @@ def register_model_architecture(model_name, arch_name):
         arch_name (str): the name of the model architecture (``--arch``)
     """
 
-    def register_model_arch_fn(fn):
-        if model_name not in MODEL_REGISTRY:
-            raise ValueError('Cannot register model architecture for unknown model type ({})'.format(model_name))
-        if arch_name in ARCH_MODEL_REGISTRY:
-            raise ValueError('Cannot register duplicate model architecture ({})'.format(arch_name))
-        if not callable(fn):
-            raise ValueError('Model architecture must be callable ({})'.format(arch_name))
-        ARCH_MODEL_REGISTRY[arch_name] = MODEL_REGISTRY[model_name]
-        ARCH_MODEL_INV_REGISTRY.setdefault(model_name, []).append(arch_name)
-        ARCH_CONFIG_REGISTRY[arch_name] = fn
-        return fn
-
-    return register_model_arch_fn
+    # def register_model_arch_fn(fn):
+    #     if model_name not in MODEL_REGISTRY:
+    #         raise ValueError('Cannot register model architecture for unknown model type ({})'.format(model_name))
+    #     if arch_name in ARCH_MODEL_REGISTRY:
+    #         raise ValueError('Cannot register duplicate model architecture ({})'.format(arch_name))
+    #     if not callable(fn):
+    #         raise ValueError('Model architecture must be callable ({})'.format(arch_name))
+    #     ARCH_MODEL_REGISTRY[arch_name] = MODEL_REGISTRY[model_name]
+    #     ARCH_MODEL_INV_REGISTRY.setdefault(model_name, []).append(arch_name)
+    #     ARCH_CONFIG_REGISTRY[arch_name] = fn
+    #     return fn
+    #
+    # return register_model_arch_fn
 
 
 # automatically import any Python files in the models/ directory
@@ -149,11 +149,14 @@ for file in os.listdir(models_dir):
         model_name = file[:file.find('.py')] if file.endswith('.py') else file
         module = importlib.import_module('ncc.model.' + model_name)
 
-        # extra `model_parser` for sphinx
-        if model_name in MODEL_REGISTRY:
-            parser = argparse.ArgumentParser(add_help=False)
-            group_archs = parser.add_argument_group('Named architectures')
-            group_archs.add_argument('--arch', choices=ARCH_MODEL_INV_REGISTRY[model_name])
-            group_args = parser.add_argument_group('Additional command-line arguments')
-            MODEL_REGISTRY[model_name].add_args(group_args)
-            globals()[model_name + '_parser'] = parser
+        # # extra `model_parser` for sphinx
+        # if model_name in MODEL_REGISTRY:
+        #     parser = argparse.ArgumentParser(add_help=False)
+        #     group_archs = parser.add_argument_group('Named architectures')
+        #     group_archs.add_argument('--arch', choices=ARCH_MODEL_INV_REGISTRY[model_name])
+        #     group_args = parser.add_argument_group('Additional command-line arguments')
+        #     MODEL_REGISTRY[model_name].add_args(group_args)
+        #     globals()[model_name + '_parser'] = parser
+
+print('MODEL_REGISTRY: ', MODEL_REGISTRY)
+# print('ARCH_MODEL_REGISTRY: ', ARCH_MODEL_REGISTRY)

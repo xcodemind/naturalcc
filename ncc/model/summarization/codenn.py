@@ -9,15 +9,15 @@ from typing import Dict, Any, Tuple
 
 class CodeNN(Encoder2Decoder):
 
-    def __init__(self, config: Dict,dict_comment) -> None:
+    def __init__(self, args: Dict,dict_comment) -> None:
         LOGGER.debug('building {}...'.format(self.__class__.__name__))
         super(CodeNN, self).__init__(
-            encoder=Encoder_Emb(token_num=config['training']['token_num']['tok'],
+            encoder=Encoder_Emb(token_num=args['training']['token_num']['tok'],
                                 embed_size=400 ),
-            decoder=CodeNNSeqDecoder(config['training']['max_predict_length'],dict_comment),
+            decoder=CodeNNSeqDecoder(args['training']['max_predict_length'],dict_comment),
         )
-        self.config = config
-        self.max_predict_length = self.config['training']['max_predict_length']
+        self.args = args
+        self.max_predict_length = self.args['training']['max_predict_length']
 
     def eval_pipeline(self, batch : Dict, ) -> Tuple:
 

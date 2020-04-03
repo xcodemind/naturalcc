@@ -37,14 +37,14 @@ from .fairseq_task import FairseqTask
 from . import register_task
 from ncc.data.encoder.utils import get_whole_word_mask
 from ncc.utils import utils
-from ncc.model.bert.modeling_bert import BertForMaskedLM
-from ncc.model.bert.modeling_roberta import RobertaForMaskedLM
-from ncc.config.bert.configuration_bert import BertConfig
-from ncc.config.bert.configuration_roberta import RobertaConfig
-from ncc.data.tokenizer.tokenization_bert import BertTokenizer
+# from ncc.model.bert.modeling_bert import BertForMaskedLM
+# from ncc.model.bert.modeling_roberta import RobertaForMaskedLM
+# from ncc.config.bert.configuration_bert import BertConfig
+# from ncc.config.bert.configuration_roberta import RobertaConfig
+# from ncc.data.tokenizer.tokenization_bert import BertTokenizer
 from ncc.data.tokenizer.tokenization_roberta import RobertaTokenizer
-from ncc.utils.modeling_utils import PreTrainedModel
-from ncc.utils.tokenization_utils import PreTrainedTokenizer
+# from ncc.utils.modeling_utils import PreTrainedModel
+# from ncc.utils.tokenization_utils import PreTrainedTokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -79,24 +79,24 @@ class MaskedLMTask(FairseqTask):
     #     parser.add_argument('--mask-whole-words', default=False, action='store_true',
     #                         help='mask whole words; you may also want to set --bpe')
 
-    def __init__(self, config, tokenizer):
-        super().__init__(config)
+    def __init__(self, args, tokenizer):
+        super().__init__(args)
         # self.dictionary = dictionary
-        # self.seed = config['common']['seed']
+        # self.seed = args['common']['seed']
 
         # # add mask token
         # self.mask_idx = dictionary.add_symbol('<mask>')、
         self.tokenizer = tokenizer
 
     @classmethod
-    def setup_task(cls, config, **kwargs):
-        # paths = utils.split_paths(config['task']['data'])
+    def setup_task(cls, args, **kwargs):
+        # paths = utils.split_paths(args['task']['data'])
         # print('paths: ', paths)
         # assert len(paths) > 0
         # dictionary = Dictionary.load(os.path.join(paths[0], 'dict.txt'))
         # logger.info('dictionary: {} types'.format(len(dictionary)))
-        tokenizer = BertTokenizer.from_pretrained(config['dataset']['tokenizer_name'], cache_dir=config['checkpoint']['cache_dir'])
-        return cls(config, tokenizer)
+        tokenizer = RobertaTokenizer.from_pretrained(args['dataset']['tokenizer_name'], cache_dir=args['checkpoint']['cache_dir'])
+        return cls(args, tokenizer)
 
     def load_dataset_(self, split, epoch=1, combine=False, **kwargs):
         """Load a given dataset split.
@@ -104,7 +104,7 @@ class MaskedLMTask(FairseqTask):
         Args:
             split (str): name of the split (e.g., train, valid, test)
         """
-        paths = utils.split_paths(self.config['task']['data'])
+        paths = utils.split_paths(self.args['task']['data'])
         assert len(paths) > 0
         data_path = paths[(epoch - 1) % len(paths)]
         split_path = os.path.join(data_path, split)
@@ -112,7 +112,7 @@ class MaskedLMTask(FairseqTask):
         dataset = data_utils.load_indexed_dataset(
             split_path,
             self.source_dictionary,
-            self.config['dataset']['dataset_impl'],
+            self.args['dataset']['dataset_impl'],
             combine=combine,
         )
         if dataset is None:
@@ -122,10 +122,10 @@ class MaskedLMTask(FairseqTask):
         dataset = TokenBlockDataset(
             dataset,
             dataset.sizes,
-            self.config['task']['tokens_per_sample'] - 1,  # one less for <s>
+            self.args['task']['tokens_per_sample'] - 1,  # one less for <s>
             pad=self.source_dictionary.pad(),
             eos=self.source_dictionary.eos(),
-            break_mode=self.config['task']['sample_break_mode'],
+            break_mode=self.args['task']['sample_break_mode'],
         )
         logger.info('loaded {} blocks from: {}'.format(len(dataset), split_path))
 
@@ -133,23 +133,23 @@ class MaskedLMTask(FairseqTask):
         dataset = PrependTokenDataset(dataset, self.source_dictionary.bos())
 
         # create masked input and targets
-        mask_whole_words = get_whole_word_mask(self.config, self.source_dictionary) \
-            if self.config['task']['mask_whole_words'] else None
+        mask_whole_words = get_whole_word_mask(self.args, self.source_dictionary) \
+            if self.args['task']['mask_whole_words'] else None
 
         src_dataset, tgt_dataset = MaskTokensDataset.apply_mask(
             dataset,
             self.source_dictionary,
             pad_idx=self.source_dictionary.pad(),
             mask_idx=self.mask_idx,
-            seed=self.config['common']['seed'],
-            mask_prob=self.config['task']['mask_prob'],
-            leave_unmasked_prob=self.config['task']['leave_unmasked_prob'],
-            random_token_prob=self.config['task']['random_token_prob'],
-            freq_weighted_replacement=self.config['task']['freq_weighted_replacement'],
+            seed=self.args['common']['seed'],
+            mask_prob=self.args['task']['mask_prob'],
+            leave_unmasked_prob=self.args['task']['leave_unmasked_prob'],
+            random_token_prob=self.args['task']['random_token_prob'],
+            freq_weighted_replacement=self.args['task']['freq_weighted_replacement'],
             mask_whole_words=mask_whole_words,
         )
 
-        with data_utils.numpy_seed(self.config['common']['seed'] + epoch):
+        with data_utils.numpy_seed(self.args['common']['seed'] + epoch):
             shuffle = np.random.permutation(len(src_dataset))
 
         self.datasets[split] = SortDataset(
@@ -185,7 +185,7 @@ class MaskedLMTask(FairseqTask):
     #         TokenBlockDataset(
     #             src_tokens,
     #             src_lengths,
-    #             self.config['task']['tokens_per_sample'] - 1,  # one less for <s>
+    #             self.args['task']['tokens_per_sample'] - 1,  # one less for <s>
     #             pad=self.source_dictionary.pad(),
     #             eos=self.source_dictionary.eos(),
     #             break_mode='eos',

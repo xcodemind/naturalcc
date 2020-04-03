@@ -18,11 +18,11 @@ class Encoder_EmbMaxpool(nn.Module):
         self.wemb = Encoder_Emb(token_num, embed_size)
 
     @classmethod
-    def load_from_config(cls, config: Dict) -> Any:
+    def load_from_config(cls, args: Dict) -> Any:
         instance = cls(
-            token_num=config['training']['code_token_num'],
-            embed_size=config['training']['embed_size'],
-            dropout=config['training']['dropout'],
+            token_num=args['training']['code_token_num'],
+            embed_size=args['training']['embed_size'],
+            dropout=args['training']['dropout'],
         )
         return instance
 

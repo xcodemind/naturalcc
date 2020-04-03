@@ -11,18 +11,18 @@ from typing import Dict, Tuple, Any
 
 class MM2Seq(Encoder2Decoder):
 
-    def __init__(self, config: Dict) -> None:
+    def __init__(self, args: Dict) -> None:
         LOGGER.debug('building {}...'.format(self.__class__.__name__))
         super(MM2Seq, self).__init__(
-            encoder=MMEncoder_EmbRNN.load_from_config(config),
-            decoder=SeqDecoder.load_from_config(config, modal='comment'),
+            encoder=MMEncoder_EmbRNN.load_from_config(args),
+            decoder=SeqDecoder.load_from_config(args, modal='comment'),
         )
-        self.config = config
+        self.args = args
 
     def eval_pipeline(self, batch_data: Dict, ) -> Tuple:
         # train/eval pipeline may be quite different, therefore we design two methods
         enc_output, dec_hidden, enc_mask = self.encoder.forward(batch_data)
-        sample_opt = {'beam_size': 1, 'sample_max': 1, 'seq_length': self.config['training']['max_predict_length']}
+        sample_opt = {'beam_size': 1, 'sample_max': 1, 'seq_length': self.args['training']['max_predict_length']}
         comment_pred, comment_logprobs, _, _ = \
             self.decoder.sample(batch_data, enc_output, dec_hidden, enc_mask, sample_opt)
         # print('comment_target_padded: ', comment_target_padded.size())
@@ -34,13 +34,13 @@ class MM2Seq(Encoder2Decoder):
     def train_sl(self, batch: Dict, criterion: BaseLoss, ) -> Any:
         # _, comment_logprobs, _, _, _, = self.train_pipeline(batch)
         enc_output, dec_hidden, enc_mask = self.encoder.forward(batch)
-        sample_opt = {'sample_max': 1, 'seq_length': self.config['training']['max_predict_length']}
+        sample_opt = {'sample_max': 1, 'seq_length': self.args['training']['max_predict_length']}
         _, comment_logprobs, _, _, _, _, _, = self.decoder.forward(batch, enc_output, dec_hidden, enc_mask, sample_opt)
 
-        if self.config['training']['pointer']:
-            comment_target = batch['pointer'][1][:, :self.config['training']['max_predict_length']]
+        if self.args['training']['pointer']:
+            comment_target = batch['pointer'][1][:, :self.args['training']['max_predict_length']]
         else:
-            comment_target = batch['comment'][2][:, :self.config['training']['max_predict_length']]
+            comment_target = batch['comment'][2][:, :self.args['training']['max_predict_length']]
         # print('comment_logprobs: ', comment_logprobs.size())
         # print('comment_target_batch2use: ', comment_target_batch2use.size())
 
@@ -49,7 +49,7 @@ class MM2Seq(Encoder2Decoder):
         return loss
 
     def train_pg(self, batch: Dict, criterion: BaseLoss, token_dicts: TokenDicts, reward_func: str) -> Any:
-        if self.config['training']['pointer']:
+        if self.args['training']['pointer']:
             code_dict_comment, comment_extend_vocab, pointer_extra_zeros, code_oovs = batch['pointer']
         else:
             code_oovs = None
@@ -57,7 +57,7 @@ class MM2Seq(Encoder2Decoder):
         # dec_hidden: (batch_size*1*rnn_hidden_size, batch_size*1*rnn_hidden_size)
         # enc_mask: {'tok': batch_size*code_len}
         enc_output, dec_hidden, enc_mask = self.encoder.forward(batch)  #
-        sample_opt = {'sample_max': 0, 'seq_length': self.config['training']['max_predict_length']}
+        sample_opt = {'sample_max': 0, 'seq_length': self.args['training']['max_predict_length']}
         # comment: batch_size*comment_len
         # comment_logprobs: batch_size*comment_len*comment_dict_size
         # comment_logp_gathered: batch_size*comment_len
@@ -78,7 +78,7 @@ class MM2Seq(Encoder2Decoder):
         return rl_loss
 
     def train_sc(self, batch: Dict, criterion: BaseLoss, token_dicts: TokenDicts, reward_func: str, ) -> Any:
-        if self.config['training']['pointer']:
+        if self.args['training']['pointer']:
             code_dict_comment, comment_extend_vocab, pointer_extra_zeros, code_oovs = batch['pointer']
         else:
             code_oovs = None
@@ -86,7 +86,7 @@ class MM2Seq(Encoder2Decoder):
         # dec_hidden: (batch_size*1*rnn_hidden_size, batch_size*1*rnn_hidden_size)
         # enc_mask: {'tok': batch_size*code_len}
         enc_output, dec_hidden, enc_mask = self.encoder.forward(batch)
-        sample_opt = {'sample_max': 0, 'seq_length': self.config['training']['max_predict_length']}
+        sample_opt = {'sample_max': 0, 'seq_length': self.args['training']['max_predict_length']}
         # comment: batch_size*comment_len
         # comment_logprobs: batch_size*comment_len*comment_dict_size
         # comment_logp_gathered: batch_size*comment_len
@@ -99,7 +99,7 @@ class MM2Seq(Encoder2Decoder):
                                       code_oovs)
 
         with torch.autograd.no_grad():
-            sample_opt = {'sample_max': 1, 'seq_length': self.config['training']['max_predict_length']}
+            sample_opt = {'sample_max': 1, 'seq_length': self.args['training']['max_predict_length']}
             comment2, comment_logprobs2, comment_logp2_gathered, comment_padding_mask2, reward2, comment_lprob_sum, _, _, = \
                 self.decoder.forward_pg(batch, enc_output, dec_hidden, enc_mask, token_dicts, sample_opt, reward_func,
                                         code_oovs)  # 100x9,100x9
@@ -118,7 +118,7 @@ class MM2Seq(Encoder2Decoder):
     def train_sl_kd(self, batch: Dict, criterion: BaseLoss, ) -> Any:
 
         enc_output, dec_hidden, enc_mask = self.encoder.forward(batch)
-        sample_opt = {'sample_max': 1, 'seq_length': self.config['training']['max_predict_length']}
+        sample_opt = {'sample_max': 1, 'seq_length': self.args['training']['max_predict_length']}
         _, comment_logprobs, _, _, _, _, _, = self.decoder.forward(batch, enc_output, dec_hidden, enc_mask, sample_opt)
         # if self.opt.enc_hc2init_dec_mode == 'hinput':
         #     feat_final = torch.tanh(
@@ -130,12 +130,12 @@ class MM2Seq(Encoder2Decoder):
         # comment, comment_logprobs, comment_logp_gathered, comment_padding_mask, comment_lprob_sum = self.model.decoder.forward(
         #     batch, enc_output, dec_hidden, enc_padding_mask, sample_opt)
 
-        if self.config['training']['pointer']:
+        if self.args['training']['pointer']:
             comment_target_batch2use = batch['pointer'][1]
         else:
             comment_target_batch2use = batch['comment'][2]
 
-        if self.config['kd']['distill']:
+        if self.args['kd']['distill']:
             comment_loss = criterion(comment_logprobs, comment_target_batch2use, batch)
         else:
             comment_loss = criterion(comment_logprobs, comment_target_batch2use)
@@ -143,28 +143,28 @@ class MM2Seq(Encoder2Decoder):
         return comment_loss, comment_logprobs, comment_target_batch2use
 
     def train_dtrl(self, batch: Dict, criterion: BaseLoss, token_dicts: TokenDicts, reward_func: str, ) -> Any:
-        if self.config['training']['pointer']:
+        if self.args['training']['pointer']:
             code_dict_comment, comment_extend_vocab, pointer_extra_zeros, code_oovs = batch['pointer']
         else:
             code_oovs = None
         enc_output, dec_hidden, enc_mask = self.encoder.forward(batch)
 
         # calculate greedy reward
-        sample_opt = {'sample_max': 1, 'seq_length': self.config['training']['max_predict_length']}
+        sample_opt = {'sample_max': 1, 'seq_length': self.args['training']['max_predict_length']}
         _, comment_logprobs, _, comment_mask, greedy_reward, _, _, _, \
             = self.decoder.forward_pg(batch, enc_output, dec_hidden, enc_mask, token_dicts, sample_opt, reward_func,
                                       code_oovs)
         # calculate sample reward
         with torch.autograd.no_grad():
-            sample_opt = {'sample_max': 0, 'seq_length': self.config['training']['max_predict_length']}
+            sample_opt = {'sample_max': 0, 'seq_length': self.args['training']['max_predict_length']}
             _, _, _, _, critic_reward, _, _, _, \
                 = self.decoder.forward_pg(batch, enc_output, dec_hidden, enc_mask, token_dicts, sample_opt, reward_func,
                                           code_oovs)
 
-        if self.config['training']['pointer']:
-            comment_target = batch['pointer'][1][:, :self.config['training']['max_predict_length']]
+        if self.args['training']['pointer']:
+            comment_target = batch['pointer'][1][:, :self.args['training']['max_predict_length']]
         else:
-            comment_target = batch['comment'][2][:, :self.config['training']['max_predict_length']]
+            comment_target = batch['comment'][2][:, :self.args['training']['max_predict_length']]
 
         reward_diff = (greedy_reward - critic_reward).clamp(1e-15)
         dtrl_loss = criterion(comment_logprobs, comment_target, reward_diff)

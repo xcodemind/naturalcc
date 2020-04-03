@@ -9,14 +9,13 @@ from typing import Dict, Tuple, Any
 
 class AstAttendGru(Encoder2Decoder):
 
-    def __init__(self, config: Dict,dict_comment ) -> None:
+    def __init__(self, args: Dict,dict_comment ) -> None:
         LOGGER.debug('building {}...'.format(self.__class__.__name__))
         super(AstAttendGru, self).__init__(
-            encoder=AstAttendGruEncoder(config),
-            decoder=AstAttendGruDecoder(config, dict_comment.size),
+            encoder=AstAttendGruEncoder(args),
+            decoder=AstAttendGruDecoder(args, dict_comment.size),
         )
-        self.config = config
-        # self.max_predict_length = self.config['training']['max_predict_length']
+        self.args = args
 
     def eval_pipeline(self, batch : Dict, ) -> Tuple:
         tok_output, tok_enc_hc, sbtao_output, sbtao_enc_hc = self.encoder.forward(batch)
@@ -47,15 +46,13 @@ class AstAttendGru(Encoder2Decoder):
 
 
 class AstAttendGruV2(Encoder2Decoder):
-
-    def __init__(self, config: Dict,dict_comment ) -> None:
+    def __init__(self, args: Dict,dict_comment ) -> None:
         LOGGER.debug('building {}...'.format(self.__class__.__name__))
         super(AstAttendGruV2, self).__init__(
-            encoder=AstAttendGruV2Encoder(config),
-            decoder=AstAttendGruDecoder(config, dict_comment.size),
+            encoder=AstAttendGruV2Encoder(args),
+            decoder=AstAttendGruDecoder(args, dict_comment.size),
         )
-        self.config = config
-        # self.max_predict_length = self.config['training']['max_predict_length']
+        self.args = args
 
     def eval_pipeline(self, batch : Dict, ) -> Tuple:
         tok_output, tok_enc_hc, sbtao_output, sbtao_enc_hc = self.encoder.forward(batch)
@@ -85,15 +82,14 @@ class AstAttendGruV2(Encoder2Decoder):
         return loss
 
 class AstAttendGruV3(Encoder2Decoder):
-
-    def __init__(self, config: Dict,dict_comment ) -> None:
+    def __init__(self, args: Dict,dict_comment ) -> None:
         LOGGER.debug('building {}...'.format(self.__class__.__name__))
         super(AstAttendGruV3, self).__init__(
-            encoder=AstAttendGruV2Encoder(config),
-            decoder=AstAttendGruV3Decoder(config, dict_comment.size),
+            encoder=AstAttendGruV2Encoder(args),
+            decoder=AstAttendGruV3Decoder(args, dict_comment.size),
         )
-        self.config = config
-        # self.max_predict_length = self.config['training']['max_predict_length']
+        self.args = args
+        # self.max_predict_length = self.args['training']['max_predict_length']
 
     def eval_pipeline(self, batch : Dict, ) -> Tuple:
         tok_output, tok_enc_hc, sbtao_output, sbtao_enc_hc = self.encoder.forward(batch)
@@ -123,17 +119,15 @@ class AstAttendGruV3(Encoder2Decoder):
         return loss
 
 class AstAttendGruV4(Encoder2Decoder):
-
-    def __init__(self, config: Dict,dict_comment ) -> None:
+    def __init__(self, args: Dict,dict_comment ) -> None:
         LOGGER.debug('building {}...'.format(self.__class__.__name__))
         super(AstAttendGruV4, self).__init__(
-            encoder=AstAttendGruV4Encoder(config),
-            decoder=AstAttendGruV3Decoder(config, dict_comment.size),
+            encoder=AstAttendGruV4Encoder(args),
+            decoder=AstAttendGruV3Decoder(args, dict_comment.size),
         )
-        self.config = config
-        # self.max_predict_length = self.config['training']['max_predict_length']
+        self.args = args
 
-    def eval_pipeline(self, batch : Dict, ) -> Tuple:
+    def eval_pipeline(self, batch: Dict, ) -> Tuple:
         tok_output, tok_enc_hc, sbtao_output = self.encoder.forward(batch)
         comment_pred, comment_logprobs  = self.decoder.sample( batch, tok_output, tok_enc_hc, sbtao_output )
 

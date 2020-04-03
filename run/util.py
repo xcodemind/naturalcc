@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 
 import sys
-
-sys.path.append('.')
-
-from ncc import *
-
-from ncc.utils.utils import mpool
-from ncc.utils.util_file import load_config, load_config_kd
-from ncc.dataset.base import *
-from ncc.dataset import *
+import os
+from collections import namedtuple
+import random
+import numpy as np
+import torch
+import torch.nn as nn
+from ncc import LOGGER
+from ncc.utils.util_file import load_args, load_args_kd
+from ncc.dataset.base import sBaseDataset, rBaseDataset, sbase_collate_fn, rbase_collate_fn, kd_codesum_collate_fn
+from ncc.dataset import XlangDataloader, UnilangDataloader, KDDataloader
 from ncc.utils.util_name import time_id, md5_id
-from ncc.model.template import *
-
+from ncc.model.template import IModel
+from typing import Dict, Union, Tuple
 
 def CONST_TIME_CODE(debug):
     return time_id(debug)
@@ -21,29 +22,29 @@ def CONST_TIME_CODE(debug):
 CONST_MD5_CODE = md5_id()
 
 
-def build_model(config: Dict, model: IModel, ) -> Module:
+def build_model(args: Dict, model: IModel, ) -> nn.Module:
     def _init_param(model):
         for p in model.parameters():
-            p.data.uniform_(-config['common']['init_bound'], config['common']['init_bound'])
+            p.data.uniform_(-args['common']['init_bound'], args['common']['init_bound'])
 
     def _load_pretrained_weights():
-        if config['common']['init_weights'] is None or not os.path.exists(config['common']['init_weights']):
+        if args['common']['init_weights'] is None or not os.path.exists(args['common']['init_weights']):
             _init_param(model)
             LOGGER.info('Initialize model weights from scratch.')
         else:
             try:
-                # print("init_weights: ", config['common']['init_weights'])
-                assert os.path.exists(config['common']['init_weights'])
+                # print("init_weights: ", args['common']['init_weights'])
+                assert os.path.exists(args['common']['init_weights'])
             except Exception as err:
                 LOGGER.error(str(err))
                 assert False
-            LOGGER.info('Loading from {}'.format(config['common']['init_weights']))
-            checkpoint = torch.load(config['common']['init_weights'], map_location=lambda storage, loc: storage)
+            LOGGER.info('Loading from {}'.format(args['common']['init_weights']))
+            checkpoint = torch.load(args['common']['init_weights'], map_location=lambda storage, loc: storage)
             model.load_state_dict(checkpoint)
 
     _load_pretrained_weights()
 
-    if config['common']['device'] is not None:
+    if args['common']['device'] is not None:
         LOGGER.info('Model to GPU')
         model.cuda()
     else:
@@ -53,40 +54,40 @@ def build_model(config: Dict, model: IModel, ) -> Module:
     return model
 
 
-def get_model_path(args, config):
-    # root_dir = config['dataset']['save_dir']
-    if args.train_mode == 'test':
-        if config['testing']['init_weights'] is None:
+def get_model_path(args_, args):
+    # root_dir = args['dataset']['save_dir']
+    if args_.train_mode == 'test':
+        if args['testing']['init_weights'] is None:
             model_path = None
         else:
-            # model_path = os.path.join(root_dir, config['testing']['init_weights'])
-            model_path = config['testing']['init_weights']
-    elif args.train_mode == 'train_sc_ft':
-        if config['sc']['init_weights'] is None:
+            # model_path = os.path.join(root_dir, args['testing']['init_weights'])
+            model_path = args['testing']['init_weights']
+    elif args_.train_mode == 'train_sc_ft':
+        if args['sc']['init_weights'] is None:
             model_path = None
         else:
-            # model_path = os.path.join(root_dir, config['sc']['init_weights'])
-            model_path = config['sc']['init_weights']
-    elif args.train_mode == 'train_sl_ft':
-        if config['sl']['init_weights'] is None:
+            # model_path = os.path.join(root_dir, args['sc']['init_weights'])
+            model_path = args['sc']['init_weights']
+    elif args_.train_mode == 'train_sl_ft':
+        if args['sl']['init_weights'] is None:
             model_path = None
         else:
-            # model_path = os.path.join(root_dir, config['sl']['init_weights'])
-            model_path = config['sl']['init_weights']
+            # model_path = os.path.join(root_dir, args['sl']['init_weights'])
+            model_path = args['sl']['init_weights']
     else:
         model_path = None
-    config['model_path'] = model_path
-    return config
+    args['model_path'] = model_path
+    return args
 
 
-def build_model_kd(config: Dict, dataset_type: str, model: IModel) -> Module:
+def build_model_kd(args: Dict, dataset_type: str, model: IModel) -> nn.Module:
     LOGGER.info('build model for {}'.format(dataset_type))
-    # model_path = config['common']['init_weights']
-    model_path = config['model_path']
+    # model_path = args['common']['init_weights']
+    model_path = args['model_path']
 
     def _init_param(model):
         for p in model.parameters():
-            p.data.uniform_(-config['common']['init_bound'], config['common']['init_bound'])
+            p.data.uniform_(-args['common']['init_bound'], args['common']['init_bound'])
 
     def _load_pretrained_weights():
         if model_path is None:
@@ -105,13 +106,13 @@ def build_model_kd(config: Dict, dataset_type: str, model: IModel) -> Module:
             model.load_state_dict(checkpoint)
 
     # try:
-    #     assert config['dataset'][dataset_type] is not None
+    #     assert args['dataset'][dataset_type] is not None
     # except Exception as err:
     #     LOGGER.error(str(err))
     #     assert False
     _load_pretrained_weights()
 
-    if config['common']['device'] is not None:
+    if args['common']['device'] is not None:
         LOGGER.info('Model to GPU')
         model.cuda()
     else:
@@ -121,31 +122,31 @@ def build_model_kd(config: Dict, dataset_type: str, model: IModel) -> Module:
     return model
 
 
-def build_critic(config: Dict, critic: IModel, ):
+def build_critic(args: Dict, critic: IModel, ):
     # LOGGER.info('build critic for {}'.format(dataset_type))
 
     def _init_param(critic):
         for p in critic.parameters():
-            p.data.uniform_(-config['common']['init_bound'], config['common']['init_bound'])
+            p.data.uniform_(-args['common']['init_bound'], args['common']['init_bound'])
 
     def _load_pretrained_weights():
-        if config['ac']['init_weights_critic'] is None:
+        if args['ac']['init_weights_critic'] is None:
             _init_param(critic)
             LOGGER.debug('Initialize critic weights from scratch.')
         else:
             try:
-                print("config['ac']['init_weights_critic']: ", config['ac']['init_weights_critic'])
-                assert os.path.exists(config['ac']['init_weights_critic'])
+                print("args['ac']['init_weights_critic']: ", args['ac']['init_weights_critic'])
+                assert os.path.exists(args['ac']['init_weights_critic'])
             except Exception as err:
                 LOGGER.error(str(err))
                 assert False
-            LOGGER.info('Loading from {}'.format(config['ac']['init_weights_critic']))
-            checkpoint = torch.load(config['ac']['init_weights_critic'], map_location=lambda storage, loc: storage)
+            LOGGER.info('Loading from {}'.format(args['ac']['init_weights_critic']))
+            checkpoint = torch.load(args['ac']['init_weights_critic'], map_location=lambda storage, loc: storage)
             critic.load_state_dict(checkpoint)
 
     _load_pretrained_weights()
 
-    if config['common']['device'] is not None:
+    if args['common']['device'] is not None:
         LOGGER.info('Model to GPU')
         critic.cuda()
     else:
@@ -155,36 +156,36 @@ def build_critic(config: Dict, critic: IModel, ):
     return critic
 
 
-def build_disc(config: Dict, dataset_type: str, disc: IModel, ):
+def build_disc(args: Dict, dataset_type: str, disc: IModel, ):
     LOGGER.info('build disc for {}'.format(dataset_type))
 
     def _init_param(disc):
         for p in disc.parameters():
-            p.data.uniform_(-config['common']['init_bound'], config['common']['init_bound'])
+            p.data.uniform_(-args['common']['init_bound'], args['common']['init_bound'])
 
     def _load_pretrained_weights():
-        if config['gan']['init_weights_disc'] is None:
+        if args['gan']['init_weights_disc'] is None:
             _init_param(disc)
             LOGGER.debug('Initialize disc weights from scratch.')
         else:
             try:
-                print("config['gan']['init_weights_disc']: ", config['gan']['init_weights_disc'])
-                assert os.path.exists(config['gan']['init_weights_disc'])
+                print("args['gan']['init_weights_disc']: ", args['gan']['init_weights_disc'])
+                assert os.path.exists(args['gan']['init_weights_disc'])
             except Exception as err:
                 LOGGER.error(str(err))
                 assert False
-            LOGGER.info('Loading from {}'.format(config['gan']['init_weights_disc']))
-            checkpoint = torch.load(config['gan']['init_weights_disc'], map_location=lambda storage, loc: storage)
+            LOGGER.info('Loading from {}'.format(args['gan']['init_weights_disc']))
+            checkpoint = torch.load(args['gan']['init_weights_disc'], map_location=lambda storage, loc: storage)
             disc.load_state_dict(checkpoint)
 
     try:
-        assert config['dataset'][dataset_type] is not None
+        assert args['dataset'][dataset_type] is not None
     except Exception as err:
         LOGGER.error(str(err))
         assert False
     _load_pretrained_weights()
 
-    if config['common']['device'] is not None:
+    if args['common']['device'] is not None:
         LOGGER.info('Model to GPU')
         disc.cuda()
     else:
@@ -194,37 +195,37 @@ def build_disc(config: Dict, dataset_type: str, disc: IModel, ):
     return disc
 
 
-def build_reward_model(config: Dict, dataset_type: str, reward_model: IModel, ):
+def build_reward_model(args: Dict, dataset_type: str, reward_model: IModel, ):
     LOGGER.info('build reward_model for {}'.format(dataset_type))
 
     def _init_param(reward_model):
         for p in reward_model.parameters():
-            p.data.uniform_(-config['common']['init_bound'], config['common']['init_bound'])
+            p.data.uniform_(-args['common']['init_bound'], args['common']['init_bound'])
 
     def _load_pretrained_weights():
-        if config['arel']['init_weights_reward_model'] is None:
+        if args['arel']['init_weights_reward_model'] is None:
             _init_param(reward_model)
             LOGGER.debug('Initialize reward_model weights from scratch.')
         else:
             try:
-                print("config['arel']['init_weights_reward_model']: ", config['arel']['init_weights_reward_model'])
-                assert os.path.exists(config['arel']['init_weights_reward_model'])
+                print("args['arel']['init_weights_reward_model']: ", args['arel']['init_weights_reward_model'])
+                assert os.path.exists(args['arel']['init_weights_reward_model'])
             except Exception as err:
                 LOGGER.error(str(err))
                 assert False
-            LOGGER.info('Loading from {}'.format(config['arel']['init_weights_reward_model']))
-            checkpoint = torch.load(config['arel']['init_weights_reward_model'],
+            LOGGER.info('Loading from {}'.format(args['arel']['init_weights_reward_model']))
+            checkpoint = torch.load(args['arel']['init_weights_reward_model'],
                                     map_location=lambda storage, loc: storage)
             reward_model.load_state_dict(checkpoint)
 
     try:
-        assert config['dataset'][dataset_type] is not None
+        assert args['dataset'][dataset_type] is not None
     except Exception as err:
         LOGGER.error(str(err))
         assert False
     _load_pretrained_weights()
 
-    if config['common']['device'] is not None:
+    if args['common']['device'] is not None:
         LOGGER.info('Model to GPU')
         reward_model.cuda()
     else:
@@ -323,110 +324,110 @@ def get_log_filename(args: namedtuple) -> str:
     return log_filename
 
 
-def run_init(yml_filename: str, config=None) -> Dict:
+def run_init(yml_filename: str, args=None) -> Dict:
     LOGGER.info("Start {} ... =>  PID: {}".format(sys.argv[0], os.getpid()))
 
     yaml_file = os.path.join(sys.path[0], yml_filename)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
-    if config is None:
-        config = load_config(yaml_file)
+    if args is None:
+        args = load_args(yaml_file)
     else:
-        config = load_config(yaml_file, config)
+        args = load_args(yaml_file, args)
 
     LOGGER.info('# ------------ env init ------------ #')
-    LOGGER.info('Init(seed {}): torch/random/numpy...'.format(config['common']['seed']))
-    torch.manual_seed(config['common']['seed'])
-    random.seed(config['common']['seed'])
-    np.random.seed(config['common']['seed'])
-    LOGGER.info("device: {}".format(config['common']['device']))
-    if config['common']['device'] is not None:
-        LOGGER.debug(config['common']['device'])
-        torch.cuda.set_device(config['common']['device'])
+    LOGGER.info('Init(seed {}): torch/random/numpy...'.format(args['common']['seed']))
+    torch.manual_seed(args['common']['seed'])
+    random.seed(args['common']['seed'])
+    np.random.seed(args['common']['seed'])
+    LOGGER.info("device: {}".format(args['common']['device']))
+    if args['common']['device'] is not None:
+        LOGGER.debug(args['common']['device'])
+        torch.cuda.set_device(args['common']['device'])
     LOGGER.info('Device: {}'.format(torch.cuda.get_device_name()))
     LOGGER.info('# ------------ env init ------------ #')
-    return config
+    return args
 
 
-def run_init_kd(yml_filename: str, config=None) -> Dict:
+def run_init_kd(yml_filename: str, args=None) -> Dict:
     LOGGER.info("Start {} ... =>  PID: {}".format(sys.argv[0], os.getpid()))
 
     yaml_file = os.path.join(sys.path[0], yml_filename)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
-    if config is None:
-        config = load_config_kd(yaml_file)
+    if args is None:
+        args = load_args_kd(yaml_file)
     else:
-        config = load_config_kd(yaml_file, config)
+        args = load_args_kd(yaml_file, args)
 
     LOGGER.info('# ------------ env init ------------ #')
-    LOGGER.info('Init(seed {}): torch/random/numpy...'.format(config['common']['seed']))
-    torch.manual_seed(config['common']['seed'])
-    random.seed(config['common']['seed'])
-    np.random.seed(config['common']['seed'])
-    LOGGER.info("device: {}".format(config['common']['device']))
-    if config['common']['device'] is not None:
-        LOGGER.debug(config['common']['device'])
-        torch.cuda.set_device(config['common']['device'])
+    LOGGER.info('Init(seed {}): torch/random/numpy...'.format(args['common']['seed']))
+    torch.manual_seed(args['common']['seed'])
+    random.seed(args['common']['seed'])
+    np.random.seed(args['common']['seed'])
+    LOGGER.info("device: {}".format(args['common']['device']))
+    if args['common']['device'] is not None:
+        LOGGER.debug(args['common']['device'])
+        torch.cuda.set_device(args['common']['device'])
     LOGGER.info('Device: {}'.format(torch.cuda.get_device_name()))
     LOGGER.info('# ------------ env init ------------ #')
-    return config
+    return args
 
-# def load_config(args: namedtuple, config=None):
+# def load_args(args: namedtuple, args=None):
 #     print('args-: ', type(args), args)
-#     if config is None:
-#         config = run_init(args.yaml)
+#     if args is None:
+#         args = run_init(args.yaml)
 #     else:
-#         config = run_init(args.yaml, config=config)
+#         args = run_init(args.yaml, args=args)
 #
-#     return config
+#     return args
 
 
-def load_config_dataset(args: namedtuple,
+def load_args_dataset(args_: namedtuple,
                         dataloader: Union[XlangDataloader, UnilangDataloader],
                         base_dataset: Union[sBaseDataset, rBaseDataset],
-                        collate_fn: Union[sbase_collate_fn, rbase_collate_fn], config=None) -> Tuple:
-    if config is None:
-        config = run_init(args.yaml)
+                        collate_fn: Union[sbase_collate_fn, rbase_collate_fn], args=None) -> Tuple:
+    if args is None:
+        args = run_init(args_.yaml)
     else:
-        config = run_init(args.yaml, config=config)
+        args = run_init(args_.yaml, args=args)
     if dataloader == XlangDataloader:
         LOGGER.debug('data_loader: XlangDataloader')
 
         # for dtrl
-        if (args.method_name == 'dtrl') and ('dtrl' in config) and \
-                ('merge_xlng' in config['dtrl']) and config['dtrl']['merge_xlng']:
+        if (args_.method_name == 'dtrl') and ('dtrl' in args) and \
+                ('merge_xlng' in args['dtrl']) and args['dtrl']['merge_xlng']:
             LOGGER.info('DTRL train, shrink batch_size into its half')
-            config['training']['batch_size'] = config['training']['batch_size'] // 2
+            args['training']['batch_size'] = args['training']['batch_size'] // 2
 
         # because load data is time-consuming, we only load data we need
-        src_dataset_info = config['dataset']['source'] \
-            if (args.dataset_type == 'source') or (args.dataset_type == 'all') else None
-        trg_dataset_info = config['dataset']['target'] \
-            if (args.dataset_type == 'target') or (args.dataset_type == 'all') else None
+        src_dataset_info = args['dataset']['source'] \
+            if (args_.dataset_type == 'source') or (args_.dataset_type == 'all') else None
+        trg_dataset_info = args['dataset']['target'] \
+            if (args_.dataset_type == 'target') or (args_.dataset_type == 'all') else None
 
-        batch_size = config['training']['batch_size']
-        thread_num = config['common']['thread_num']
+        batch_size = args['training']['batch_size']
+        thread_num = args['common']['thread_num']
 
-        if 'leaf_path_k' in config['dataset']:
-            leaf_path_k = config['dataset']['leaf_path_k']
+        if 'leaf_path_k' in args['dataset']:
+            leaf_path_k = args['dataset']['leaf_path_k']
         else:
             leaf_path_k = None
 
-        if args.task == 'summarization':
+        if args_.task == 'summarization':
 
-            if (args.method_name == 'dtrl') and ('dtrl' in config) and \
-                    ('merge_xlng' in config['dtrl']) and config['dtrl']['merge_xlng']:
-                src_xlang = config['dataset']['source']['dataset_lng']
+            if (args_.method_name == 'dtrl') and ('dtrl' in args) and \
+                    ('merge_xlng' in args['dtrl']) and args['dtrl']['merge_xlng']:
+                src_xlang = args['dataset']['source']['dataset_lng']
             else:
                 src_xlang = None
 
             params = {
-                'file_dir': config['dataset']['dataset_dir'],
-                'code_modalities': config['training']['code_modalities'],
-                'token_dicts': config['dicts'],
-                'portion': config['dataset']['portion'],
+                'file_dir': args['dataset']['dataset_dir'],
+                'code_modalities': args['training']['code_modalities'],
+                'token_dicts': args['dicts'],
+                'portion': args['dataset']['portion'],
                 'pad_ast_sub_node': None,
                 'leaf_path_k': leaf_path_k,
-                'pointer_gen': config['training']['pointer'],
+                'pointer_gen': args['training']['pointer'],
                 'src_xlang': src_xlang,
             }
 
@@ -437,9 +438,9 @@ def load_config_dataset(args: namedtuple,
         elif args.task == 'retrieval':
 
             params = {
-                'file_dir': config['dataset']['dataset_dir'],
-                'code_modalities': config['training']['code_modalities'],
-                'token_dicts': config['dicts'],
+                'file_dir': args['dataset']['dataset_dir'],
+                'code_modalities': args['training']['code_modalities'],
+                'token_dicts': args['dicts'],
                 'leaf_path_k': leaf_path_k,
             }
 
@@ -453,62 +454,62 @@ def load_config_dataset(args: namedtuple,
         raise NotImplementedError
     LOGGER.info(dataset)
 
-    config['training']['token_num'] = {
+    args['training']['token_num'] = {
         # key.split('_')[0]: token_size
         key: token_size
         for key, token_size in dataset.token_dicts.size.items()
     }
-    LOGGER.debug(config)
+    LOGGER.debug(args)
 
-    return config, dataset,
+    return args, dataset,
 
 
-def load_config_dataset_ast_attendgru(args: namedtuple,
+def load_args_dataset_ast_attendgru(args_: namedtuple,
                                       dataloader: Union[XlangDataloader, UnilangDataloader],
                                       base_dataset: Union[sBaseDataset, rBaseDataset],
-                                      collate_fn: Union[sbase_collate_fn, rbase_collate_fn], config=None) -> Tuple:
-    if config is None:
-        config = run_init(args.yaml)
+                                      collate_fn: Union[sbase_collate_fn, rbase_collate_fn], args=None) -> Tuple:
+    if args is None:
+        args = run_init(args_.yaml)
     else:
-        config = run_init(args.yaml, config=config)
+        args = run_init(args_.yaml, args=args)
     if dataloader == XlangDataloader:
         LOGGER.debug('data_loader: XlangDataloader')
 
         # for dtrl
-        if (args.method_name == 'dtrl') and ('dtrl' in config) and \
-                ('merge_xlng' in config['dtrl']) and config['dtrl']['merge_xlng']:
+        if (args_.method_name == 'dtrl') and ('dtrl' in args) and \
+                ('merge_xlng' in args['dtrl']) and args['dtrl']['merge_xlng']:
             LOGGER.info('DTRL train, shrink batch_size into its half')
-            config['training']['batch_size'] = config['training']['batch_size'] // 2
+            args['training']['batch_size'] = args['training']['batch_size'] // 2
 
         # because load data is time-consuming, we only load data we need
-        src_dataset_info = config['dataset']['source'] \
-            if (args.dataset_type == 'source') or (args.dataset_type == 'all') else None
-        trg_dataset_info = config['dataset']['target'] \
-            if (args.dataset_type == 'target') or (args.dataset_type == 'all') else None
+        src_dataset_info = args['dataset']['source'] \
+            if (args_.dataset_type == 'source') or (args_.dataset_type == 'all') else None
+        trg_dataset_info = args['dataset']['target'] \
+            if (args_.dataset_type == 'target') or (args_.dataset_type == 'all') else None
 
-        batch_size = config['training']['batch_size']
-        thread_num = config['common']['thread_num']
+        batch_size = args['training']['batch_size']
+        thread_num = args['common']['thread_num']
 
-        # if 'leaf_path_k' in config['dataset']:
-        #     leaf_path_k = config['dataset']['leaf_path_k']
+        # if 'leaf_path_k' in args['dataset']:
+        #     leaf_path_k = args['dataset']['leaf_path_k']
         # else:
         #     leaf_path_k = None
 
-        if args.task == 'summarization':
-            # if (args.method_name == 'dtrl') and ('dtrl' in config) and \
-            #         ('merge_xlng' in config['dtrl']) and config['dtrl']['merge_xlng']:
-            #     src_xlang = config['dataset']['source']['dataset_lng']
+        if args_.task == 'summarization':
+            # if (args.method_name == 'dtrl') and ('dtrl' in args) and \
+            #         ('merge_xlng' in args['dtrl']) and args['dtrl']['merge_xlng']:
+            #     src_xlang = args['dataset']['source']['dataset_lng']
             # else:
             #     src_xlang = None
 
             params = {
-                'file_dir': config['dataset']['dataset_dir'],
-                'code_modalities': config['training']['code_modalities'],
-                'token_dicts': config['dicts'],
-                'portion': config['dataset']['portion'],
-                'max_comment_len': config['dataset']['max_comment_len'],
-                'max_tok_len': config['dataset']['max_tok_len'],
-                'max_sbtao_len': config['dataset']['max_sbtao_len']
+                'file_dir': args['dataset']['dataset_dir'],
+                'code_modalities': args['training']['code_modalities'],
+                'token_dicts': args['dicts'],
+                'portion': args['dataset']['portion'],
+                'max_comment_len': args['dataset']['max_comment_len'],
+                'max_tok_len': args['dataset']['max_tok_len'],
+                'max_sbtao_len': args['dataset']['max_sbtao_len']
 
             }
 
@@ -523,62 +524,62 @@ def load_config_dataset_ast_attendgru(args: namedtuple,
         raise NotImplementedError
     LOGGER.info(dataset)
 
-    config['training']['token_num'] = {key.split('_')[0]: token_size for key, token_size in
+    args['training']['token_num'] = {key.split('_')[0]: token_size for key, token_size in
                                        dataset.token_dicts.size.items()}
-    LOGGER.info(config)
-    return config, dataset,
+    LOGGER.info(args)
+    return args, dataset,
 
 
-def load_config_dataset_kd(args: namedtuple,
-                           base_dataset=sBaseDataset, config=None):
-    if config is None:
-        config = run_init_kd(args.yaml)
+def load_args_dataset_kd(args_: namedtuple,
+                           base_dataset=sBaseDataset, args=None):
+    if args is None:
+        args = run_init_kd(args_.yaml)
     else:
-        config = run_init_kd(args.yaml, config=config)
+        args = run_init_kd(args_.yaml, args=args)
 
-    if args.train_mode in ['train_sl_ft', 'train_sc_ft', 'test']:
+    if args_.train_mode in ['train_sl_ft', 'train_sc_ft', 'test']:
         # in kd, use source and target in target domain  when finetune the multilingual student model
-        config['dataset']['source'] = config['dataset']['target_domain']['source']
-        config['dataset']['target'] = config['dataset']['target_domain']['target']
+        args['dataset']['source'] = args['dataset']['target_domain']['source']
+        args['dataset']['target'] = args['dataset']['target_domain']['target']
 
         LOGGER.debug('data_loader: XlangDataloader')
 
         # for dtrl
-        if (args.method_name == 'dtrl') and ('dtrl' in config) and \
-                ('merge_xlng' in config['dtrl']) and config['dtrl']['merge_xlng']:
+        if (args_.method_name == 'dtrl') and ('dtrl' in args) and \
+                ('merge_xlng' in args['dtrl']) and args['dtrl']['merge_xlng']:
             LOGGER.info('DTRL train, shrink batch_size into its half')
-            config['training']['batch_size'] = config['training']['batch_size'] // 2
+            args['training']['batch_size'] = args['training']['batch_size'] // 2
 
         # because load data is time-consuming, we only load data we need
-        src_dataset_info = config['dataset']['source'] \
-            if (args.dataset_type == 'source') or (args.dataset_type == 'all') else None
-        trg_dataset_info = config['dataset']['target'] \
-            if (args.dataset_type == 'target') or (args.dataset_type == 'all') else None
+        src_dataset_info = args['dataset']['source'] \
+            if (args_.dataset_type == 'source') or (args_.dataset_type == 'all') else None
+        trg_dataset_info = args['dataset']['target'] \
+            if (args_.dataset_type == 'target') or (args_.dataset_type == 'all') else None
 
-        batch_size = config['training']['batch_size']
-        thread_num = config['common']['thread_num']
+        batch_size = args['training']['batch_size']
+        thread_num = args['common']['thread_num']
 
-        if 'leaf_path_k' in config['dataset']:
-            leaf_path_k = config['dataset']['leaf_path_k']
+        if 'leaf_path_k' in args['dataset']:
+            leaf_path_k = args['dataset']['leaf_path_k']
         else:
             leaf_path_k = None
 
-        if args.task == 'summarization':
+        if args_.task == 'summarization':
 
-            if (args.method_name == 'dtrl') and ('dtrl' in config) and \
-                    ('merge_xlng' in config['dtrl']) and config['dtrl']['merge_xlng']:
-                src_xlang = config['dataset']['source']['dataset_lng']
+            if (args_.method_name == 'dtrl') and ('dtrl' in args) and \
+                    ('merge_xlng' in args['dtrl']) and args['dtrl']['merge_xlng']:
+                src_xlang = args['dataset']['source']['dataset_lng']
             else:
                 src_xlang = None
 
             params = {
-                'file_dir': config['dataset']['dataset_dir'],
-                'code_modalities': config['training']['code_modalities'],
-                'token_dicts': config['dicts'],
-                'portion': config['dataset']['portion'],
+                'file_dir': args['dataset']['dataset_dir'],
+                'code_modalities': args['training']['code_modalities'],
+                'token_dicts': args['dicts'],
+                'portion': args['dataset']['portion'],
                 'pad_ast_sub_node': None,
                 'leaf_path_k': leaf_path_k,
-                'pointer_gen': config['training']['pointer'],
+                'pointer_gen': args['training']['pointer'],
                 'src_xlang': src_xlang,
             }
 
@@ -588,52 +589,52 @@ def load_config_dataset_kd(args: namedtuple,
             )
 
 
-    elif args.train_mode == 'train_sl':
+    elif args_.train_mode == 'train_sl':
         # if args.train_mode in [ 'train_kd_sl_ft','train_kd_sc_ft']:
         #     LOGGER.info("use target_domain..... ")
-        #     # modes = config['dataset']['target_domain']['sources']['mode']
-        #     sources = config['dataset']['target_domain']['source']['dataset_lng']
-        #     if config['dataset']['target_domain']['target'] is not None:
-        #         targets = config['dataset']['target_domain']['target']['dataset_lng']
+        #     # modes = args['dataset']['target_domain']['sources']['mode']
+        #     sources = args['dataset']['target_domain']['source']['dataset_lng']
+        #     if args['dataset']['target_domain']['target'] is not None:
+        #         targets = args['dataset']['target_domain']['target']['dataset_lng']
         #     else:
         #         targets = None
         # else:
         LOGGER.info("use source_domain..... ")
-        # modes = config['dataset']['source_domain']['sources']['mode']
-        if not config['kd']['distill']:
-            assert config['dataset']['source_domain']['source']['select_lng'] is not None
-            sources = config['dataset']['source_domain']['source']['select_lng']
+        # modes = args['dataset']['source_domain']['sources']['mode']
+        if not args['kd']['distill']:
+            assert args['dataset']['source_domain']['source']['select_lng'] is not None
+            sources = args['dataset']['source_domain']['source']['select_lng']
         else:
-            sources = config['dataset']['source_domain']['source']['dataset_lng']
-        if config['dataset']['source_domain']['target'] is not None:
-            targets = config['dataset']['source_domain']['target']['dataset_lng']
+            sources = args['dataset']['source_domain']['source']['dataset_lng']
+        if args['dataset']['source_domain']['target'] is not None:
+            targets = args['dataset']['source_domain']['target']['dataset_lng']
         else:
             targets = None
 
         if targets is None:
             targets = ['en']
 
-        config['kd']['source'] = sources
-        config['kd']['target'] = targets
-        dataset = KDDataloader(args, config, collate_fn=kd_codesum_collate_fn, base_dataset=base_dataset)
+        args['kd']['source'] = sources
+        args['kd']['target'] = targets
+        dataset = KDDataloader(args_, args, collate_fn=kd_codesum_collate_fn, base_dataset=base_dataset)
     # if args.multi_processing:
     #     with mpool() as mp_pool:
-    #         dataset = dataloader(config, args.dataset_type, dataset_type, collate_fn, mp_pool, )
+    #         dataset = dataloader(args, args.dataset_type, dataset_type, collate_fn, mp_pool, )
     # else:
-    #     dataset = dataloader(config, args.dataset_type, dataset_type, collate_fn, None)
+    #     dataset = dataloader(args, args.dataset_type, dataset_type, collate_fn, None)
     # LOGGER.debug(dataset)
 
-    # config = dataset.add_token_num(config)
-    LOGGER.info(config)
-    config['training']['token_num'] = {key.split('_')[0]: token_size for key, token_size in
+    # args = dataset.add_token_num(args)
+    LOGGER.info(args)
+    args['training']['token_num'] = {key.split('_')[0]: token_size for key, token_size in
                                        dataset.token_dicts.size.items()}
-    return config, dataset
+    return args, dataset
 
 
-def get_save_dir(config: Dict, args: namedtuple) -> str:
+def get_save_dir(args_: Dict, args: namedtuple) -> str:
     save_dir = os.path.join(
-        config['dataset']['save_dir'],
-        '{}_{}_{}.{}'.format(args.task, args.task_mode, CONST_TIME_CODE, CONST_MD5_CODE, ),
+        args['dataset']['save_dir'],
+        '{}_{}_{}.{}'.format(args_.task, args_.task_mode, CONST_TIME_CODE, CONST_MD5_CODE, ),
     )
     try:
         # os.makedirs(save_dir)

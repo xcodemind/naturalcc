@@ -26,7 +26,7 @@ from ncc.config.bert.configuration_roberta import RobertaConfig
 from ncc.utils.file_utils import add_start_docstrings, add_start_docstrings_to_callable
 from ncc.model.bert.modeling_bert import BertEmbeddings, BertLayerNorm, BertModel, BertPreTrainedModel, gelu
 from ncc.utils.modeling_utils import create_position_ids_from_input_ids
-
+from ncc.model import register_model
 
 logger = logging.getLogger(__name__)
 
@@ -131,6 +131,7 @@ ROBERTA_INPUTS_DOCSTRING = r"""
 """
 
 
+@register_model('roberta')
 @add_start_docstrings(
     "The bare RoBERTa Model transformer outputting raw hidden-states without any specific head on top.",
     ROBERTA_START_DOCSTRING,
@@ -156,6 +157,10 @@ class RobertaModel(BertModel):
 
     def set_input_embeddings(self, value):
         self.embeddings.word_embeddings = value
+
+    @classmethod
+    def build_model(cls, config, task): # TODO: task is unnecessary here.
+        return cls(config)
 
 
 @add_start_docstrings("""RoBERTa Model with a `language modeling` head on top. """, ROBERTA_START_DOCSTRING)

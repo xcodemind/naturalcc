@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
-import sys
-
-sys.path.append('.')
-
-from ncc import *
-
+from ncc import LOGGER
+from typing import Dict, Any
+import abc
 
 class Trainer(object):
 

@@ -133,7 +133,7 @@ model:
 #  decoder_layers_to_keep: ~ # default=None, help='which layers to *keep* when pruning as a comma-separated list'
 #  layernorm_embedding: 0 # action='store_true', help='add layernorm to embedding'
 #  no_scale_embedding: 0 # action='store_true', help='if True, dont scale embeddings'
-  model_type: roberta # type=str, default='roberta', help="The model architecture to be trained or fine-tuned.",
+  arch: roberta # type=str, default='roberta', help="The model architecture to be trained or fine-tuned.",
   config_name: /data/wanyao/ghproj_d/transformers/models/EsperBERTo-small # default='/data/wanyao/ghproj_d/transformers/models/EsperBERTo-small', type=str, help="Optional pretrained config name or path if not the same as model_name_or_path. If both are None, initialize a new config.",
 
 optimization:

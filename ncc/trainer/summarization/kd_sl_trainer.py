@@ -13,9 +13,9 @@ from ncc.eval.evaluator import Evaluator
 
 
 class KDSLTrainer(object):
-    def __init__(self, args, config, model, dataset: KDDataloader):
+    def __init__(self, args_, args, model, dataset: KDDataloader):
+        self.args_ = args_
         self.args = args
-        self.config = config
         self.model = model
         self.train_dataset = dataset['train_dataset']
         self.train_dataloader = dataset['train']
@@ -23,16 +23,16 @@ class KDSLTrainer(object):
         self.val_dataloader = dataset['valid']
         self.token_dicts = dataset.token_dicts
 
-        self.kd_path = self.config['kd']['kd_path']
-        self.distill = self.config['kd']['distill']
-        self.distill_topk = config['kd']['distill_topk']
+        self.kd_path = self.args['kd']['kd_path']
+        self.distill = self.args['kd']['distill']
+        self.distill_topk = args['kd']['distill_topk']
 
-        self.oriname2finetune = model.config['sl']['oriname2finetune']
-        self.code_modalities_str = '8'.join(  config['training']['code_modalities'])
-        self.train_epoch = config['training']['train_epoch']
+        self.oriname2finetune = model.args['sl']['oriname2finetune']
+        self.code_modalities_str = '8'.join(args['training']['code_modalities'])
+        self.train_epoch = args['training']['train_epoch']
 
-        self.source = self.config['kd']['source']
-        self.target = self.config['kd']['target']
+        self.source = self.args['kd']['source']
+        self.target = self.args['kd']['target']
 
         LOGGER.info("self.source :{}  ".format(self.source))
         LOGGER.info("self.target :{}  ".format(self.target))
@@ -41,25 +41,25 @@ class KDSLTrainer(object):
             self.source = dataset.sources[0]
             self.target = dataset.targets[0]
         # only used in individual model train(before distill),so dataset.sources and dataset.targets has only one element
-        self.trainer_type = args.train_mode
+        self.trainer_type = args_.train_mode
         self.best_bleu1= 0
         self.best_bleu1_epoch=0
         self.best_cider=0
         self.best_cider_epoch = 0
         self.last_best_bleu1_dict = {}
 
-        # self.source_epoch_str = "_".join([str(i) for i in self.config['kd']['sources_epoch']]) \
-        #     if self.config['kd']['sources_epoch'] is not None else None
+        # self.source_epoch_str = "_".join([str(i) for i in self.args['kd']['sources_epoch']]) \
+        #     if self.args['kd']['sources_epoch'] is not None else None
 
-        if self.config['kd']['sources_epoch'] is not None:
+        if self.args['kd']['sources_epoch'] is not None:
             self.source_epoch_str = ''
-            for k,v in self.config['kd']['sources_epoch'].items():
+            for k,v in self.args['kd']['sources_epoch'].items():
                 self.source_epoch_str += '_'+str(k)+str(v)
         else:
             self.source_epoch_str = None
 
         LOGGER.info("source_epoch_str: {} ".format(self.source_epoch_str))
-        # self.all_epoch = config['training']['all_epoch']
+        # self.all_epoch = args['training']['all_epoch']
 
         # if self.distill:
         #     self.evaluator = Evaluator(self.model, self.val_dataset, self.val_dataloader, (self.dict_code, self.dict_comment),
@@ -78,10 +78,10 @@ class KDSLTrainer(object):
             self.start_time = start_time
 
         scheduler = create_scheduler(optim,
-                                     self.config['sl']['warmup_epochs'],
-                                     self.config['sl']['warmup_factor'],
-                                     self.config['sl']['lr_milestones'],
-                                     self.config['sl']['lr_gamma'])
+                                     self.args['sl']['warmup_epochs'],
+                                     self.args['sl']['warmup_factor'],
+                                     self.args['sl']['lr_milestones'],
+                                     self.args['sl']['lr_gamma'])
 
         if not self.distill and self.oriname2finetune  is None :
             expert_outputs = [None for _ in range(len(self.train_dataset))]
@@ -112,7 +112,7 @@ class KDSLTrainer(object):
                 # batch = batch2cuda(self.opt, batch)
 
                 batch = train_data_iter.__next__()
-                if self.config['common']['device'] is not None:
+                if self.args['common']['device'] is not None:
                     batch = batch_to_cuda(batch)
 
                 batch_size = batch['tok'][0].shape[0]
@@ -139,23 +139,23 @@ class KDSLTrainer(object):
                 optim.zero_grad()
                 comment_loss.backward()
                 total_loss += comment_loss.item()
-                # if self.config['flag_clip_grad:
-                #     total_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config['max_grad_norm)
+                # if self.args['flag_clip_grad:
+                #     total_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args['max_grad_norm)
                 optim.step()
 
 
-                # if iteration % self.config['training']['log_interval'] == 0 and iteration > 0:
+                # if iteration % self.args['training']['log_interval'] == 0 and iteration > 0:
                 #     LOGGER.info('Epoch %3d / %3d, %6d/%d batches; avg_loss: %9.5f; %s elapsed' % (
                 #         epoch, self.all_epoch, iteration, len(self.train_dataloader), total_loss / iteration,
                 #         str(datetime.timedelta(seconds=int(time.time() - self.start_time)))))
 
-                # if iteration % self.config['training']['log_interval'] == 0 and iteration > 0:
+                # if iteration % self.args['training']['log_interval'] == 0 and iteration > 0:
                 #     LOGGER.info('Epoch: {:0>3d}/{:0>3d}, batches: {:0>3d}/{:0>3d}, avg_loss: {:.8f}; lr: {}, time: {}'.format(
                 #         epoch, self.all_epoch, iteration, len(self.train_dataloader),
                 #         total_loss / iteration, scheduler.get_lr(),
                 #         str(datetime.timedelta(seconds=int(time.time() - start_time)))))
 
-                if iteration % self.config['training']['log_interval'] == 0 and iteration > 0:
+                if iteration % self.args['training']['log_interval'] == 0 and iteration > 0:
                     LOGGER.info('Epoch: {}, batches: {:0>3d}/{:0>3d}, avg_loss: {:.8f}; lr: {}, time: {}'.format(
                         epoch,   iteration, len(self.train_dataloader),
                         total_loss / iteration,  scheduler.get_lr()[0],
@@ -173,7 +173,7 @@ class KDSLTrainer(object):
             if self.distill:
                 student_scores, self.best_bleu1, self.best_bleu1_epoch ,self.best_cider, self.best_cider_epoch,\
                 self.last_best_bleu1_dict\
-                    = Evaluator.summarization_kd_eval(args=self.args,
+                    = Evaluator.summarization_kd_eval(args_=self.args_,
                     last_best_bleu1_dict=self.last_best_bleu1_dict,
                       model=self.model ,dataset=self.val_dataset,data_loader=self.val_dataloader,
                     token_dicts=self.token_dicts, criterion=criterion,trainer_type=self.trainer_type,
@@ -188,7 +188,7 @@ class KDSLTrainer(object):
 
                 student_scores, self.best_bleu1,  self.best_bleu1_epoch ,self.best_cider, self.best_cider_epoch ,\
                         self.last_best_bleu1_dict \
-                    = Evaluator.summarization_kd_eval(args=self.args,
+                    = Evaluator.summarization_kd_eval(args_=self.args_,
                     last_best_bleu1_dict = self.last_best_bleu1_dict,
                     model=self.model ,dataset=self.val_dataset,data_loader=self.val_dataloader,
                     token_dicts=self.token_dicts, criterion=criterion,trainer_type=self.trainer_type,
@@ -205,17 +205,17 @@ class KDSLTrainer(object):
 
             model_name = \
     '{}-bs{}-lr{}-attn{}-pointer{}-ep{}-tt{}-di{}-slng{}-d{}-hc{}-afs{}-ka{}-dk{}-dp{}-ls{}-kt{}-s{}-o{}-se{}-pr{}-bi{}.pt'.format(
-                self.code_modalities_str ,
-                self.config['training']['batch_size'],
-                self.config['sl']['lr'],
-                self.config['training']['attn_type'],
-                self.config['training']['pointer'],epoch,self.trainer_type,self.config['kd']['distill'],
-                self.config['dataset']['source_domain']['source']['select_lng'][0],self.config['training']['dropout'],
-                self.config['training']['enc_hc2dec_hc'],self.config['kd']['alpha_strategy'],
-                self.config['kd']['kd_default_alpha'],self.config['kd']['distill_topk'],
-                self.config['kd']['distill_temp'],self.config['kd']['label_smooth_rate'],
-                self.config['kd']['kd_threshold'],self.config['kd']['shuffle'],self.config['sl']['oriname2finetune'],
-                self.source_epoch_str,self.config['dataset']['portion'],self.config['training']['rnn_bidirectional'])
+                self.code_modalities_str,
+                self.args['training']['batch_size'],
+                self.args['sl']['lr'],
+                self.args['training']['attn_type'],
+                self.args['training']['pointer'], epoch, self.trainer_type, self.args['kd']['distill'],
+                self.args['dataset']['source_domain']['source']['select_lng'][0], self.args['training']['dropout'],
+                self.args['training']['enc_hc2dec_hc'], self.args['kd']['alpha_strategy'],
+                self.args['kd']['kd_default_alpha'], self.args['kd']['distill_topk'],
+                self.args['kd']['distill_temp'], self.args['kd']['label_smooth_rate'],
+                self.args['kd']['kd_threshold'], self.args['kd']['shuffle'], self.args['sl']['oriname2finetune'],
+                self.source_epoch_str, self.args['dataset']['portion'], self.args['training']['rnn_bidirectional'])
 
 
 

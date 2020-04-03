@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch.optim.optimizer import Optimizer
 from ncc import LOGGER
-from ncc.trainer import Trainer
+from ncc.trainer.trainer_ import Trainer
 from ncc.trainer.summarization.sl_trainer import SLTrainer
 from ncc.model.template import IModel
 from ncc.dataset import UnilangDataloader, XlangDataloader
@@ -22,9 +22,9 @@ class MAMLTrainer(Trainer):
     model-agnostic meta learning
     '''
 
-    def __init__(self, config: Dict, ) -> None:
-        super(MAMLTrainer, self).__init__(config)
-        self.sl_trainer = SLTrainer(config)
+    def __init__(self, args: Dict, ) -> None:
+        super(MAMLTrainer, self).__init__(args)
+        self.sl_trainer = SLTrainer(args)
 
     def meta_train(self, model: IModel,
                    meta_train_loader: DataLoader, meta_train_size: int,
@@ -39,7 +39,7 @@ class MAMLTrainer(Trainer):
         for _ in range(1, 1 + meta_train_size):
             # load batch data
             meta_train_batch = train_iter.__next__()
-            if model.config['common']['device'] is not None:
+            if model.args['common']['device'] is not None:
                 meta_train_batch = batch_to_cuda(meta_train_batch)
 
             comment_loss = model.train_sl(meta_train_batch, meta_criterion)
@@ -61,14 +61,14 @@ class MAMLTrainer(Trainer):
         # only save first graph. such method can save lot os cuda memory
         model.train()
         meta_val_batch = val_iter.__next__()
-        if model.config['common']['device'] is not None:
+        if model.args['common']['device'] is not None:
             meta_val_batch = batch_to_cuda(meta_val_batch)
         meta_val_loss = model.train_sl(meta_val_batch, meta_criterion)
 
         with torch.no_grad():
             for _ in range(1, meta_val_size):
                 meta_val_batch = val_iter.__next__()
-                if model.config['common']['device'] is not None:
+                if model.args['common']['device'] is not None:
                     meta_val_batch = batch_to_cuda(meta_val_batch)
                 batch_meta_val_loss = model.train_sl(meta_val_batch, meta_criterion)
                 meta_val_loss += batch_meta_val_loss.item()
@@ -81,22 +81,22 @@ class MAMLTrainer(Trainer):
         super().train()
         start_time = time.time() if start_time is None else start_time
 
-        trg_lng = self.config['dataset']['target']['dataset_lng'][0]
+        trg_lng = self.args['dataset']['target']['dataset_lng'][0]
 
         #############################################################################################
         # because meta-train is time costly, therefore we only use min batch-size of datasets
         #############################################################################################
-        # if self.config['maml']['meta_epoch'] is None:
+        # if self.args['maml']['meta_epoch'] is None:
         #     meta_train_epoch = min([len(dataset['train']) for dataset in dataset['source'].values()])
         # else:
         #     meta_train_epoch = min([len(dataset['train']) for dataset in dataset['source'].values()])
-        #     meta_train_epoch = min(meta_train_epoch, model.config['maml']['meta_epoch'])
+        #     meta_train_epoch = min(meta_train_epoch, model.args['maml']['meta_epoch'])
         # LOGGER.info('meta train min batch num: {}'.format(meta_train_epoch))
-        meta_train_size = self.config['maml']['meta_train_size']
-        meta_val_size = self.config['maml']['meta_val_size']
+        meta_train_size = self.args['maml']['meta_train_size']
+        meta_val_size = self.args['maml']['meta_val_size']
         #############################################################################################
 
-        for epoch in range(1, 1 + self.config['training']['train_epoch']):
+        for epoch in range(1, 1 + self.args['training']['train_epoch']):
             model.train()
             total_loss = 0.0
 
@@ -124,25 +124,25 @@ class MAMLTrainer(Trainer):
             optimizer.step()
 
             LOGGER.info('Epoch: {:0>3d}/{:0>3d}, avg_loss: {:.4f}; time: {}'.format(
-                epoch, self.config['training']['train_epoch'], total_loss.item(),
+                epoch, self.args['training']['train_epoch'], total_loss.item(),
                 str(datetime.timedelta(seconds=int(time.time() - start_time)))))
 
-            if epoch <= self.config['training']['train_epoch'] and epoch % 10 == 0:
+            if epoch <= self.args['training']['train_epoch'] and epoch % 10 == 0:
                 if SAVE_DIR is not None:
                     model_name = '{}-bs{}-{}({})-m{}({})-EPOCH{}-{}-{}'.format(
-                        '8'.join(self.config['training']['code_modalities']),
-                        self.config['training']['batch_size'],
-                        self.config['sl']['optim'], self.config['sl']['lr'],
-                        self.config['maml']['meta_optim'], self.config['maml']['meta_lr'],
-                        self.config['maml']['meta_train_size'], self.config['maml']['meta_val_size'], epoch)
+                        '8'.join(self.args['training']['code_modalities']),
+                        self.args['training']['batch_size'],
+                        self.args['sl']['optim'], self.args['sl']['lr'],
+                        self.args['maml']['meta_optim'], self.args['maml']['meta_lr'],
+                        self.args['maml']['meta_train_size'], self.args['maml']['meta_val_size'], epoch)
                     model_path = os.path.join(SAVE_DIR, '{}.pt'.format(model_name), )
                     torch.save(model.state_dict(), model_path)
                     LOGGER.info('Dumping model in {}'.format(model_path))
 
                 ori_weights = deepcopy(model.state_dict())
                 # finetune on target train dataset, but DO NOT update model
-                tmp_optimizer = getattr(torch.optim, self.config['sl']['optim']) \
-                    (model.parameters(), self.config['sl']['lr'])
+                tmp_optimizer = getattr(torch.optim, self.args['sl']['optim']) \
+                    (model.parameters(), self.args['sl']['lr'])
                 self.finetune(model, dataset['target'][trg_lng], criterion, tmp_optimizer)
                 model.load_state_dict(ori_weights)
             else:
@@ -155,7 +155,7 @@ class MAMLTrainer(Trainer):
         '''
         finetune modal only on a batch data, to check out
         '''
-        lm_criterion = LMLoss(device=self.config['common']['device'] is not None, )
+        lm_criterion = LMLoss(device=self.args['common']['device'] is not None, )
 
         cider_list = []
         # zero-shot
@@ -164,12 +164,12 @@ class MAMLTrainer(Trainer):
         cider_list.append(round(metrics[-1], 4))
         # few-shot
         LOGGER.info('finetune on {} '.format(dataset.lng))
-        for epoch in range(1, 1 + self.config['maml']['mini_finetune_epoch']):
+        for epoch in range(1, 1 + self.args['maml']['mini_finetune_epoch']):
             model.train()
             train_data_iter = iter(dataset['train'])
             for _ in range(1, 1 + len(train_data_iter)):
                 batch = train_data_iter.__next__()
-                if self.config['common']['device'] is not None:
+                if self.args['common']['device'] is not None:
                     batch = batch_to_cuda(batch)
 
                 sl_loss = model.train_sl(batch, criterion)
