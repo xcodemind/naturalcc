@@ -17,9 +17,9 @@
 
 
 import logging
+from ncc.config import register_config
+from ncc.config.bert.configuration_utils import PretrainedConfig
 
-from ncc.mconfig.bert.configuration_utils import PretrainedConfig
-from ncc.mconfig import register_mconfig
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ BERT_PRETRAINED_CONFIG_ARCHIVE_MAP = {
 }
 
 
-@register_mconfig('bert')
+@register_config('bert')
 class BertConfig(PretrainedConfig):
     r"""
         This is the configuration class to store the configuration of a :class:`~transformers.BertModel`.

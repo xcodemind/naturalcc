@@ -9,7 +9,7 @@ from torch.optim.optimizer import Optimizer
 from ncc import LOGGER
 from ncc.trainer.trainer_ import Trainer
 from ncc.trainer.summarization.sl_trainer import SLTrainer
-from ncc.model.template import IModel
+from ncc.models.template import IModel
 from ncc.dataset import UnilangDataloader, XlangDataloader
 from ncc.metric import BaseLoss
 from ncc.metric.base import LMLoss

@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from run.util import *
 from ncc.metric.base import *
-from ncc.model.summarization.unilang import *
+from ncc.models.summarization.unilang import *
 from ncc.trainer.summarization.unilang import *
 from ncc.trainer.summarization.xlang import *
 from ncc.metric.summarization.loss import PGCriterion_REINFORCE

@@ -18,7 +18,7 @@ from ncc.logging import meters, metrics
 from ncc.utils.nan_detector import NanDetector
 from ncc.optim import lr_scheduler
 from typing import Any, Dict, List
-
+from ncc import models
 
 logger = logging.getLogger(__name__)
 
@@ -496,7 +496,7 @@ class Trainer(object):
 
     def get_meter(self, name):
         """[deprecated] Get a specific meter by name."""
-        from fairseq import meters
+        from ncc import meters
 
         if 'get_meter' not in self._warn_once:
             self._warn_once.add('get_meter')

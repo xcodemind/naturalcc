@@ -313,7 +313,7 @@ def add_model_args(parser):
     # 1) model defaults (lowest priority)
     # 2) --arch argument
     # 3) --encoder/decoder-* arguments (highest priority)
-    from ncc.model import ARCH_MODEL_REGISTRY
+    from ncc.models import ARCH_MODEL_REGISTRY
     group.add_argument('--arch', '-a', default='fconv', metavar='ARCH',
                        choices=ARCH_MODEL_REGISTRY.keys(),
                        help='Model Architecture')
@@ -439,7 +439,7 @@ def parse_args_and_arch(
             **{k: v for k, v in vars(args).items() if v is not None}
         )
 
-    from ncc.model import ARCH_MODEL_REGISTRY, ARCH_CONFIG_REGISTRY
+    from ncc.models import ARCH_MODEL_REGISTRY, ARCH_CONFIG_REGISTRY
 
     # Before creating the true parser, we need to import optional user module
     # in order to eagerly import custom tasks, optimizers, architectures, etc.

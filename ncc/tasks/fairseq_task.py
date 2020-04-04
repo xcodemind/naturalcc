@@ -206,7 +206,7 @@ class FairseqTask(object):
         self.dataset_to_epoch_iter[dataset] = epoch_iter
         return epoch_iter
 
-    def build_model(self, args):
+    def build_model(self, args, config):
         """
         Build the :class:`~fairseq.models.BaseFairseqModel` instance for this
         task.
@@ -217,9 +217,9 @@ class FairseqTask(object):
         Returns:
             a :class:`~fairseq.models.BaseFairseqModel` instance
         """
-        from ncc import model
+        from ncc import models
         # assert 0
-        return model.build_model(args, self)
+        return models.build_model(args, config, self)
 
     def build_config(self, args):
         from ncc import config

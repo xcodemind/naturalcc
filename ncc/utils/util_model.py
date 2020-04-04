@@ -4,11 +4,11 @@ import networkx as nx
 from ncc.data.tree  import get_data_tree_ptb_dgl_graph
 from ncc.data.codesum.constants import *
 from ncc.data.dict import Dict
-# from ncc.model.codesum.Model import Model, ModelCritic, Seq8Tree8CFG2SeqModel, Seq8Tree8CFG2SeqModelCritic, \
+# from ncc.models.codesum.Model import Model, ModelCritic, Seq8Tree8CFG2SeqModel, Seq8Tree8CFG2SeqModelCritic, \
 #     Seq8Tree2SeqModel, Seq8CFG2SeqModel, Tree8CFG2SeqModel, Seq8Tree2SeqModelCritic
 # from model.Encoder import Encoder, TreeEncoder_TreeLSTM_dgl, CFGEncoder_GGNN, CFGEncoder_GGNN_add_node_token,\
 # RetrievalCodeEncoderWrapper,RetrievalCommentEncoderWrapper
-from ncc.model.Encoder import Encoder, RetrievalCodeEncoderWrapper, RetrievalCommentEncoderWrapper
+from ncc.models.Encoder import Encoder, RetrievalCodeEncoderWrapper, RetrievalCommentEncoderWrapper
 from ncc.module.encoder.base.encoder_ast import TreeEncoder_TreeLSTM_dgl
 from ncc.module.encoder.encoder_cfg  import CFGEncoder_GGNN, CFGEncoder_GGNN_add_node_token
 from ncc.module.summarization.decoder import SeqDecoder
@@ -26,7 +26,7 @@ from ncc.data.codeir.deepcs_dataset import *
 #     collate_fn_code_retrieval_for_test_set_deep_cs, CodeRetrieval_DeepCS_QueryDataset, \
 #     collate_fn_code_retrieval_for_query_deep_cs
 from ncc.module.retrieval.deepcs_encoder import SeqEncoder
-from ncc.model.retrieval.deepcs import DeepCSModel
+from ncc.models.retrieval.deepcs import DeepCSModel
 
 
 

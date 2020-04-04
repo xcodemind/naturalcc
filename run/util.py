@@ -12,7 +12,7 @@ from ncc.utils.util_file import load_args, load_args_kd
 from ncc.dataset.base import sBaseDataset, rBaseDataset, sbase_collate_fn, rbase_collate_fn, kd_codesum_collate_fn
 from ncc.dataset import XlangDataloader, UnilangDataloader, KDDataloader
 from ncc.utils.util_name import time_id, md5_id
-from ncc.model.template import IModel
+from ncc.models.template import IModel
 from typing import Dict, Union, Tuple
 
 def CONST_TIME_CODE(debug):

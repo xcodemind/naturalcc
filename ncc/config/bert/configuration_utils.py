@@ -23,13 +23,13 @@ import os
 from typing import Dict, Optional, Tuple
 
 from ncc.utils.file_utils import CONFIG_NAME, cached_path, hf_bucket_url, is_remote_url
-from ncc.mconfig.fairseq_mconfig import FairseqMConfig
+from ncc.config.fairseq_config import FairseqConfig
 
 
 logger = logging.getLogger(__name__)
 
 
-class PretrainedConfig(FairseqMConfig):
+class PretrainedConfig(FairseqConfig):
     r""" Base class for all configuration classes.
         Handles a few parameters common to all models' configurations as well as methods for loading/downloading/saving configurations.
 

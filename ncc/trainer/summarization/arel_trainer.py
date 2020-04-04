@@ -5,8 +5,8 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 from ncc import LOGGER
 from ncc.trainer import *
-from ncc.model import *
-from ncc.model.template import *
+from ncc.models import *
+from ncc.models.template import *
 from ncc.dataset import *
 from ncc.metric import *
 from ncc.utils.util_data import batch_to_cuda

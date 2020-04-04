@@ -18,8 +18,8 @@
 
 import logging
 
-from ncc.mconfig.bert.configuration_bert import BertConfig
-from ncc.mconfig import register_mconfig
+from ncc.config.bert.configuration_bert import BertConfig
+from ncc.config import register_config
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ ROBERTA_PRETRAINED_CONFIG_ARCHIVE_MAP = {
 }
 
 
-@register_mconfig('roberta')
+@register_config('roberta')
 class RobertaConfig(BertConfig):
     r"""
         This is the configuration class to store the configuration of an :class:`~transformers.RobertaModel`.

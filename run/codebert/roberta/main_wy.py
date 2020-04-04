@@ -45,9 +45,9 @@ def single_main(args, init_distributed=False):
     # Setup task, e.g., translation, language modeling, etc.
     task = tasks.setup_task(args) # task.tokenizer
     # build model_config
-    model_config = task.build_config(args)
+    config = task.build_config(args)
     # Build model and criterion
-    model = task.build_model(args, model_config)
+    model = task.build_model(args, config)
     # model_config = task.build_model_config()
 
     criterion = task.build_criterion(args)
@@ -59,11 +59,10 @@ def single_main(args, init_distributed=False):
     ))
 
     # Load valid dataset (we load training data below, based on the latest checkpoint)
-    for valid_sub_split in args['dataset']['valid_subset'].split(','):
-        task.load_dataset(valid_sub_split, combine=False, epoch=1)
-    sys.exit()
+    # for valid_sub_split in args['dataset']['valid_subset'].split(','):
+    #     task.load_dataset(valid_sub_split, combine=False, epoch=1)
+    # sys.exit()
 
-    sys.exit()
     # Build trainer
     trainer = Trainer(args, task, model, criterion)
     LOGGER.info('training on {} GPUs'.format(args['distributed_training']['distributed_world_size']))

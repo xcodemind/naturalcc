@@ -38,8 +38,8 @@ import time
 
 # from .composite_encoder import CompositeEncoder
 # from .distributed_fairseq_model import DistributedFairseqModel
-from ncc.config.bert.configuration_bert import BertConfig
-from ncc.config.bert.configuration_roberta import RobertaConfig
+# from ncc.config.bert.configuration_bert import BertConfig
+# from ncc.config.bert.configuration_roberta import RobertaConfig
 from ncc.config.fairseq_config import FairseqConfig
 
 CONFIG_REGISTRY = {}
@@ -50,8 +50,9 @@ CONFIG_REGISTRY = {}
 
 __all__ = [
     'datetime', 'time',
-    'BertConfig',
-    'RobertaConfig',
+    # 'BertConfig',
+    # 'RobertaConfig',
+    # 'register_config',
 ]
 
 
@@ -151,5 +152,5 @@ for file in os.listdir(configs_dir):
         #     MODEL_REGISTRY[model_name].add_args(group_args)
         #     globals()[model_name + '_parser'] = parser
 
-print('MCONFIG_REGISTRY: ', CONFIG_REGISTRY)
+print('CONFIG_REGISTRY: ', CONFIG_REGISTRY)
 # print('ARCH_MODEL_REGISTRY: ', ARCH_MODEL_REGISTRY)

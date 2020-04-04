@@ -7,8 +7,8 @@ import torch
 import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 from ncc import LOGGER
-from ncc.trainer import Trainer
-from ncc.model.template import IModel
+from ncc.trainer.trainer_ import Trainer
+from ncc.models.template import IModel
 from ncc.dataset import UnilangDataloader
 from ncc.metric import BaseLoss
 from ncc.utils.util_data import batch_to_cuda

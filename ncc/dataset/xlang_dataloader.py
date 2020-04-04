@@ -7,7 +7,7 @@ from pprint import pprint
 from ncc import LOGGER
 from ncc.data import TokenDicts
 from ncc.dataset.base import sBaseDataset, rBaseDataset, sbase_collate_fn, rbase_collate_fn
-from ncc.utils.util_file import load_config
+from ncc.utils.util_file import load_args
 from ncc.utils.util_data import merge_data
 from ncc.dataset.unilang_dataloader import UnilangDataloader
 from typing import Dict, List, Union, Any
@@ -155,7 +155,7 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError
     yaml_file = os.path.join(run_dir, 'python.yml')
-    config = load_config(yaml_file)
+    config = load_args(yaml_file)
     CUR_SCRIPT = sys.argv[0].split('/')[-1].split('.')[0]
     LOGGER.info("Start {}.py ... =>  PID: {}".format(CUR_SCRIPT, os.getpid()))
     LOGGER.info('Load arguments in {}'.format(yaml_file))

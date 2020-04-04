@@ -13,7 +13,7 @@ from ncc.logging import metrics
 from ncc.utils import utils
 
 
-class FairseqMConfig(object):
+class FairseqConfig(object):
 
     def __init__(self):
         # super().__init__()
@@ -28,5 +28,5 @@ class FairseqMConfig(object):
     #     pass
 
     @classmethod
-    def build_mconfig(cls, config, task):
+    def build_config(cls, config, task):
         raise NotImplementedError("Model must implement the build_model method")

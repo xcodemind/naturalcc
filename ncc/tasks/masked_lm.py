@@ -33,12 +33,16 @@ from ncc.data.prepend_token_dataset import PrependTokenDataset
 from ncc.data.sort_dataset import SortDataset
 from ncc.data.token_block_dataset import TokenBlockDataset
 
+from tokenizers import ByteLevelBPETokenizer
+from tokenizers.processors import BertProcessing
+from pathlib import Path
+
 from .fairseq_task import FairseqTask
 from . import register_task
 from ncc.data.encoder.utils import get_whole_word_mask
 from ncc.utils import utils
-# from ncc.model.bert.modeling_bert import BertForMaskedLM
-# from ncc.model.bert.modeling_roberta import RobertaForMaskedLM
+# from ncc.models.bert.modeling_bert import BertForMaskedLM
+# from ncc.models.bert.modeling_roberta import RobertaForMaskedLM
 # from ncc.config.bert.configuration_bert import BertConfig
 # from ncc.config.bert.configuration_roberta import RobertaConfig
 # from ncc.data.tokenizer.tokenization_bert import BertTokenizer
@@ -97,6 +101,25 @@ class MaskedLMTask(FairseqTask):
         # logger.info('dictionary: {} types'.format(len(dictionary)))
         tokenizer = RobertaTokenizer.from_pretrained(args['dataset']['tokenizer_name'], cache_dir=args['checkpoint']['cache_dir'])
         return cls(args, tokenizer)
+
+    def load_dataset(self, split):
+        tokenizer = ByteLevelBPETokenizer(
+            os.path.join(self.args['dataset']['tokenizer_name'], 'vocab.json'),
+            os.path.join(self.args['dataset']['tokenizer_name'], 'merges.txt'),
+        )
+        tokenizer._tokenizer.post_processor = BertProcessing(
+            ("</s>", tokenizer.token_to_id("</s>")),
+            ("<s>", tokenizer.token_to_id("<s>")),
+        )
+        tokenizer.enable_truncation(max_length=512)
+        # or use the RobertaTokenizer from `transformers` directly.
+
+        self.examples = []
+        src_file = Path(self.args['dataset']['train_data_file'])
+        # src_files = Path("./data/").glob("*-eval.txt") if evaluate else Path("./data/").glob("*-train.txt")
+        # for src_file in src_files:
+        lines = src_file.read_text(encoding="utf-8").splitlines()
+        self.examples += [x.ids for x in tokenizer.encode_batch(lines)]
 
     def load_dataset_(self, split, epoch=1, combine=False, **kwargs):
         """Load a given dataset split.

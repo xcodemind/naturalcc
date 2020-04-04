@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from ncc import *
 from ncc.data import *
 from ncc.metric import *
-from ncc.model.template import *
+from ncc.models.template import *
 from ncc.utils.util_data import batch_to_cuda
 from ncc.utils.util_eval import eval_metrics, calculate_scores_multi_dataset, eval_per_metrics, \
     normalize, ACC, MAP, MRR, NDCG

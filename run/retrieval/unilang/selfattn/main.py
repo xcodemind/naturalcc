@@ -5,7 +5,7 @@ sys.path.append('.')
 
 from run.util import *
 from ncc.metric.base import *
-from ncc.model.retrieval.unilang import *
+from ncc.models.retrieval.unilang import *
 from ncc.trainer.retrieval.unilang import *
 from ncc.eval import *
 
