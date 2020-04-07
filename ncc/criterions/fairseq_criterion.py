@@ -19,8 +19,9 @@ class FairseqCriterion(_Loss):
         super().__init__()
         self.task = task
         if hasattr(task, 'target_dictionary'):
-            tgt_dict = task.target_dictionary
-            self.padding_idx = tgt_dict.pad() if tgt_dict is not None else -100
+            # tgt_dict = task.target_dictionary
+            # self.padding_idx = tgt_dict.pad() if tgt_dict is not None else -100
+            self.padding_idx = task.tokenizer.pad_token_id
 
     @staticmethod
     def add_args(parser):

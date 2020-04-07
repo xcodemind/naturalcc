@@ -33,7 +33,7 @@ from .hub_interface import RobertaHubInterface
 logger = logging.getLogger(__name__)
 
 
-@register_model('roberta')
+# @register_model('roberta')
 class RobertaModel(FairseqLanguageModel):
 
     @classmethod

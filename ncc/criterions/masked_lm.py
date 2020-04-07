@@ -36,10 +36,17 @@ class MaskedLmLoss(FairseqCriterion):
             masked_tokens,
             masked_tokens.new([True]),
         )
+        # inputs = masked_tokens
 
-        logits = model(**sample['net_input'], masked_tokens=masked_tokens)[0]
-        targets = model.get_targets(sample, [logits])
-        targets = targets[masked_tokens]
+        # logits = model(**sample['net_input'], masked_tokens=masked_tokens)[0]
+        # targets = model.get_targets(sample, [logits])
+        # targets = targets[masked_tokens]
+
+        # (masked_lm_loss), prediction_scores, (hidden_states), (attentions)
+        outputs = model(sample['net_input']['src_tokens'], masked_lm_labels=sample['target'])# if args.mlm else model(inputs, labels=labels)
+        logits = outputs[1]
+        # targets = model.get_targets(sample, [logits])
+        # targets = targets[masked_tokens]
 
         loss = F.nll_loss(
             F.log_softmax(
@@ -47,7 +54,7 @@ class MaskedLmLoss(FairseqCriterion):
                 dim=-1,
                 dtype=torch.float32,
             ),
-            targets.view(-1),
+            sample['target'].view(-1),
             reduction='sum',
             ignore_index=self.padding_idx,
         )

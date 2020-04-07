@@ -12,6 +12,8 @@ import numpy as np
 import torch
 
 from .fairseq_dataset import FairseqDataset
+from tokenizers import ByteLevelBPETokenizer
+from tokenizers.processors import BertProcessing
 
 
 def __best_fitting_dtype(vocab_size=None):
@@ -48,7 +50,7 @@ def make_builder(out_file, impl, vocab_size=None):
         return IndexedDatasetBuilder(out_file)
 
 
-def make_dataset(path, impl, fix_lua_indexing=False, dictionary=None):
+def make_dataset(path, impl, fix_lua_indexing=False, dictionary=None, tokenizer=None):
     if impl == 'raw' and IndexedRawTextDataset.exists(path):
         assert dictionary is not None
         return IndexedRawTextDataset(path, dictionary)
@@ -58,6 +60,8 @@ def make_dataset(path, impl, fix_lua_indexing=False, dictionary=None):
         return IndexedCachedDataset(path, fix_lua_indexing=fix_lua_indexing)
     elif impl == 'mmap' and MMapIndexedDataset.exists(path):
         return MMapIndexedDataset(path)
+    elif impl == 'bert':
+        return BertDataset(path, dictionary, tokenizer)
     return None
 
 
@@ -251,6 +255,79 @@ class IndexedRawTextDataset(FairseqDataset):
                 self.tokens_list.append(tokens)
                 self.sizes.append(len(tokens))
         self.sizes = np.array(self.sizes)
+
+    def check_index(self, i):
+        if i < 0 or i >= self.size:
+            raise IndexError('index out of range')
+
+    @lru_cache(maxsize=8)
+    def __getitem__(self, i):
+        self.check_index(i)
+        return self.tokens_list[i]
+
+    def get_original_text(self, i):
+        self.check_index(i)
+        return self.lines[i]
+
+    def __del__(self):
+        pass
+
+    def __len__(self):
+        return self.size
+
+    def num_tokens(self, index):
+        return self.sizes[index]
+
+    def size(self, index):
+        return self.sizes[index]
+
+    @staticmethod
+    def exists(path):
+        return os.path.exists(path)
+
+class BertDataset(FairseqDataset):
+    def __init__(self, path, dictionary, tokenizer):
+        self.tokens_list = []
+        self.lines = []
+        self.sizes = []
+        # self.append_eos = append_eos
+        # self.reverse_order = reverse_order
+        self.read_data(path, dictionary, tokenizer)
+        self.size = len(self.tokens_list)
+
+    def read_data(self, path, dictionary, tokenizer, block_size=512):
+        # tokenizer = ByteLevelBPETokenizer(
+        #     os.path.join(self.args['dataset']['tokenizer_name'], 'vocab.json'),
+        #     os.path.join(self.args['dataset']['tokenizer_name'], 'merges.txt'),
+        # )
+        # tokenizer._tokenizer.post_processor = BertProcessing(
+        #     ("</s>", tokenizer.token_to_id("</s>")),
+        #     ("<s>", tokenizer.token_to_id("<s>")),
+        # )
+        # tokenizer.enable_truncation(max_length=512)
+
+        # or use the RobertaTokenizer from `transformers` directly.
+        with open(path, 'r', encoding='utf-8') as f:
+            # for line in f:
+            #     self.lines.append(line.strip('\n'))
+            #     tokens = dictionary.encode_line(
+            #         line, add_if_not_exist=False,
+            #         append_eos=self.append_eos, reverse_order=self.reverse_order,
+            #     ).long()
+            #     self.tokens_list.append(tokens)
+            #     self.sizes.append(len(tokens))
+
+            # text = f.read()
+            # tokenized_text = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(text))
+
+            self.lines = [line for line in f.read().splitlines() if (len(line) > 0 and not line.isspace())]
+
+            # for i in range(0, len(tokenized_text) - block_size + 1, block_size):  # Truncate in block of block_size
+            #     self.tokens_list.append(tokenizer.build_inputs_with_special_tokens(tokenized_text[i: i + block_size]))
+            # self.sizes = np.array(self.sizes)
+        self.tokens_list = tokenizer.batch_encode_plus(self.lines, add_special_tokens=True, max_length=block_size)["input_ids"]
+        self.sizes = np.array([len(tok) for tok in self.tokens_list])
+        self.tokens_list = [torch.LongTensor(tok) for tok in self.tokens_list]
 
     def check_index(self, i):
         if i < 0 or i >= self.size:

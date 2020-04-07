@@ -162,7 +162,7 @@ class RobertaModel(BertModel):
     def build_model(cls, args, config, task): # TODO: task is unnecessary here.
         return cls(config)
 
-
+@register_model('roberta_masked_lm')
 @add_start_docstrings("""RoBERTa Model with a `language modeling` head on top. """, ROBERTA_START_DOCSTRING)
 class RobertaForMaskedLM(BertPreTrainedModel):
     config_class = RobertaConfig
@@ -248,6 +248,9 @@ class RobertaForMaskedLM(BertPreTrainedModel):
 
         return outputs  # (masked_lm_loss), prediction_scores, (hidden_states), (attentions)
 
+    @classmethod
+    def build_model(cls, args, config, task):  # TODO: task is unnecessary here.
+        return cls(config)
 
 class RobertaLMHead(nn.Module):
     """Roberta Head for masked language modeling."""

@@ -239,7 +239,6 @@ class Trainer(object):
         shard_batch_itr=True,
     ):
         """Return an EpochBatchIterator over the training set for a given epoch."""
-        print('load_dataset: ', load_dataset)
         if load_dataset:
             logger.info("loading train data for epoch {}".format(epoch))
             self.task.load_dataset(

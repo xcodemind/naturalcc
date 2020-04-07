@@ -57,7 +57,7 @@ class MaskTokensDataset(BaseWrapperDataset):
     def __init__(
         self,
         dataset: torch.utils.data.Dataset,
-        vocab: Dictionary,
+        tokenizer, #: Dictionary,
         pad_idx: int,
         mask_idx: int,
         return_masked_tokens: bool = False,
@@ -74,7 +74,7 @@ class MaskTokensDataset(BaseWrapperDataset):
         assert random_token_prob + leave_unmasked_prob <= 1.0
 
         self.dataset = dataset
-        self.vocab = vocab
+        self.tokenizer = tokenizer
         self.pad_idx = pad_idx
         self.mask_idx = mask_idx
         self.return_masked_tokens = return_masked_tokens
@@ -86,10 +86,11 @@ class MaskTokensDataset(BaseWrapperDataset):
 
         if random_token_prob > 0.0:
             if freq_weighted_replacement:
-                weights = np.array(self.vocab.count)
+                # weights = np.array(self.vocab.count)
+                pass
             else:
-                weights = np.ones(len(self.vocab))
-            weights[:self.vocab.nspecial] = 0
+                weights = np.ones(self.tokenizer.vocab_size)
+            weights[:len(self.tokenizer.all_special_ids)] = 0
             self.weights = weights / weights.sum()
 
         self.epoch = 0
@@ -167,7 +168,7 @@ class MaskTokensDataset(BaseWrapperDataset):
                         num_rand = rand_mask.sum()
 
                     new_item[rand_mask] = np.random.choice(
-                        len(self.vocab),
+                        self.tokenizer.vocab_size, #len(self.vocab), # TODO: to verify
                         num_rand,
                         p=self.weights,
                     )

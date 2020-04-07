@@ -159,12 +159,8 @@ class FairseqTask(object):
         # For default fairseq task, return same iterator across epochs
         # as datasets are not dynamic, can be overridden in task specific
         # setting.
-        print('dataset: ', dataset)
-        print('self.dataset_to_epoch_iter: ', self.dataset_to_epoch_iter)
         if dataset in self.dataset_to_epoch_iter:
             return self.dataset_to_epoch_iter[dataset]
-        print('dataset: ', dataset)
-        print('isinstance(dataset, FairseqDataset)-: ', isinstance(dataset, FairseqDataset))
         assert isinstance(dataset, FairseqDataset)
 
         # initialize the dataset with the correct starting epoch

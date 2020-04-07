@@ -110,17 +110,51 @@ class TextDataset(Dataset):
 
 
 class LineByLineTextDataset(Dataset):
-    def __init__(self, tokenizer: PreTrainedTokenizer, args, file_path: str, block_size=512):
+    # def __init__(self, tokenizer: PreTrainedTokenizer, args, file_path: str, block_size=512):
+    #     assert os.path.isfile(file_path)
+    #     # Here, we do not cache the features, operating under the assumption
+    #     # that we will soon use fast multithreaded tokenizers from the
+    #     # `tokenizers` repo everywhere =)
+    #     logger.info("Creating features from dataset file at %s", file_path)
+    #
+    #     with open(file_path, encoding="utf-8") as f:
+    #         lines = [line for line in f.read().splitlines() if (len(line) > 0 and not line.isspace())]
+    #
+    #     self.examples = tokenizer.batch_encode_plus(lines, add_special_tokens=True, max_length=block_size)["input_ids"]
+    def __init__(self, t: PreTrainedTokenizer, args, file_path: str, block_size=512):
         assert os.path.isfile(file_path)
-        # Here, we do not cache the features, operating under the assumption
-        # that we will soon use fast multithreaded tokenizers from the
-        # `tokenizers` repo everywhere =)
         logger.info("Creating features from dataset file at %s", file_path)
+        # -------------------------- CHANGES START
+        bert_tokenizer = os.path.join(args.tokenizer_name, "vocab.txt")
+        if os.path.exists(bert_tokenizer):
+            logger.info("Loading BERT tokenizer")
+            from tokenizers import BertWordPieceTokenizer
+            tokenizer = BertWordPieceTokenizer(os.path.join(args.tokenizer_name, "vocab.txt"),
+                                               handle_chinese_chars=False, lowercase=False)
+            tokenizer.enable_truncation(512)
+        else:
+            from tokenizers import ByteLevelBPETokenizer
+            from tokenizers.processors import BertProcessing
+            logger.info("Loading RoBERTa tokenizer")
 
+            tokenizer = ByteLevelBPETokenizer(
+                os.path.join(args.tokenizer_name, "vocab.json"),
+                os.path.join(args.tokenizer_name, "merges.txt")
+            )
+            tokenizer._tokenizer.post_processor = BertProcessing(
+                ("</s>", tokenizer.token_to_id("</s>")),
+                ("<s>", tokenizer.token_to_id("<s>")),
+            )
+            tokenizer.enable_truncation(max_length=512)
+
+        logger.info("Reading file %s", file_path)
         with open(file_path, encoding="utf-8") as f:
             lines = [line for line in f.read().splitlines() if (len(line) > 0 and not line.isspace())]
 
-        self.examples = tokenizer.batch_encode_plus(lines, add_special_tokens=True, max_length=block_size)["input_ids"]
+        logger.info("Running tokenization")
+        self.examples = tokenizer.encode_batch(lines)
+
+        # -------------------------- CHANGES END
 
     def __len__(self):
         return len(self.examples)

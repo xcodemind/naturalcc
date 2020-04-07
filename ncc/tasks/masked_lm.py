@@ -91,6 +91,8 @@ class MaskedLMTask(FairseqTask):
         # # add mask token
         # self.mask_idx = dictionary.add_symbol('<mask>')、
         self.tokenizer = tokenizer
+        # self.mask_idx = self.tokenizer.mask_token_id
+
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -102,24 +104,101 @@ class MaskedLMTask(FairseqTask):
         tokenizer = RobertaTokenizer.from_pretrained(args['dataset']['tokenizer_name'], cache_dir=args['checkpoint']['cache_dir'])
         return cls(args, tokenizer)
 
-    def load_dataset(self, split):
-        tokenizer = ByteLevelBPETokenizer(
-            os.path.join(self.args['dataset']['tokenizer_name'], 'vocab.json'),
-            os.path.join(self.args['dataset']['tokenizer_name'], 'merges.txt'),
-        )
-        tokenizer._tokenizer.post_processor = BertProcessing(
-            ("</s>", tokenizer.token_to_id("</s>")),
-            ("<s>", tokenizer.token_to_id("<s>")),
-        )
-        tokenizer.enable_truncation(max_length=512)
-        # or use the RobertaTokenizer from `transformers` directly.
+    def build_model(self, args, config):
+        """
+        Build the :class:`~fairseq.models.BaseFairseqModel` instance for this
+        task.
 
-        self.examples = []
-        src_file = Path(self.args['dataset']['train_data_file'])
-        # src_files = Path("./data/").glob("*-eval.txt") if evaluate else Path("./data/").glob("*-train.txt")
-        # for src_file in src_files:
-        lines = src_file.read_text(encoding="utf-8").splitlines()
-        self.examples += [x.ids for x in tokenizer.encode_batch(lines)]
+        Args:
+            args (argparse.Namespace): parsed command-line arguments
+
+        Returns:
+            a :class:`~fairseq.models.BaseFairseqModel` instance
+        """
+        from ncc import models
+        # assert 0
+        args['model']['arch'] = '{}_{}'.format(args['model']['arch'], args['common']['task'])
+        return models.build_model(args, config, self)
+
+    def load_dataset(self, split, epoch=1, combine=False, **kwargs):
+        paths = utils.split_paths(self.args['task']['data'])
+        assert len(paths) > 0
+        data_path = paths[(epoch - 1) % len(paths)]
+        split_path = os.path.join(data_path, 'wiki.{}.raw'.format(split))
+        print('combine: ', combine)
+
+        dataset = data_utils.load_indexed_dataset(
+            path=split_path,
+            dictionary=None,
+            tokenizer=self.tokenizer,
+            dataset_impl=self.args['dataset']['dataset_impl'],
+            combine=combine,
+        )
+        if dataset is None:
+            raise FileNotFoundError('Dataset not found: {} ({})'.format(split, split_path))
+
+        # create continuous blocks of tokens
+        dataset = TokenBlockDataset(
+            dataset,
+            dataset.sizes,
+            self.args['task']['tokens_per_sample'] - 1,  # one less for <s>
+            pad=self.tokenizer.pad_token_id,  # source_dictionary.pad(),
+            eos=self.tokenizer.eos_token_id,  # .source_dictionary.eos(),
+            break_mode=self.args['task']['sample_break_mode'],
+        )
+        logger.info('loaded {} blocks from: {}'.format(len(dataset), split_path))
+
+        # # prepend beginning-of-sentence token (<s>, equiv. to [CLS] in BERT)
+        # dataset = PrependTokenDataset(dataset, self.tokenizer.bos_token_id) # .source_dictionary.bos()
+        #
+        # # create masked input and targets
+        mask_whole_words = get_whole_word_mask(self.args, self.source_dictionary) \
+            if self.args['task']['mask_whole_words'] else None
+        #
+        src_dataset, tgt_dataset = MaskTokensDataset.apply_mask(
+            dataset,
+            # self.source_dictionary,
+            tokenizer=self.tokenizer,
+            pad_idx=self.tokenizer.pad_token_id, # .source_dictionary.pad(),
+            mask_idx=self.tokenizer.mask_token_id, #self.mask_idx,
+            seed=self.args['common']['seed'],
+            mask_prob=self.args['task']['mask_prob'],
+            leave_unmasked_prob=self.args['task']['leave_unmasked_prob'],
+            random_token_prob=self.args['task']['random_token_prob'],
+            freq_weighted_replacement=self.args['task']['freq_weighted_replacement'],
+            mask_whole_words=mask_whole_words,
+        )
+
+        with data_utils.numpy_seed(self.args['common']['seed'] + epoch):
+            shuffle = np.random.permutation(len(src_dataset))
+
+        self.datasets[split] = SortDataset(
+            NestedDictionaryDataset(
+                {
+                    'id': IdDataset(),
+                    'net_input': {
+                        'src_tokens': PadDataset(
+                            src_dataset,
+                            pad_idx=self.tokenizer.pad_token_id, #source_dictionary.pad(),
+                            left_pad=False,
+                        ),
+                        'src_lengths': NumelDataset(src_dataset, reduce=False),
+                    },
+                    'target': PadDataset(
+                        tgt_dataset,
+                        pad_idx=self.tokenizer.pad_token_id, #self.source_dictionary.pad(),
+                        left_pad=False,
+                    ),
+                    'nsentences': NumSamplesDataset(),
+                    'ntokens': NumelDataset(src_dataset, reduce=True),
+                },
+                sizes=[src_dataset.sizes],
+            ),
+            sort_order=[
+                shuffle,
+                src_dataset.sizes,
+            ],
+        )
 
     def load_dataset_(self, split, epoch=1, combine=False, **kwargs):
         """Load a given dataset split.
@@ -231,10 +310,10 @@ class MaskedLMTask(FairseqTask):
     #         src_dataset = SortDataset(src_dataset, sort_order=[src_lengths])
     #     return src_dataset
     #
-    # @property
-    # def source_dictionary(self):
-    #     return self.dictionary
-    #
-    # @property
-    # def target_dictionary(self):
-    #     return self.dictionary
+    @property
+    def source_dictionary(self):
+        return self.tokenizer.encoder
+
+    @property
+    def target_dictionary(self):
+        return self.tokenizer.encoder

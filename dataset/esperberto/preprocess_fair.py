@@ -442,7 +442,7 @@ if __name__ == "__main__":
     # Task definitions can be found under fairseq/tasks/
     from ncc.tasks import TASK_REGISTRY
 
-    parser.add_argument('--task', metavar='TASK', default="translation",
+    parser.add_argument('--task', metavar='TASK', default="masked_lm",
                         choices=TASK_REGISTRY.keys(),
                         help='task')
     # fmt: on

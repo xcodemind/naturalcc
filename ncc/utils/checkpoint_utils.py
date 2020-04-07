@@ -25,14 +25,14 @@ def save_checkpoint(args, trainer, epoch_itr, val_loss):
     from ncc.utils import distributed_utils
     prev_best = getattr(save_checkpoint, "best", val_loss)
     if val_loss is not None:
-        best_function = max if args.maximize_best_checkpoint_metric else min
+        best_function = max if args['checkpoint']['maximize_best_checkpoint_metric'] else min
         save_checkpoint.best = best_function(val_loss, prev_best)
 
-    if args.no_save or not distributed_utils.is_master(args):
+    if args['checkpoint']['no_save'] or not distributed_utils.is_master(args):
         return
 
     def is_better(a, b):
-        return a >= b if args.maximize_best_checkpoint_metric else a <= b
+        return a >= b if args['checkpoint']['maximize_best_checkpoint_metric'] else a <= b
 
     write_timer = meters.StopwatchMeter()
     write_timer.start()
@@ -44,32 +44,32 @@ def save_checkpoint(args, trainer, epoch_itr, val_loss):
     checkpoint_conds = collections.OrderedDict()
     checkpoint_conds["checkpoint{}.pt".format(epoch)] = (
         end_of_epoch
-        and not args.no_epoch_checkpoints
-        and epoch % args.save_interval == 0
+        and not args['checkpoint']['no_epoch_checkpoints']
+        and epoch % args['checkpoint']['save_interval'] == 0
     )
     checkpoint_conds["checkpoint_{}_{}.pt".format(epoch, updates)] = (
         not end_of_epoch
-        and args.save_interval_updates > 0
-        and updates % args.save_interval_updates == 0
+        and args['checkpoint']['save_interval_updates'] > 0
+        and updates % args['checkpoint']['save_interval_updates'] == 0
     )
     checkpoint_conds["checkpoint_best.pt"] = val_loss is not None and (
         not hasattr(save_checkpoint, "best")
         or is_better(val_loss, save_checkpoint.best)
     )
-    if val_loss is not None and args.keep_best_checkpoints > 0:
+    if val_loss is not None and args['checkpoint']['keep_best_checkpoints'] > 0:
         checkpoint_conds["checkpoint.best_{}_{:.2f}.pt".format(
-            args.best_checkpoint_metric, val_loss)] = (
+            args['checkpoint']['best_checkpoint_metric'], val_loss)] = (
             not hasattr(save_checkpoint, "best")
             or is_better(val_loss, save_checkpoint.best)
         )
-    checkpoint_conds["checkpoint_last.pt"] = not args.no_last_checkpoints
+    checkpoint_conds["checkpoint_last.pt"] = not args['checkpoint']['no_last_checkpoints']
 
     extra_state = {"train_iterator": epoch_itr.state_dict(), "val_loss": val_loss}
     if hasattr(save_checkpoint, "best"):
         extra_state.update({"best": save_checkpoint.best})
 
     checkpoints = [
-        os.path.join(args.save_dir, fn) for fn, cond in checkpoint_conds.items() if cond
+        os.path.join(args['checkpoint']['save_dir'], fn) for fn, cond in checkpoint_conds.items() if cond
     ]
     if len(checkpoints) > 0:
         trainer.save_checkpoint(checkpoints[0], extra_state)
@@ -83,29 +83,29 @@ def save_checkpoint(args, trainer, epoch_itr, val_loss):
             )
         )
 
-    if not end_of_epoch and args.keep_interval_updates > 0:
+    if not end_of_epoch and args['checkpoint']['keep_interval_updates'] > 0:
         # remove old checkpoints; checkpoints are sorted in descending order
         checkpoints = checkpoint_paths(
-            args.save_dir, pattern=r"checkpoint_\d+_(\d+)\.pt"
+            args['checkpoint']['save_dir'], pattern=r"checkpoint_\d+_(\d+)\.pt"
         )
-        for old_chk in checkpoints[args.keep_interval_updates :]:
+        for old_chk in checkpoints[args['checkpoint']['keep_interval_updates'] :]:
             if os.path.lexists(old_chk):
                 os.remove(old_chk)
 
-    if args.keep_last_epochs > 0:
+    if args['checkpoint']['keep_last_epochs'] > 0:
         # remove old epoch checkpoints; checkpoints are sorted in descending order
-        checkpoints = checkpoint_paths(args.save_dir, pattern=r"checkpoint(\d+)\.pt")
-        for old_chk in checkpoints[args.keep_last_epochs :]:
+        checkpoints = checkpoint_paths(args['checkpoint']['save_dir'], pattern=r"checkpoint(\d+)\.pt")
+        for old_chk in checkpoints[args['checkpoint']['keep_last_epochs'] :]:
             if os.path.lexists(old_chk):
                 os.remove(old_chk)
 
-    if args.keep_best_checkpoints > 0:
+    if args['checkpoint']['keep_best_checkpoints'] > 0:
         # only keep the best N checkpoints according to validation metric
         checkpoints = checkpoint_paths(
-            args.save_dir, pattern=r"checkpoint\.best_{}_(\d+\.?\d*)\.pt".format(args.best_checkpoint_metric))
-        if not args.maximize_best_checkpoint_metric:
+            args['checkpoint']['save_dir'], pattern=r"checkpoint\.best_{}_(\d+\.?\d*)\.pt".format(args['checkpoint']['best_checkpoint_metric']))
+        if not args['checkpoint']['maximize_best_checkpoint_metric']:
             checkpoints = checkpoints[::-1]
-        for old_chk in checkpoints[args.keep_best_checkpoints:]:
+        for old_chk in checkpoints[args['checkpoint']['keep_best_checkpoints']:]:
             if os.path.lexists(old_chk):
                 os.remove(old_chk)
 
@@ -284,7 +284,7 @@ def save_state(
     }
     if utils.has_parameters(criterion):
         state_dict["criterion"] = criterion.state_dict()
-    if not args.no_save_optimizer_state:
+    if not args['checkpoint']['no_save_optimizer_state']:
         state_dict["last_optimizer_state"] = convert_state_dict_type(
             optimizer.state_dict()
         )
@@ -295,7 +295,7 @@ def save_state(
 
 def _upgrade_state_dict(state):
     """Helper for upgrading old model checkpoints."""
-    from ncc import model, registry, tasks
+    from ncc import models, registry, tasks
 
     # add optimizer_history
     if "optimizer_history" not in state:
@@ -361,7 +361,7 @@ def _upgrade_state_dict(state):
 
     # set any missing default values in the task, model or other registries
     registry.set_defaults(state["args"], tasks.TASK_REGISTRY[state["args"].task])
-    registry.set_defaults(state["args"], model.ARCH_MODEL_REGISTRY[state["args"].arch])
+    registry.set_defaults(state["args"], models.ARCH_MODEL_REGISTRY[state["args"].arch])
     for registry_name, REGISTRY in registry.REGISTRIES.items():
         choice = getattr(state["args"], registry_name, None)
         if choice is not None:
@@ -382,77 +382,78 @@ def prune_state_dict(state_dict, args):
     It's called by functions that load models from checkpoints and does not
     need to be called directly.
     """
-    if not args or args.arch == "ptt_transformer":
-        # args should not be none, but don't crash if it is.
-        return state_dict
-
-    encoder_layers_to_keep = (
-        args.encoder_layers_to_keep if "encoder_layers_to_keep" in vars(args) else None
-    )
-    decoder_layers_to_keep = (
-        args.decoder_layers_to_keep if "decoder_layers_to_keep" in vars(args) else None
-    )
-
-    if not encoder_layers_to_keep and not decoder_layers_to_keep:
-        return state_dict
-
-    # apply pruning
-    logger.info(
-        "Pruning model to specified layer configuration - this works best if the model was trained with LayerDrop"
-    )
-
-    def create_pruning_pass(layers_to_keep, layer_name):
-        keep_layers = sorted(
-            [int(layer_string) for layer_string in layers_to_keep.split(",")]
-        )
-        mapping_dict = {}
-        for i in range(len(keep_layers)):
-            mapping_dict[str(keep_layers[i])] = str(i)
-
-        regex = re.compile("^{layer}.*\.layers\.(\d+)".format(layer=layer_name))
-        return {"substitution_regex": regex, "mapping_dict": mapping_dict}
-
-    pruning_passes = []
-    if encoder_layers_to_keep:
-        pruning_passes.append(create_pruning_pass(encoder_layers_to_keep, "encoder"))
-    if decoder_layers_to_keep:
-        pruning_passes.append(create_pruning_pass(decoder_layers_to_keep, "decoder"))
-
-    new_state_dict = {}
-    for layer_name in state_dict.keys():
-        match = re.search("\.layers\.(\d+)\.", layer_name)
-        # if layer has no number in it, it is a supporting layer, such as an
-        # embedding
-        if not match:
-            new_state_dict[layer_name] = state_dict[layer_name]
-            continue
-
-        # otherwise, layer should be pruned.
-        original_layer_number = match.group(1)
-        # figure out which mapping dict to replace from
-        for pruning_pass in pruning_passes:
-            if original_layer_number in pruning_pass["mapping_dict"] and pruning_pass[
-                "substitution_regex"
-            ].search(layer_name):
-                new_layer_number = pruning_pass["mapping_dict"][original_layer_number]
-                substitution_match = pruning_pass["substitution_regex"].search(
-                    layer_name
-                )
-                new_state_key = (
-                    layer_name[: substitution_match.start(1)]
-                    + new_layer_number
-                    + layer_name[substitution_match.end(1) :]
-                )
-                new_state_dict[new_state_key] = state_dict[layer_name]
-
-    # Since layers are now pruned, *_layers_to_keep are no longer needed.
-    # This is more of "It would make it work fix" rather than a proper fix.
-    if "encoder_layers_to_keep" in vars(args):
-        args.encoder_layers_to_keep = None
-    if "decoder_layers_to_keep" in vars(args):
-        args.decoder_layers_to_keep = None
-
-    return new_state_dict
+    pass
+#     if not args or args['model']['arch'] == "ptt_transformer":
+#         # args should not be none, but don't crash if it is.
+#         return state_dict
+#
+#     encoder_layers_to_keep = (
+#         args.encoder_layers_to_keep if "encoder_layers_to_keep" in vars(args) else None
+#     )
+#     decoder_layers_to_keep = (
+#         args.decoder_layers_to_keep if "decoder_layers_to_keep" in vars(args) else None
+#     )
+#
+#     if not encoder_layers_to_keep and not decoder_layers_to_keep:
+#         return state_dict
+#
+#     # apply pruning
+#     logger.info(
+#         "Pruning model to specified layer configuration - this works best if the model was trained with LayerDrop"
+#     )
+#
+#     def create_pruning_pass(layers_to_keep, layer_name):
+#         keep_layers = sorted(
+#             [int(layer_string) for layer_string in layers_to_keep.split(",")]
+#         )
+#         mapping_dict = {}
+#         for i in range(len(keep_layers)):
+#             mapping_dict[str(keep_layers[i])] = str(i)
+#
+#         regex = re.compile("^{layer}.*\.layers\.(\d+)".format(layer=layer_name))
+#         return {"substitution_regex": regex, "mapping_dict": mapping_dict}
+#
+#     pruning_passes = []
+#     if encoder_layers_to_keep:
+#         pruning_passes.append(create_pruning_pass(encoder_layers_to_keep, "encoder"))
+#     if decoder_layers_to_keep:
+#         pruning_passes.append(create_pruning_pass(decoder_layers_to_keep, "decoder"))
+#
+#     new_state_dict = {}
+#     for layer_name in state_dict.keys():
+#         match = re.search("\.layers\.(\d+)\.", layer_name)
+#         # if layer has no number in it, it is a supporting layer, such as an
+#         # embedding
+#         if not match:
+#             new_state_dict[layer_name] = state_dict[layer_name]
+#             continue
+#
+#         # otherwise, layer should be pruned.
+#         original_layer_number = match.group(1)
+#         # figure out which mapping dict to replace from
+#         for pruning_pass in pruning_passes:
+#             if original_layer_number in pruning_pass["mapping_dict"] and pruning_pass[
+#                 "substitution_regex"
+#             ].search(layer_name):
+#                 new_layer_number = pruning_pass["mapping_dict"][original_layer_number]
+#                 substitution_match = pruning_pass["substitution_regex"].search(
+#                     layer_name
+#                 )
+#                 new_state_key = (
+#                     layer_name[: substitution_match.start(1)]
+#                     + new_layer_number
+#                     + layer_name[substitution_match.end(1) :]
+#                 )
+#                 new_state_dict[new_state_key] = state_dict[layer_name]
+#
+#     # Since layers are now pruned, *_layers_to_keep are no longer needed.
+#     # This is more of "It would make it work fix" rather than a proper fix.
+#     if "encoder_layers_to_keep" in vars(args):
+#         args.encoder_layers_to_keep = None
+#     if "decoder_layers_to_keep" in vars(args):
+#         args.decoder_layers_to_keep = None
+#
+#     return new_state_dict
 
 
 # def load_pretrained_component_from_model(

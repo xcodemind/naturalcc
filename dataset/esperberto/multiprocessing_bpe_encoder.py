@@ -8,11 +8,11 @@
 import argparse
 import contextlib
 import sys
-
+# sys.path.append('../..')
 from collections import Counter
 from multiprocessing import Pool
 
-from ..utils.gpt2_bpe_utils import get_encoder
+from ncc.utils.gpt2_bpe_utils import get_encoder
 
 
 def main():
