@@ -1,64 +1,55 @@
 # -*- coding: utf-8 -*-
-
 import os
-import sys
-
-sys.path.append(os.path.abspath('.'))
-
 # *refrenence: https://github.com/github/CodeSearchNet/blob/master/notebooks/ExploreData.ipynb
-
 import itertools
 from glob import glob
 import pandas as pd
-
-from typing import *
-
-from dataset.utils.constants import LANGUAGES, MODES
+from typing import Dict
+from dataset.codesearchnet.utils import constants
 from ncc.utils.utils import mkdir
-
+import argparse
 
 def download(data_dir: str) -> None:
     # step 1: download original data from
     #          https://s3.amazonaws.com/code-search-net/CodeSearchNet/v2/{python,java,go,php,ruby,javascript}.zip
     mkdir(data_dir)
 
-    for lang in LANGUAGES:
+    for lang in constants.LANGUAGES:
         data_file = os.path.join(data_dir, '{}.zip'.format(lang))
         if os.path.exists(data_file):
             print('file {} exists, skip this one.'.format(data_file))
         else:
-            # pass
             os.system('wget -P  https://s3.amazonaws.com/code-search-net/CodeSearchNet/v2/{}}.zip'.format(lang))
 
 
 def preprocess(data_dir: str) -> Dict:
     # step 2: unzip *.zip and futhermore, unzip its train/valid/test.zip dataset
     gz_files = {}
-    for lang in LANGUAGES:
-        data_file = os.path.join(data_dir, '{}.zip'.format(lang))
+    for lang in constants.LANGUAGES:
+        zip_file = os.path.join(data_dir, '{}.zip'.format(lang))
         if os.path.exists(os.path.join(data_dir, lang)):
             # if data_dir has already been unzipped, skip *.zip file
             pass
         else:
-            os.system('unzip -d {} {}'.format(data_dir, data_file))
+            os.system('unzip -d {} {}'.format(data_dir, zip_file))
 
         gz_files[lang] = []
-        for md in MODES:
-            data_file_md = os.path.join(data_dir, lang, 'final/jsonl', md)
-            for md_file in glob('{}/*.jsonl.gz'.format(data_file_md)):
-                gz_files[lang].append(md_file)
+        for mode in constants.MODES:
+            data_folder = os.path.join(data_dir, lang, 'final/jsonl', mode)
+            for gz_file in glob('{}/*.jsonl.gz'.format(data_folder)):
+                gz_files[lang].append(gz_file)
         gz_files[lang] = sorted(gz_files[lang])
     return gz_files
 
 
-def explore(gz_files: Dict) -> None:
+def statistic(gz_files, vis=False):
     # step 3: load gz
-    columns_long_list = ['repo', 'path', 'url', 'code', 'code_tokens', 'docstring',
-                         'docstring_tokens', 'language', 'partition']
+    COLUMNS = ['repo', 'path', 'url', 'code', 'code_tokens', 'docstring',
+               'docstring_tokens', 'language', 'partition']
 
     # columns_short_list = ['code_tokens', 'docstring_tokens', 'language', 'partition']
 
-    def jsonl_list_to_dataframe(file_list, columns=columns_long_list):
+    def jsonl_list_to_dataframe(file_list, columns=COLUMNS):
         """Load a list of jsonl.gz files into a pandas DataFrame."""
         return pd.concat([pd.read_json(f, orient='records', compression='gzip',
                                        lines=True)[columns]
@@ -67,8 +58,18 @@ def explore(gz_files: Dict) -> None:
     all_files = sorted(list(itertools.chain(*gz_files.values())))  # all languages
     # all_files = sorted(gz_files['ruby'])  # ruby only, for test
     all_df = jsonl_list_to_dataframe(all_files)
-    for (lang, md), index in all_df.groupby(['language', 'partition', ]).groups.items():
-        print('{} {}: {}'.format(lang, md, index.size))
+    for (lang, mode), index in all_df.groupby(['language', 'partition', ]).groups.items():
+        print('{} {}: {}'.format(lang, mode, index.size))
+
+    if vis:
+        # plot()
+        pass
+
+def explore(gz_files: Dict) -> None:
+    # 1. data statistics
+    statistic(gz_files)
+
+    # 2. show bad examples
 
 
 if __name__ == '__main__':
@@ -93,8 +94,12 @@ if __name__ == '__main__':
     ruby train: 48791
     ruby valid: 2209
     '''
-
-    data_dir = '/data/wanyao/ghproj_d/CodeSearchNet/data'
-    download(data_dir)
-    gz_files = preprocess(data_dir)
+    parser = argparse.ArgumentParser()
+    # Before creating the true parser, we need to import optional user module
+    # in order to eagerly import custom tasks, optimizers, architectures, etc.
+    parser.add_argument('--data_dir', default='/data/wanyao/ghproj_d/naturalcodev3/codesearchnet/raw')
+    args_ = parser.parse_args()
+    # data_dir = '/data/wanyao/ghproj_d/CodeSearchNet/data'
+    download(args_.data_dir)
+    gz_files = preprocess(args_.data_dir)
     explore(gz_files)

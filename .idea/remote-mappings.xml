@@ -10,6 +10,7 @@
             </list>
           </settings>
         </remote-mappings>
+        <remote-mappings server-id="python@sftp://wanyao@ccnt.prince2015.club:24422/home/wanyao/anaconda3/envs/py37-1.4/bin/python3.7" />
       </list>
     </list>
   </component>

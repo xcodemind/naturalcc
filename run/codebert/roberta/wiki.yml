@@ -52,10 +52,10 @@ dataset:
 #  gen_subset: test # default='test', metavar='SPLIT', help='data subset to generate (train, valid, test)'
 #  num_shards: 1 # default=1, type=int, metavar='N', help='shard generation over N shards'
 #  shard_id: 0 # default=0, type=int, metavar='ID', help='id of the shard to generate (id < num_shards)'
-  train_data_file: /data/wanyao/ghproj_d/naturalcodev3/wikitext-103-raw/wiki.train.raw # type=str, help="The input training data file (a text file)."
+  train_data_file: /data/wanyao/ghproj_d/naturalcodev3/wikitext-103-raw/data/wiki.train.raw # type=str, help="The input training data file (a text file)."
   eval_data_file: ~ # default=None, type=str, help="An optional input evaluation data file to evaluate the perplexity on (a text file).",
   line_by_line: 0 # action="store_true", help="Whether distinct lines of text in the dataset are to be handled as distinct sequences.",
-  tokenizer_name: /data/wanyao/ghproj_d/transformers/models/WikiBERT-small #default='/data/wanyao/ghproj_d/transformers/models/EsperBERTo-small', type=str, help="Optional pretrained tokenizer name or path if not the same as model_name_or_path. If both are None, initialize a new tokenizer.",
+  tokenizer_name: /data/wanyao/ghproj_d/naturalcodev3/wikitext-103-raw/archive/WikiBERT-small #default='/data/wanyao/ghproj_d/transformers/models/EsperBERTo-small', type=str, help="Optional pretrained tokenizer name or path if not the same as model_name_or_path. If both are None, initialize a new tokenizer.",
   block_size: -1 # default=-1, type=int, help="Optional input sequence length after tokenization. The training dataset will be truncated in block of this size for training. Default to the model max input length for single sentence inputs (take into account special tokens).",
   per_gpu_train_batch_size: 16 # default=16, type=int, help="Batch size per GPU/CPU for training."
   per_gpu_eval_batch_size: 4 # default=4, type=int, help="Batch size per GPU/CPU for evaluation."
@@ -81,7 +81,7 @@ distributed_training:
   local_rank: -1 # type=int, default=-1, help="For distributed training: local_rank"
 
 task:
-  data: /data/wanyao/ghproj_d/naturalcodev3/wikitext-103-raw # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: /data/wanyao/ghproj_d/naturalcodev3/wikitext-103-raw/data # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
   tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
   mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
@@ -134,7 +134,7 @@ model:
 #  layernorm_embedding: 0 # action='store_true', help='add layernorm to embedding'
 #  no_scale_embedding: 0 # action='store_true', help='if True, dont scale embeddings'
   arch: roberta # type=str, default='roberta', help="The model architecture to be trained or fine-tuned.",
-  config_name: /data/wanyao/ghproj_d/transformers/models/WikiBERT-small # default='/data/wanyao/ghproj_d/transformers/models/EsperBERTo-small', type=str, help="Optional pretrained config name or path if not the same as model_name_or_path. If both are None, initialize a new config.",
+  config_name: /data/wanyao/ghproj_d/naturalcodev3/wikitext-103-raw/archive/WikiBERT-small # default='/data/wanyao/ghproj_d/transformers/models/EsperBERTo-small', type=str, help="Optional pretrained config name or path if not the same as model_name_or_path. If both are None, initialize a new config.",
 
 optimization:
   max_epoch: 0 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
@@ -195,7 +195,7 @@ checkpoint:
   best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
 #  patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
-  save_dir: /data/wanyao/ghproj_d/transformers/models/WikiBERT-small # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
+  save_dir: /data/wanyao/ghproj_d/naturalcodev3/wikitext-103-raw/archive/WikiBERT-small # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
   model_name_or_path: ~ # default=None, type=str, help="The model checkpoint for weights initialization. Leave None if you want to train a model from scratch.",
   cache_dir: ~ # default=None, type=str, help="Optional directory to store the pre-trained models downloaded from s3 (instead of the default one)",

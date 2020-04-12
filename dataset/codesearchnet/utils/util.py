@@ -1,37 +1,32 @@
 # -*- coding: utf-8 -*-
-
 import os
-import sys
-
-sys.path.append(os.path.abspath('.'))
-
-from typing import *
+from typing import Dict, Tuple, List, Any, Union
 from glob import glob
 import gzip, json, jsonlines
-import ujson
 import itertools
 
 import math
-from dataset import *
-from dataset.utils.constants import *
+# from dataset import *
+from . import constants
 from collections import Counter
 
 from copy import deepcopy
+from joblib import Parallel, delayed
 
 # Such methods are widely used. Therefore, we define them ahead of other functions
 
 # get children with NODE_FIX
-get_tree_children_func = lambda node: [name for name in node['children'] if name.startswith(NODE_FIX)]
+get_tree_children_func = lambda node: [name for name in node['children'] if name.startswith(constants.NODE_FIX)]
 
 # get children without NODE_FIX
-get_token_children_func = lambda node: [name for name in node['children'] if not name.startswith(NODE_FIX)]
+get_token_children_func = lambda node: [name for name in node['children'] if not name.startswith(constants.NODE_FIX)]
 
 
 def get_child_nodes(node: Dict) -> Tuple[List, List]:
     # get tree/token children of node
     token_node, tree_node = [], []
     for name in node['children']:
-        if name.startswith(NODE_FIX):
+        if name.startswith(constants.NODE_FIX):
             tree_node.append(name)
         else:
             token_node.append(name)
@@ -39,7 +34,7 @@ def get_child_nodes(node: Dict) -> Tuple[List, List]:
 
 
 # get max node id
-last_index = lambda ast_tree: sorted([int(node_ind[len(NODE_FIX):]) for node_ind in ast_tree.keys()])[-1]
+last_index = lambda ast_tree: sorted([int(node_ind[len(constants.NODE_FIX):]) for node_ind in ast_tree.keys()])[-1]
 
 # is string token
 is_string = lambda identifier: \
@@ -100,7 +95,7 @@ def load_raw_filenames(data_dir: str, sort_func=None, debug=False, ) -> List[str
 
 def load_raw_data(data_dir: str, load_keys: List, debug=False, ) -> Dict:
     raw_data = {}
-    for mode in MODES:
+    for mode in constants.MODES:
         data = {}
         for key in load_keys:
             mode_data_dir = os.path.join(data_dir, key, '{}.*'.format(mode))

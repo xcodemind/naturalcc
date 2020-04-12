@@ -1,20 +1,18 @@
 # -*- coding: utf-8 -*-
-
-import os
 import sys
-
-sys.path.append(os.path.abspath('.'))
-
 import re
 import itertools
-
 from copy import deepcopy
 from pprint import pprint
 from tree_sitter import Language, Parser
-
-from dataset.utils.util import *
-from dataset.utils.constants import *
-from dataset.utils.util_path import *
+from . import util
+from . import util_path
+# from dataset.utils.util import *
+# from dataset.utils.constants import *
+# from dataset.utils.util_path import *
+from . import constants
+from typing import Tuple, List, Dict, Union
+from ncc import LOGGER
 
 sys.setrecursionlimit(99999)  # recursion depth
 
@@ -80,7 +78,7 @@ def build_tree(root, code_lines: List[str]) -> Dict:
                     'parent': parent_node_ind,
                     'children': [token_name.strip()],
                 }
-                new_node_ind = NODE_FIX + str(len(ast_tree) + 1)
+                new_node_ind = constants.NODE_FIX + str(len(ast_tree) + 1)
                 ast_tree[new_node_ind] = new_node
                 ast_tree[parent_node_ind]['children'].append(new_node_ind)
             else:
@@ -90,12 +88,12 @@ def build_tree(root, code_lines: List[str]) -> Dict:
                     'parent': parent_node_ind,
                     'children': [cur_node.type],
                 }
-                new_node_ind = NODE_FIX + str(len(ast_tree) + 1)
+                new_node_ind = constants.NODE_FIX + str(len(ast_tree) + 1)
                 ast_tree[new_node_ind] = new_node
                 ast_tree[parent_node_ind]['children'].append(new_node_ind)
         else:
             # current node has many child nodes
-            node_ind = NODE_FIX + str(len(ast_tree) + 1)  # root node index
+            node_ind = constants.NODE_FIX + str(len(ast_tree) + 1)  # root node index
             node = {
                 'node': cur_node.type,
                 'parent': parent_node_ind,
@@ -134,7 +132,7 @@ def delete_comment_child_node(ast_tree: Dict) -> Dict:
 
     def dfs(node_ind):
         cur_node = ast_tree[node_ind]
-        child_node_indices = get_tree_children_func(cur_node)
+        child_node_indices = util.get_tree_children_func(cur_node)
 
         if cur_node['node'] == 'comment':
             node_ind, cur_node = delete_cur_node(node_ind, cur_node)
@@ -148,7 +146,7 @@ def delete_comment_child_node(ast_tree: Dict) -> Dict:
         for child_name in child_node_indices:
             dfs(child_name)
 
-    dfs(ROOT_NODE_NAME)
+    dfs(constants.ROOT_NODE_NAME)
     return ast_tree
 
 
@@ -161,7 +159,7 @@ def delete_single_child_ndoe(ast_tree: Dict) -> Dict:
 
     def dfs(node_ind):
         cur_node = ast_tree[node_ind]
-        child_node_indices = get_tree_children_func(cur_node)
+        child_node_indices = util.get_tree_children_func(cur_node)
 
         # each ast tree generally is parsed from a method, so it has a "program" root node and a "method" node
         # therefore, if current node is the root node with single child, we do not delete it
@@ -181,7 +179,7 @@ def delete_single_child_ndoe(ast_tree: Dict) -> Dict:
             # update current info
             node_ind = child_ind
             cur_node = ast_tree[node_ind]
-            child_node_indices = get_tree_children_func(cur_node)
+            child_node_indices = util.get_tree_children_func(cur_node)
 
         if len(child_node_indices) == 0:
             return
@@ -189,7 +187,7 @@ def delete_single_child_ndoe(ast_tree: Dict) -> Dict:
         for child_name in child_node_indices:
             dfs(child_name)
 
-    dfs(ROOT_NODE_NAME)
+    dfs(constants.ROOT_NODE_NAME)
     return ast_tree
 
 
@@ -203,7 +201,7 @@ def reset_indices(ast_tree: Dict) -> Dict:
 
     root_ind = 1
     while 1:
-        root_node_ind = NODE_FIX + str(root_ind)
+        root_node_ind = constants.NODE_FIX + str(root_ind)
         if root_node_ind in ast_tree:
             break
         else:
@@ -211,7 +209,7 @@ def reset_indices(ast_tree: Dict) -> Dict:
 
     def new_ndoe_name():
         nonlocal new_ind
-        new_name = '_' + NODE_FIX + str(new_ind)
+        new_name = '_' + constants.NODE_FIX + str(new_ind)
         new_ind += 1
         return new_name
 
@@ -229,7 +227,7 @@ def reset_indices(ast_tree: Dict) -> Dict:
             parent_node = ast_tree[cur_node['parent']]
             parent_node['children'][parent_node['children'].index(cur_node_ind)] = new_cur_node_ind
 
-        if cur_node['children'][0].startswith(NODE_FIX):
+        if cur_node['children'][0].startswith(constants.NODE_FIX):
             # update its children nodes' parent
             for child_name in cur_node['children']:
                 ast_tree[child_name]['parent'] = new_cur_node_ind
@@ -239,7 +237,7 @@ def reset_indices(ast_tree: Dict) -> Dict:
         # 2. delete old node
         ast_tree.pop(cur_node_ind)
 
-        child_node_indices = get_tree_children_func(cur_node)
+        child_node_indices = util.get_tree_children_func(cur_node)
 
         if len(child_node_indices) == 0:
             return
@@ -253,7 +251,7 @@ def reset_indices(ast_tree: Dict) -> Dict:
     node_names = deepcopy(list(ast_tree.keys()))
     for node_name in node_names:
         node = deepcopy(ast_tree[node_name])
-        if node['children'][0].startswith('_' + NODE_FIX):
+        if node['children'][0].startswith('_' + constants.NODE_FIX):
             node['children'] = [child_name[1:] for child_name in node['children']]
         else:
             pass
@@ -273,19 +271,19 @@ def to_binary_tree(ast_tree: Dict) -> Dict:
     :param ast_tree:
     :return:
     '''
-    last_node_ind = last_index(ast_tree)
+    last_node_ind = util.last_index(ast_tree)
 
     def dfs(cur_node_ind):
         cur_node = ast_tree[cur_node_ind]
-        child_node_indices = get_tree_children_func(cur_node)
+        child_node_indices = util.get_tree_children_func(cur_node)
 
         if len(child_node_indices) > 2:
             # add new node
             nonlocal last_node_ind
             last_node_ind += 1
-            new_node_ind = NODE_FIX + str(last_node_ind)
+            new_node_ind = constants.NODE_FIX + str(last_node_ind)
             new_node = {
-                'node': NODE_TMP,
+                'node': constants.NODE_TMP,
                 'parent': cur_node_ind,
                 'children': child_node_indices[1:],
             }
@@ -294,10 +292,10 @@ def to_binary_tree(ast_tree: Dict) -> Dict:
             cur_node['children'] = [child_node_indices[0], new_node_ind]
             # update other childen nodes' parent info
             for child_name in child_node_indices[1:]:
-                if child_name.startswith(NODE_FIX) and child_name in ast_tree:
+                if child_name.startswith(constants.NODE_FIX) and child_name in ast_tree:
                     ast_tree[child_name]['parent'] = new_node_ind
             # update current node's children info
-            child_node_indices = get_tree_children_func(cur_node)
+            child_node_indices = util.get_tree_children_func(cur_node)
 
         if len(child_node_indices) == 0:
             return
@@ -305,11 +303,11 @@ def to_binary_tree(ast_tree: Dict) -> Dict:
         for child_name in cur_node['children']:
             dfs(child_name)
 
-    dfs(ROOT_NODE_NAME)
+    dfs(constants.ROOT_NODE_NAME)
     return ast_tree
 
 
-def split_and_pad_token(token: str, MAX_TOKEN_LIST_LEN: int, to_lower=True, PAD_TOKEN=PAD_WORD) -> List:
+def split_and_pad_token(token: str, MAX_TOKEN_LIST_LEN: int, to_lower=True, PAD_TOKEN=constants.PAD_WORD) -> List:
     '''
     split token and pad it with PAD_TOKEN till reach MAX_TOKEN_LIST_LEN
     e.g. VariableName ->  [VariableName, [Variable, Name, PAD_TOKEN, PAD_TOKEN, ...]]
@@ -318,14 +316,14 @@ def split_and_pad_token(token: str, MAX_TOKEN_LIST_LEN: int, to_lower=True, PAD_
     :param to_lower:
     :return:
     '''
-    token_list = split_identifier(token)
+    token_list = util.split_identifier(token)
     if to_lower:
         token_list = [str.lower(token) for token in token_list]
     token_list.extend([PAD_TOKEN for _ in range(MAX_TOKEN_LIST_LEN - len(token_list))])
     return token_list
 
 
-def pad_leaf_node(ast_tree: Dict, MAX_LEN: int, to_lower=True, PAD_TOKEN=PAD_WORD) -> Dict:
+def pad_leaf_node(ast_tree: Dict, MAX_LEN: int, to_lower=True, PAD_TOKEN=constants.PAD_WORD) -> Dict:
     '''
     pad leaf node's child into [XX, [XX, ...]]
     :param ast_tree:
@@ -333,7 +331,7 @@ def pad_leaf_node(ast_tree: Dict, MAX_LEN: int, to_lower=True, PAD_TOKEN=PAD_WOR
     :return:
     '''
     for key, node in ast_tree.items():
-        if len(node['children']) == 1 and (not str.startswith(node['children'][0], NODE_FIX)):
+        if len(node['children']) == 1 and (not str.startswith(node['children'][0], constants.NODE_FIX)):
             ast_tree[key]['children'].append(
                 split_and_pad_token(ast_tree[key]['children'][0], MAX_LEN, to_lower, PAD_TOKEN)
             )
@@ -353,15 +351,15 @@ def build_sbt_tree(ast_tree: Dict, node_ind: str, to_lower: bool) -> List:
         token = ast_tree[node_ind]['node'] + '_' + ast_tree[node_ind]['children'][0]
         if to_lower:
             token = token.lower()
-        seq = [SBT_PARENTHESES[0], token, SBT_PARENTHESES[1], token]
+        seq = [constants.SBT_PARENTHESES[0], token, constants.SBT_PARENTHESES[1], token]
     else:
         token = ast_tree[node_ind]['node']
         if to_lower:
             token = token.lower()
-        seq = [SBT_PARENTHESES[0], token]
+        seq = [constants.SBT_PARENTHESES[0], token]
         for child_ind in ast_tree[node_ind]['children']:
             seq += build_sbt_tree(ast_tree, child_ind, to_lower)
-        seq += [SBT_PARENTHESES[1], token]
+        seq += [constants.SBT_PARENTHESES[1], token]
     return seq
 
 
@@ -378,34 +376,34 @@ def build_sbtao_tree(ast_tree: Dict, node_ind: str, to_lower: bool) -> List:
         token = ast_tree[node_ind]['node'] + '_' + '<other>'
         if to_lower:
             token = token.lower()
-        seq = [SBT_PARENTHESES[0], token, SBT_PARENTHESES[1], token]
+        seq = [constants.SBT_PARENTHESES[0], token, constants.SBT_PARENTHESES[1], token]
     else:
         token = ast_tree[node_ind]['node']
         if to_lower:
             token = token.lower()
-        seq = [SBT_PARENTHESES[0], token]
+        seq = [constants.SBT_PARENTHESES[0], token]
         for child_ind in ast_tree[node_ind]['children']:
             seq += build_sbtao_tree(ast_tree, child_ind, to_lower)
-        seq += [SBT_PARENTHESES[1], token]
+        seq += [constants.SBT_PARENTHESES[1], token]
     return seq
 
 
 def build_sbt2_tree(ast_tree: Dict, node_ind: str, to_lower: bool) -> List:
     # our SBT tree
     if len(ast_tree[node_ind]['children']) > 1 and type(ast_tree[node_ind]['children'][1]) == list:
-        child_token_list = list(filter(lambda token: not token == PAD_WORD, ast_tree[node_ind]['children'][1]))
+        child_token_list = list(filter(lambda token: not token == constants.PAD_WORD, ast_tree[node_ind]['children'][1]))
         token_list = [ast_tree[node_ind]["node"]] + child_token_list
         if to_lower:
             token_list = [token.lower() for token in token_list]
-        seq = [SBT_PARENTHESES[0]] + token_list + [SBT_PARENTHESES[0]] + token_list
+        seq = [constants.SBT_PARENTHESES[0]] + token_list + [constants.SBT_PARENTHESES[0]] + token_list
     else:
         token_list = ast_tree[node_ind]["node"]
         if to_lower:
             token_list = token_list.lower()
-        seq = [SBT_PARENTHESES[0], token_list]
+        seq = [constants.SBT_PARENTHESES[0], token_list]
         for child_ind in ast_tree[node_ind]['children']:
             seq += build_sbt2_tree(ast_tree, child_ind, to_lower)
-        seq += [SBT_PARENTHESES[1], token_list]
+        seq += [constants.SBT_PARENTHESES[1], token_list]
     return seq
 
 
@@ -418,8 +416,8 @@ def parse_raw_comment(comment: str, to_lower: bool) -> List:
     '''
     comment = re.sub(r'\{\@\S+', '', comment)
     comment = re.sub(r'{.+}', '', comment)
-    comment = ''.join([char for char in comment if char not in MEANINGLESS_TOKENS])
-    comment = [split_identifier(token, str_flag=False) for token in comment.split(' ')]
+    comment = ''.join([char for char in comment if char not in constants.MEANINGLESS_TOKENS])
+    comment = [util.split_identifier(token, str_flag=False) for token in comment.split(' ')]
     comment = list(itertools.chain(*comment))
     # comment = list(filter(lambda token: token not in MEANINGLESS_TOKENS, comment))
     comment = re.split(r'\s+', ' '.join(comment).strip())
@@ -430,8 +428,8 @@ def parse_raw_comment(comment: str, to_lower: bool) -> List:
 
 def parse_comment(comment: List, to_lower: bool) -> List:
     # parse comment from docstring_tokens
-    comment = [''.join([char for char in token if char not in MEANINGLESS_TOKENS]) for token in comment]
-    comment = itertools.chain(*[split_identifier(token, str_flag=False) for token in comment])
+    comment = [''.join([char for char in token if char not in constants.MEANINGLESS_TOKENS]) for token in comment]
+    comment = itertools.chain(*[util.split_identifier(token, str_flag=False) for token in comment])
     comment = re.split(r'\s+', ' '.join(comment).strip())
     if to_lower:
         comment = [str.lower(token) if to_lower else token for token in comment]
@@ -439,7 +437,7 @@ def parse_comment(comment: List, to_lower: bool) -> List:
 
 
 def filter_and_seperate(token_list: List, to_lower: bool) -> List:
-    token_list = list(itertools.chain(*[split_identifier(token.strip()) for token in token_list
+    token_list = list(itertools.chain(*[util.split_identifier(token.strip()) for token in token_list
                                         if len(token.strip()) > 0]))
     if to_lower:
         token_list = [str.lower(token) if to_lower else token for token in token_list]
@@ -459,7 +457,7 @@ class CodeParser(object):
     def parse_comment(self, docstring: str, docstring_tokens: List[str], ) -> Tuple:
         # comment
         error = ''
-        if (docstring_tokens[-1] in COMMENT_END_TOKENS) or (len(docstring_tokens) > MAX_COMMENT_TOKEN_LIST_LEN):
+        if (docstring_tokens[-1] in constants.COMMENT_END_TOKENS) or (len(docstring_tokens) > constants.MAX_COMMENT_TOKEN_LIST_LEN):
             # if docstring_tokens is too long or docstring_tokens is wrong parsed
             ''' exceptions in CodeSearchNet, eg.
             docstring: 'Set {@link ServletRegistrationBean}s that the filter will be registered against.
@@ -472,7 +470,7 @@ class CodeParser(object):
             error += 'docstring_tokens: last element is wrong, or length too long.\nuse docstring to generate comment\t'
 
             # skip this code snippet, if there are non-ascii tokens
-            if not is_ascii(docstring):
+            if not util.is_ascii(docstring):
                 return None, error + 'contain non-ascii'
             raw_comment = re.sub(
                 '(http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&:/~\+#]*[\w\-\@?^=%&/~\+#])?', ' ',
@@ -485,7 +483,7 @@ class CodeParser(object):
         else:
             # skip this code snippet, if there are non-ascii tokens
             for comment_token in docstring_tokens:
-                if not is_ascii(comment_token):
+                if not util.is_ascii(comment_token):
                     return None, error + 'contain non-ascii'
             raw_comment = parse_comment(docstring_tokens, to_lower=self.to_lower)
 
@@ -553,12 +551,12 @@ class CodeParser(object):
         # leaf_path = ast_to_path(raw_ast)
 
         # 3) pop useless head node
-        if (code_tree[NODE_FIX + '1']['parent'] is None) and \
-                len(code_tree[NODE_FIX + '1']['children']) == 1 and \
-                code_tree[NODE_FIX + '1']['children'][0].startswith(NODE_FIX):
-            child_node = code_tree[NODE_FIX + '1']['children'][0]
+        if (code_tree[constants.NODE_FIX + '1']['parent'] is None) and \
+                len(code_tree[constants.NODE_FIX + '1']['children']) == 1 and \
+                code_tree[constants.NODE_FIX + '1']['children'][0].startswith(constants.NODE_FIX):
+            child_node = code_tree[constants.NODE_FIX + '1']['children'][0]
             code_tree[child_node]['parent'] = None
-            code_tree.pop(NODE_FIX + '1')
+            code_tree.pop(constants.NODE_FIX + '1')
         # 4) reset tree indices
         raw_ast = reset_indices(code_tree)  # reset node indices
 
@@ -605,7 +603,7 @@ class CodeParser(object):
         raw_code = [None] * len(code_tokens)
         for ind, token in enumerate(code_tokens):
             raw_code[ind] = token.strip()
-            if not is_ascii(raw_code[ind]) or len(raw_code[ind]) > MAX_CODE_TOKEN_LEN:
+            if not util.is_ascii(raw_code[ind]) or len(raw_code[ind]) > constants.MAX_CODE_TOKEN_LEN:
                 return None, error + 'some token are too long/non-ascii ({})'.format(raw_code[ind])
 
         raw_seq = filter_and_seperate(raw_code, to_lower=self.to_lower)
@@ -644,7 +642,7 @@ def parse_base(ast_tree: Dict) -> Dict:
 
 
 def parse_deepcom(ast_tree: dict, sbt_func: None, to_lower: bool):
-    sbt_seq = sbt_func(ast_tree, ROOT_NODE_NAME, to_lower)
+    sbt_seq = sbt_func(ast_tree, constants.ROOT_NODE_NAME, to_lower)
     return sbt_seq
 
 
@@ -678,4 +676,4 @@ end
     print(code_tree)
 
     code_tree = parse_base(code_tree)
-    path = ast_to_path(code_tree)
+    path = util_path.ast_to_path(code_tree)

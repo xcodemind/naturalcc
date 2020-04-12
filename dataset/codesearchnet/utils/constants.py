@@ -1,24 +1,20 @@
 # -*- coding: utf-8 -*-
-
 import os
-import sys
 
-sys.path.append(os.path.abspath('.'))
-
-DATASET_DIR = '/data/wanyao/yang/ghproj_d/GitHub/datasetv2'
-RAW_DATASET_DIR = os.path.join(DATASET_DIR, 'raw')
+# DATASET_DIR = '/data/wanyao/ghproj_d/naturalcodev3/codesearchnet'
+# RAW_DATASET_DIR = os.path.join(DATASET_DIR, 'raw')
 AST_NODE_CEILING = 200
-KEY_DST_DIR = os.path.join(DATASET_DIR, str(AST_NODE_CEILING))
+# KEY_DST_DIR = os.path.join(DATASET_DIR, str(AST_NODE_CEILING))
 PATH_K = 300
 
-SO_FILE = '/data/wanyao/yang/ghproj_d/GitHub/naturalcodev2/dataset/parser_zips/languages.so'
+SO_FILE = '/data/wanyao/Dropbox/ghproj-titan/naturalcodev3/dataset/codesearchnet/languages.so'
 
 RAW_KEYS = ['code', 'code_tokens', 'docstring', 'docstring_tokens', 'func_name', 'original_string',
             'path', 'repo', 'sha', 'url']
 SAVE_KEYS = ['code', 'code_tokens', 'docstring', 'docstring_tokens', 'func_name', ]
 POP_KEYS = ['original_string', 'path', 'repo', 'sha', 'url', 'language', 'partition']
 
-LANGUAGES = ['python', 'java', 'go', 'php', 'ruby', 'javascript']
+LANGUAGES = ['ruby'] # 'python', 'java', 'go', 'php', , 'javascript'
 MODES = ['train', 'valid', 'test']
 
 # POP_KEYS = ['repo', 'path', 'language', 'original_string', 'partition', 'sha', 'url']

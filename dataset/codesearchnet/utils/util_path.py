@@ -1,32 +1,26 @@
 # -*- coding: utf-8 -*-
-
-import os
-import sys
-
-sys.path.append(os.path.abspath('.'))
-
 '''
 ref: https://github.com/tech-srl/code2seq/blob/master/Python150kExtractor/extract.py
 '''
 
-from dataset.utils.util import *
-from typing import *
-
+from . import util
+from . import constants
+from typing import Dict
 import re
-
+import itertools
 MAX_PATH_LENTH = 8
 MAX_PATH_WIDTH = 2
 
 
 def __terminals(ast: Dict, node_index: str, ):
-    ROOT_NODE_NAME
+    constants.ROOT_NODE_NAME
     stack, paths = [], []
 
     def dfs(v):
         stack.append(v)
         v_node = ast[v]
 
-        child_nodes = get_tree_children_func(v_node)
+        child_nodes = util.get_tree_children_func(v_node)
 
         if len(child_nodes) == 0:
             # add leaf node's value
@@ -34,7 +28,7 @@ def __terminals(ast: Dict, node_index: str, ):
         else:
             # converse non-leaf node
             # add root node
-            if v == ROOT_NODE_NAME:
+            if v == constants.ROOT_NODE_NAME:
                 paths.append((stack.copy(), v_node['node']))
             for child in v_node['children']:
                 dfs(child)
@@ -58,7 +52,7 @@ def __merge_terminals2_paths(v_path, u_path):
     return prefix, lca, suffix
 
 
-def __raw_tree_paths(ast, node_index=ROOT_NODE_NAME, ):
+def __raw_tree_paths(ast, node_index=constants.ROOT_NODE_NAME, ):
     tnodes = __terminals(ast, node_index, )
 
     tree_paths = []
@@ -98,8 +92,8 @@ def __collect_sample(ast: Dict, MAX_PATH: int, ):
         start, connector, finish = tree_path
 
         # start, finish = __delim_name(start), __delim_name(finish)
-        new_start, new_finish = [str.lower(token) for token in split_identifier(start)], \
-                                [str.lower(token) for token in split_identifier(finish)]
+        new_start, new_finish = [str.lower(token) for token in util.split_identifier(start)], \
+                                [str.lower(token) for token in util.split_identifier(finish)]
 
         connector = [ast[v]['node'] for v in connector]
 

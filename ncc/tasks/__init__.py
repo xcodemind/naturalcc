@@ -7,8 +7,8 @@ import argparse
 import importlib
 import os
 import sys
-sys.path.append('.')
-from .fairseq_task import FairseqTask
+# sys.path.append('.')
+from ncc.tasks.fairseq_task import FairseqTask
 
 TASK_REGISTRY = {}
 TASK_CLASS_NAMES = set()
