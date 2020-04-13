@@ -36,3 +36,5 @@ src/test.py
 .idea/remote-mappings.xml
 .idea/webServers.xml
 .idea/workspace.xml
+*.xml
+.idea/workspace.xml
