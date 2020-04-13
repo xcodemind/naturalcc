@@ -1,25 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="ssh-rtx-proxy">
+  <component name="PublishConfigData" autoUpload="Always" serverName="Copy of project-level server 'RTX 8000'">
     <serverData>
-      <paths name="ssh-rtx">
+      <paths name="Copy of project-level server '2080ti'">
         <serverdata>
           <mappings>
-            <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
+            <mapping local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
-      <paths name="ssh-rtx (project level)">
+      <paths name="Copy of project-level server 'RTX 8000'">
         <serverdata>
           <mappings>
-            <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/data/wanyao/yang/ghproj_d/GitHub/naturalcodev3" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
-      <paths name="ssh-rtx-proxy">
+      <paths name="Copy of project-level server 'Tesla M60'">
         <serverdata>
           <mappings>
-            <mapping deploy="/data/wanyao/Dropbox/ghproj-titan/naturalcodev3" local="$PROJECT_DIR$" />
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="Copy of project-level server 'Tesla M60-1'">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
