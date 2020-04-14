@@ -103,19 +103,19 @@ def flatten_raw_data(mpool: Pool,
 def parse_ast_modalities(mpool: Pool, clean_dir: str, lng: str, MAX_SUB_TOKEN_LEN: int, ) -> None:
     src_code_files = sorted(glob.glob(os.path.join(clean_dir, lng, 'raw_ast', '*', '*.json.gz')))
     new_modalities = ['path', 'sbt', 'sbtao', 'ast', ]
-    dst_dir = {}
-    for modal in new_modalities:
-        dst_dir[modal] = os.path.join(clean_dir, lng, 'modal', )
-        os.makedirs(dst_dir[modal], exist_ok=True)
 
     def parse_new_modalities(code_file: str, ) -> None:
         reader = open(code_file, 'r')
-        dst_files = {modal: os.path.join(dst_dir[modal], code_file.split('/')[-1]) for modal in new_modalities}
+
+        dst_files = {}
+        for modal in new_modalities:
+            dst_files[modal] = code_file.replace('raw_ast', modal)
+            os.makedirs(os.path.join(dst_files[modal].split('/')[:-1]), exist_ok=True)
+
         writers = {
             modal: open(dst_files[modal], 'w')
             for modal in new_modalities
         }
-        MAX_SUB_TOKEN_LEN = 0
 
         data_line = reader.readline().strip()
         while len(data_line) > 0:
