@@ -25,7 +25,7 @@ def raw_data_len_worker(src_filename: str) -> int:
 
 
 def flatten_worker(raw_filename: str, dst_filenames: Dict, pop_keys: List[str], start_ind: int,
-            so_file: str, lang: str) -> int:
+                   so_file: str, lang: str) -> int:
     code_parser = CodeParser(so_file, lang)
     reader = gzip.GzipFile(raw_filename, 'r')
     writers = {
@@ -66,7 +66,7 @@ def flatten_raw_data(mpool: Pool,
         mode: util.load_raw_filenames(
             '{}/{}/final/jsonl/{}/*.jsonl.gz'.format(raw_dir, lang, mode),
             sort_func=util.raw_file_index,
-            # debug=True,
+            debug=True,
         )
         for mode in modes
     }
@@ -84,7 +84,7 @@ def flatten_raw_data(mpool: Pool,
             dst_files = {}
             dst_filename = raw_fl.split('/')[-1].replace('.jsonl.gz', '.txt')
             for key in constants.SAVE_KEYS + ['raw_ast', 'index', ]:  # add "raw_ast"
-                dst_dir = os.path.join(clean_dir, lang, key, )
+                dst_dir = os.path.join(clean_dir, lang, key, mode, )
                 os.makedirs(dst_dir, exist_ok=True)
                 dst_files[key] = os.path.join(dst_dir, dst_filename, )
             params.append([raw_fl, dst_files, constants.POP_KEYS, start_indices[mode][ind], \
@@ -96,20 +96,20 @@ def flatten_raw_data(mpool: Pool,
     return max_sub_token_len
 
 
-def extract_modalities_worker(code_file: str, clean_dir: str, lang: str, ) -> None:
+def extract_modalities_worker(code_file: str, MAX_SUB_TOKEN_LEN: int, ) -> None:
     modalities = ['path', 'sbt', 'sbtao', 'ast', ]
-    dst_dir = {}
+    dst_files = {}
     for modal in modalities:
-        dst_dir[modal] = os.path.join(clean_dir, lang, modal, )
-        os.makedirs(dst_dir[modal], exist_ok=True)
+        # mkdir for modal path
+        modal_dir = '/'.join(code_file.split('/')[:-1]).replace('raw_ast', modal)
+        os.makedirs(modal_dir, exist_ok=True)
+        dst_files[modal] = code_file.replace('raw_ast', modal)
 
     reader = open(code_file, 'r')
-    dst_files = {modal: os.path.join(dst_dir[modal], code_file.split('/')[-1]) for modal in modalities}
     writers = {
         modal: open(dst_files[modal], 'w')
         for modal in modalities
     }
-    MAX_SUB_TOKEN_LEN = 0
 
     data_line = reader.readline().strip()
     while len(data_line) > 0:
@@ -134,9 +134,10 @@ def extract_modalities_worker(code_file: str, clean_dir: str, lang: str, ) -> No
 
 
 def extract_ast_modalities(mpool: Pool, clean_dir: str, lang: str, MAX_SUB_TOKEN_LEN: int, ) -> None:
-    src_code_files = sorted(glob.glob(os.path.join(clean_dir, lang, 'raw_ast', '*.txt')))
+    src_code_files = sorted(glob.glob(os.path.join(clean_dir, lang, 'raw_ast', '*', '*.txt')))
     print('src_code_files: ', src_code_files)
-    results = [mpool.apply_async(extract_modalities_worker, (code_file, clean_dir, lang,)) for code_file in src_code_files]
+    results = [mpool.apply_async(extract_modalities_worker, (code_file, MAX_SUB_TOKEN_LEN,)) for code_file in
+               src_code_files]
     results = [res.get() for res in results]
 
 
@@ -146,10 +147,10 @@ def main():
     # in order to eagerly import custom tasks, optimizers, architectures, etc.
     parser.add_argument('--raw_dir', default='/data/wanyao/ghproj_d/naturalcodev3/codesearchnet/raw')
     parser.add_argument('--clean_dir', default='/data/wanyao/ghproj_d/naturalcodev3/codesearchnet/clean')
-    parser.add_argument('--so_file', default='/data/wanyao/Dropbox/ghproj-titan/naturalcodev3/dataset/codesearchnet/ruby.so')
+    parser.add_argument('--so_file',
+                        default='/data/wanyao/Dropbox/ghproj-titan/naturalcodev3/dataset/codesearchnet/ruby.so')
     parser.add_argument('--langs', default=['ruby'], nargs='+')
     parser.add_argument('--modes', default=['train', 'valid', 'test'], nargs='+')
-
 
     args_ = parser.parse_args()
 
@@ -157,7 +158,7 @@ def main():
     ################################################################
     # use all cores
     ################################################################
-    mpool = Pool(processes=1)  # build a multi-processing pool
+    mpool = Pool(processes=10)  # build a multi-processing pool
 
     for lang in args_.langs:
         # 1. flatten

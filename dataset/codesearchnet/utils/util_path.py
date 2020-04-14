@@ -8,12 +8,12 @@ from . import constants
 from typing import Dict
 import re
 import itertools
+
 MAX_PATH_LENTH = 8
 MAX_PATH_WIDTH = 2
 
 
 def __terminals(ast: Dict, node_index: str, ):
-    constants.ROOT_NODE_NAME
     stack, paths = [], []
 
     def dfs(v):
