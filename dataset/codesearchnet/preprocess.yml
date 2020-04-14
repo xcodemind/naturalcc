@@ -18,11 +18,11 @@ preprocess:
   all_gather_list_size: 16384 #', default=16384, type=int, help='number of bytes reserved for gathering stats from workers'
 
   task: summarization # task', metavar='TASK', default="translation", choices=TASK_REGISTRY.keys(), help='task'
-  source_lang: code  #", default=None, metavar="SRC", help="source language"
-  target_lang: comment #", default=None, metavar="TARGET", help="target language"
-  trainpref: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/clean/ruby #", metavar="FP", default=None, help="train file prefix"
-  validpref: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/clean/ruby #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-  testpref: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/clean/ruby # ", metavar="FP", default=None, help="comma separated, test file prefixes"
+  source_lang: ~  #", default=None, metavar="SRC", help="source language"
+  target_lang: ~ #", default=None, metavar="TARGET", help="target language"
+  trainpref: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/clean/ruby/code/ruby_train_0.txt, /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/clean/ruby/code/ruby_train_1.txt #", metavar="FP", default=None, help="train file prefix"
+  validpref: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/clean/ruby/code/ruby_valid_0.txt #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+  testpref: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/clean/ruby/code/ruby_test_0.txt # ", metavar="FP", default=None, help="comma separated, test file prefixes"
   align_suffix: ~ # ", metavar="FP", default=None, help="alignment file suffix"
   destdir: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/data-bin #", metavar="DIR", default="data-bin", help="destination dir"
   thresholdtgt: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"

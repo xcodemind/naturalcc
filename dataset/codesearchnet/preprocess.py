@@ -82,14 +82,14 @@ def main(args):
     task = tasks.get_task(args['preprocess']['task'])
 
     def train_path(lang):
-        # return "{}{}".format(args['preprocess']['trainpref'], ("." + lang) if lang else "")
-        paths = []
-        if lang == 'code':
-            for file in glob.glob(os.path.join(args['preprocess']['trainpref'], 'code', '*train*.txt')):
-                paths.append(os.path.join(args['preprocess']['trainpref'], file))
-        elif lang == 'comment':
-            for file in glob.glob(os.path.join(args['preprocess']['trainpref'], 'docstring', '*train*.txt')):
-                paths.append(os.path.join(args['preprocess']['trainpref'], file))
+        return "{}{}".format(args['preprocess']['trainpref'], ("." + lang) if lang else "")
+        # paths = []
+        # if lang == 'code':
+        #     for file in glob.glob(os.path.join(args['preprocess']['trainpref'], 'code', '*train*.txt')):
+        #         paths.append(os.path.join(args['preprocess']['trainpref'], file))
+        # elif lang == 'comment':
+        #     for file in glob.glob(os.path.join(args['preprocess']['trainpref'], 'docstring', '*train*.txt')):
+        #         paths.append(os.path.join(args['preprocess']['trainpref'], file))
         return paths
 
     def file_name(prefix, lang):
@@ -140,16 +140,16 @@ def main(args):
             src_dict = task.load_dictionary(args['preprocess']['srcdict'])
         else:
             assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
-            # src_dict = build_dictionary([train_path(args['preprocess']['source_lang'])], src=True)
-            src_dict = build_dictionary(train_path(args['preprocess']['source_lang']), src=True)
+            src_dict = build_dictionary([train_path(args['preprocess']['source_lang'])], src=True)
+            # src_dict = build_dictionary(train_path(args['preprocess']['source_lang']), src=True)
 
         if target:
             if args['preprocess']['tgtdict']:
                 tgt_dict = task.load_dictionary(args['preprocess']['tgtdict'])
             else:
                 assert args['preprocess']['trainpref'], "--trainpref must be set if --tgtdict is not specified"
-                # tgt_dict = build_dictionary([train_path(args['preprocess']['target_lang'])], tgt=True)
-                tgt_dict = build_dictionary(train_path(args['preprocess']['target_lang']), tgt=True)
+                tgt_dict = build_dictionary([train_path(args['preprocess']['target_lang'])], tgt=True)
+                # tgt_dict = build_dictionary(train_path(args['preprocess']['target_lang']), tgt=True)
 
         else:
             tgt_dict = None
@@ -173,6 +173,7 @@ def main(args):
         input_file = "{}{}".format(
             input_prefix, ("." + lang) if lang is not None else ""
         )
+        # input_file = os.path.join(input_prefix, lang, 'code')
         offsets = Binarizer.find_offsets(input_file, num_workers)
         pool = None
         if num_workers > 1:
