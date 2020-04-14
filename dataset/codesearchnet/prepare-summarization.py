@@ -85,7 +85,7 @@ def flatten_raw_data(mpool: Pool,
             dst_files = {}
             dst_filename = raw_fl.split('/')[-1].replace('.jsonl.gz', '.txt')
             for key in constants.SAVE_KEYS + ['raw_ast', 'index', ]:  # add "raw_ast"
-                dst_dir = os.path.join(clean_dir, lng, key, )
+                dst_dir = os.path.join(clean_dir, lng, key, mode, )
                 os.makedirs(dst_dir, exist_ok=True)
                 dst_files[key] = os.path.join(dst_dir, dst_filename, )
             params.append([raw_fl, dst_files, constants.POP_KEYS, start_indices[mode][ind], \
