@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ncc.module.code2vec.fairseq_encoder import FairseqEncoder
-from ncc.module.embedding import Embedding
+from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
+from ncc.modules.embedding import Embedding
 from ncc.utils import utils
 
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5

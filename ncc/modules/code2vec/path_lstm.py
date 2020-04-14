@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.nn import Module
 import torch.nn.functional as F
 from ncc import LOGGER
-from ncc.module.code2vec.base import *
+from ncc.modules.code2vec.base import *
 from ncc.utils.util_file import *
 from ncc.data import *
 from ncc.dataset.base import *

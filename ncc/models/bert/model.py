@@ -21,11 +21,11 @@ from ncc.models import (
     register_model,
     register_model_architecture,
 )
-from ncc.module import (
+from ncc.modules import (
     LayerNorm,
     TransformerSentenceEncoder,
 )
-from ncc.module.transformer_sentence_encoder import init_bert_params
+from ncc.modules.transformer_sentence_encoder import init_bert_params
 
 from .hub_interface import RobertaHubInterface
 

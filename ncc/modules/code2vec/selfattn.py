@@ -2,8 +2,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ncc.module.code2vec.base import *
-from ncc.module.attention import *
+from ncc.modules.code2vec.base import *
+from ncc.modules.attention import *
 from typing import Dict, Any
 
 

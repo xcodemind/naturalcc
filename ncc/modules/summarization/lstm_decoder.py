@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ncc.module.summarization.fairseq_incremental_decoder import FairseqIncrementalDecoder
-from ncc.module.embedding import Embedding
+from ncc.modules.summarization.fairseq_incremental_decoder import FairseqIncrementalDecoder
+from ncc.modules.embedding import Embedding
 from ncc.utils import utils
 
 DEFAULT_MAX_TARGET_POSITIONS = 1e5

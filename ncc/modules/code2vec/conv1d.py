@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 from ncc import LOGGER
-from ncc.module.code2vec.base.util import *
+from ncc.modules.code2vec.base.util import *
 from typing import Dict, Any
 
 

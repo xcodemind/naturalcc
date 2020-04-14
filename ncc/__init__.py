@@ -78,7 +78,7 @@ sys.modules['ncc.progress_bar'] = progress_bar
 
 # import ncc.criterions  # noqa
 # import ncc.model  # noqa
-# import ncc.module  # noqa
+# import ncc.modules  # noqa
 # import ncc.optim  # noqa
 # import ncc.optim.lr_scheduler  # noqa
 # import ncc.utils.pdb as pdb # noqa

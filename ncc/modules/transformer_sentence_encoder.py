@@ -14,10 +14,10 @@ import torch.nn.functional as F
 #     PositionalEmbedding,
 #     TransformerSentenceEncoderLayer,
 # )
-from ncc.module.layer_norm import LayerNorm
-from ncc.module.attention.multihead_attention import MultiheadAttention
-from ncc.module.positional_embedding import PositionalEmbedding
-from ncc.module.transformer_sentence_encoder_layer import TransformerSentenceEncoderLayer
+from ncc.modules.layer_norm import LayerNorm
+from ncc.modules.attention.multihead_attention import MultiheadAttention
+from ncc.modules.positional_embedding import PositionalEmbedding
+from ncc.modules.transformer_sentence_encoder_layer import TransformerSentenceEncoderLayer
 
 import random
 

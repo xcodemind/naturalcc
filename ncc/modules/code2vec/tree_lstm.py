@@ -2,7 +2,7 @@
 import dgl
 import torch
 import torch.nn as nn
-from ncc.module.code2vec.base import Encoder_Emb
+from ncc.modules.code2vec.base import Encoder_Emb
 from typing import Dict, Any, Tuple
 
 

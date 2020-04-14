@@ -9,10 +9,10 @@ from ncc.data.dict import Dict
 # from model.Encoder import Encoder, TreeEncoder_TreeLSTM_dgl, CFGEncoder_GGNN, CFGEncoder_GGNN_add_node_token,\
 # RetrievalCodeEncoderWrapper,RetrievalCommentEncoderWrapper
 from ncc.models.Encoder import Encoder, RetrievalCodeEncoderWrapper, RetrievalCommentEncoderWrapper
-from ncc.module.encoder.base.encoder_ast import TreeEncoder_TreeLSTM_dgl
-from ncc.module.encoder.encoder_cfg  import CFGEncoder_GGNN, CFGEncoder_GGNN_add_node_token
-from ncc.module.summarization.decoder import SeqDecoder
-from ncc.module.summarization.discriminator import Discriminator, Discriminator_LSTM
+from ncc.modules.encoder.base.encoder_ast import TreeEncoder_TreeLSTM_dgl
+from ncc.modules.encoder.encoder_cfg  import CFGEncoder_GGNN, CFGEncoder_GGNN_add_node_token
+from ncc.modules.summarization.decoder import SeqDecoder
+from ncc.modules.summarization.discriminator import Discriminator, Discriminator_LSTM
 
 import torch.nn as nn
 from ncc.data.codesum.codesum_dataset import *
@@ -25,7 +25,7 @@ from ncc.data.codeir.deepcs_dataset import *
 # from ncc.data.codeir.deepcs_dataset import CodeRetrieval_DeepCS_Dataset, collate_fn_code_retrieval_deep_cs, \
 #     collate_fn_code_retrieval_for_test_set_deep_cs, CodeRetrieval_DeepCS_QueryDataset, \
 #     collate_fn_code_retrieval_for_query_deep_cs
-from ncc.module.retrieval.deepcs_encoder import SeqEncoder
+from ncc.modules.retrieval.deepcs_encoder import SeqEncoder
 from ncc.models.retrieval.deepcs import DeepCSModel
 
 

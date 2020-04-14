@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from ncc.module.code2vec.base import Encoder_Emb
+from ncc.modules.code2vec.base import Encoder_Emb
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
