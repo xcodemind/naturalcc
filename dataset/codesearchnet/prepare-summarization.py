@@ -101,7 +101,7 @@ def flatten_raw_data(mpool: Pool,
 # TODO: parse_ast_modalities只需要抽出ast即可，path， sbt等单独抽成其他函数
 # TODO: save信息页抽出来成一个函数
 def parse_ast_modalities(mpool: Pool, clean_dir: str, lng: str, MAX_SUB_TOKEN_LEN: int, ) -> None:
-    src_code_files = sorted(glob.glob(os.path.join(clean_dir, lng, 'raw_ast', '*.json.gz')))
+    src_code_files = sorted(glob.glob(os.path.join(clean_dir, lng, 'raw_ast', '*', '*.json.gz')))
     new_modalities = ['path', 'sbt', 'sbtao', 'ast', ]
     dst_dir = {}
     for modal in new_modalities:
