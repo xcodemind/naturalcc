@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+from .fairseq_encoder import FairseqEncoder
 
-import sys
 
-sys.path.append('.')
-
+__all__ = [
+    'FairseqEncoder'
+]

@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ncc.utils import utils
-from ncc.data import encoder
+from ncc.data import encoders
 
 
 class RobertaHubInterface(nn.Module):

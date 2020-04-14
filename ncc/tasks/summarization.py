@@ -2,55 +2,121 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
-import logging
 import os
-
-import numpy as np
-
-# from fairseq.data import (
-#     data_utils,
-#     Dictionary,
-#     IdDataset,
-#     MaskTokensDataset,
-#     NestedDictionaryDataset,
-#     NumelDataset,
-#     NumSamplesDataset,
-#     PadDataset,
-#     PrependTokenDataset,
-#     SortDataset,
-#     TokenBlockDataset,
-# )
-from ncc.data import data_utils
-from ncc.data.dictionary import Dictionary
-from ncc.data.id_dataset import IdDataset
-from ncc.data.mask_tokens_dataset import MaskTokensDataset
-from ncc.data.nested_dictionary_dataset import NestedDictionaryDataset
-from ncc.data.numel_dataset import NumelDataset
-from ncc.data.num_samples_dataset import NumSamplesDataset
-from ncc.data.pad_dataset import PadDataset
-from ncc.data.prepend_token_dataset import PrependTokenDataset
-from ncc.data.sort_dataset import SortDataset
-from ncc.data.token_block_dataset import TokenBlockDataset
-
-from tokenizers import ByteLevelBPETokenizer
-from tokenizers.processors import BertProcessing
-from pathlib import Path
-
-from .fairseq_task import FairseqTask
-from . import register_task
-from ncc.data.encoder.utils import get_whole_word_mask
+import json
+import itertools
+from argparse import Namespace
+from ncc import LOGGER
+from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks import register_task
 from ncc.utils import utils
-# from ncc.models.bert.modeling_bert import BertForMaskedLM
-# from ncc.models.bert.modeling_roberta import RobertaForMaskedLM
-# from ncc.config.bert.configuration_bert import BertConfig
-# from ncc.config.bert.configuration_roberta import RobertaConfig
-# from ncc.data.tokenizer.tokenization_bert import BertTokenizer
-from ncc.data.tokenizer.tokenization_roberta import RobertaTokenizer
-# from ncc.utils.modeling_utils import PreTrainedModel
-# from ncc.utils.tokenization_utils import PreTrainedTokenizer
+from ncc.data import encoders
+from ncc.data import indexed_dataset
+from ncc.data import data_utils
+from ncc.data.append_token_dataset import AppendTokenDataset
+from ncc.data.truncate_dataset import TruncateDataset
+from ncc.data.strip_token_dataset import StripTokenDataset
+from ncc.data.concat_dataset import ConcatDataset
+from ncc.data.prepend_token_dataset import PrependTokenDataset
+from ncc.data.language_pair_dataset import LanguagePairDataset
 
-logger = logging.getLogger(__name__)
+
+def load_langpair_dataset(
+    data_path, split,
+    src, src_dict,
+    tgt, tgt_dict,
+    combine, dataset_impl, upsample_primary,
+    left_pad_source, left_pad_target, max_source_positions,
+    max_target_positions, prepend_bos=False, load_alignments=False,
+    truncate_source=False, append_source_id=False
+):
+
+    def split_exists(split, src, tgt, lang, data_path):
+        filename = os.path.join(data_path, '{}.{}-{}.{}'.format(split, src, tgt, lang))
+        return indexed_dataset.dataset_exists(filename, impl=dataset_impl)
+
+    src_datasets = []
+    tgt_datasets = []
+
+    for k in itertools.count():
+        split_k = split + (str(k) if k > 0 else '')
+
+        # infer langcode
+        if split_exists(split_k, src, tgt, src, data_path):
+            prefix = os.path.join(data_path, '{}.{}-{}.'.format(split_k, src, tgt))
+        elif split_exists(split_k, tgt, src, src, data_path):
+            prefix = os.path.join(data_path, '{}.{}-{}.'.format(split_k, tgt, src))
+        else:
+            if k > 0:
+                break
+            else:
+                raise FileNotFoundError('Dataset not found: {} ({})'.format(split, data_path))
+
+        src_dataset = data_utils.load_indexed_dataset(prefix + src, src_dict, dataset_impl)
+        if truncate_source:
+            src_dataset = AppendTokenDataset(
+                TruncateDataset(
+                    StripTokenDataset(src_dataset, src_dict.eos()),
+                    max_source_positions - 1,
+                ),
+                src_dict.eos(),
+            )
+        src_datasets.append(src_dataset)
+
+        tgt_dataset = data_utils.load_indexed_dataset(prefix + tgt, tgt_dict, dataset_impl)
+        if tgt_dataset is not None:
+            tgt_datasets.append(tgt_dataset)
+
+        LOGGER.info('{} {} {}-{} {} examples'.format(
+            data_path, split_k, src, tgt, len(src_datasets[-1])
+        ))
+
+        if not combine:
+            break
+
+    assert len(src_datasets) == len(tgt_datasets) or len(tgt_datasets) == 0
+
+    if len(src_datasets) == 1:
+        src_dataset = src_datasets[0]
+        tgt_dataset = tgt_datasets[0] if len(tgt_datasets) > 0 else None
+    else:
+        sample_ratios = [1] * len(src_datasets)
+        sample_ratios[0] = upsample_primary
+        src_dataset = ConcatDataset(src_datasets, sample_ratios)
+        if len(tgt_datasets) > 0:
+            tgt_dataset = ConcatDataset(tgt_datasets, sample_ratios)
+        else:
+            tgt_dataset = None
+
+    if prepend_bos:
+        assert hasattr(src_dict, "bos_index") and hasattr(tgt_dict, "bos_index")
+        src_dataset = PrependTokenDataset(src_dataset, src_dict.bos())
+        if tgt_dataset is not None:
+            tgt_dataset = PrependTokenDataset(tgt_dataset, tgt_dict.bos())
+
+    eos = None
+    if append_source_id:
+        src_dataset = AppendTokenDataset(src_dataset, src_dict.index('[{}]'.format(src)))
+        if tgt_dataset is not None:
+            tgt_dataset = AppendTokenDataset(tgt_dataset, tgt_dict.index('[{}]'.format(tgt)))
+        eos = tgt_dict.index('[{}]'.format(tgt))
+
+    align_dataset = None
+    if load_alignments:
+        align_path = os.path.join(data_path, '{}.align.{}-{}'.format(split, src, tgt))
+        if indexed_dataset.dataset_exists(align_path, impl=dataset_impl):
+            align_dataset = data_utils.load_indexed_dataset(align_path, None, dataset_impl)
+
+    tgt_dataset_sizes = tgt_dataset.sizes if tgt_dataset is not None else None
+    return LanguagePairDataset(
+        src_dataset, src_dataset.sizes, src_dict,
+        tgt_dataset, tgt_dataset_sizes, tgt_dict,
+        left_pad_source=left_pad_source,
+        left_pad_target=left_pad_target,
+        max_source_positions=max_source_positions,
+        max_target_positions=max_target_positions,
+        align_dataset=align_dataset, eos=eos
+    )
 
 
 @register_task('summarization')
@@ -78,111 +144,61 @@ class SummarizationTask(FairseqTask):
         # logger.info('dictionary: {} types'.format(len(dictionary)))
         # tokenizer = RobertaTokenizer.from_pretrained(args['dataset']['tokenizer_name'], cache_dir=args['checkpoint']['cache_dir'])
         # load dictionaries
-        src_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args.source_lang)))
-        tgt_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args.target_lang)))
+        src_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['source_lang'])))
+        tgt_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['target_lang'])))
         assert src_dict.pad() == tgt_dict.pad()
         assert src_dict.eos() == tgt_dict.eos()
         assert src_dict.unk() == tgt_dict.unk()
-        logger.info('[{}] dictionary: {} types'.format(args.source_lang, len(src_dict)))
-        logger.info('[{}] dictionary: {} types'.format(args.target_lang, len(tgt_dict)))
+        LOGGER.info('[{}] dictionary: {} types'.format(args['task']['source_lang'], len(src_dict)))
+        LOGGER.info('[{}] dictionary: {} types'.format(args['task']['target_lang'], len(tgt_dict)))
 
         return cls(args, src_dict, tgt_dict)
 
-    def build_model(self, args, config):
-        """
-        Build the :class:`~fairseq.models.BaseFairseqModel` instance for this
-        task.
+    def load_dataset(self, split, epoch=1, combine=False, **kwargs):
+        """Load a given dataset split.
 
         Args:
-            args (argparse.Namespace): parsed command-line arguments
-
-        Returns:
-            a :class:`~fairseq.models.BaseFairseqModel` instance
+            split (str): name of the split (e.g., train, valid, test)
         """
-        from ncc import models
-        # assert 0
-        args['model']['arch'] = '{}_{}'.format(args['model']['arch'], args['common']['task'])
-        return models.build_model(args, config, self)
-
-    def load_dataset(self, split, epoch=1, combine=False, **kwargs):
-        paths = utils.split_paths(self.args['task']['data'])
+        paths = utils.split_paths(self.args.data)
         assert len(paths) > 0
         data_path = paths[(epoch - 1) % len(paths)]
-        split_path = os.path.join(data_path, 'wiki.{}.raw'.format(split))
-        print('combine: ', combine)
 
-        dataset = data_utils.load_indexed_dataset(
-            path=split_path,
-            dictionary=None,
-            tokenizer=self.tokenizer,
-            dataset_impl=self.args['dataset']['dataset_impl'],
-            combine=combine,
-        )
-        if dataset is None:
-            raise FileNotFoundError('Dataset not found: {} ({})'.format(split, split_path))
+        # infer langcode
+        src, tgt = self.args.source_lang, self.args.target_lang
 
-        # create continuous blocks of tokens
-        dataset = TokenBlockDataset(
-            dataset,
-            dataset.sizes,
-            self.args['task']['tokens_per_sample'] - 1,  # one less for <s>
-            pad=self.tokenizer.pad_token_id,  # source_dictionary.pad(),
-            eos=self.tokenizer.eos_token_id,  # .source_dictionary.eos(),
-            break_mode=self.args['task']['sample_break_mode'],
-        )
-        logger.info('loaded {} blocks from: {}'.format(len(dataset), split_path))
-
-        # # prepend beginning-of-sentence token (<s>, equiv. to [CLS] in BERT)
-        # dataset = PrependTokenDataset(dataset, self.tokenizer.bos_token_id) # .source_dictionary.bos()
-        #
-        # # create masked input and targets
-        mask_whole_words = get_whole_word_mask(self.args, self.source_dictionary) \
-            if self.args['task']['mask_whole_words'] else None
-        #
-        src_dataset, tgt_dataset = MaskTokensDataset.apply_mask(
-            dataset,
-            # self.source_dictionary,
-            tokenizer=self.tokenizer,
-            pad_idx=self.tokenizer.pad_token_id, # .source_dictionary.pad(),
-            mask_idx=self.tokenizer.mask_token_id, #self.mask_idx,
-            seed=self.args['common']['seed'],
-            mask_prob=self.args['task']['mask_prob'],
-            leave_unmasked_prob=self.args['task']['leave_unmasked_prob'],
-            random_token_prob=self.args['task']['random_token_prob'],
-            freq_weighted_replacement=self.args['task']['freq_weighted_replacement'],
-            mask_whole_words=mask_whole_words,
+        self.datasets[split] = load_langpair_dataset(
+            data_path, split, src, self.src_dict, tgt, self.tgt_dict,
+            combine=combine, dataset_impl=self.args.dataset_impl,
+            upsample_primary=self.args.upsample_primary,
+            left_pad_source=self.args.left_pad_source,
+            left_pad_target=self.args.left_pad_target,
+            max_source_positions=self.args.max_source_positions,
+            max_target_positions=self.args.max_target_positions,
+            load_alignments=self.args.load_alignments,
+            truncate_source=self.args.truncate_source,
         )
 
-        with data_utils.numpy_seed(self.args['common']['seed'] + epoch):
-            shuffle = np.random.permutation(len(src_dataset))
+    def build_dataset_for_inference(self, src_tokens, src_lengths):
+        return LanguagePairDataset(src_tokens, src_lengths, self.source_dictionary)
 
-        self.datasets[split] = SortDataset(
-            NestedDictionaryDataset(
-                {
-                    'id': IdDataset(),
-                    'net_input': {
-                        'src_tokens': PadDataset(
-                            src_dataset,
-                            pad_idx=self.tokenizer.pad_token_id, #source_dictionary.pad(),
-                            left_pad=False,
-                        ),
-                        'src_lengths': NumelDataset(src_dataset, reduce=False),
-                    },
-                    'target': PadDataset(
-                        tgt_dataset,
-                        pad_idx=self.tokenizer.pad_token_id, #self.source_dictionary.pad(),
-                        left_pad=False,
-                    ),
-                    'nsentences': NumSamplesDataset(),
-                    'ntokens': NumelDataset(src_dataset, reduce=True),
-                },
-                sizes=[src_dataset.sizes],
-            ),
-            sort_order=[
-                shuffle,
-                src_dataset.sizes,
-            ],
-        )
+    def build_model(self, args):
+        model = super().build_model(args)
+        if getattr(args, 'eval_bleu', False):
+            assert getattr(args, 'eval_bleu_detok', None) is not None, (
+                '--eval-bleu-detok is required if using --eval-bleu; '
+                'try --eval-bleu-detok=moses (or --eval-bleu-detok=space '
+                'to disable detokenization, e.g., when using sentencepiece)'
+            )
+            detok_args = json.loads(getattr(args, 'eval_bleu_detok_args', '{}') or '{}')
+            self.tokenizer = encoders.build_tokenizer(Namespace(
+                tokenizer=getattr(args, 'eval_bleu_detok', None),
+                **detok_args
+            ))
+
+            gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
+            self.sequence_generator = self.build_generator([model], Namespace(**gen_args))
+        return model
 
     @property
     def source_dictionary(self):

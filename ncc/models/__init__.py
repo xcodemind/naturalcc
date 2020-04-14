@@ -24,9 +24,9 @@ import os
 import datetime
 import time
 
-from .fairseq_decoder import FairseqDecoder
-from .fairseq_encoder import FairseqEncoder
-from .fairseq_incremental_decoder import FairseqIncrementalDecoder
+# from .fairseq_decoder import FairseqDecoder
+# from .fairseq_encoder import FairseqEncoder
+# from .fairseq_incremental_decoder import FairseqIncrementalDecoder
 from .fairseq_model import (
     BaseFairseqModel,
     FairseqEncoderModel,
@@ -36,7 +36,7 @@ from .fairseq_model import (
     FairseqMultiModel,
 )
 
-from .composite_encoder import CompositeEncoder
+# from .composite_encoder import CompositeEncoder
 from .distributed_fairseq_model import DistributedFairseqModel
 
 
@@ -49,13 +49,13 @@ MODEL_REGISTRY = {}
 __all__ = [
     'datetime', 'time',
     'BaseFairseqModel',
-    'CompositeEncoder',
+    # 'CompositeEncoder',
     'DistributedFairseqModel',
-    'FairseqDecoder',
-    'FairseqEncoder',
+    # 'FairseqDecoder',
+    # 'FairseqEncoder',
     'FairseqEncoderDecoderModel',
     'FairseqEncoderModel',
-    'FairseqIncrementalDecoder',
+    # 'FairseqIncrementalDecoder',
     'FairseqLanguageModel',
     'FairseqModel',
     'FairseqMultiModel',

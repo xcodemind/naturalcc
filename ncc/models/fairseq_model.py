@@ -15,7 +15,8 @@ import torch.nn.functional as F
 from ncc.utils import utils
 from ncc.utils.checkpoint_utils import prune_state_dict
 from ncc.data import Dictionary
-from ncc.models import FairseqDecoder, FairseqEncoder
+from ncc.module.code2vec import FairseqEncoder
+from ncc.module.summarization import FairseqDecoder
 from torch import Tensor
 
 

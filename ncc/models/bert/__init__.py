@@ -9,3 +9,9 @@
 # from .model_xlmr import *  # noqa
 from .modeling_bert import BertModel
 from .modeling_roberta import RobertaModel
+
+
+__all__ = [
+    'BertModel',
+    'RobertaModel'
+]
