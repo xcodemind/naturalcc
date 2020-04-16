@@ -7,8 +7,8 @@ import logging
 
 import numpy as np
 import torch
-
-from . import data_utils, FairseqDataset
+from ncc.data import data_utils
+from ncc.data.fairseq_dataset import FairseqDataset
 
 
 logger = logging.getLogger(__name__)

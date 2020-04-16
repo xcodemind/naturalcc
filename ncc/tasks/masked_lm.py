@@ -5,24 +5,8 @@
 
 import logging
 import os
-
 import numpy as np
-
-# from fairseq.data import (
-#     data_utils,
-#     Dictionary,
-#     IdDataset,
-#     MaskTokensDataset,
-#     NestedDictionaryDataset,
-#     NumelDataset,
-#     NumSamplesDataset,
-#     PadDataset,
-#     PrependTokenDataset,
-#     SortDataset,
-#     TokenBlockDataset,
-# )
 from ncc.data import data_utils
-from ncc.data.dictionary import Dictionary
 from ncc.data.id_dataset import IdDataset
 from ncc.data.mask_tokens_dataset import MaskTokensDataset
 from ncc.data.nested_dictionary_dataset import NestedDictionaryDataset
@@ -32,23 +16,11 @@ from ncc.data.pad_dataset import PadDataset
 from ncc.data.prepend_token_dataset import PrependTokenDataset
 from ncc.data.sort_dataset import SortDataset
 from ncc.data.token_block_dataset import TokenBlockDataset
-
-from tokenizers import ByteLevelBPETokenizer
-from tokenizers.processors import BertProcessing
-from pathlib import Path
-
-from .fairseq_task import FairseqTask
-from . import register_task
-from ncc.data.encoder.utils import get_whole_word_mask
+from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks import register_task
+from ncc.data.encoders.utils import get_whole_word_mask
 from ncc.utils import utils
-# from ncc.models.bert.modeling_bert import BertForMaskedLM
-# from ncc.models.bert.modeling_roberta import RobertaForMaskedLM
-# from ncc.config.bert.configuration_bert import BertConfig
-# from ncc.config.bert.configuration_roberta import RobertaConfig
-# from ncc.data.tokenizer.tokenization_bert import BertTokenizer
 from ncc.data.tokenizer.tokenization_roberta import RobertaTokenizer
-# from ncc.utils.modeling_utils import PreTrainedModel
-# from ncc.utils.tokenization_utils import PreTrainedTokenizer
 
 logger = logging.getLogger(__name__)
 

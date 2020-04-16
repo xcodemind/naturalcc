@@ -202,7 +202,7 @@ class FairseqTask(object):
         self.dataset_to_epoch_iter[dataset] = epoch_iter
         return epoch_iter
 
-    def build_model(self, args, config):
+    def build_model(self, args, config=None):
         """
         Build the :class:`~fairseq.models.BaseFairseqModel` instance for this
         task.

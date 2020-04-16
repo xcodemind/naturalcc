@@ -10,7 +10,7 @@ import os
 import numpy as np
 import torch
 import sys
-sys.path.append('../..')
+# sys.path.append('../..')
 from ncc.data import data_utils
 
 

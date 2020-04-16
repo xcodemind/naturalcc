@@ -7,6 +7,7 @@ from ncc.utils import utils
 
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
 
+
 def LSTM(input_size, hidden_size, **kwargs):
     m = nn.LSTM(input_size, hidden_size, **kwargs)
     for name, param in m.named_parameters():

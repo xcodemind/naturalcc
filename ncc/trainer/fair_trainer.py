@@ -33,11 +33,11 @@ class Trainer(object):
     communication of the gradients across workers.
     """
 
-    def __init__(self, config, task, model, criterion):
-        self.config = config
+    def __init__(self, args, task, model, criterion):
+        self.args = args
         self.task = task
 
-        self.cuda = torch.cuda.is_available() and not config['common']['cpu']
+        self.cuda = torch.cuda.is_available() and not args['common']['cpu']
         if self.cuda:
             self.device = torch.device('cuda')
         else:
@@ -46,7 +46,7 @@ class Trainer(object):
         # copy model and criterion to current device
         self._criterion = criterion
         self._model = model
-        if config['common']['fp16']:
+        if args['common']['fp16']:
             self._criterion = self._criterion.half()
             self._model = self._model.half()
         self._criterion = self._criterion.to(device=self.device)
@@ -61,8 +61,8 @@ class Trainer(object):
         self._wrapped_criterion = None
         self._wrapped_model = None
 
-        if self.cuda and config['distributed_training']['distributed_world_size'] > 1:
-            self._grad_norm_buf = torch.cuda.DoubleTensor(config['distributed_training']['distributed_world_size'])
+        if self.cuda and args['distributed_training']['distributed_world_size'] > 1:
+            self._grad_norm_buf = torch.cuda.DoubleTensor(args['distributed_training']['distributed_world_size'])
         else:
             self._grad_norm_buf = None
 
@@ -73,11 +73,11 @@ class Trainer(object):
         if self._wrapped_criterion is None:
             if (
                 utils.has_parameters(self._criterion)
-                and self.config['distributed_training']['distributed_world_size'] > 1
-                and not self.config['optimization']['use_bmuf']
+                and self.args['distributed_training']['distributed_world_size'] > 1
+                and not self.args['optimization']['use_bmuf']
             ):
                 self._wrapped_criterion = models.DistributedFairseqModel(
-                    self.config, self._criterion
+                    self.args, self._criterion
                 )
             else:
                 self._wrapped_criterion = self._criterion
@@ -86,9 +86,9 @@ class Trainer(object):
     @property
     def model(self):
         if self._wrapped_model is None:
-            if self.config['distributed_training']['distributed_world_size'] > 1 and not self.config['optimization']['use_bmuf']:
+            if self.args['distributed_training']['distributed_world_size'] > 1 and not self.args['optimization']['use_bmuf']:
                 self._wrapped_model = models.DistributedFairseqModel(
-                    self.config, self._model
+                    self.args, self._model
                 )
             else:
                 self._wrapped_model = self._model
@@ -114,38 +114,38 @@ class Trainer(object):
             )
         )
 
-        if self.config['common']['fp16']:
+        if self.args['common']['fp16']:
             if self.cuda and torch.cuda.get_device_capability(0)[0] < 7:
                 logger.info(
                     "NOTE: your device does NOT support faster training with --fp16, "
                     "please switch to FP32 which is likely to be faster"
                 )
-            if self.config['common']['memory_efficient_fp16']:
+            if self.args['common']['memory_efficient_fp16']:
                 self._optimizer = optim.MemoryEfficientFP16Optimizer.build_optimizer(
-                    self.config, params
+                    self.args, params
                 )
             else:
-                self._optimizer = optim.FP16Optimizer.build_optimizer(self.config, params)
+                self._optimizer = optim.FP16Optimizer.build_optimizer(self.args, params)
         else:
             if self.cuda and torch.cuda.get_device_capability(0)[0] >= 7:
                 logger.info("NOTE: your device may support faster training with --fp16")
-            self._optimizer = optim.build_optimizer(self.config, params)
+            self._optimizer = optim.build_optimizer(self.args, params)
 
-        if self.config['optimization']['use_bmuf']:
-            self._optimizer = optim.FairseqBMUF(self.config, self._optimizer)
+        if self.args['optimization']['use_bmuf']:
+            self._optimizer = optim.FairseqBMUF(self.args, self._optimizer)
 
         # We should initialize the learning rate scheduler immediately after
         # building the optimizer, so that the initial learning rate is set.
-        self._lr_scheduler = lr_scheduler.build_lr_scheduler(self.config, self.optimizer)
+        self._lr_scheduler = lr_scheduler.build_lr_scheduler(self.args, self.optimizer)
         self._lr_scheduler.step_update(0)
 
     def save_checkpoint(self, filename, extra_state):
         """Save all training state in a checkpoint file."""
-        if distributed_utils.is_master(self.config):  # only save one checkpoint
+        if distributed_utils.is_master(self.args):  # only save one checkpoint
             extra_state["metrics"] = metrics.state_dict()
             checkpoint_utils.save_state(
                 filename,
-                self.config,
+                self.args,
                 self.get_model().state_dict(),
                 self.get_criterion(),
                 self.optimizer,
@@ -173,7 +173,7 @@ class Trainer(object):
             # load model parameters
             try:
                 self.get_model().load_state_dict(
-                    state["model"], strict=True, config=self.config
+                    state["model"], strict=True, args=self.args
                 )
                 if utils.has_parameters(self.get_criterion()):
                     self.get_criterion().load_state_dict(
@@ -242,26 +242,26 @@ class Trainer(object):
         if load_dataset:
             logger.info("loading train data for epoch {}".format(epoch))
             self.task.load_dataset(
-                self.config['dataset']['train_subset'],
+                self.args['dataset']['train_subset'],
                 epoch=epoch,
                 combine=combine,
                 data_selector=data_selector,
             )
         return self.task.get_batch_iterator(
-            dataset=self.task.dataset(self.config['dataset']['train_subset']),
-            max_tokens=self.config['dataset']['max_tokens'],
-            max_sentences=self.config['dataset']['max_sentences'],
+            dataset=self.task.dataset(self.args['dataset']['train_subset']),
+            max_tokens=self.args['dataset']['max_tokens'],
+            max_sentences=self.args['dataset']['max_sentences'],
             max_positions=utils.resolve_max_positions(
                 self.task.max_positions(),
                 self.model.max_positions(),
-                self.config['dataset']['max_tokens'],
+                self.args['dataset']['max_tokens'],
             ),
             ignore_invalid_inputs=True,
-            required_batch_size_multiple=self.config['dataset']['required_batch_size_multiple'],
-            seed=self.config['common']['seed'],
-            num_shards=self.config['distributed_training']['distributed_world_size'] if shard_batch_itr else 1,
-            shard_id=self.config['distributed_training']['distributed_rank'] if shard_batch_itr else 0,
-            num_workers=self.config['dataset']['num_workers'],
+            required_batch_size_multiple=self.args['dataset']['required_batch_size_multiple'],
+            seed=self.args['common']['seed'],
+            num_shards=self.args['distributed_training']['distributed_world_size'] if shard_batch_itr else 1,
+            shard_id=self.args['distributed_training']['distributed_rank'] if shard_batch_itr else 0,
+            num_workers=self.args['dataset']['num_workers'],
             epoch=epoch,
         )
 
@@ -297,7 +297,7 @@ class Trainer(object):
                 all-reduce in the last backwards pass.
                 """
                 if (
-                    self.config['distributed_training']['distributed_world_size'] > 1
+                    self.args['distributed_training']['distributed_world_size'] > 1
                     and hasattr(self.model, "no_sync")
                     and i < len(samples) - 1
                 ):
@@ -355,19 +355,19 @@ class Trainer(object):
             # multiply gradients by (# GPUs / sample_size) since DDP
             # already normalizes by the number of GPUs. Thus we get
             # (sum_of_gradients / sample_size).
-            if not self.config['optimization']['use_bmuf']:
+            if not self.args['optimization']['use_bmuf']:
                 self.optimizer.multiply_grads(
-                    self.config['distributed_training']['distributed_world_size'] / sample_size
+                    self.args['distributed_training']['distributed_world_size'] / sample_size
                 )
             elif sample_size > 0:  # BMUF needs to check sample size
-                num = self.config['distributed_training']['distributed_world_size'] if self._sync_stats() else 1
+                num = self.args['distributed_training']['distributed_world_size'] if self._sync_stats() else 1
                 self.optimizer.multiply_grads(num / sample_size)
 
             # clip grads
-            grad_norm = self.optimizer.clip_grad_norm(self.config['optimization']['clip_norm'])
+            grad_norm = self.optimizer.clip_grad_norm(self.args['optimization']['clip_norm'])
 
             # check that grad norms are consistent across workers
-            if not self.config['optimization']['use_bmuf']:
+            if not self.args['optimization']['use_bmuf']:
                 self._check_grad_norms(grad_norm)
 
             # take an optimization step
@@ -381,13 +381,13 @@ class Trainer(object):
 
             # clear CUDA cache to reduce memory fragmentation
             if (
-                self.config['common']['empty_cache_freq'] > 0
+                self.args['common']['empty_cache_freq'] > 0
                 and (
-                    (self.get_num_updates() + self.config['common']['empty_cache_freq'] - 1)
-                    % self.config['common']['empty_cache_freq']
+                    (self.get_num_updates() + self.args['common']['empty_cache_freq'] - 1)
+                    % self.args['common']['empty_cache_freq']
                 ) == 0
                 and torch.cuda.is_available()
-                and not self.config['common']['cpu']
+                and not self.args['common']['cpu']
             ):
                 torch.cuda.empty_cache()
         except FloatingPointError:
@@ -408,7 +408,7 @@ class Trainer(object):
                 logger.error("OOM during optimization, irrecoverable")
             raise e
 
-        if self.config['common']['fp16']:
+        if self.args['common']['fp16']:
             metrics.log_scalar("loss_scale", self.optimizer.scaler.loss_scale, priority=700, round=0)
 
         metrics.log_stop_time("train_wall")
@@ -456,7 +456,7 @@ class Trainer(object):
                 sample_size *= 0  # multiply by 0 to preserve device
 
         # gather logging outputs from all replicas
-        if self.config['distributed_training']['distributed_world_size'] > 1:
+        if self.args['distributed_training']['distributed_world_size'] > 1:
             logging_outputs, (sample_size, ) = self._aggregate_logging_outputs(
                 logging_outputs, sample_size, ignore=is_dummy_batch,
             )
@@ -563,15 +563,15 @@ class Trainer(object):
                 return t.half()
             return t
 
-        if self.config['common']['fp16']:
+        if self.args['common']['fp16']:
             sample = utils.apply_to_sample(apply_half, sample)
 
         return sample
 
     def _set_seed(self):
-        # Set seed based on config.seed and the update number so that we get
+        # Set seed based on args.seed and the update number so that we get
         # reproducible results when resuming from checkpoints
-        seed = self.config['common']['seed'] + self.get_num_updates()
+        seed = self.args['common']['seed'] + self.get_num_updates()
         torch.manual_seed(seed)
         if self.cuda:
             torch.cuda.manual_seed(seed)
@@ -579,12 +579,12 @@ class Trainer(object):
     def _sync_stats(self):
         # Return True if it's using multiple GPUs and DDP or multiple GPUs with
         # BMUF and it's a bmuf sync with warmup iterations completed before.
-        return self.config['distributed_training']['distributed_world_size'] > 1 and (
-            (not self.config['optimization']['use_bmuf'])
+        return self.args['distributed_training']['distributed_world_size'] > 1 and (
+            (not self.args['optimization']['use_bmuf'])
             or (
-                self.config['optimization']['use_bmuf']
-                and (self.get_num_updates() + 1) % self.config['distributed_training']['global_sync_iter'] == 0
-                and (self.get_num_updates() + 1) > self.config['distributed_training']['warmup_iterations']
+                self.args['optimization']['use_bmuf']
+                and (self.get_num_updates() + 1) % self.args['distributed_training']['global_sync_iter'] == 0
+                and (self.get_num_updates() + 1) > self.args['distributed_training']['warmup_iterations']
             )
         )
 
@@ -626,7 +626,7 @@ class Trainer(object):
         results = list(zip(
             *distributed_utils.all_gather_list(
                 [logging_outputs] + list(extra_stats_to_sum),
-                max_size=getattr(self.config, 'all_gather_list_size', 16384),
+                max_size=getattr(self.args, 'all_gather_list_size', 16384),
             )
         ))
         logging_outputs, extra_stats_to_sum = results[0], results[1:]
@@ -679,7 +679,7 @@ class Trainer(object):
         """Check that grad norms are consistent across workers."""
         if self._grad_norm_buf is not None:
             self._grad_norm_buf.zero_()
-            self._grad_norm_buf[self.config['distributed_training']['distributed_rank']] = grad_norm
+            self._grad_norm_buf[self.args['distributed_training']['distributed_rank']] = grad_norm
             distributed_utils.all_reduce(self._grad_norm_buf)
             if not (self._grad_norm_buf == self._grad_norm_buf[0]).all():
                 raise RuntimeError(
@@ -691,11 +691,11 @@ class Trainer(object):
         if grad_norm is not None:
             metrics.log_speed("ups", 1., priority=100, round=2)
             metrics.log_scalar("gnorm", grad_norm, priority=400, round=3)
-            if self.config['optimization']['clip_norm'] > 0:
+            if self.args['optimization']['clip_norm'] > 0:
                 metrics.log_scalar(
                     "clip",
                     torch.where(
-                        grad_norm > self.config['optimization']['clip_norm'],
+                        grad_norm > self.args['optimization']['clip_norm'],
                         grad_norm.new_tensor(100),
                         grad_norm.new_tensor(0),
                     ),

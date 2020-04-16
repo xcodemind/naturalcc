@@ -8,29 +8,42 @@ import json
 import itertools
 import logging
 import os
-
 import numpy as np
 
-from fairseq import metrics, options, utils
-from fairseq.data import (
-    AppendTokenDataset,
-    ConcatDataset,
-    data_utils,
-    encoders,
-    indexed_dataset,
-    LanguagePairDataset,
-    PrependTokenDataset,
-    StripTokenDataset,
-    TruncateDataset,
-)
-
-from .fairseq_task import FairseqTask
-from . import register_task
+# from fairseq import metrics, options, utils
+# from fairseq.data import (
+#     AppendTokenDataset,
+#     ConcatDataset,
+#     data_utils,
+#     encoders,
+#     indexed_dataset,
+#     LanguagePairDataset,
+#     PrependTokenDataset,
+#     StripTokenDataset,
+#     TruncateDataset,
+# )
+#
+# from .fairseq_task import FairseqTask
+# from . import register_task
+from ncc.logging import metrics
+from ncc import LOGGER
+from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks import register_task
+from ncc.utils import utils
+from ncc.data import encoders
+from ncc.data import indexed_dataset
+from ncc.data import data_utils
+from ncc.data.append_token_dataset import AppendTokenDataset
+from ncc.data.truncate_dataset import TruncateDataset
+from ncc.data.strip_token_dataset import StripTokenDataset
+from ncc.data.concat_dataset import ConcatDataset
+from ncc.data.prepend_token_dataset import PrependTokenDataset
+from ncc.data.language_pair_dataset import LanguagePairDataset
 
 EVAL_BLEU_ORDER = 4
 
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 
 def load_langpair_dataset(
@@ -79,7 +92,7 @@ def load_langpair_dataset(
         if tgt_dataset is not None:
             tgt_datasets.append(tgt_dataset)
 
-        logger.info('{} {} {}-{} {} examples'.format(
+        LOGGER.info('{} {} {}-{} {} examples'.format(
             data_path, split_k, src, tgt, len(src_datasets[-1])
         ))
 
@@ -211,25 +224,26 @@ class TranslationTask(FairseqTask):
         Args:
             args (argparse.Namespace): parsed command-line arguments
         """
-        args.left_pad_source = options.eval_bool(args.left_pad_source)
-        args.left_pad_target = options.eval_bool(args.left_pad_target)
+        # options.eval_bool
+        args['task']['left_pad_source'] = bool(args['task']['left_pad_source'])
+        args['task']['left_pad_target'] = bool(args['task']['left_pad_target'])
 
-        paths = utils.split_paths(args.data)
+        paths = utils.split_paths(args['task']['data'])
         assert len(paths) > 0
         # find language pair automatically
-        if args.source_lang is None or args.target_lang is None:
-            args.source_lang, args.target_lang = data_utils.infer_language_pair(paths[0])
-        if args.source_lang is None or args.target_lang is None:
+        if args['task']['source_lang'] is None or args['task']['target_lang'] is None:
+            args['task']['source_lang'], args['task']['target_lang'] = data_utils.infer_language_pair(paths[0])
+        if args['task']['source_lang'] is None or args['task']['target_lang'] is None:
             raise Exception('Could not infer language pair, please provide it explicitly')
 
         # load dictionaries
-        src_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args.source_lang)))
-        tgt_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args.target_lang)))
+        src_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['source_lang'])))
+        tgt_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['target_lang'])))
         assert src_dict.pad() == tgt_dict.pad()
         assert src_dict.eos() == tgt_dict.eos()
         assert src_dict.unk() == tgt_dict.unk()
-        logger.info('[{}] dictionary: {} types'.format(args.source_lang, len(src_dict)))
-        logger.info('[{}] dictionary: {} types'.format(args.target_lang, len(tgt_dict)))
+        LOGGER.info('[{}] dictionary: {} types'.format(args['task']['source_lang'], len(src_dict)))
+        LOGGER.info('[{}] dictionary: {} types'.format(args['task']['target_lang'], len(tgt_dict)))
 
         return cls(args, src_dict, tgt_dict)
 
@@ -239,23 +253,23 @@ class TranslationTask(FairseqTask):
         Args:
             split (str): name of the split (e.g., train, valid, test)
         """
-        paths = utils.split_paths(self.args.data)
+        paths = utils.split_paths(self.args['task']['data'])
         assert len(paths) > 0
         data_path = paths[(epoch - 1) % len(paths)]
 
         # infer langcode
-        src, tgt = self.args.source_lang, self.args.target_lang
+        src, tgt = self.args['task']['source_lang'], self.args['task']['target_lang']
 
         self.datasets[split] = load_langpair_dataset(
             data_path, split, src, self.src_dict, tgt, self.tgt_dict,
-            combine=combine, dataset_impl=self.args.dataset_impl,
-            upsample_primary=self.args.upsample_primary,
-            left_pad_source=self.args.left_pad_source,
-            left_pad_target=self.args.left_pad_target,
-            max_source_positions=self.args.max_source_positions,
-            max_target_positions=self.args.max_target_positions,
-            load_alignments=self.args.load_alignments,
-            truncate_source=self.args.truncate_source,
+            combine=combine, dataset_impl=self.args['dataset']['dataset_impl'],
+            upsample_primary=self.args['task']['upsample_primary'],
+            left_pad_source=self.args['task']['left_pad_source'],
+            left_pad_target=self.args['task']['left_pad_target'],
+            max_source_positions=self.args['task']['max_source_positions'],
+            max_target_positions=self.args['task']['max_target_positions'],
+            load_alignments=self.args['task']['load_alignments'],
+            truncate_source=self.args['task']['truncate_source'],
         )
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
@@ -281,7 +295,7 @@ class TranslationTask(FairseqTask):
 
     def valid_step(self, sample, model, criterion):
         loss, sample_size, logging_output = super().valid_step(sample, model, criterion)
-        if self.args.eval_bleu:
+        if self.args['task']['eval_bleu']:
             bleu = self._inference_with_bleu(self.sequence_generator, sample, model)
             logging_output['_bleu_sys_len'] = bleu.sys_len
             logging_output['_bleu_ref_len'] = bleu.ref_len
@@ -295,7 +309,7 @@ class TranslationTask(FairseqTask):
 
     def reduce_metrics(self, logging_outputs, criterion):
         super().reduce_metrics(logging_outputs, criterion)
-        if self.args.eval_bleu:
+        if self.args['task']['eval_bleu']:
 
             def sum_logs(key):
                 return sum(log.get(key, 0) for log in logging_outputs)
@@ -333,7 +347,7 @@ class TranslationTask(FairseqTask):
 
     def max_positions(self):
         """Return the max sentence length allowed by the task."""
-        return (self.args.max_source_positions, self.args.max_target_positions)
+        return (self.args['task']['max_source_positions'], self.args['task']['max_target_positions'])
 
     @property
     def source_dictionary(self):
@@ -351,7 +365,7 @@ class TranslationTask(FairseqTask):
         def decode(toks, escape_unk=False):
             s = self.tgt_dict.string(
                 toks.int().cpu(),
-                self.args.eval_bleu_remove_bpe,
+                self.args['task']['eval_bleu_remove_bpe'],
                 escape_unk=escape_unk,
             )
             if self.tokenizer:
@@ -366,8 +380,8 @@ class TranslationTask(FairseqTask):
                 utils.strip_pad(sample['target'][i], self.tgt_dict.pad()),
                 escape_unk=True,  # don't count <unk> as matches to the hypo
             ))
-        if self.args.eval_bleu_print_samples:
-            logger.info('example hypothesis: ' + hyps[0])
-            logger.info('example reference: ' + refs[0])
-        tokenize = sacrebleu.DEFAULT_TOKENIZER if not self.args.eval_tokenized_bleu else 'none'
+        if self.args['task']['eval_bleu_print_samples']:
+            LOGGER.info('example hypothesis: ' + hyps[0])
+            LOGGER.info('example reference: ' + refs[0])
+        tokenize = sacrebleu.DEFAULT_TOKENIZER if not self.args['task']['eval_tokenized_bleu'] else 'none'
         return sacrebleu.corpus_bleu(hyps, [refs], tokenize=tokenize)

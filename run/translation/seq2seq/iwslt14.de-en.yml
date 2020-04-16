@@ -25,7 +25,7 @@ common:
 #  user_dir: ~ # default=None, help='path to a python module containing custom extensions (tasks and/or architectures)'
   empty_cache_freq: 0 # type=int, help='how often to clear the PyTorch CUDA cache (0 to disable)'
 #  all_gather_list_size: 16384 # default=16384, type=int, help='number of bytes reserved for gathering stats from workers'
-  task: summarization # task
+  task: translation # task
 
   seed: 42 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
   cpu: 0 # action='store_true', help='use CPU instead of CUDA'
@@ -80,7 +80,7 @@ distributed_training:
   local_rank: -1 # type=int, default=-1, help="For distributed training: local_rank"
 
 task:
-  data: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/data-bin # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: /data/wanyao/ghproj_d/naturalcodev3/iwslt14/iwslt14.tokenized.de-en/dest-bin # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 #  sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
 #  tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
 #  mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
@@ -97,8 +97,8 @@ task:
 #  eval_all_checkpoints: 0 # action="store_true", help="Evaluate all checkpoints starting with the same prefix as model_name_or_path ending and ending with step number",
 
   # for summarization
-  source_lang: code
-  target_lang: docstring
+  source_lang: de
+  target_lang: en
   load_alignments: 0 #', action='store_true', help='load the binarized alignments'
   left_pad_source: 1 #', default='True', type=str, metavar='BOOL', help='pad the source on the left'
   left_pad_target: 0 #', default='False', type=str, metavar='BOOL', help='pad the target on the left'
@@ -220,7 +220,7 @@ checkpoint:
   best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
 #  patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
-  save_dir: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/summarization/result # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
+  save_dir: /data/wanyao/ghproj_d/naturalcodev3/iwslt14/result # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
   model_name_or_path: ~ # default=None, type=str, help="The model checkpoint for weights initialization. Leave None if you want to train a model from scratch.",
   cache_dir: ~ # default=None, type=str, help="Optional directory to store the pre-trained models downloaded from s3 (instead of the default one)",

@@ -4,8 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
-
-from . import BaseWrapperDataset
+from ncc.data.base_wrapper_dataset import BaseWrapperDataset
 
 
 class TruncateDataset(BaseWrapperDataset):

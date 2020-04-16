@@ -69,12 +69,12 @@ class LSTMModel(FairseqEncoderDecoderModel):
     #     # fmt: on
 
     @classmethod
-    def build_model(cls, args, task):
+    def build_model(cls, args, config, task):
         """Build a new model instance."""
         # make sure that all args are properly defaulted (in case there are any new ones)
         # base_architecture(args)
 
-        if args['model'].encoder_layers != args['model'].decoder_layers:
+        if args['model']['encoder_layers'] != args['model']['decoder_layers']:
             raise ValueError('--encoder-layers must match --decoder-layers')
 
         # max_source_positions = getattr(args, 'max_source_positions', DEFAULT_MAX_SOURCE_POSITIONS)
@@ -144,7 +144,7 @@ class LSTMModel(FairseqEncoderDecoderModel):
             num_layers=args['model']['encoder_layers'],
             dropout_in=args['model']['encoder_dropout_in'],
             dropout_out=args['model']['encoder_dropout_out'],
-            bidirectional=args['model']['encoder_bidirectional'],
+            bidirectional=bool(args['model']['encoder_bidirectional']),
             pretrained_embed=pretrained_encoder_embed,
             max_source_positions=max_source_positions
         )

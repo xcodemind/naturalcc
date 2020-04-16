@@ -137,12 +137,23 @@ class SummarizationTask(FairseqTask):
 
     @classmethod
     def setup_task(cls, args, **kwargs):
+        """Setup the task (e.g., load dictionaries).
+
+        Args:
+            args (argparse.Namespace): parsed command-line arguments
+        """
+        # options.eval_bool
+        args['task']['left_pad_source'] = bool(args['task']['left_pad_source'])
+        args['task']['left_pad_target'] = bool(args['task']['left_pad_target'])
+
         paths = utils.split_paths(args['task']['data'])
-        print('paths: ', paths)
-        # assert len(paths) > 0
-        # dictionary = Dictionary.load(os.path.join(paths[0], 'dict.txt'))
-        # logger.info('dictionary: {} types'.format(len(dictionary)))
-        # tokenizer = RobertaTokenizer.from_pretrained(args['dataset']['tokenizer_name'], cache_dir=args['checkpoint']['cache_dir'])
+        assert len(paths) > 0
+        # find language pair automatically
+        if args['task']['source_lang'] is None or args['task']['target_lang'] is None:
+            args['task']['source_lang'], args['task']['target_lang'] = data_utils.infer_language_pair(paths[0])
+        if args['task']['source_lang'] is None or args['task']['target_lang'] is None:
+            raise Exception('Could not infer language pair, please provide it explicitly')
+
         # load dictionaries
         src_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['source_lang'])))
         tgt_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['target_lang'])))
@@ -160,23 +171,23 @@ class SummarizationTask(FairseqTask):
         Args:
             split (str): name of the split (e.g., train, valid, test)
         """
-        paths = utils.split_paths(self.args.data)
+        paths = utils.split_paths(self.args['task']['data'])
         assert len(paths) > 0
         data_path = paths[(epoch - 1) % len(paths)]
 
         # infer langcode
-        src, tgt = self.args.source_lang, self.args.target_lang
+        src, tgt = self.args['task']['source_lang'], self.args['task']['target_lang']
 
         self.datasets[split] = load_langpair_dataset(
             data_path, split, src, self.src_dict, tgt, self.tgt_dict,
-            combine=combine, dataset_impl=self.args.dataset_impl,
-            upsample_primary=self.args.upsample_primary,
-            left_pad_source=self.args.left_pad_source,
-            left_pad_target=self.args.left_pad_target,
-            max_source_positions=self.args.max_source_positions,
-            max_target_positions=self.args.max_target_positions,
-            load_alignments=self.args.load_alignments,
-            truncate_source=self.args.truncate_source,
+            combine=combine, dataset_impl=self.args['dataset']['dataset_impl'],
+            upsample_primary=self.args['task']['upsample_primary'],
+            left_pad_source=self.args['task']['left_pad_source'],
+            left_pad_target=self.args['task']['left_pad_target'],
+            max_source_positions=self.args['task']['max_source_positions'],
+            max_target_positions=self.args['task']['max_target_positions'],
+            load_alignments=self.args['task']['load_alignments'],
+            truncate_source=self.args['task']['truncate_source'],
         )
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
@@ -202,8 +213,10 @@ class SummarizationTask(FairseqTask):
 
     @property
     def source_dictionary(self):
-        return self.tokenizer.encoder
+        """Return the source :class:`~fairseq.data.Dictionary`."""
+        return self.src_dict
 
     @property
     def target_dictionary(self):
-        return self.tokenizer.encoder
+        """Return the target :class:`~fairseq.data.Dictionary`."""
+        return self.tgt_dict

@@ -16,11 +16,11 @@ import torch.nn.functional as F
 
 from ncc.utils import utils
 from ncc.models import (
-    FairseqDecoder,
     FairseqLanguageModel,
     register_model,
     register_model_architecture,
 )
+from ncc.modules.summarization.fairseq_decoder import FairseqDecoder
 from ncc.modules import (
     LayerNorm,
     TransformerSentenceEncoder,
