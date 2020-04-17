@@ -181,12 +181,11 @@ def main():
     mpool = Pool(processes=10)  # build a multi-processing pool
 
     for lang in args_.langs:
-        # # 1. flatten
-        # max_sub_token_len = flatten_raw_data(mpool, args_.raw_dir, args_.clean_dir, args_.so_file, lang, args_.modes, )
-        # # 2. parse ast
-        # extract_ast_modalities(mpool, args_.clean_dir, lang, max_sub_token_len)
-        # print('finish...')
-
+        # 1. flatten
+        max_sub_token_len = flatten_raw_data(mpool, args_.raw_dir, args_.clean_dir, args_.so_file, lang, args_.modes, )
+        # 2. parse ast
+        extract_ast_modalities(mpool, args_.clean_dir, lang, max_sub_token_len)
+        print('finish...')
         # 3. merge data into one
         merge_modalities(args_.clean_dir, lang, )
 
