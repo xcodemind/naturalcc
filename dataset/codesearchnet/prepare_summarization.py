@@ -141,6 +141,26 @@ def extract_ast_modalities(mpool: Pool, clean_dir: str, lang: str, MAX_SUB_TOKEN
     results = [res.get() for res in results]
 
 
+def merge_modalities(clean_dir: str, lang: str, modalities=None, ):
+    if modalities is None:
+        modalities = glob.glob(os.path.join(clean_dir, lang, '*', ))
+        modalities = [modal.split('/')[-1] for modal in modalities]
+    print('merge file of modalities: [{}]'.format('/'.join(modalities)))
+    # get all modalities from modalities dir
+    for modal in modalities:
+        for mode in ['train', 'valid', 'test']:
+            modalities_files = [modal_file \
+                                for modal_file in glob.glob(os.path.join(clean_dir, lang, modal, mode, '*.txt')) \
+                                if modal_file.split('/')[-1].startswith('{}_{}'.format(lang, mode))]
+            if len(modalities_files) == 0:
+                pass
+            else:
+                dst_file = os.path.join(clean_dir, lang, '{}.{}'.format(mode, modal))
+                cmd = 'cat {} > {}'.format(' '.join(modalities_files), dst_file)
+                print(cmd)
+                os.system(cmd)
+
+
 def main():
     parser = argparse.ArgumentParser()
     # Before creating the true parser, we need to import optional user module
@@ -161,11 +181,14 @@ def main():
     mpool = Pool(processes=10)  # build a multi-processing pool
 
     for lang in args_.langs:
-        # 1. flatten
-        max_sub_token_len = flatten_raw_data(mpool, args_.raw_dir, args_.clean_dir, args_.so_file, lang, args_.modes, )
-        # 2. parse ast
-        extract_ast_modalities(mpool, args_.clean_dir, lang, max_sub_token_len)
-        print('finish...')
+        # # 1. flatten
+        # max_sub_token_len = flatten_raw_data(mpool, args_.raw_dir, args_.clean_dir, args_.so_file, lang, args_.modes, )
+        # # 2. parse ast
+        # extract_ast_modalities(mpool, args_.clean_dir, lang, max_sub_token_len)
+        # print('finish...')
+
+        # 3. merge data into one
+        merge_modalities(args_.clean_dir, lang, )
 
         # 到此结束，dict构造我会放到preprocess.py里面去
         # from dataset.parse_key.dicts import main as dict_main
