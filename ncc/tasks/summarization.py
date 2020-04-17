@@ -30,7 +30,7 @@ def load_langpair_dataset(
     max_target_positions, prepend_bos=False, load_alignments=False,
     truncate_source=False, append_source_id=False
 ):
-
+    # TODO: add modality argument
     def split_exists(split, src, tgt, lang, data_path):
         filename = os.path.join(data_path, '{}.{}-{}.{}'.format(split, src, tgt, lang))
         return indexed_dataset.dataset_exists(filename, impl=dataset_impl)
@@ -62,6 +62,10 @@ def load_langpair_dataset(
                 src_dict.eos(),
             )
         src_datasets.append(src_dataset)
+
+        # path_datasets
+
+        # ast_datasets
 
         tgt_dataset = data_utils.load_indexed_dataset(prefix + tgt, tgt_dict, dataset_impl)
         if tgt_dataset is not None:
@@ -210,6 +214,39 @@ class SummarizationTask(FairseqTask):
             gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
             self.sequence_generator = self.build_generator([model], Namespace(**gen_args))
         return model
+
+    # TODO: rewrite this function, add reinforcement learning
+    def train_step(
+        self, sample, model, criterion, optimizer, update_num, ignore_grad=False
+    ):
+        """
+        Do forward and backward, and return the loss as computed by *criterion*
+        for the given *model* and *sample*.
+
+        Args:
+            sample (dict): the mini-batch. The format is defined by the
+                :class:`~fairseq.data.FairseqDataset`.
+            model (~fairseq.models.BaseFairseqModel): the model
+            criterion (~fairseq.criterions.FairseqCriterion): the criterion
+            optimizer (~fairseq.optim.FairseqOptimizer): the optimizer
+            update_num (int): the current update
+            ignore_grad (bool): multiply loss by 0 if this is set to True
+
+        Returns:
+            tuple:
+                - the loss
+                - the sample size, which is used as the denominator for the
+                  gradient
+                - logging outputs to display while training
+        """
+        model.train()
+        model.set_num_updates(update_num)
+        loss, sample_size, logging_output = criterion(model, sample)
+        if ignore_grad:
+            loss *= 0
+        optimizer.backward(loss)
+        return loss, sample_size, logging_output
+
 
     @property
     def source_dictionary(self):
