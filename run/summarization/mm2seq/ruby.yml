@@ -38,7 +38,7 @@ dataset:
   num_workers: 1 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
 #  skip_invalid_size_inputs_valid_test: 0 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
-  max_sentences: 1 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  max_sentences: ~ # 16 # 1 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
   dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
   train_subset: train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
@@ -47,7 +47,7 @@ dataset:
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
   disable_validation: 1 # action='store_true',help='disable validation'
   max_tokens_valid: ~ # type=int, metavar='N', help='maximum number of tokens in a validation batch (defaults to --max-tokens)'
-  max_sentences_valid: 16 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
+  max_sentences_valid: ~ # 16 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
   curriculum: 0 # default=0, type=int, metavar='N', help='don\'t shuffle batches for first N epochs'
 #  gen_subset: test # default='test', metavar='SPLIT', help='data subset to generate (train, valid, test)'
 #  num_shards: 1 # default=1, type=int, metavar='N', help='shard generation over N shards'
@@ -97,13 +97,16 @@ task:
 #  eval_all_checkpoints: 0 # action="store_true", help="Evaluate all checkpoints starting with the same prefix as model_name_or_path ending and ending with step number",
 
   # for summarization
-  source_lang: code
+  source_lang:
+    - path
+  #    - bin_ast
+#    - code
   target_lang: docstring
   load_alignments: 0 #', action='store_true', help='load the binarized alignments'
   left_pad_source: 1 #', default='True', type=str, metavar='BOOL', help='pad the source on the left'
   left_pad_target: 0 #', default='False', type=str, metavar='BOOL', help='pad the target on the left'
-  max_source_positions: 1024 #', default=1024, type=int, metavar='N', help='max number of tokens in the source sequence'
-  max_target_positions: 1024 #', default=1024, type=int, metavar='N', help='max number of tokens in the target sequence'
+  max_source_positions: ~ # 1024 #', default=1024, type=int, metavar='N', help='max number of tokens in the source sequence'
+  max_target_positions: ~ #1024 #', default=1024, type=int, metavar='N', help='max number of tokens in the target sequence'
   upsample_primary: 1 #', default=1, type=int, help='amount to upsample primary dataset'
   truncate_source: 0 #', action='store_true', default=False, help='truncate source to max-source-positions'
 
@@ -118,15 +121,12 @@ task:
 
 
 model:
-  arch: lstm
-  code_modalities:
-    - tok
-    #    - ast
-    #    - path
-#    - sbt
+  arch: mm2seq # lstm
   # encoder
   encoder_embed_dim: 512 #', type=int, metavar='N', help='encoder embedding dimension'
   encoder_embed_path: ~ #', type=str, metavar='STR', help='path to pre-trained encoder embedding'
+  encoder_embed_path_path: ~ #', type=str, metavar='STR', help='path to pre-trained encoder embedding'
+  encoder_embed_path_ast: ~ #', type=str, metavar='STR', help='path to pre-trained encoder embedding'
   encoder_freeze_embed: 0 #', action='store_true', help='freeze encoder embeddings'
   encoder_hidden_size: 512 #', type=int, metavar='N', help='encoder hidden size'
   encoder_layers: 1 #', type=int, metavar='N', help='number of encoder layers'
@@ -156,8 +156,8 @@ model:
 #  max_predict_length: 60 # （固定，不要调）max generation length for decoder
 #  dropout: 0.2 # （固定，不要调）dropout
 #  decoder_input_feed: False # （固定，不要调）True, False
-  max_source_positions: 1e5
-  max_target_positions: 1e5
+  max_source_positions: ~ #1e5
+  max_target_positions: ~ #1e5
 
 
 optimization:

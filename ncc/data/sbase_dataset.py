@@ -338,8 +338,8 @@ if __name__ == '__main__':
     code_modalities = args['training']['code_modalities']
     # mode = args['dataset']['source']['mode'][-1]
     mode = 'valid'
-    # token_dicts = TokenDicts(args['dicts'])
-    token_dicts = None
+    token_dicts = TokenDicts(args['dicts'])
+    # token_dicts = None
 
     portion = args['dataset']['portion']
     leaf_path_k = args['dataset']['leaf_path_k']

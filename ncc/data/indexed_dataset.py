@@ -14,7 +14,7 @@ import torch
 from .fairseq_dataset import FairseqDataset
 from tokenizers import ByteLevelBPETokenizer
 from tokenizers.processors import BertProcessing
-
+import ujson
 
 def __best_fitting_dtype(vocab_size=None):
     if vocab_size is not None and vocab_size < 65500:
@@ -50,10 +50,17 @@ def make_builder(out_file, impl, vocab_size=None):
         return IndexedDatasetBuilder(out_file)
 
 
-def make_dataset(path, impl, fix_lua_indexing=False, dictionary=None, tokenizer=None):
+def make_dataset(path, impl, modality='text', fix_lua_indexing=False, dictionary=None, tokenizer=None):
     if impl == 'raw' and IndexedRawTextDataset.exists(path):
         assert dictionary is not None
-        return IndexedRawTextDataset(path, dictionary)
+        if modality == 'path':
+            print('dictionary: ', dictionary)
+            return IndexedRawPathDataset(path, dictionary)
+        elif modality == 'ast':
+            return IndexedRawASTDataset(path, dictionary)
+        else:
+            return IndexedRawTextDataset(path, dictionary)
+
     elif impl == 'lazy' and IndexedDataset.exists(path):
         return IndexedDataset(path, fix_lua_indexing=fix_lua_indexing)
     elif impl == 'cached' and IndexedDataset.exists(path):
@@ -284,6 +291,144 @@ class IndexedRawTextDataset(FairseqDataset):
     @staticmethod
     def exists(path):
         return os.path.exists(path)
+
+
+class IndexedRawASTDataset(FairseqDataset):
+    """Takes a text file as input and binarizes it in memory at instantiation.
+    Original lines are also kept in memory"""
+
+    def __init__(self, path, dictionary, append_eos=True, reverse_order=False):
+        self.tokens_list = []
+        self.lines = []
+        self.sizes = []
+        self.append_eos = append_eos
+        self.reverse_order = reverse_order
+        self.read_data(path, dictionary)
+        self.size = len(self.tokens_list)
+
+    def read_data(self, path, dictionary):
+        with open(path, 'r', encoding='utf-8') as f:
+            for line in f:
+                self.lines.append(line.strip('\n'))
+                tokens = dictionary.encode_line(
+                    line, add_if_not_exist=False,
+                    append_eos=self.append_eos, reverse_order=self.reverse_order,
+                ).long()
+                self.tokens_list.append(tokens)
+                self.sizes.append(len(tokens))
+        self.sizes = np.array(self.sizes)
+
+    def check_index(self, i):
+        if i < 0 or i >= self.size:
+            raise IndexError('index out of range')
+
+    @lru_cache(maxsize=8)
+    def __getitem__(self, i):
+        self.check_index(i)
+        return self.tokens_list[i]
+
+    def get_original_text(self, i):
+        self.check_index(i)
+        return self.lines[i]
+
+    def __del__(self):
+        pass
+
+    def __len__(self):
+        return self.size
+
+    def num_tokens(self, index):
+        return self.sizes[index]
+
+    def size(self, index):
+        return self.sizes[index]
+
+    @staticmethod
+    def exists(path):
+        return os.path.exists(path)
+
+
+class IndexedRawPathDataset(FairseqDataset):
+    """Takes a text file as input and binarizes it in memory at instantiation.
+    Original lines are also kept in memory"""
+
+    def __init__(self, path, dictionary, append_eos=True, reverse_order=False):
+        self.tokens_list = {'head':[], 'center':[], 'tail':[]}
+        # self.lines = []
+        self.sizes = {'head':[], 'center':[], 'tail': []}
+        self.append_eos = append_eos
+        self.reverse_order = reverse_order
+        self.read_data(path, dictionary)
+        self.size = len(self.tokens_list['head'])
+
+    def read_data(self, path, dictionary):
+        border_dictionary, center_dictionary = dictionary
+        sss = {'head': [], 'center': [], 'tail': []}
+        with open(path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = ujson.loads(line)
+                tokens, sizes = {'head': [], 'center': [], 'tail': []}, {'head': [], 'center': [], 'tail': []}
+                line = line[0: 2]  # TODO [:10]
+                for path in line:
+                    head, center, tail = path
+                    head_tokens = border_dictionary.encode_line(
+                        head, line_tokenizer=None, add_if_not_exist=False,
+                        append_eos=self.append_eos, reverse_order=self.reverse_order,).long()
+                    tail_tokens = border_dictionary.encode_line(
+                        tail, line_tokenizer=None, add_if_not_exist=False,
+                        append_eos=self.append_eos, reverse_order=self.reverse_order, ).long()
+                    center_tokens = center_dictionary.encode_line(
+                        center, line_tokenizer=None, add_if_not_exist=False,
+                        append_eos=self.append_eos, reverse_order=self.reverse_order, ).long()
+                    # tmp_tokens = torch.cat([head_tokens, center_tokens, tail_tokens])
+                    tokens['head'].append(head_tokens)
+                    sizes['head'].append(len(head_tokens))
+                    tokens['center'].append(center_tokens)
+                    sizes['center'].append(len(center_tokens))
+                    tokens['tail'].append(tail_tokens)
+                    sizes['tail'].append(len(tail_tokens))
+
+                self.tokens_list['head'].append(tokens['head'])
+                self.tokens_list['center'].append(tokens['center'])
+                self.tokens_list['tail'].append(tokens['tail'])
+                sss['head'].append(sizes['head'])
+                sss['center'].append(sizes['center'])
+                sss['tail'].append(sizes['tail'])
+
+        self.sizes['head'] = np.array(sss['head'])
+        self.sizes['center'] = np.array(sss['center'])
+        self.sizes['tail'] = np.array(sss['tail'])
+
+    def check_index(self, i):
+        if i < 0 or i >= self.size:
+            raise IndexError('index out of range')
+
+    @lru_cache(maxsize=8)
+    def __getitem__(self, i):
+        self.check_index(i)
+        return self.tokens_list['head'][i], self.tokens_list['center'][i], self.tokens_list['tail'][i]
+
+    def get_original_text(self, i):
+        # self.check_index(i)
+        # return self.lines[i]
+        raise NotImplementedError
+
+    def __del__(self):
+        pass
+
+    def __len__(self):
+        return self.size
+
+    def num_tokens(self, index):
+        return self.sizes['head'][index], self.sizes['center'][index], self.sizes['tail'][index]
+
+    def size(self, index):
+        return self.sizes['head'][index], self.sizes['center'][index], self.sizes['tail'][index]
+
+    @staticmethod
+    def exists(path):
+        return os.path.exists(path)
+
 
 class BertDataset(FairseqDataset):
     def __init__(self, path, dictionary, tokenizer):
