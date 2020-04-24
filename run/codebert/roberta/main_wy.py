@@ -88,6 +88,7 @@ def train(args, trainer, task, epoch_itr):
     # reset epoch-level meters
     metrics.reset_meters('train')
 
+
 def validate(args, trainer, task, epoch_itr, subsets):
     """Evaluate the model on the validation set(s) and return the losses."""
 
@@ -138,6 +139,7 @@ def validate(args, trainer, task, epoch_itr, subsets):
         valid_losses.append(stats[args['checkpoint']['best_checkpoint_metric']])
     return valid_losses
 
+
 def get_valid_stats(args, trainer, stats):
     if 'nll_loss' in stats and 'ppl' not in stats:
         stats['ppl'] = utils.get_perplexity(stats['nll_loss'])
@@ -150,6 +152,7 @@ def get_valid_stats(args, trainer, stats):
             stats[args['checkpoint']['best_checkpoint_metric']],
         )
     return stats
+
 
 def get_training_stats(stats):
     if 'nll_loss' in stats and 'ppl' not in stats:
