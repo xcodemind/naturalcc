@@ -37,9 +37,9 @@ import random
 import numpy as np
 from collections import namedtuple
 
-from line_profiler import LineProfiler
+#from line_profiler import LineProfiler
 
-TimeAnalyzer = LineProfiler()
+#TimeAnalyzer = LineProfiler()
 
 # Copyright (c) Facebook, Inc. and its affiliates.
 #
