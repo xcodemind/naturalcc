@@ -92,16 +92,16 @@ class LSTMModel(FairseqEncoderDecoderModel):
 
         if args['model']['encoder_embed_path']:
             pretrained_encoder_embed = load_pretrained_embedding_from_file(
-                args['model']['encoder_embed_path'], task.source_dictionary, args['model']['encoder_embed_dim'])
+                args['model']['encoder_embed_path'], task.source_dictionary['code'], args['model']['encoder_embed_dim'])
         else:
-            num_embeddings = len(task.source_dictionary)
+            num_embeddings = len(task.source_dictionary['code'])
             pretrained_encoder_embed = Embedding(
-                num_embeddings, args['model']['encoder_embed_dim'], task.source_dictionary.pad()
+                num_embeddings, args['model']['encoder_embed_dim'], task.source_dictionary['code'].pad()
             )
 
         if args['model']['share_all_embeddings']:
             # double check all parameters combinations are valid
-            if task.source_dictionary != task.target_dictionary:
+            if task.source_dictionary['code'] != task.target_dictionary:
                 raise ValueError('--share-all-embeddings requires a joint dictionary')
             if args['model']['decoder_embed_path'] and (
                     args['model']['decoder_embed_path'] != args['model']['encoder_embed_path']):
@@ -138,7 +138,7 @@ class LSTMModel(FairseqEncoderDecoderModel):
             pretrained_decoder_embed.weight.requires_grad = False
 
         encoder = LSTMEncoder(
-            dictionary=task.source_dictionary,
+            dictionary=task.source_dictionary['code'],
             embed_dim=args['model']['encoder_embed_dim'],
             hidden_size=args['model']['encoder_hidden_size'],
             num_layers=args['model']['encoder_layers'],

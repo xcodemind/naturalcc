@@ -7,6 +7,7 @@
 Data pre-processing: build vocabularies and binarize training data.
 """
 from collections import Counter
+from collections import OrderedDict
 from itertools import zip_longest
 from multiprocessing import Pool
 import shutil
@@ -82,10 +83,11 @@ def dict_path(args, lang):
     return dest_path(args, "dict", lang) + ".txt"
 
 
-def build_dictionary(args, task, filenames, src=False, tgt=False):
+def build_dictionary(args, task, modality, filenames, src=False, tgt=False):
     assert src ^ tgt
     return task.build_dictionary(
         filenames,
+        modality=modality,
         workers=args['preprocess']['workers'],
         threshold=args['preprocess']['thresholdsrc'] if src else args['preprocess']['thresholdtgt'],
         nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
@@ -218,7 +220,7 @@ def make_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers=1):
     if args['preprocess']['dataset_impl'] == "raw":
         # Copy original text file to destination folder
         output_text_file = dest_path(args,
-            output_prefix + ".{}-{}".format(args['preprocess']['source_lang'], args['preprocess']['target_lang']),
+            output_prefix, # + ".{}-{}".format(args['preprocess']['source_lang'], args['preprocess']['target_lang'])
             lang,
         )
         shutil.copyfile(file_name(input_prefix, lang), output_text_file)
@@ -300,54 +302,72 @@ def main(args):
     os.makedirs(args['preprocess']['destdir'], exist_ok=True)
     target = not args['preprocess']['only_source']
 
-    if not args['preprocess']['srcdict'] and os.path.exists(dict_path(args, args['preprocess']['source_lang'])):
-        raise FileExistsError(dict_path(args, args['preprocess']['source_lang']))
-    if target and not args['preprocess']['tgtdict'] and os.path.exists(dict_path(args, args['preprocess']['target_lang'])):
-        raise FileExistsError(dict_path(args, args['preprocess']['target_lang']))
+    # if not args['preprocess']['codedict'] and os.path.exists(dict_path(args, args['preprocess']['source_lang'])):
+    #     raise FileExistsError(dict_path(args, args['preprocess']['source_lang']))
+    # if target and not args['preprocess']['tgtdict'] and os.path.exists(dict_path(args, args['preprocess']['target_lang'])):
+    #     raise FileExistsError(dict_path(args, args['preprocess']['target_lang']))
 
     # 1. Build vocabulary (dictionary)
     LOGGER.info('Build vocabulary...')
     task = tasks.get_task(args['preprocess']['task'])
-    if args['preprocess']['joined_dictionary']:
-        assert not args['preprocess']['srcdict'] or not args['preprocess']['tgtdict'], \
+    if args['preprocess']['joined_dictionary']:     # TODO: to be checked
+        assert not args['preprocess']['codedict'] or not args['preprocess']['tgtdict'], \
             "cannot use both --srcdict and --tgtdict with --joined-dictionary"
 
-        if args['preprocess']['srcdict']:
-            src_dict = task.load_dictionary(args['preprocess']['srcdict'])
-        elif args['preprocess']['tgtdict']:
-            src_dict = task.load_dictionary(args['preprocess']['tgtdict'])
-        else:
-            assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
-            src_dict = build_dictionary(args, task,
-                {train_path(args, lang) for lang in [args['preprocess']['source_lang'], args['preprocess']['target_lang']]}, src=True
-            )
+        # if args['preprocess']['codedict']:
+        #     src_dict = task.load_dictionary(args['preprocess']['srcdict'])
+        # elif args['preprocess']['tgtdict']:
+        #     src_dict = task.load_dictionary(args['preprocess']['tgtdict'])
+        # else:
+        assert args['preprocess']['trainpref'], "--trainpref must be set if --codedict is not specified"
+        src_dict = build_dictionary(args, task,
+            {train_path(args, lang) for lang in args['preprocess']['source_lang'] + args['preprocess']['target_lang']}, src=True
+        )
         tgt_dict = src_dict
     else:
-        if args['preprocess']['srcdict']:
-            src_dict = task.load_dictionary(args['preprocess']['srcdict'])
-        else:
-            assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
-            src_dict = build_dictionary(args, task, [train_path(args, args['preprocess']['source_lang'])], src=True)
-            # src_dict = build_dictionary(train_path(args['preprocess']['source_lang']), src=True)
+        # if args['preprocess']['codedict']:
+        #     src_dict = task.load_dictionary(args['preprocess']['codedict'])
+        # else:
+        src_dicts = OrderedDict()
+        for modality in args['preprocess']['source_lang']:
+            assert args['preprocess']['trainpref'], "--trainpref must be set if --codedict is not specified"
+            if modality == 'path':
+                src_dict1, src_dict2 = build_dictionary(args, task, modality, [train_path(args, modality)], src=True)
+                # src_dict = build_dictionary(train_path(args['preprocess']['source_lang']), src=True)
+                src_dicts[modality] = [src_dict1, src_dict2]
+            else:
+                src_dict = build_dictionary(args, task, modality, [train_path(args, modality)], src=True)
+                # src_dict = build_dictionary(train_path(args['preprocess']['source_lang']), src=True)
+                src_dicts[modality] = src_dict
 
         if target:
             if args['preprocess']['tgtdict']:
                 tgt_dict = task.load_dictionary(args['preprocess']['tgtdict'])
             else:
                 assert args['preprocess']['trainpref'], "--trainpref must be set if --tgtdict is not specified"
-                tgt_dict = build_dictionary(args, task, [train_path(args, args['preprocess']['target_lang'])], tgt=True)
+                tgt_dict = build_dictionary(args, task, modality, [train_path(args, args['preprocess']['target_lang'])], tgt=True)
                 # tgt_dict = build_dictionary(train_path(args['preprocess']['target_lang']), tgt=True)
 
         else:
             tgt_dict = None
     LOGGER.info('Save vocabulary.')
-    src_dict.save(dict_path(args, args['preprocess']['source_lang']))
+    for modality in args['preprocess']['source_lang']:
+        if modality == 'path':
+            src_dicts[modality][0].save(dict_path(args, modality+'_border'))
+            src_dicts[modality][1].save(dict_path(args, modality + '_center'))
+        else:
+            src_dicts[modality].save(dict_path(args, modality))
     if target and tgt_dict is not None:
         tgt_dict.save(dict_path(args, args['preprocess']['target_lang']))
 
+    # sys.exit()
     # 2. Make dataset (raw or mmap..)
     LOGGER.info('Make dataset...')
-    make_all(args, args['preprocess']['source_lang'], src_dict)
+    # make_all(args, args['preprocess']['source_lang'], src_dict) # TODO: source_lang -> modalities
+    make_all(args, 'code', src_dict)
+    make_all(args, 'path', src_dict)
+    make_all(args, 'bin_ast', src_dict)
+    make_all(args, 'sbt', src_dict)
     if target:
         make_all(args, args['preprocess']['target_lang'], tgt_dict)
     if args['preprocess']['align_suffix']:

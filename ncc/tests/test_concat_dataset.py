@@ -6,9 +6,10 @@
 import unittest
 
 import torch
-from fairseq.data import LanguagePairDataset, TokenBlockDataset
-from fairseq.data.concat_dataset import ConcatDataset
-from tests.test_train import mock_dict
+from ncc.data.language_pair_dataset import LanguagePairDataset
+from ncc.data.token_block_dataset import TokenBlockDataset
+from ncc.data.concat_dataset import ConcatDataset
+from ncc.tests.test_train import mock_dict
 
 
 class TestConcatDataset(unittest.TestCase):
@@ -62,3 +63,6 @@ class TestConcatDataset(unittest.TestCase):
         assert(d[0]['source'][0] == 1)
         assert(d[1]['source'][0] == 1)
         assert(d[2]['source'][0] == 2)
+
+if __name__ == '__main__':
+    unittest.main()

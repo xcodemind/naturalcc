@@ -109,5 +109,5 @@ def __collect_sample(ast: Dict, MAX_PATH: int, ):
     return contexts
 
 
-def ast_to_path(ast_tree: Dict, MAX_PATH=300):
+def ast_to_path(ast_tree: Dict, MAX_PATH=10):
     return __collect_sample(ast_tree, MAX_PATH)

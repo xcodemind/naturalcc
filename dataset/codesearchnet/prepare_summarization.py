@@ -15,6 +15,7 @@ import glob
 from ncc import LOGGER
 import argparse
 from multiprocessing import Pool, cpu_count
+from ncc.utils import util_ast
 
 random.seed(666)
 
@@ -97,7 +98,7 @@ def flatten_raw_data(mpool: Pool,
 
 
 def extract_modalities_worker(code_file: str, MAX_SUB_TOKEN_LEN: int, ) -> None:
-    modalities = ['path', 'sbt', 'sbtao', 'ast', ]
+    modalities = ['path', 'sbt', 'sbtao', 'bin_ast']
     dst_files = {}
     for modal in modalities:
         # mkdir for modal path
@@ -115,7 +116,7 @@ def extract_modalities_worker(code_file: str, MAX_SUB_TOKEN_LEN: int, ) -> None:
     while len(data_line) > 0:
         raw_ast = json.loads(data_line)
         if 'path' in writers:
-            path = util_path.ast_to_path(deepcopy(raw_ast))
+            path = util_path.ast_to_path(deepcopy(raw_ast), MAX_PATH=10)
             writers['path'].write(ujson.dumps(path) + '\n')
 
         if 'sbt' in writers:
@@ -129,6 +130,11 @@ def extract_modalities_worker(code_file: str, MAX_SUB_TOKEN_LEN: int, ) -> None:
             padded_raw_ast = util_ast.pad_leaf_node(deepcopy(raw_ast), MAX_SUB_TOKEN_LEN)
             sbt = util_ast.parse_deepcom(padded_raw_ast, util_ast.build_sbtao_tree, to_lower=True, )
             writers['sbtao'].write(ujson.dumps(sbt) + '\n')
+
+        if 'bin_ast' in writers:
+            # ast
+            bin_ast = util_ast.parse_base(raw_ast)
+            writers['bin_ast'].write(ujson.dumps(bin_ast) + '\n')
 
         data_line = reader.readline().strip()
 
@@ -185,9 +191,9 @@ def main():
         max_sub_token_len = flatten_raw_data(mpool, args_.raw_dir, args_.clean_dir, args_.so_file, lang, args_.modes, )
         # 2. parse ast
         extract_ast_modalities(mpool, args_.clean_dir, lang, max_sub_token_len)
-        print('finish...')
         # 3. merge data into one
         merge_modalities(args_.clean_dir, lang, )
+        print('finish...')
 
         # 到此结束，dict构造我会放到preprocess.py里面去
         # from dataset.parse_key.dicts import main as dict_main
