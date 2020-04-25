@@ -33,7 +33,7 @@ python preprocess.py
 Go back to the ROOT folder of project, and then run the following commands.
 
 ```
-cd run/summarization/mm2seq
+cd run/summarization/seq2seq
 ```
 
 1. Config the ruby.yml according to your requirement.
