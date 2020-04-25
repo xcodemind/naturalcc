@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 # import os
 # import unittest
-# import itertools
+# import itertool
 # import torch
 # from ncc.data.multi_language_pair_dataset import MultiLanguagePairDataset
 # from ncc.data.token_block_dataset import TokenBlockDataset
