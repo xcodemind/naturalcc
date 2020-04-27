@@ -21,6 +21,8 @@ from ncc import tasks
 from ncc.utils.util_file import load_yaml
 from ncc.utils import utils
 from ncc import LOGGER
+import ujson
+
 
 # logging.basicConfig(
 #     format='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
@@ -223,7 +225,19 @@ def make_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers=1):
             output_prefix, # + ".{}-{}".format(args['preprocess']['source_lang'], args['preprocess']['target_lang'])
             lang,
         )
-        shutil.copyfile(file_name(input_prefix, lang), output_text_file)
+        if lang == 'code':
+        #     insert <S_SEP> to .code files
+            with open(output_text_file, 'w') as output_file:
+                with open(file_name(input_prefix, lang), 'r') as input_file:
+                    for line in input_file.readlines():
+                        line_ = ujson.loads(line)
+                        for count in [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]:   # to handle duplicate '\n'
+                            line_ = line_.replace('\n', '<S_SEP>', count)
+                        output_file.write(ujson.dumps(line_)+'\n')
+        else:
+            shutil.copyfile(file_name(input_prefix, lang), output_text_file)
+
+
     else:
         make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers)
 
