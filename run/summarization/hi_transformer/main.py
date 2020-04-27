@@ -1,4 +1,11 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3 -u
+# Copyright (c) NaturalCC, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+"""
+Train a new model on one or across multiple GPUs.
+"""
 import os
 import sys
 import math
@@ -15,7 +22,6 @@ from ncc.utils.util_file import load_yaml
 from ncc.logging import metrics, progress_bar
 from ncc.utils import utils
 from ncc.data import iterators
-
 
 @metrics.aggregate('train')
 def train(args, trainer, task, epoch_itr):
@@ -47,7 +53,6 @@ def train(args, trainer, task, epoch_itr):
 
     valid_subsets = args['dataset']['valid_subset'].split(',')
     max_update = args['optimization']['max_update'] or math.inf
-
     for samples in progress:
         with metrics.aggregate('train_inner'):
             log_output = trainer.train_step(samples)
@@ -198,11 +203,11 @@ def single_main(args, init_distributed=False):
     LOGGER.info(args)
 
     # Setup task, e.g., translation, language modeling, etc.
-    task = tasks.setup_task(args)   # task.tokenizer
-    # build model_config
+    task = tasks.setup_task(args) # task.tokenizer
+    # # build model_config
     # config = task.build_config(args)
     # Build model and criterion
-    model = task.build_model(args)
+    model = task.build_model(args) # , config
     # model_config = task.build_model_config()
 
     # Load valid dataset (we load training data below, based on the latest checkpoint)
@@ -242,7 +247,7 @@ def single_main(args, init_distributed=False):
         and trainer.get_num_updates() < max_update
     ):
         # train for one epoch
-        valid_losses = train(args, trainer, task, epoch_itr)    # max_update
+        valid_losses = train(args, trainer, task, epoch_itr) # max_update
         if not args['dataset']['disable_validation'] and epoch_itr.epoch % args['dataset']['validate_interval'] == 0:
             valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
         else:
@@ -264,7 +269,7 @@ def single_main(args, init_distributed=False):
             epoch_itr.next_epoch_idx,
             combine=False,
             # sharded data: get train iterator for next epoch
-            load_dataset=(os.pathsep in getattr(args, 'data', '')),  # TODO: Bugs: getattr
+            load_dataset=(os.pathsep in getattr(args, 'data', '')),
         )
     train_meter.stop()
     LOGGER.info('done training in {:.1f} seconds'.format(train_meter.sum))
@@ -295,11 +300,11 @@ def cli_main():
 
     LOGGER.info(args)
 
-    # if args['model']['arch'] in ['bert', 'roberta', 'distilbert', 'camembert'] and not args['task']['mlm']:
-    #     raise ValueError(
-    #         "BERT and RoBERTa-like models do not have LM heads but masked LM heads. They must be run using the --mlm "
-    #         "flag (masked language modeling)."
-    #     )
+    if args['model']['arch'] in ['bert', 'roberta', 'distilbert', 'camembert'] and not args['task']['mlm']:
+        raise ValueError(
+            "BERT and RoBERTa-like models do not have LM heads but masked LM heads. They must be run using the --mlm "
+            "flag (masked language modeling)."
+        )
     # if args.eval_data_file is None and args.do_eval:
     #     raise ValueError(
     #         "Cannot do evaluation without an evaluation data file. Either supply a file to --eval_data_file "

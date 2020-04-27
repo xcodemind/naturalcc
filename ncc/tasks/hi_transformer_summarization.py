@@ -18,7 +18,7 @@ from ncc.data.truncate_dataset import TruncateDataset
 from ncc.data.strip_token_dataset import StripTokenDataset
 from ncc.data.concat_dataset import ConcatDataset
 from ncc.data.prepend_token_dataset import PrependTokenDataset
-from ncc.data.language_pair_dataset import LanguagePairDataset
+from ncc.data.hi_code_pair_dataset import HiCodePairDataset
 from ncc.data.dictionary import Dictionary
 from ncc.utils import tokenizer # , utils # metrics, search,
 
@@ -110,7 +110,7 @@ def load_langpair_dataset(
             align_dataset = data_utils.load_indexed_dataset(align_path, None, dataset_impl)
 
     tgt_dataset_sizes = tgt_dataset.sizes if tgt_dataset is not None else None
-    return LanguagePairDataset(
+    return HiCodePairDataset(
         src_dataset, src_dataset.sizes, src_dict,
         tgt_dataset, tgt_dataset_sizes, tgt_dict,
         left_pad_source=left_pad_source,
@@ -121,8 +121,8 @@ def load_langpair_dataset(
     )
 
 
-@register_task('summarization')
-class SummarizationTask(FairseqTask):
+@register_task('hi_transformer_summarization')
+class HiTransformerSummarizationTask(FairseqTask):
     """Task for training masked language models (e.g., BERT, RoBERTa)."""
 
     def __init__(self, args, src_dict, tgt_dict):

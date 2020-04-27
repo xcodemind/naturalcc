@@ -28,7 +28,7 @@ from ncc.utils import utils
 # )
 
 
-@register_model('hitransformer')
+@register_model('hi_transformer')
 class HiTransformerModel(FairseqModel):
     def __init__(self, encoder, decoder):
         super().__init__(encoder, decoder)
@@ -77,7 +77,7 @@ class HiTransformerModel(FairseqModel):
     #                              ' (requires shared dictionary and embed dim)')
 
     @classmethod
-    def build_model(cls, args, task):
+    def build_model(cls, args, config, task):
         """Build a new model instance."""
         # make sure that all args are properly defaulted (in case there are any new ones)
         # base_architecture(args)

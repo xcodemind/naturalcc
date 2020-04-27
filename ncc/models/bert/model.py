@@ -5,7 +5,7 @@
 """
 RoBERTa: A Robustly Optimized BERT Pretraining Approach.
 """
-import sys
+# import sys
 # sys.path.append('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3')
 
 import logging

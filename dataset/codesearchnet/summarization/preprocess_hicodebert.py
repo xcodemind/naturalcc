@@ -422,7 +422,7 @@ def main(args):
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')
 
-    args_ = Argues('preprocess_hitransformer.yml')  # train_sl
+    args_ = Argues('preprocess_hicodebert.yml')  # train_sl
     LOGGER.info(args_)
     # print(type(args.multi_processing))
     # assert False

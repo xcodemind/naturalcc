@@ -5,8 +5,8 @@
 """
 CamemBERT: a Tasty French Language Model
 """
-import sys
-sys.path.append('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3')
+# import sys
+# sys.path.append('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3')
 
 from ncc.models import register_model
 

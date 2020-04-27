@@ -119,7 +119,7 @@ def collate(
     return batch
 
 
-class HiCodeDataset(FairseqDataset):
+class HiCodePairDataset(FairseqDataset):
     """
     A pair of torch.utils.data.Datasets.
 

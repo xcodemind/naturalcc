@@ -118,7 +118,7 @@ task:
 
 
 model:
-  arch: hi_transformer # hi_transformer
+  arch: lstm # hi_transformer
 #  code_modalities:
 #    - tok
     #    - ast

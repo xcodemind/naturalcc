@@ -27,7 +27,7 @@ preprocess:
   validpref: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/clean/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
   testpref: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/clean/ruby/test # ", metavar="FP", default=None, help="comma separated, test file prefixes"
   align_suffix: ~ # ", metavar="FP", default=None, help="alignment file suffix"
-  destdir: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/summarization/hitransformer-data-bin #", metavar="DIR", default="data-bin", help="destination dir"
+  destdir: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/summarization/codebert-data-bin #", metavar="DIR", default="data-bin", help="destination dir"
   thresholdtgt: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
   thresholdsrc: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
   tgtdict: ~ # /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/data-bin/dict.comment.txt # ", metavar="FP", help="reuse given target dictionary"

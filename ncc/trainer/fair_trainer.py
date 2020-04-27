@@ -255,13 +255,12 @@ class Trainer(object):
         return self.task.get_batch_iterator(
             dataset=self.task.dataset(self.args['dataset']['train_subset']),
             max_tokens=self.args['dataset']['max_tokens'],
-            max_sentences=None, #self.args['dataset']['max_sentences'],
-            max_positions=None,
-            # utils.resolve_max_positions(
-            #     self.task.max_positions(),
-            #     self.model.max_positions(),
-            #     self.args['dataset']['max_tokens'],
-            # ),
+            max_sentences=self.args['dataset']['max_sentences'], #None, #
+            max_positions=utils.resolve_max_positions(
+                self.task.max_positions(),
+                self.model.max_positions(),
+                self.args['dataset']['max_tokens'],
+            ),
             ignore_invalid_inputs=True,
             required_batch_size_multiple=self.args['dataset']['required_batch_size_multiple'],
             seed=self.args['common']['seed'],
