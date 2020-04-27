@@ -16,7 +16,7 @@ import torch.nn.functional as F
 # )
 from ncc.modules.learned_positional_embedding import LearnedPositionalEmbedding
 from ncc.modules.attention.multihead_attention import MultiheadAttention
-from ncc.modules.sinusoidal_positional_embedding import SinusoidalPositionalEmbedding
+from ncc.modules.sinusoidal_positional_embedding_hibert import SinusoidalPositionalEmbedding
 from ncc.modules.summarization.fairseq_incremental_decoder import FairseqIncrementalDecoder
 from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
 from ncc.models.fairseq_model import FairseqModel
@@ -94,27 +94,27 @@ class HiTransformerModel(FairseqModel):
                 utils.load_embedding(embed_dict, dictionary, emb)
             return emb
 
-        if args.share_all_embeddings:
+        if args['model']['share_all_embeddings']:
             if src_dict != tgt_dict:
                 raise RuntimeError('--share-all-embeddings requires a joined dictionary')
-            if args.encoder_embed_dim != args.decoder_embed_dim:
+            if args['model']['encoder_embed_dim'] != args['model'].decoder_embed_dim:
                 raise RuntimeError(
                     '--share-all-embeddings requires --encoder-embed-dim to match --decoder-embed-dim')
-            if args.decoder_embed_path and (
-                    args.decoder_embed_path != args.encoder_embed_path):
+            if args['model']['decoder_embed_path'] and (
+                    ['model']['decoder_embed_path'] != args['model']['encoder_embed_path']):
                 raise RuntimeError('--share-all-embeddings not compatible with --decoder-embed-path')
             encoder_embed_tokens = build_embedding(
-                src_dict, args.encoder_embed_dim, args.encoder_embed_path
+                src_dict, args['model']['encoder_embed_dim'], args['model']['encoder_embed_path']
             )
             decoder_embed_tokens = encoder_embed_tokens
-            args.share_decoder_input_output_embed = True
+            args['model']['share_decoder_input_output_embed'] = True
         else:
             encoder_embed_tokens = build_embedding(
-                src_dict, args.encoder_embed_dim, args.encoder_embed_path
+                src_dict, args['model']['encoder_embed_dim'], args['model']['encoder_embed_path']
             )
             # note the decoder has the same vocabulary size
             decoder_embed_tokens = build_embedding(
-                src_dict, args.decoder_embed_dim, args.decoder_embed_path
+                src_dict, args['model']['decoder_embed_dim'], args['model']['decoder_embed_path']
             )
 
         encoder = HiTransformerEncoder(args, src_dict, encoder_embed_tokens)
@@ -145,7 +145,7 @@ class HiTransformerEncoder(FairseqEncoder):
 
     def __init__(self, args, dictionary, embed_tokens, left_pad=True):
         super().__init__(dictionary)
-        self.dropout = args.dropout
+        self.dropout = args['model']['dropout']
 
         embed_dim = embed_tokens.embedding_dim
         self.padding_idx = embed_tokens.padding_idx
@@ -155,25 +155,25 @@ class HiTransformerEncoder(FairseqEncoder):
         self.embed_positions = PositionalEmbedding(
             1024, embed_dim, self.padding_idx,
             left_pad=left_pad,
-            learned=args.encoder_learned_pos,
+            learned=args['model']['encoder_learned_pos'],
         )
 
         self.layers = nn.ModuleList([])
         self.layers.extend([
             TransformerEncoderLayer(args)
-            for i in range(args.encoder_layers)
+            for i in range(args['model']['encoder_layers'])
         ])
 
         self.sent_embed_positions = PositionalEmbedding(
             1024, embed_dim, self.padding_idx,
             left_pad=False,
-            learned=args.encoder_learned_pos,
+            learned=args['model']['encoder_learned_pos'],
         )
 
         self.doc_layers = nn.ModuleList([])
         self.doc_layers.extend([
             TransformerEncoderLayer(args)
-            for i in range(args.encoder_layers)
+            for i in range(args['model']['encoder_layers'])
         ])
 
     def forward(self, src_tokens, doc_pad_mask, doc_pos_tok):
@@ -254,8 +254,8 @@ class HiTransformerDecoder(FairseqIncrementalDecoder):
             2) a decoder to predict sentence labels
         '''
         super().__init__(src_dictionary)
-        self.dropout = args.dropout
-        self.share_input_output_embed = args.share_decoder_input_output_embed
+        self.dropout = args['model']['dropout']
+        self.share_input_output_embed = args['model']['share_decoder_input_output_embed']
 
         embed_dim = embed_tokens.embedding_dim
         padding_idx = embed_tokens.padding_idx
@@ -265,13 +265,13 @@ class HiTransformerDecoder(FairseqIncrementalDecoder):
         self.embed_positions = PositionalEmbedding(
             1024, embed_dim, padding_idx,
             left_pad=left_pad,
-            learned=args.decoder_learned_pos,
+            learned=args['model']['decoder_learned_pos'],
         )
 
         self.layers = nn.ModuleList([])
         self.layers.extend([
             TransformerDecoderLayer(args)
-            for i in range(args.decoder_layers)
+            for i in range(args['model']['decoder_layers'])
         ])
 
         if not self.share_input_output_embed:
@@ -379,16 +379,16 @@ class TransformerEncoderLayer(nn.Module):
 
     def __init__(self, args):
         super().__init__()
-        self.embed_dim = args.encoder_embed_dim
+        self.embed_dim = args['model']['encoder_embed_dim']
         self.self_attn = MultiheadAttention(
-            self.embed_dim, args.encoder_attention_heads,
-            dropout=args.attention_dropout,
+            self.embed_dim, args['model']['encoder_attention_heads'],
+            dropout=args['model']['attention_dropout'],
         )
-        self.dropout = args.dropout
-        self.relu_dropout = args.relu_dropout
-        self.normalize_before = args.encoder_normalize_before
-        self.fc1 = Linear(self.embed_dim, args.encoder_ffn_embed_dim)
-        self.fc2 = Linear(args.encoder_ffn_embed_dim, self.embed_dim)
+        self.dropout = args['model']['dropout']
+        self.relu_dropout = args['model']['relu_dropout']
+        self.normalize_before = args['model']['encoder_normalize_before']
+        self.fc1 = Linear(self.embed_dim, args['model']['encoder_ffn_embed_dim'])
+        self.fc2 = Linear(args['model']['encoder_ffn_embed_dim'], self.embed_dim)
         self.layer_norms = nn.ModuleList([LayerNorm(self.embed_dim) for i in range(2)])
 
     def forward(self, x, encoder_padding_mask):
@@ -422,22 +422,22 @@ class TransformerDecoderLayer(nn.Module):
 
     def __init__(self, args):
         super().__init__()
-        self.embed_dim = args.decoder_embed_dim
+        self.embed_dim = args['model']['decoder_embed_dim']
         self.self_attn = MultiheadAttention(
-            self.embed_dim, args.decoder_attention_heads,
-            dropout=args.attention_dropout,
+            self.embed_dim, args['model']['decoder_attention_heads'],
+            dropout=args['model']['attention_dropout'],
         )
-        self.dropout = args.dropout
-        self.relu_dropout = args.relu_dropout
-        self.normalize_before = args.decoder_normalize_before
+        self.dropout = args['model']['dropout']
+        self.relu_dropout = args['model']['relu_dropout']
+        self.normalize_before = args['model']['decoder_normalize_before']
         '''
         self.encoder_attn = MultiheadAttention(
             self.embed_dim, args.decoder_attention_heads,
             dropout=args.attention_dropout,
         )
         '''
-        self.fc1 = Linear(self.embed_dim, args.decoder_ffn_embed_dim)
-        self.fc2 = Linear(args.decoder_ffn_embed_dim, self.embed_dim)
+        self.fc1 = Linear(self.embed_dim, args['model']['decoder_ffn_embed_dim'])
+        self.fc2 = Linear(args['model']['decoder_ffn_embed_dim'], self.embed_dim)
         self.layer_norms = nn.ModuleList([LayerNorm(self.embed_dim) for i in range(3)])
 
     def forward(self, x, encoder_out, incremental_state):
