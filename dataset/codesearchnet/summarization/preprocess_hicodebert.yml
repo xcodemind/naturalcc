@@ -26,6 +26,10 @@ preprocess:
   trainpref: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/clean/ruby/train #", metavar="FP", default=None, help="train file prefix"
   validpref: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/clean/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
   testpref: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/clean/ruby/test # ", metavar="FP", default=None, help="comma separated, test file prefixes"
+  trainpref_: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/summarization/hicodebert-data-bin/train #", metavar="FP", default=None, help="train file prefix"
+  validpref_: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/summarization/hicodebert-data-bin/valid #", metavar="FP", default=None, help="train file prefix"
+  testpref_: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/summarization/hicodebert-data-bin/test #", metavar="FP", default=None, help="train file prefix"
+
   align_suffix: ~ # ", metavar="FP", default=None, help="alignment file suffix"
   destdir: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/summarization/hicodebert-data-bin #", metavar="DIR", default="data-bin", help="destination dir"
   thresholdtgt: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"

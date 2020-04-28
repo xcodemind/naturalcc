@@ -56,18 +56,10 @@ def parse_alignment(line):
 
 def train_path(args, lang):
     return "{}{}".format(args['preprocess']['trainpref'], ("." + lang) if lang else "")
-    # if lang == 'code':
-    #     return os.path.join(args['preprocess']['trainpref'], 'code', 'train', 'train_all.txt')
-    # elif lang == 'comment':
-    #     return os.path.join(args['preprocess']['trainpref'], 'docstring', 'train', 'train_all.txt')
-    # paths = []
-    # if lang == 'code':
-    #     for file in glob.glob(os.path.join(args['preprocess']['trainpref'], 'code', 'train', '*train_all*.txt')):
-    #         paths.append(os.path.join(args['preprocess']['trainpref'], file))
-    # elif lang == 'comment':
-    #     for file in glob.glob(os.path.join(args['preprocess']['trainpref'], 'docstring', 'train', '*train_all*.txt')):
-    #         paths.append(os.path.join(args['preprocess']['trainpref'], file))
-    # return paths
+
+
+def train_path_(args, lang):
+    return "{}{}".format(args['preprocess']['trainpref_'], ("." + lang) if lang else "")
 
 
 def file_name(prefix, lang):
@@ -218,6 +210,23 @@ def make_binary_alignment_dataset(args, input_prefix, output_prefix, num_workers
     )
 
 
+def insert_sep_token(args, input_prefix, output_prefix, lang):
+    output_text_file = dest_path(args,
+                                 output_prefix,
+                                 # + ".{}-{}".format(args['preprocess']['source_lang'], args['preprocess']['target_lang'])
+                                 lang,
+                                 )
+    if lang == 'code':
+        #     insert <S_SEP> to .code files
+        with open(output_text_file, 'w') as output_file:
+            with open(file_name(input_prefix, lang), 'r') as input_file:
+                for line in input_file.readlines():
+                    line_ = ujson.loads(line)
+                    for count in [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]:  # to handle duplicate '\n'
+                        line_ = line_.replace('\n', ' <S_SEP> ', count)
+                    output_file.write(ujson.dumps(line_) + '\n')
+
+
 def make_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers=1):
     if args['preprocess']['dataset_impl'] == "raw":
         # Copy original text file to destination folder
@@ -226,14 +235,8 @@ def make_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers=1):
             lang,
         )
         if lang == 'code':
-        #     insert <S_SEP> to .code files
-            with open(output_text_file, 'w') as output_file:
-                with open(file_name(input_prefix, lang), 'r') as input_file:
-                    for line in input_file.readlines():
-                        line_ = ujson.loads(line)
-                        for count in [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]:   # to handle duplicate '\n'
-                            line_ = line_.replace('\n', '<S_SEP>', count)
-                        output_file.write(ujson.dumps(line_)+'\n')
+        #     insert <S_SEP> to .code files has been conducted in the first stage
+            pass
         else:
             shutil.copyfile(file_name(input_prefix, lang), output_text_file)
 
@@ -322,6 +325,11 @@ def main(args):
     #     raise FileExistsError(dict_path(args, args['preprocess']['target_lang']))
     modality = args['preprocess']['source_lang']
 
+    # 0. insert special token
+    insert_sep_token(args, args['preprocess']['trainpref'], "train", 'code')
+    insert_sep_token(args, args['preprocess']['validpref'], "valid", 'code')
+    insert_sep_token(args, args['preprocess']['testpref'], "test", 'code')
+
     # 1. Build vocabulary (dictionary)
     LOGGER.info('Build vocabulary...')
     task = tasks.get_task(args['preprocess']['task'])
@@ -336,7 +344,7 @@ def main(args):
         # else:
         assert args['preprocess']['trainpref'], "--trainpref must be set if --codedict is not specified"
         src_dict = build_dictionary(args, task,
-            {train_path(args, lang) for lang in args['preprocess']['source_lang'] + args['preprocess']['target_lang']}, src=True
+            {train_path_(args, lang) for lang in args['preprocess']['source_lang'] + args['preprocess']['target_lang']}, src=True
         )
         tgt_dict = src_dict
     else:
@@ -351,7 +359,7 @@ def main(args):
             # src_dict = build_dictionary(train_path(args['preprocess']['source_lang']), src=True)
             src_dict = [src_dict1, src_dict2]
         else:
-            src_dict = build_dictionary(args, task, modality, [train_path(args, modality)], src=True)
+            src_dict = build_dictionary(args, task, modality, [train_path_(args, modality)], src=True)
             # src_dict = build_dictionary(train_path(args['preprocess']['source_lang']), src=True)
             # src_dicts[modality] = src_dict
 
@@ -360,7 +368,7 @@ def main(args):
                 tgt_dict = task.load_dictionary(args['preprocess']['tgtdict'])
             else:
                 assert args['preprocess']['trainpref'], "--trainpref must be set if --tgtdict is not specified"
-                tgt_dict = build_dictionary(args, task, modality, [train_path(args, args['preprocess']['target_lang'])], tgt=True)
+                tgt_dict = build_dictionary(args, task, modality, [train_path_(args, args['preprocess']['target_lang'])], tgt=True)
                 # tgt_dict = build_dictionary(train_path(args['preprocess']['target_lang']), tgt=True)
 
         else:
