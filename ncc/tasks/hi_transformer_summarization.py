@@ -22,7 +22,8 @@ from ncc.data.hi_code_pair_dataset import HiCodePairDataset
 from ncc.data.dictionary import Dictionary
 from ncc.utils import tokenizer # , utils # metrics, search,
 
-def load_langpair_dataset(
+
+def load_codepair_dataset(
     data_path, split,
     src, src_dict,
     tgt, tgt_dict,
@@ -180,7 +181,7 @@ class HiTransformerSummarizationTask(FairseqTask):
         # infer langcode
         src, tgt = self.args['task']['source_lang'], self.args['task']['target_lang']
 
-        self.datasets[split] = load_langpair_dataset(
+        self.datasets[split] = load_codepair_dataset(
             data_path, split, src, self.src_dict, tgt, self.tgt_dict,
             combine=combine, dataset_impl=self.args['dataset']['dataset_impl'],
             upsample_primary=self.args['task']['upsample_primary'],
@@ -193,7 +194,7 @@ class HiTransformerSummarizationTask(FairseqTask):
         )
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
-        return LanguagePairDataset(src_tokens, src_lengths, self.source_dictionary)
+        return HiCodePairDataset(src_tokens, src_lengths, self.source_dictionary)
 
     def build_model(self, args):
         model = super().build_model(args)

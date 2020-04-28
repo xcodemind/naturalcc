@@ -10,7 +10,7 @@ import math
 import torch
 import torch.nn as nn
 
-from fairseq import utils
+from ncc.utils import utils
 
 
 class SinusoidalPositionalEmbedding(nn.Module):

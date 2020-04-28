@@ -13,9 +13,97 @@ from ncc.data.fairseq_dataset import FairseqDataset
 
 logger = logging.getLogger(__name__)
 
+SENT_SEP = '<S_SEP>'
+
+def find_sep(src, sep_id):
+    sep_pos = []
+    for i, v in enumerate(src):
+        if sep_id == v:
+            sep_pos.append(i)
+    return sep_pos
 
 
-def collate(
+# tokens are left-padding
+def docs2tensor(docs, pad_idx):
+    doc_sep_pos = map(lambda x: x[1], docs)
+    max_nsent = max( map(len, doc_sep_pos) )
+    srcs = map(lambda x: x[0], docs)
+    max_seqlen = max( map(len, srcs) )
+    bsz = len(docs)
+    # print('max_nsent', max_nsent)
+    # print('max_seqlen', max_seqlen)
+    src_tokens = torch.LongTensor(bsz, max_seqlen).fill_(pad_idx)
+    doc_pad_mask = torch.ByteTensor(bsz, max_nsent).fill_(1)
+    src_sent_ends = torch.LongTensor(bsz, max_nsent).fill_(0) # assume default sentence ends (for padding) are 0s
+    for i in range(bsz):
+        src, sep_pos = docs[i]
+        src_tokens[i, 0:len(src)] = src
+        doc_pad_mask[i, 0:len(sep_pos)] = 0
+        src_sent_ends[i, 0:len(sep_pos)] = torch.LongTensor(sep_pos)
+
+    return src_tokens, doc_pad_mask, src_sent_ends
+
+
+def create_src_tok_batch(samples, sep_id, eos_idx, pad_idx):
+    docs = []
+    for sample in samples:
+        src = sample['source']
+        if src[-1] != sep_id:
+            src_len = src.size(0)
+            new_src = src.new(src_len + 1)
+            new_src[0:src_len] = src
+            new_src[-1] = sep_id
+            src = new_src
+
+        sep_pos = find_sep(src, sep_id)
+        docs.append((src, sep_pos))
+
+    return docs2tensor(docs, pad_idx)
+
+
+def create_target_batch(samples, pad_idx):
+    maxlen = max( [len(s['target']) for s in samples] )
+    bsz = len(samples)
+    target = torch.LongTensor(bsz, maxlen).fill_(pad_idx)
+    for i, s in enumerate(samples):
+        tgt = s['target']
+        tgt_len = len(tgt)
+        target[i, 0:tgt_len] = tgt
+    return target
+
+def collate(samples, src_dict, tgt_dict, left_pad_source=True, left_pad_target=False):
+    if len(samples) == 0:
+        return {}
+
+    id = torch.LongTensor([s['id'] for s in samples])
+    src_tokens, doc_pad_mask, src_sent_ends = create_src_tok_batch(samples, src_dict.index(SENT_SEP), src_dict.eos(), src_dict.pad())
+
+    # print('src_tokens', src_tokens.size())
+    # print('doc_pad_mask', doc_pad_mask.size())
+    # print( src_tokens[:, :, -1] )
+    doc_pos_tok = torch.LongTensor( doc_pad_mask.size() ).fill_( src_dict.index(SENT_SEP) )
+    doc_pos_tok[ doc_pad_mask ] = src_dict.pad()
+    # print( '** doc_pos_tok **' )
+    # print( doc_pos_tok )
+
+    ntokens = sum(len(s['target']) for s in samples)
+    target = create_target_batch(samples, tgt_dict.pad())
+
+    # print('target', target.size())
+
+    return {
+        'id': id,
+        'ntokens': ntokens,
+        'net_input': {
+            'src_tokens': src_tokens,
+            'src_sent_ends': src_sent_ends,
+            'doc_pad_mask': doc_pad_mask,
+            'doc_pos_tok': doc_pos_tok,
+        },
+        'target': target,
+    }
+
+def collate_(
     samples, pad_idx, eos_idx, left_pad_source=True, left_pad_target=False,
     input_feeding=True,
 ):
@@ -253,10 +341,15 @@ class HiCodePairDataset(FairseqDataset):
                   target sentence of shape `(bsz, tgt_len)`. Padding will appear
                   on the left if *left_pad_target* is ``True``.
         """
+        # return collate(
+        #     samples, pad_idx=self.src_dict.pad(), eos_idx=self.eos,
+        #     left_pad_source=self.left_pad_source, left_pad_target=self.left_pad_target,
+        #     input_feeding=self.input_feeding,
+        # )
         return collate(
-            samples, pad_idx=self.src_dict.pad(), eos_idx=self.eos,
+            samples, src_dict=self.src_dict, tgt_dict=self.tgt_dict,
             left_pad_source=self.left_pad_source, left_pad_target=self.left_pad_target,
-            input_feeding=self.input_feeding,
+            # input_feeding=self.input_feeding,
         )
 
     def num_tokens(self, index):
