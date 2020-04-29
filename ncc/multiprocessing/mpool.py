@@ -20,7 +20,7 @@ class MPool:
 
         out = []
         for p_id in range(len(params)):
-            tmp_p = mp.Process(target=self.fun_with_id, args=(func, params[p_id], p_id, data_buffer,))
+            tmp_p = mp.Process(target=self._fun_with_id, args=(func, params[p_id], p_id, data_buffer,))
             tmp_p.daemon = True
             tmp_p.start()
             processor_buffer.append(tmp_p)
@@ -44,6 +44,6 @@ class MPool:
         del processor_buffer, data_buffer
         return list(out)
 
-    def fun_with_id(self, func: Any, params: List, id: int, buffer: mp.Queue):
+    def _fun_with_id(self, func: Any, params: List, id: int, buffer: mp.Queue):
         result = func(*params)
         buffer.put((result, id))
