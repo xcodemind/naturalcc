@@ -7,7 +7,6 @@
 Train a new model on one or across multiple GPUs.
 """
 import sys
-sys.path.append('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3')
 import logging
 import math
 import os
@@ -15,14 +14,14 @@ import random
 import numpy as np
 import torch
 from ncc.utils import checkpoint_utils, distributed_utils, utils
-from ncc import tasks #, utils #  options,
+from ncc import tasks  # , utils #  options,
 from ncc.data import iterators
 from ncc.logging import meters, metrics, progress_bar
 from ncc.trainer import Trainer
 import argparse
 from typing import Callable, List, Optional
 from ncc.data.indexed_dataset import get_available_dataset_impl
-from run.util import * #get_args
+from run.util import *  # get_args
 from ncc.utils.util_file import load_yaml
 
 
@@ -73,10 +72,10 @@ def train(config, trainer, task, epoch_itr):
             metrics.reset_meters('train_inner')
 
         if (
-            not config['dataset']['disable_validation']
-            and config['checkpoint']['save_interval_updates'] > 0
-            and num_updates % config['checkpoint']['save_interval_updates'] == 0
-            and num_updates > 0
+                not config['dataset']['disable_validation']
+                and config['checkpoint']['save_interval_updates'] > 0
+                and num_updates % config['checkpoint']['save_interval_updates'] == 0
+                and num_updates > 0
         ):
             valid_losses = validate(config, trainer, task, epoch_itr, valid_subsets)
             checkpoint_utils.save_checkpoint(config, trainer, epoch_itr, valid_losses[0])
@@ -241,14 +240,15 @@ def single_main(config, init_distributed=False):
     train_meter.start()
     valid_subsets = config['dataset']['valid_subset'].split(',')
     while (
-        lr > config['optimization']['min_lr']
-        and epoch_itr.next_epoch_idx <= max_epoch
-        and trainer.get_num_updates() < max_update
+            lr > config['optimization']['min_lr']
+            and epoch_itr.next_epoch_idx <= max_epoch
+            and trainer.get_num_updates() < max_update
     ):
         # train for one epoch
         train(config, trainer, task, epoch_itr)
         sys.exit()
-        if not config['dataset']['disable_validation'] and epoch_itr.epoch % config['dataset']['validate_interval'] == 0:
+        if not config['dataset']['disable_validation'] and epoch_itr.epoch % config['dataset'][
+            'validate_interval'] == 0:
             valid_losses = validate(config, trainer, task, epoch_itr, valid_subsets)
         else:
             valid_losses = [None]
@@ -262,7 +262,8 @@ def single_main(config, init_distributed=False):
 
         # early stop
         if should_stop_early(config, valid_losses[0]):
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(config['checkpoint']['patience']))
+            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
+                config['checkpoint']['patience']))
             break
 
         epoch_itr = trainer.get_train_iterator(
@@ -302,7 +303,6 @@ def cli_main():
     if config['distributed_training']['distributed_init_method'] is None:
         distributed_utils.infer_init_method(config)
 
-
     if config['distributed_training']['distributed_init_method'] is not None:
         # distributed training
         if torch.cuda.device_count() > 1 and not config['distributed_training']['distributed_no_spawn']:
@@ -323,7 +323,7 @@ def cli_main():
         config['distributed_training']['distributed_rank'] = None  # set based on device id
         torch.multiprocessing.spawn(
             fn=distributed_main,
-            config=(config, ),
+            config=(config,),
             nprocs=config['distributed_training']['distributed_world_size'],
         )
     else:

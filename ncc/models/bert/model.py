@@ -6,7 +6,6 @@
 RoBERTa: A Robustly Optimized BERT Pretraining Approach.
 """
 import sys
-sys.path.append('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3')
 
 import logging
 
@@ -28,7 +27,6 @@ from ncc.modules import (
 from ncc.modules.transformer_sentence_encoder import init_bert_params
 
 from .hub_interface import RobertaHubInterface
-
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +103,8 @@ class RobertaModel(FairseqLanguageModel):
         encoder = RobertaEncoder(args, task.source_dictionary)
         return cls(args, encoder)
 
-    def forward(self, src_tokens, features_only=False, return_all_hiddens=False, classification_head_name=None, **kwargs):
+    def forward(self, src_tokens, features_only=False, return_all_hiddens=False, classification_head_name=None,
+                **kwargs):
         if classification_head_name is not None:
             features_only = True
 
@@ -140,7 +139,8 @@ class RobertaModel(FairseqLanguageModel):
         return {'self'}
 
     @classmethod
-    def from_pretrained(cls, model_name_or_path, checkpoint_file='model.pt', data_name_or_path='.', bpe='gpt2', **kwargs):
+    def from_pretrained(cls, model_name_or_path, checkpoint_file='model.pt', data_name_or_path='.', bpe='gpt2',
+                        **kwargs):
         from ncc.utils import hub_utils
         x = hub_utils.from_pretrained(
             model_name_or_path,
@@ -182,8 +182,8 @@ class RobertaModel(FairseqLanguageModel):
                     )
                     keys_to_delete.append(k)
                 elif (
-                    num_classes != self.classification_heads[head_name].out_proj.out_features
-                    or inner_dim != self.classification_heads[head_name].dense.out_features
+                        num_classes != self.classification_heads[head_name].out_proj.out_features
+                        or inner_dim != self.classification_heads[head_name].dense.out_features
                 ):
                     logger.warning(
                         'deleting classification head ({}) from checkpoint '
@@ -349,6 +349,7 @@ def base_architecture(args):
     args['model']['encoder_layers_to_keep'] = None
     args['model']['encoder_layerdrop'] = 0.0
 
+
 @register_model_architecture('roberta', 'roberta_base')
 def roberta_base_architecture(args):
     base_architecture(args)
@@ -368,6 +369,5 @@ def xlm_architecture(args):
     base_architecture(args)
     args['model']['encoder_layers'] = 16
     args['model']['encoder_embed_dim'] = 1280
-    args['model']['encoder_ffn_embed_dim'] = 1280*4
+    args['model']['encoder_ffn_embed_dim'] = 1280 * 4
     args['model']['encoder_attention_heads'] = 16
-

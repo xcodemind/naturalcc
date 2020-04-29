@@ -6,7 +6,6 @@
 Unsupervised Cross-lingual Representation Learning at Scale
 """
 import sys
-sys.path.append('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3')
 
 from ncc.models import register_model
 

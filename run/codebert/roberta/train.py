@@ -7,7 +7,6 @@
 Train a new model on one or across multiple GPUs.
 """
 import sys
-sys.path.append('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3')
 
 import logging
 import math
