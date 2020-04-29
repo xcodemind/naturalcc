@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
-from typing import Dict, Tuple, List, Any, Union
+import ujson
+from typing import Dict, Tuple, List, Any, Union, Sequence
 from glob import glob
 import gzip, json, jsonlines
 import itertools
@@ -11,7 +12,7 @@ from . import constants
 from collections import Counter
 
 from copy import deepcopy
-from joblib import Parallel, delayed
+import re
 
 # Such methods are widely used. Therefore, we define them ahead of other functions
 
@@ -107,32 +108,6 @@ def load_raw_data(data_dir: str, load_keys: List, debug=False, ) -> Dict:
 
 
 ################################################################
-
-
-def map_reduce(paralleler: Parallel, func: Any, params: Union[Tuple, List], ) -> Union[Tuple, List]:
-    for param in params:
-        if type(param) in [list, tuple]:
-            data_num = len(param)
-            break
-
-    processor_num = paralleler.n_jobs
-    batch_len = int(math.ceil(data_num / processor_num))
-
-    # duplicate args
-    for ind, param in enumerate(params):
-        if type(param) in [list, tuple]:
-            continue
-        else:
-            params[ind] = [deepcopy(param) for _ in range(data_num)]
-    params = list(zip(*params))
-
-    result = paralleler(delayed(func)(*param) for param in params)
-    result = zip(*result)
-    result = [
-        list(itertools.chain(*res))
-        for res in result
-    ]
-    return result
 
 
 ################################################################
@@ -289,6 +264,12 @@ def filter_func(code_snippet: Dict) -> Dict:
 
 
 def is_ascii(identifier: str) -> bool:
+    """
+    print(is_ascii('\\xAA'))
+    print(is_ascii('\\u02C6-'))
+    print(is_ascii('0x10000'))
+    print(is_ascii('你好'))
+    """
     if ('0x' in identifier) or ('\\x' in identifier) or \
             ('\\u' in identifier):  # hex or unicode
         return False
@@ -296,8 +277,57 @@ def is_ascii(identifier: str) -> bool:
         return str.isascii(identifier)
 
 
-if __name__ == '__main__':
-    print(is_ascii('\\xAA'))
-    print(is_ascii('\\u02C6-'))
-    print(is_ascii('0x10000'))
-    print(is_ascii('你好'))
+#####################################
+def raw_data_len(src_filename: str) -> int:
+    raw_data = list(load_jsonl_gz(src_filename))
+    return len(raw_data)
+
+
+def lower(tokens: Sequence) -> List:
+    return list(map(str.lower, tokens))
+
+
+def stress_tokens(tokens: Sequence) -> List:
+    return re.split(r'\s+', ' '.join(tokens).strip())
+
+
+def filter_tokens(tokens: List) -> List:
+    return list(itertools.chain(*[split_identifier(token.strip()) for token in tokens if len(token.strip()) > 0]))
+
+
+def parse_flatten(raw_filename: str, pop_keys: List[str], start_ind: int,
+                  so_file: str, language: str, dst_filenames: Dict, ) -> Tuple:
+    reader = gzip.GzipFile(raw_filename, 'r')
+    writers = {
+        key: open(dst_filename, 'w')
+        for key, dst_filename in dst_filenames.items()
+    }
+    code_parser = util_ast.CodeParser(so_file, language)
+    MAX_SUB_TOKEN_LEN = 0
+
+    data_line = reader.readline().strip()
+    while len(data_line) > 0:
+        data_line = json.loads(data_line)
+
+        for pop_key in pop_keys:
+            data_line.pop(pop_key)
+        data_line['index'] = start_ind
+
+        ################################################################
+        # parse method and ast
+        ################################################################
+        data_line['method'] = code_parser.parse_method(data_line['func_name'])
+        data_line['raw_ast'] = code_parser.parse_raw_ast(data_line['code'])
+        max_sub_token_len = 0
+        # get max length of a tree nodes' token list
+        for _, node in data_line['raw_ast'].items():
+            if len(node['children']) == 1:
+                max_sub_token_len = max(max_sub_token_len, len(split_identifier(node['children'][0])))
+        MAX_SUB_TOKEN_LEN = max(MAX_SUB_TOKEN_LEN, max_sub_token_len)
+
+        for key, entry in data_line.items():
+            writers[key].write(ujson.dumps(entry) + '\n')
+
+        start_ind += 1
+        data_line = reader.readline().strip()
+    return language, MAX_SUB_TOKEN_LEN,

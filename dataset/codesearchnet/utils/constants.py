@@ -1,20 +1,23 @@
 # -*- coding: utf-8 -*-
-import os
 
-# DATASET_DIR = '/data/wanyao/ghproj_d/naturalcodev3/codesearchnet'
-# RAW_DATASET_DIR = os.path.join(DATASET_DIR, 'raw')
+import os
+import sys
+
+sys.path.append(os.path.abspath('.'))
+
+RAW_DATASET_DIR = '/data/wanyao/ghproj_d/naturalcodev3/codesearchnet/raw'
+TREE_SITTER_LIB_DIR = '/data/wanyao/yang/ghproj_d/GitHub/tree_sitter/'
+
 AST_NODE_CEILING = 200
 # KEY_DST_DIR = os.path.join(DATASET_DIR, str(AST_NODE_CEILING))
 PATH_K = 300
-
-SO_FILE = '/data/wanyao/Dropbox/ghproj-titan/naturalcodev3/dataset/codesearchnet/languages.so'
 
 RAW_KEYS = ['code', 'code_tokens', 'docstring', 'docstring_tokens', 'func_name', 'original_string',
             'path', 'repo', 'sha', 'url']
 SAVE_KEYS = ['code', 'code_tokens', 'docstring', 'docstring_tokens', 'func_name', ]
 POP_KEYS = ['original_string', 'path', 'repo', 'sha', 'url', 'language', 'partition']
 
-LANGUAGES = ['ruby'] # 'python', 'java', 'go', 'php', , 'javascript'
+LANGUAGES = ['ruby', 'python', 'java', 'go', 'php', 'javascript', ]
 MODES = ['train', 'valid', 'test']
 
 # POP_KEYS = ['repo', 'path', 'language', 'original_string', 'partition', 'sha', 'url']
@@ -37,3 +40,7 @@ PAD_WORD = '<PAD>'
 PAD_TOKEN_IND = 0
 UNK_TOKEN_IND = 1
 VALID_VOCAB_START_IND = 2
+
+NO_COMMENT = '<NO_COMMENT>'
+NO_METHOD = '<NO_METHOD>'
+
