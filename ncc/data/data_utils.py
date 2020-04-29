@@ -15,6 +15,7 @@ import sys
 import types
 
 import numpy as np
+np.get_include()
 
 
 logger = logging.getLogger(__name__)
@@ -381,13 +382,17 @@ def batch_by_size(
         required_batch_size_multiple (int, optional): require batch size to
             be a multiple of N (default: 1).
     """
-    try:
-        from ncc.data.data_utils_fast import batch_by_size_fast
-    except ImportError:
-        raise ImportError(
-            'Please build Cython components with: `pip install --editable .` '
-            'or `python setup.py build_ext --inplace`'
-        )
+    #try:
+
+    import pyximport
+    pyximport.install()
+    from ncc.data.data_utils_fast import batch_by_size_fast
+
+    #except ImportError:
+    #    raise ImportError(
+            #'Please build Cython components with: `pip install --editable .` '
+            #'or `python setup.py build_ext --inplace`'
+    #    )
 
     max_tokens = max_tokens if max_tokens is not None else -1
     max_sentences = max_sentences if max_sentences is not None else -1

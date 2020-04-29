@@ -204,10 +204,10 @@ def single_main(args, init_distributed=False):
 
     # Setup task, e.g., translation, language modeling, etc.
     task = tasks.setup_task(args) # task.tokenizer
-    # build model_config
-    config = task.build_config(args)
+    # # build model_config
+    # config = task.build_config(args)
     # Build model and criterion
-    model = task.build_model(args, config)
+    model = task.build_model(args) # , config
     # model_config = task.build_model_config()
 
     # Load valid dataset (we load training data below, based on the latest checkpoint)
@@ -288,7 +288,7 @@ def cli_main():
     # Argues = namedtuple('Argues', 'yaml task lang_mode method_name train_mode dataset_type multi_processing')
     Argues = namedtuple('Argues', 'yaml')
 
-    args_ = Argues('wiki.yml')  # train_sl
+    args_ = Argues('ruby.yml')  # train_sl
     LOGGER.info(args_)
     # print(type(args.multi_processing))
     # assert False

@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
 
-import os
-import sys
-
-# sys.path.append(os.path.abspath('.'))
-
-from typing import Any, Dict, Tuple, List, Union, Optional
-
-from pprint import pprint
+# import os
+# import sys
+#
+# # sys.path.append(os.path.abspath('.'))
+#
+# from typing import Any, Dict, Tuple, List, Union, Optional
+#
+# from pprint import pprint
 
 import logging
 # from ncc.logging import get_logger
@@ -22,24 +22,24 @@ logging.basicConfig(
         datefmt='%Y-%m-%d %H:%M:%S',
     )
 LOGGER = logging.getLogger(__name__)
-import torch
-from torch import nn
-from torch.nn import Module
-import torch.nn.functional as F
-from torch.utils.data import DataLoader
-from torch.optim.optimizer import Optimizer
+# import torch
+# from torch import nn
+# from torch.nn import Module
+# import torch.nn.functional as F
+# from torch.utils.data import DataLoader
+# from torch.optim.optimizer import Optimizer
+#
+# import abc
+#
+# from copy import deepcopy
+#
+# import random
+# import numpy as np
+# from collections import namedtuple
 
-import abc
+#from line_profiler import LineProfiler
 
-from copy import deepcopy
-
-import random
-import numpy as np
-from collections import namedtuple
-
-from line_profiler import LineProfiler
-
-TimeAnalyzer = LineProfiler()
+#TimeAnalyzer = LineProfiler()
 
 # Copyright (c) Facebook, Inc. and its affiliates.
 #

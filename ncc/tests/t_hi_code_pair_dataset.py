@@ -2,38 +2,23 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-# import os
-# import unittest
-# import itertool
-# import torch
-# from ncc.data.multi_language_pair_dataset import MultiLanguagePairDataset
-# from ncc.data.token_block_dataset import TokenBlockDataset
-# from ncc.data.concat_dataset import ConcatDataset
-# from ncc.tests.test_train import mock_dict
-# from ncc.data import indexed_dataset
-# from ncc.data import data_utils
-# from ncc.data.append_token_dataset import AppendTokenDataset
-# from ncc.data.truncate_dataset import TruncateDataset
-# from ncc.data.strip_token_dataset import StripTokenDataset
-# from ncc.data.prepend_token_dataset import PrependTokenDataset
-# -*- coding: utf-8 -*-
 import os
 import sys
 from collections import namedtuple
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
-from ncc.tasks.mm_summarization import load_multimodalpair_dataset
+from ncc.tasks.hi_transformer_summarization import load_codepair_dataset
 from ncc.tasks import FairseqTask
 from collections import OrderedDict
 from ncc.utils import utils
 from ncc import tasks
 import torch
-from ncc.data.multi_language_pair_dataset import collate
+from ncc.data.hi_code_pair_dataset import collate
 
 if __name__ == '__main__':
     Argues = namedtuple('Argues', 'yaml')
 
-    args_ = Argues('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3/run/summarization/mm2seq/ruby.yml')  # train_sl
+    args_ = Argues('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3/run/codebert/hi_codebert/ruby.yml')  # train_sl
     LOGGER.info(args_)
     # print(type(args.multi_processing))
     # assert False
@@ -42,12 +27,13 @@ if __name__ == '__main__':
     yaml_file = os.path.join(sys.path[0], args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
-
     LOGGER.info(args)
 
-    data_path = '/data/wanyao/ghproj_d/naturalcodev3/codesearchnet/data-bin'
+    modality = args['task']['source_lang']
+
+    data_path = '/data/wanyao/ghproj_d/naturalcodev3/codesearchnet/summarization/hicodebert-data-bin'
     split = 'train'
-    src_modalities = ['path'] # , 'code'
+    # src_modalities = ['path'] # , 'code'
     # src_dicts = None
     tgt = 'docstring'
     # tgt_dict = None
@@ -55,26 +41,25 @@ if __name__ == '__main__':
 
     tgt_dict = FairseqTask.load_dictionary(os.path.join(data_path, 'dict.{}.txt'.format(args['task']['target_lang'])))
     # src_dict = {modality: None for modality in args['task']['source_lang']}
-    src_dicts = OrderedDict()
-    for modality in args['task']['source_lang']:
-        if modality == 'path':  # special for path modality
-            dict_path_border = FairseqTask.load_dictionary(
-                os.path.join(data_path, 'dict.{}_border.txt'.format(modality)))  # args['task']['source_lang']
-            dict_path_center = FairseqTask.load_dictionary(
-                os.path.join(data_path, 'dict.{}_center.txt'.format(modality)))  # args['task']['source_lang']
-            src_dicts[modality] = [dict_path_border, dict_path_center]
-            # assert src_dicts[modality][0].pad() == src_dicts[modality][1].pad() == tgt_dict.pad()
-            # assert src_dicts[modality][0].eos() == src_dicts[modality][1].eos() == tgt_dict.eos()
-            # assert src_dicts[modality][0].unk() == src_dicts[modality][1].unk() == tgt_dict.unk()
-        else:
-            src_dicts[modality] = FairseqTask.load_dictionary(
-                os.path.join(data_path, 'dict.{}.txt'.format(modality)))  # args['task']['source_lang']
-            # assert src_dicts[modality].pad() == tgt_dict.pad()
-            # assert src_dicts[modality].eos() == tgt_dict.eos()
-            # assert src_dicts[modality].unk() == tgt_dict.unk()
+    # src_dicts = OrderedDict()
+    if modality == 'path':  # special for path modality
+        dict_path_border = FairseqTask.load_dictionary(
+            os.path.join(data_path, 'dict.{}_border.txt'.format(modality)))  # args['task']['source_lang']
+        dict_path_center = FairseqTask.load_dictionary(
+            os.path.join(data_path, 'dict.{}_center.txt'.format(modality)))  # args['task']['source_lang']
+        src_dict = [dict_path_border, dict_path_center]
+        # assert src_dicts[modality][0].pad() == src_dicts[modality][1].pad() == tgt_dict.pad()
+        # assert src_dicts[modality][0].eos() == src_dicts[modality][1].eos() == tgt_dict.eos()
+        # assert src_dicts[modality][0].unk() == src_dicts[modality][1].unk() == tgt_dict.unk()
+    else:
+        src_dict = FairseqTask.load_dictionary(
+            os.path.join(data_path, 'dict.{}.txt'.format(modality)))  # args['task']['source_lang']
+        # assert src_dicts[modality].pad() == tgt_dict.pad()
+        # assert src_dicts[modality].eos() == tgt_dict.eos()
+        # assert src_dicts[modality].unk() == tgt_dict.unk()
 
-    dataset = load_multimodalpair_dataset(
-        data_path, split, src_modalities, src_dicts, tgt, tgt_dict,
+    dataset = load_codepair_dataset(
+        data_path, split, modality, src_dict, tgt, tgt_dict,
         combine=combine, dataset_impl=args['dataset']['dataset_impl'],
         upsample_primary=args['task']['upsample_primary'],
         left_pad_source=args['task']['left_pad_source'],
@@ -102,12 +87,18 @@ if __name__ == '__main__':
         samples.append(data_item)
     # print('samples: ', samples)
     # sys.exit()
+
+    # batch = collate(
+    #     samples, pad_idx=src_dict.pad(), eos_idx=dataset.eos,
+    #     left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
+    #     input_feeding=dataset.input_feeding,
+    # )
     batch = collate(
-        samples, pad_idx=src_dicts['path'][0].pad(), eos_idx=dataset.eos, src_modalities=['path'],
+        samples, src_dict, tgt_dict,
         left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
-        input_feeding=dataset.input_feeding,
+        # input_feeding=dataset.input_feeding,
     )
-    print(batch['net_input']['src_lengths']['path'][1])
+    print(batch)
     # sys.exit()
 
     # data_iter = iter(dataloader)
