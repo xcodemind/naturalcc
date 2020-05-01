@@ -34,7 +34,10 @@ from Cython.Distutils import build_ext
 #     ],
 # )
 
+ext_modules = [Extension("data_utils_fast", ["data_utils_fast.pyx"])]
+
 setup(
-    ext_modules = cythonize("data_utils_fast.pyx"),
+    cmdclass = {'build_ext': build_ext},
+    ext_modules =ext_modules,# cythonize("data_utils_fast.pyx"),
     include_dirs=[numpy.get_include()]
 )
