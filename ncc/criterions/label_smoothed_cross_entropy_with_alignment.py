@@ -10,7 +10,7 @@ from ncc.logging import metrics
 from ncc.utils import utils
 from ncc.criterions import register_criterion
 
-from .label_smoothed_cross_entropy import LabelSmoothedCrossEntropyCriterion
+from ncc.criterions.label_smoothed_cross_entropy import LabelSmoothedCrossEntropyCriterion
 
 
 @register_criterion('label_smoothed_cross_entropy_with_alignment')

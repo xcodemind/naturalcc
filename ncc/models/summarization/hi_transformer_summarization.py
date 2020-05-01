@@ -19,7 +19,7 @@ from ncc.modules.attention.multihead_attention import MultiheadAttention
 from ncc.modules.sinusoidal_positional_embedding_hibert import SinusoidalPositionalEmbedding
 from ncc.modules.summarization.fairseq_incremental_decoder import FairseqIncrementalDecoder
 from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
-from ncc.models.fairseq_model import FairseqModel
+from ncc.models.fairseq_model import FairseqEncoderDecoderModel
 from ncc.models import register_model
 from ncc.utils import utils
 # from . import (
@@ -44,7 +44,7 @@ def get_sent_end_repr(src_emb, sent_ends):
     return sent_ends_repr
 
 @register_model('hi_transformer_summarization')
-class HiTransformerSummarizationModel(FairseqModel):
+class HiTransformerSummarizationModel(FairseqEncoderDecoderModel):
     def __init__(self, encoder, decoder):
         super().__init__(encoder, decoder)
 
@@ -132,12 +132,16 @@ class HiTransformerSummarizationModel(FairseqModel):
             )
 
         encoder = TransformerEncoder(args, src_dict, encoder_embed_tokens)
-        decoder = TransformerDecoder(args, tgt_dict)
+        decoder = TransformerDecoder(args, tgt_dict, decoder_embed_tokens)
         return HiTransformerSummarizationModel(encoder, decoder)
 
-    def forward(self, src_tokens, src_sent_ends, doc_pad_mask, doc_pos_tok):
+    # def forward(self, src_tokens, doc_pad_mask, doc_pos_tok, masked_sent_positions, prev_output_tokens):
+    #     encoder_out = self.encoder(src_tokens, doc_pad_mask, doc_pos_tok)
+    #     decoder_out = self.decoder(encoder_out, masked_sent_positions, prev_output_tokens)
+    #     return decoder_out
+    def forward(self, src_tokens, src_sent_ends, doc_pad_mask, doc_pos_tok, prev_output_tokens):
         encoder_out = self.encoder(src_tokens, src_sent_ends, doc_pad_mask, doc_pos_tok)
-        decoder_out = self.decoder(encoder_out)
+        decoder_out = self.decoder(prev_output_tokens, encoder_out)
         return decoder_out
 
 
@@ -238,6 +242,88 @@ class TransformerEncoder(FairseqEncoder):
 
 
 class TransformerDecoder(FairseqIncrementalDecoder):
+    """Transformer decoder."""
+
+    def __init__(self, args, dictionary, embed_tokens, left_pad=False):
+        super().__init__(dictionary)
+        self.dropout = args['model']['dropout']
+        self.share_input_output_embed = args['model']['share_decoder_input_output_embed']
+
+        embed_dim = embed_tokens.embedding_dim
+        padding_idx = embed_tokens.padding_idx
+
+        self.embed_tokens = embed_tokens
+        self.embed_scale = math.sqrt(embed_dim)
+        self.embed_positions = PositionalEmbedding(
+            1024, embed_dim, padding_idx,
+            left_pad=left_pad,
+            learned=args['model']['decoder_learned_pos'],
+        )
+
+        self.layers = nn.ModuleList([])
+        self.layers.extend([
+            TransformerDecoderLayer(args)
+            for i in range(args['model']['decoder_layers'])
+        ])
+
+        if not self.share_input_output_embed:
+            self.embed_out = nn.Parameter(torch.Tensor(len(dictionary), embed_dim))
+            nn.init.normal_(self.embed_out, mean=0, std=embed_dim ** -0.5)
+
+    def forward(self, prev_output_tokens, encoder_out, incremental_state=None):
+        # embed positions
+        positions = self.embed_positions(
+            prev_output_tokens,
+            incremental_state=incremental_state,
+        )
+
+        if incremental_state is not None:
+            prev_output_tokens = prev_output_tokens[:, -1:]
+            positions = positions[:, -1:]
+
+        # embed tokens and positions
+        x = self.embed_scale * self.embed_tokens(prev_output_tokens)
+        x += positions
+        x = F.dropout(x, p=self.dropout, training=self.training)
+
+        # B x T x C -> T x B x C
+        x = x.transpose(0, 1)
+
+        # decoder layers
+        for layer in self.layers:
+            x, attn = layer(
+                x,
+                encoder_out['encoder_out'],
+                encoder_out['encoder_padding_mask'],
+                incremental_state,
+            )
+
+        # T x B x C -> B x T x C
+        x = x.transpose(0, 1)
+
+        # project back to size of vocabulary
+        if self.share_input_output_embed:
+            x = F.linear(x, self.embed_tokens.weight)
+        else:
+            x = F.linear(x, self.embed_out)
+
+        return x, attn
+
+    def max_positions(self):
+        """Maximum output length supported by the decoder."""
+        return self.embed_positions.max_positions()
+
+    def upgrade_state_dict(self, state_dict):
+        if isinstance(self.embed_positions, SinusoidalPositionalEmbedding):
+            if 'decoder.embed_positions.weights' in state_dict:
+                del state_dict['decoder.embed_positions.weights']
+            if 'decoder.embed_positions._float_tensor' not in state_dict:
+                state_dict['decoder.embed_positions._float_tensor'] = torch.FloatTensor()
+        return state_dict
+
+
+
+class TransformerDecoder_(FairseqIncrementalDecoder):
     """Transformer decoder."""
 
     def __init__(self, args, dictionary):

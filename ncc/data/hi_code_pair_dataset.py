@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 SENT_SEP = '<S_SEP>'
 
+
 def find_sep(src, sep_id):
     sep_pos = []
     for i, v in enumerate(src):
@@ -26,15 +27,15 @@ def find_sep(src, sep_id):
 # tokens are left-padding
 def docs2tensor(docs, pad_idx):
     doc_sep_pos = map(lambda x: x[1], docs)
-    max_nsent = max( map(len, doc_sep_pos) )
+    max_nsent = max(map(len, doc_sep_pos))
     srcs = map(lambda x: x[0], docs)
-    max_seqlen = max( map(len, srcs) )
+    max_seqlen = max(map(len, srcs))
     bsz = len(docs)
     # print('max_nsent', max_nsent)
     # print('max_seqlen', max_seqlen)
     src_tokens = torch.LongTensor(bsz, max_seqlen).fill_(pad_idx)
     doc_pad_mask = torch.ByteTensor(bsz, max_nsent).fill_(1)
-    src_sent_ends = torch.LongTensor(bsz, max_nsent).fill_(0) # assume default sentence ends (for padding) are 0s
+    src_sent_ends = torch.LongTensor(bsz, max_nsent).fill_(0)   # assume default sentence ends (for padding) are 0s
     for i in range(bsz):
         src, sep_pos = docs[i]
         src_tokens[i, 0:len(src)] = src
@@ -62,7 +63,7 @@ def create_src_tok_batch(samples, sep_id, eos_idx, pad_idx):
 
 
 def create_target_batch(samples, pad_idx):
-    maxlen = max( [len(s['target']) for s in samples] )
+    maxlen = max([len(s['target']) for s in samples])
     bsz = len(samples)
     target = torch.LongTensor(bsz, maxlen).fill_(pad_idx)
     for i, s in enumerate(samples):
@@ -70,6 +71,7 @@ def create_target_batch(samples, pad_idx):
         tgt_len = len(tgt)
         target[i, 0:tgt_len] = tgt
     return target
+
 
 def collate(samples, src_dict, tgt_dict, left_pad_source=True, left_pad_target=False):
     if len(samples) == 0:
@@ -81,14 +83,15 @@ def collate(samples, src_dict, tgt_dict, left_pad_source=True, left_pad_target=F
     # print('src_tokens', src_tokens.size())
     # print('doc_pad_mask', doc_pad_mask.size())
     # print( src_tokens[:, :, -1] )
-    doc_pos_tok = torch.LongTensor( doc_pad_mask.size() ).fill_( src_dict.index(SENT_SEP) )
-    doc_pos_tok[ doc_pad_mask ] = src_dict.pad()
+    doc_pos_tok = torch.LongTensor(doc_pad_mask.size() ).fill_( src_dict.index(SENT_SEP))
+    doc_pos_tok[doc_pad_mask] = src_dict.pad()
     # print( '** doc_pos_tok **' )
     # print( doc_pos_tok )
 
     ntokens = sum(len(s['target']) for s in samples)
     target = create_target_batch(samples, tgt_dict.pad())
 
+    prev_output_tokens = target  # TODO
     # print('target', target.size())
 
     return {
@@ -99,6 +102,7 @@ def collate(samples, src_dict, tgt_dict, left_pad_source=True, left_pad_target=F
             'src_sent_ends': src_sent_ends,
             'doc_pad_mask': doc_pad_mask,
             'doc_pos_tok': doc_pos_tok,
+            'prev_output_tokens': prev_output_tokens,
         },
         'target': target,
     }

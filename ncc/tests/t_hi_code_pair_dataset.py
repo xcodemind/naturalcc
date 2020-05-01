@@ -9,11 +9,14 @@ from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
 from ncc.tasks.hi_transformer_summarization import load_codepair_dataset
 from ncc.tasks import FairseqTask
-from collections import OrderedDict
-from ncc.utils import utils
 from ncc import tasks
 import torch
 from ncc.data.hi_code_pair_dataset import collate
+from ncc.data import iterators
+from ncc.logging import metrics, progress_bar
+from ncc.utils import checkpoint_utils, distributed_utils
+from ncc.trainer.fair_trainer import Trainer
+
 
 if __name__ == '__main__':
     Argues = namedtuple('Argues', 'yaml')
@@ -70,7 +73,17 @@ if __name__ == '__main__':
         truncate_source=args['task']['truncate_source'],
     )
     task = tasks.setup_task(args)  # task.tokenizer
+    model = task.build_model(args)  # , config
+    criterion = task.build_criterion(args)
+    LOGGER.info(model)
+    LOGGER.info('model {}, criterion {}'.format(args['model']['arch'], criterion.__class__.__name__))
+    LOGGER.info('num. model params: {} (num. trained: {})'.format(
+        sum(p.numel() for p in model.parameters()),
+        sum(p.numel() for p in model.parameters() if p.requires_grad),
+    ))
 
+    # Build trainer
+    trainer = Trainer(args, task, model, criterion)
     # indices = dataset.ordered_indices()
     #
     # sys.exit()
@@ -98,7 +111,7 @@ if __name__ == '__main__':
         left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
         # input_feeding=dataset.input_feeding,
     )
-    print(batch)
+    # print(batch)
     # sys.exit()
 
     # data_iter = iter(dataloader)
@@ -107,8 +120,8 @@ if __name__ == '__main__':
     epoch_itr = task.get_batch_iterator(
         dataset=dataset,
         max_tokens=args['dataset']['max_tokens'],
-        max_sentences=None,     # args['dataset']['max_sentences'],
-        max_positions=None,     #  args['task']['max_source_positions'],
+        max_sentences=args['dataset']['max_sentences'],
+        max_positions=None, #args['task']['max_source_positions'],
         ignore_invalid_inputs=True,
         required_batch_size_multiple=args['dataset']['required_batch_size_multiple'],
         seed=args['common']['seed'],
@@ -119,11 +132,38 @@ if __name__ == '__main__':
     )
 
 
+    # itr = epoch_itr.next_epoch_itr(
+    #     fix_batches_to_gpus=args['distributed_training']['fix_batches_to_gpus'],
+    #     shuffle=(epoch_itr.next_epoch_idx > args['dataset']['curriculum']),
+    # )
+    # print('itr: ', itr)
+    # for i, obj in enumerate(itr):
+    #     print('i: ', i)
+    #     print('obj: ', obj)
+
     itr = epoch_itr.next_epoch_itr(
         fix_batches_to_gpus=args['distributed_training']['fix_batches_to_gpus'],
         shuffle=(epoch_itr.next_epoch_idx > args['dataset']['curriculum']),
     )
-    print('itr: ', itr)
-    for i, obj in enumerate(itr):
-        print('i: ', i)
-        print('obj: ', obj)
+    update_freq = (
+        args['optimization']['update_freq'][epoch_itr.epoch - 1]
+        if epoch_itr.epoch <= len(args['optimization']['update_freq'])
+        else args['optimization']['update_freq'][-1]
+    )
+    itr = iterators.GroupedIterator(itr, update_freq)
+    progress = progress_bar.progress_bar(
+        itr,
+        log_format=args['common']['log_format'],
+        log_interval=args['common']['log_interval'],
+        epoch=epoch_itr.epoch,
+        tensorboard_logdir=(
+            args['common']['tensorboard_logdir'] if distributed_utils.is_master(args) else None
+        ),
+        default_log_format=('tqdm' if not args['common']['no_progress_bar'] else 'simple'),
+    )
+
+    for samples in progress:
+        print('samples: ')
+        log_output = trainer.train_step(samples)
+        print('log_output: ', log_output)
+
