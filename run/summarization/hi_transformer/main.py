@@ -22,7 +22,7 @@ from ncc.utils.util_file import load_yaml
 from ncc.logging import metrics, progress_bar
 from ncc.utils import utils
 from ncc.data import iterators
-
+from ncc.utils import file_utils as f_util
 @metrics.aggregate('train')
 def train(args, trainer, task, epoch_itr):
     """Train the model for one epoch."""
@@ -197,8 +197,9 @@ def single_main(args, init_distributed=False):
 
     # Verify checkpoint directory
     if distributed_utils.is_master(args):
+        save_dir = args['checkpoint']['save_dir']
         checkpoint_utils.verify_checkpoint_directory(args['checkpoint']['save_dir'])
-
+        f_util.remove_files(save_dir, 'pt')
     # Print args
     LOGGER.info(args)
 

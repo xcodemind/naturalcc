@@ -496,3 +496,13 @@ def get_from_cache(
             json.dump(meta, meta_file)
 
     return cache_path
+
+
+def remove_files(path,ext_name):
+    for f in Path(path).glob('{}.{}'.format('*',ext_name)):
+        try:
+            os.remove(f)
+        except OSError as e:
+            print("Error: %s : %s" % (f, e.strerror))
+
+

@@ -14,6 +14,7 @@ from ncc.utils import checkpoint_utils, distributed_utils
 from ncc.utils.util_file import load_yaml
 from ncc.logging import metrics, progress_bar
 from ncc.utils import utils
+from ncc.utils import file_utils as f_util
 from ncc.data import iterators
 from pathlib import Path
 
@@ -176,12 +177,7 @@ def should_stop_early(config, valid_loss):
         should_stop_early.num_runs += 1
         return should_stop_early.num_runs >= config['checkpoint']['patience']
 
-def remove_files(path,ext_name):
-    for f in Path(path).glob('{}.{}'.format('*',ext_name)):
-        try:
-            os.remove(f)
-        except OSError as e:
-            print("Error: %s : %s" % (f, e.strerror))
+
 
 def single_main(args, init_distributed=False):
     # utils.import_user_module(args) # TODO: delete
@@ -201,7 +197,7 @@ def single_main(args, init_distributed=False):
     if distributed_utils.is_master(args):
         save_dir=args['checkpoint']['save_dir']
         checkpoint_utils.verify_checkpoint_directory(save_dir)
-        remove_files(save_dir,'pt')
+        f_util.remove_files(save_dir,'pt')
 
     # Print args
     LOGGER.info(args)
