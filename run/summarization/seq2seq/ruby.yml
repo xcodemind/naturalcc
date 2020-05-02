@@ -80,7 +80,7 @@ distributed_training:
   local_rank: -1 # type=int, default=-1, help="For distributed training: local_rank"
 
 task:
-  data: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/data-bin # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/data-bin # /tmp/pycharm_project_629/data-bin help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 #  sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
 #  tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
 #  mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
@@ -220,7 +220,7 @@ checkpoint:
   best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
 #  patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
-  save_dir: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/summarization/result # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
+  save_dir: /tmp/pycharm_project_429/checkpoint/result # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
   model_name_or_path: ~ # default=None, type=str, help="The model checkpoint for weights initialization. Leave None if you want to train a model from scratch.",
   cache_dir: ~ # default=None, type=str, help="Optional directory to store the pre-trained models downloaded from s3 (instead of the default one)",

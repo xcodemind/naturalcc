@@ -57,7 +57,7 @@ class GANTrainer(Trainer):
                     # self.proj
                     # self.fc
                     # self.activation
-                    disc_loss = criterion(value, label)
+                    #disc_loss = criterion(value, label)
                 elif alter_flag.flag == 'gan':
                     comment, comment_input, comment_target, comment_len, raw_comment = batch['comment']
                     enc_output, dec_hidden, enc_mask = model.encoder.forward(batch)

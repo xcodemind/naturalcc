@@ -54,17 +54,13 @@ def train(args, trainer, task, epoch_itr):
     valid_subsets = args['dataset']['valid_subset'].split(',')
     max_update = args['optimization']['max_update'] or math.inf
     for samples in progress:
-        print('samples ')
-        sys.exit()
-        # with metrics.aggregate('train_inner'):
-        log_output = trainer.train_step(samples)
-
-        if log_output is None:  # OOM, overflow, ...
-            continue
+        with metrics.aggregate('train_inner'):
+            log_output = trainer.train_step(samples)
+            if log_output is None:  # OOM, overflow, ...
+                continue
 
         # log mid-epoch stats
         num_updates = trainer.get_num_updates()
-
         if num_updates % args['common']['log_interval'] == 0:
             stats = get_training_stats(metrics.get_smoothed_values('train_inner'))
             progress.log(stats, tag='train_inner', step=num_updates)
@@ -86,8 +82,8 @@ def train(args, trainer, task, epoch_itr):
             break
 
     # log end-of-epoch stats
-    stats = get_training_stats(metrics.get_smoothed_values('train'))
-    progress.print(stats, tag='train', step=num_updates)
+        stats = get_training_stats(metrics.get_smoothed_values('train'))
+        progress.print(stats, tag='train', step=num_updates)
 
     # reset epoch-level meters
     metrics.reset_meters('train')

@@ -1,5 +1,5 @@
 #registry
-criterion: cross_entropy
+criterion: label_smoothed_cross_entropy
 optimizer: 'adam'
 lr_scheduler: 'polynomial_decay'
 tokenizer: ~ # default=None
@@ -38,7 +38,7 @@ dataset:
   num_workers: 1 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
 #  skip_invalid_size_inputs_valid_test: 0 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
-  max_sentences: 1 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  max_sentences: 16 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
   dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
   train_subset: train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
@@ -80,7 +80,7 @@ distributed_training:
   local_rank: -1 # type=int, default=-1, help="For distributed training: local_rank"
 
 task:
-  data: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/data-bin # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/data-bin #/tmp/pycharm_project_249/data-bin # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 #  sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
 #  tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
 #  mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
@@ -118,7 +118,7 @@ task:
 
 
 model:
-  arch: hi_transformer # hi_transformer
+  arch: hi_transformer_summarization # hi_transformer
 #  code_modalities:
 #    - tok
     #    - ast
@@ -147,6 +147,18 @@ model:
   encoder_dropout_out: 0.1 #', type=float, metavar='D', help='dropout probability for encoder output'
   decoder_dropout_in: 0.1 #' type=float, metavar='D', help='dropout probability for decoder input embedding'
   decoder_dropout_out: 0.1 #', type=float, metavar='D', help='dropout probability for decoder output'
+  dropout: 0.1 # '--dropout', type=float, metavar='D', help='dropout probability')
+  encoder_learned_pos: 0 # default=False, action='store_true', help='use learned positional embeddings in the encoder')
+  encoder_attention_heads: 8 #', type=int, metavar='N',help='num encoder attention heads'
+  attention_dropout: 0.1
+  relu_dropout: 0.1 # ', type=float, metavar='D', help='dropout probability after ReLU in FFN'
+  encoder_normalize_before: 0 #', default=False, action='store_true', help='apply layernorm before each encoder block'
+  encoder_ffn_embed_dim: 2048 #', type=int, metavar='N', help='encoder embedding dimension for FFN'
+  decoder_learned_pos: 0 #, default=False, action='store_true', help='use learned positional embeddings in the decoder'
+  decoder_attention_heads: 8 #', type=int, metavar='N', help='num decoder attention heads'
+  decoder_normalize_before: 0 #', default=False, action='store_true', help='apply layernorm before each decoder block'
+  decoder_ffn_embed_dim: 512 #', type=int, metavar='N', help='decoder embedding dimension for FFN'
+
   # network: decoder
 #  attn_type: ~ # ~, general, dot, mlp, intra
 #  attn_unit: 512 # （固定，不要调）
@@ -199,6 +211,7 @@ optimization:
   warmup_steps: 0 # default=0, type=int, help="Linear warmup over warmup_steps."
   gradient_accumulation_steps: 1 # type=int, default=1, help="Number of updates steps to accumulate before performing a backward/update pass."
 
+  label_smoothing: 0.0 #default=0., type=float, metavar='D', help='epsilon for label smoothing, 0 means no label smoothing'
 
 checkpoint:
 #  save_dir: /data/wanyao/ghproj_d/naturalcodev3/wikitext-103-raw/checkpoints # default='checkpoints', help='path to save checkpoints'
@@ -220,7 +233,7 @@ checkpoint:
   best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
 #  patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
-  save_dir: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/summarization/result # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
+  save_dir: /tmp/pycharm_project_249/checkpoint/result # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
   model_name_or_path: ~ # default=None, type=str, help="The model checkpoint for weights initialization. Leave None if you want to train a model from scratch.",
   cache_dir: ~ # default=None, type=str, help="Optional directory to store the pre-trained models downloaded from s3 (instead of the default one)",

@@ -82,8 +82,8 @@ def train(args, trainer, task, epoch_itr):
             break
 
     # log end-of-epoch stats
-    stats = get_training_stats(metrics.get_smoothed_values('train'))
-    progress.print(stats, tag='train', step=num_updates)
+        stats = get_training_stats(metrics.get_smoothed_values('train'))
+        progress.print(stats, tag='train', step=num_updates)
 
     # reset epoch-level meters
     metrics.reset_meters('train')
