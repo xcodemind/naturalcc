@@ -199,9 +199,9 @@ def single_main(args, init_distributed=False):
     if distributed_utils.is_master(args):
         save_dir = args['checkpoint']['save_dir']
         checkpoint_utils.verify_checkpoint_directory(args['checkpoint']['save_dir'])
-        f_util.remove_files(save_dir, 'pt')
+        f_util.remove_files(save_dir, 'pt') # clean the check points before training
     # Print args
-    LOGGER.info(args)
+    #LOGGER.info(args)
 
     # Setup task, e.g., translation, language modeling, etc.
     task = tasks.setup_task(args) # task.tokenizer
@@ -216,8 +216,8 @@ def single_main(args, init_distributed=False):
     #     task.load_dataset(valid_sub_split, combine=False, epoch=1)
 
     criterion = task.build_criterion(args)
-    LOGGER.info(model)
-    LOGGER.info('model {}, criterion {}'.format(args['model']['arch'], criterion.__class__.__name__))
+    #LOGGER.info(model)
+    LOGGER.info('Model name: {}, Criterion : {}'.format(args['model']['arch'], criterion.__class__.__name__))
     LOGGER.info('num. model params: {} (num. trained: {})'.format(
         sum(p.numel() for p in model.parameters()),
         sum(p.numel() for p in model.parameters() if p.requires_grad),
@@ -225,7 +225,7 @@ def single_main(args, init_distributed=False):
 
     # Build trainer
     trainer = Trainer(args, task, model, criterion)
-    LOGGER.info('training on {} GPUs'.format(args['distributed_training']['distributed_world_size']))
+    LOGGER.info('Training on {} GPUs'.format(args['distributed_training']['distributed_world_size']))
     # LOGGER.info('max tokens per GPU = {} and max sentences per GPU = {}'.format(
     #     args['dataset']['max_tokens'],
     #     args['dataset']['max_sentences'],
@@ -233,7 +233,7 @@ def single_main(args, init_distributed=False):
 
     # Load the latest checkpoint if one is available and restore the
     # corresponding train iterator
-    extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer, combine=False)
+    extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer, combine=False) # load dataset
 
     # Train until the learning rate gets too small
     max_epoch = args['optimization']['max_epoch'] or math.inf

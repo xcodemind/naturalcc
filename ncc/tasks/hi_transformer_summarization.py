@@ -54,7 +54,7 @@ def load_codepair_dataset(
                 break
             else:
                 raise FileNotFoundError('Dataset not found: {} ({})'.format(split, data_path))
-        print('prefix + src: ', prefix + src)
+        print('Data set file : prefix + src: ', prefix + src)
         src_dataset = data_utils.load_indexed_dataset(prefix + src, 'text', src_dict, dataset_impl)
         if truncate_source:
             src_dataset = AppendTokenDataset(
@@ -70,7 +70,7 @@ def load_codepair_dataset(
         if tgt_dataset is not None:
             tgt_datasets.append(tgt_dataset)
 
-        LOGGER.info('{} {} {}-{} {} examples'.format(
+        LOGGER.info('data_path: {} split:{} source : {}- target : {} dataset len: {} examples'.format(
             data_path, split_k, src, tgt, len(src_datasets[-1])
         ))
 
