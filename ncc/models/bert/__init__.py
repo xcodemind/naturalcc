@@ -7,6 +7,7 @@
 # from .model import *  # noqa
 # from .model_camembert import *  # noqa
 # from .model_xlmr import *  # noqa
+from .model import *
 from .modeling_bert import BertModel
 from .modeling_roberta import RobertaModel
 

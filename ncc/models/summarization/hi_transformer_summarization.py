@@ -374,9 +374,18 @@ class TransformerEncoderLayer(nn.Module):
     def __init__(self, args):
         super().__init__()
         self.embed_dim = args['model']['encoder_embed_dim']
+        # self.self_attn = MultiheadAttention(
+        #     self.embed_dim, args['model']['encoder_attention_heads'],
+        #     dropout=args['model']['attention_dropout'],
+        # )
+        # TODO: to be verified
         self.self_attn = MultiheadAttention(
-            self.embed_dim, args['model']['encoder_attention_heads'],
+            self.embed_dim,
+            args['model']['encoder_attention_heads'],
             dropout=args['model']['attention_dropout'],
+            # add_bias_kv=add_bias_kv,
+            # add_zero_attn=add_zero_attn,
+            self_attention=True
         )
         self.dropout = args['model']['dropout']
         self.relu_dropout = args['model']['relu_dropout']

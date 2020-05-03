@@ -131,7 +131,7 @@ ROBERTA_INPUTS_DOCSTRING = r"""
 """
 
 
-@register_model('roberta')
+@register_model('roberta_huggingface')
 @add_start_docstrings(
     "The bare RoBERTa Model transformer outputting raw hidden-states without any specific head on top.",
     ROBERTA_START_DOCSTRING,
@@ -162,7 +162,7 @@ class RobertaModel(BertModel):
     def build_model(cls, args, config, task): # TODO: task is unnecessary here.
         return cls(config)
 
-@register_model('roberta_masked_lm')
+@register_model('roberta_masked_lm_huggingface')
 @add_start_docstrings("""RoBERTa Model with a `language modeling` head on top. """, ROBERTA_START_DOCSTRING)
 class RobertaForMaskedLM(BertPreTrainedModel):
     config_class = RobertaConfig

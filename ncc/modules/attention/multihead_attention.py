@@ -13,7 +13,7 @@ from torch import Tensor, nn
 from torch.nn import Parameter
 from ncc.incremental_decoding_utils import with_incremental_state
 
-class MultiheadAttention(nn.Module):
+class MultiheadAttention_old(nn.Module):
     """Multi-headed attention.
 
     See "Attention Is All You Need" for more details.
@@ -206,7 +206,7 @@ class MultiheadAttention(nn.Module):
         )
 
 @with_incremental_state
-class MultiheadAttention_new(nn.Module):
+class MultiheadAttention(nn.Module):
     """Multi-headed attention.
 
     See "Attention Is All You Need" for more details.

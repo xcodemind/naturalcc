@@ -588,7 +588,7 @@ BERT_INPUTS_DOCSTRING = r"""
 """
 
 
-@register_model('bert')
+@register_model('bert_huggingface')
 @add_start_docstrings(
     "The bare Bert Model transformer outputting raw hidden-states without any specific head on top.",
     BERT_START_DOCSTRING,
