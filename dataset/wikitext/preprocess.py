@@ -32,6 +32,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger('preprocess')
 
+
 def parse_alignment(line):
     """
     Parses a single line from the alingment file.
@@ -51,6 +52,7 @@ def parse_alignment(line):
         parsed_alignment[2 * idx] = int(src_idx)
         parsed_alignment[2 * idx + 1] = int(tgt_idx)
     return parsed_alignment
+
 
 def main(args):
 

@@ -12,47 +12,15 @@ import sys
 from collections import Counter
 from multiprocessing import Pool
 
-from ncc.data.encoders.gpt2_bpe_utils import get_encoder
+# from ncc.data.encoders.gpt2_bpe_utils import get_encoder
+import sentencepiece as spm
 
 
-def main():
-    """
-    Helper script to encode raw text with the GPT-2 BPE using multiple processes.
+def build_model(args):
+    spm.SentencePieceTrainer.Train('--input={} --model_prefix={} --vocab_size={}'.format(args.inputs[0], args.model_prefix, args.vocab_size))
 
-    The encoder.json and vocab.bpe files can be obtained here:
-    - https://dl.fbaipublicfiles.com/fairseq/gpt2_bpe/encoder.json
-    - https://dl.fbaipublicfiles.com/fairseq/gpt2_bpe/vocab.bpe
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--encoder-json",
-        help='path to encoder.json',
-    )
-    parser.add_argument(
-        "--vocab-bpe",
-        type=str,
-        help='path to vocab.bpe',
-    )
-    parser.add_argument(
-        "--inputs",
-        nargs="+",
-        default=['-'],
-        help="input files to filter/encode",
-    )
-    parser.add_argument(
-        "--outputs",
-        nargs="+",
-        default=['-'],
-        help="path to save encoded outputs",
-    )
-    parser.add_argument(
-        "--keep-empty",
-        action="store_true",
-        help="keep empty lines",
-    )
-    parser.add_argument("--workers", type=int, default=20)
-    args = parser.parse_args()
 
+def main(args):
     assert len(args.inputs) == len(args.outputs), \
         "number of input and output paths should match"
 
@@ -92,17 +60,27 @@ class MultiprocessingEncoder(object):
         self.args = args
 
     def initializer(self):
-        global bpe
-        bpe = get_encoder(self.args.encoder_json, self.args.vocab_bpe)
+        global sp
+        # bpe = get_encoder(self.args.encoder_json, self.args.vocab_bpe)
+        sp = spm.SentencePieceProcessor()
+        sp.Load('{}.model'.format(self.args.model_prefix))
 
     def encode(self, line):
-        global bpe
-        ids = bpe.encode(line)
-        return list(map(str, ids))
+        global sp
+        if self.args.format == 'id':
+            ids = sp.EncodeAsIds(line)
+            return list(map(str, ids))
+        elif self.args.format == 'piece':
+            pieces = sp.EncodeAsPieces(line)
+            return pieces
 
     def decode(self, tokens):
-        global bpe
-        return bpe.decode(tokens)
+        global sp
+        # return bpe.decode(tokens)
+        if self.args.format == 'id':
+            return sp.DecodeIds(tokens)
+        elif self.args.format == 'piece':
+            return sp.DecodePieces(tokens)
 
     def encode_lines(self, lines):
         """
@@ -126,4 +104,52 @@ class MultiprocessingEncoder(object):
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    # parser.add_argument(
+    #     "--encoder-json",
+    #     help='path to encoder.json',
+    # )
+    # parser.add_argument(
+    #     "--vocab-bpe",
+    #     type=str,
+    #     help='path to vocab.bpe',
+    # )
+    parser.add_argument(
+        "--vocab-size",
+        type=int,
+        default=50000,
+        help='path to vocab.bpe',
+    )
+    parser.add_argument(
+        "--format",
+        type=str,
+        help='path to vocab.bpe',
+    )
+
+    parser.add_argument(
+        "--model-prefix",
+        type=str,
+        help='path to vocab.bpe',
+    )
+    parser.add_argument(
+        "--inputs",
+        nargs="+",
+        default=['-'],
+        help="input files to filter/encode",
+    )
+    parser.add_argument(
+        "--outputs",
+        nargs="+",
+        default=['-'],
+        help="path to save encoded outputs",
+    )
+    parser.add_argument(
+        "--keep-empty",
+        action="store_true",
+        help="keep empty lines",
+    )
+    parser.add_argument("--workers", type=int, default=20)
+    args = parser.parse_args()
+    if 'train' in args.inputs[0]:
+        build_model(args)
+    main(args)
