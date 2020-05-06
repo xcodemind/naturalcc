@@ -6,6 +6,9 @@ import os
 S_SEP = '<S_SEP>'
 S_CLS = '<CLS>'
 S_MASK = '<MASK>'
+output_prefixs=['train','valid','test'] # insert spec tokens for all datasets.
+PREPROCESS = 'preprocess'
+prefix = 'pref'
 
 
 def file_name(prefix, lang):
@@ -40,9 +43,6 @@ def insert_sep_token(args, input_prefix, output_prefix, lang):
         )
 
 def insert_sep_tokens(args,lang='code'):
-    PREPROCESS='preprocess'
-    output_prefixs=['train','valid','test'] # insert spec tokens for all datasets.
-    prefix='pref'
     for idx in output_prefixs:
         insert_sep_token(args,args[PREPROCESS][idx+prefix],idx,lang)
 
