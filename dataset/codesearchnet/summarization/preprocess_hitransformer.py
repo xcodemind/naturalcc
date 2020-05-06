@@ -21,7 +21,7 @@ from ncc import tasks
 from ncc.utils.util_file import load_yaml
 from ncc.utils import utils
 from ncc import LOGGER
-
+from .preprocess_helper import *
 # logging.basicConfig(
 #     format='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
 #     datefmt='%Y-%m-%d %H:%M:%S',
@@ -216,6 +216,7 @@ def make_binary_alignment_dataset(args, input_prefix, output_prefix, num_workers
     )
 
 
+
 def make_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers=1):
     if args['preprocess']['dataset_impl'] == "raw":
         # Copy original text file to destination folder
@@ -308,6 +309,9 @@ def main(args):
     #     raise FileExistsError(dict_path(args, args['preprocess']['target_lang']))
     modality = args['preprocess']['source_lang']
 
+    # 0. insert special token
+    insert_sep_tokens(args)
+
     # 1. Build vocabulary (dictionary)
     LOGGER.info('Build vocabulary...')
     task = tasks.get_task(args['preprocess']['task'])
@@ -315,11 +319,6 @@ def main(args):
         assert not args['preprocess']['codedict'] or not args['preprocess']['tgtdict'], \
             "cannot use both --srcdict and --tgtdict with --joined-dictionary"
 
-        # if args['preprocess']['codedict']:
-        #     src_dict = task.load_dictionary(args['preprocess']['srcdict'])
-        # elif args['preprocess']['tgtdict']:
-        #     src_dict = task.load_dictionary(args['preprocess']['tgtdict'])
-        # else:
         assert args['preprocess']['trainpref'], "--trainpref must be set if --codedict is not specified"
         src_dict = build_dictionary(args, task,
             {train_path(args, lang) for lang in args['preprocess']['source_lang'] + args['preprocess']['target_lang']}, src=True
@@ -392,10 +391,6 @@ def main(args):
                             srcidx = si[int(sai)]
                             tgtidx = ti[int(tai)]
                             if srcidx != src_dict.unk() and tgtidx != tgt_dict.unk():
-                                assert srcidx != src_dict.pad()
-                                assert srcidx != src_dict.eos()
-                                assert tgtidx != tgt_dict.pad()
-                                assert tgtidx != tgt_dict.eos()
 
                                 if srcidx not in freq_map:
                                     freq_map[srcidx] = {}
@@ -438,110 +433,4 @@ def cli_main():
 
 if __name__ == "__main__":
     cli_main()
-    # sys.exit()
-    # # cli_main()
-    # # parser = get_parser("Preprocessing", default_task)
-    # parser = argparse.ArgumentParser()
-    # # Before creating the true parser, we need to import optional user module
-    # # in order to eagerly import custom tasks, optimizers, architectures, etc.
-    # usr_parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
-    # usr_parser.add_argument("--user-dir", default=None)
-    # usr_args, _ = usr_parser.parse_known_args()
-    # # utils.import_user_module(usr_args)
-    #
-    # parser = argparse.ArgumentParser(allow_abbrev=False)
-    # # fmt: off
-    # parser.add_argument('--no-progress-bar', action='store_true', help='disable progress bar')
-    # parser.add_argument('--log-interval', type=int, default=100, metavar='N',
-    #                     help='log progress every N batches (when progress bar is disabled)')
-    # parser.add_argument('--log-format', default=None, help='log format to use',
-    #                     choices=['json', 'none', 'simple', 'tqdm'])
-    # parser.add_argument('--tensorboard-logdir', metavar='DIR', default='',
-    #                     help='path to save logs for tensorboard, should match --logdir '
-    #                          'of running tensorboard (default: no tensorboard logging)')
-    # parser.add_argument('--seed', default=1, type=int, metavar='N',
-    #                     help='pseudo random number generator seed')
-    # parser.add_argument('--cpu', action='store_true', help='use CPU instead of CUDA')
-    # parser.add_argument('--fp16', action='store_true', help='use FP16')
-    # parser.add_argument('--memory-efficient-fp16', action='store_true',
-    #                     help='use a memory-efficient version of FP16 training; implies --fp16')
-    # parser.add_argument('--fp16-no-flatten-grads', action='store_true',
-    #                     help='don\'t flatten FP16 grads tensor')
-    # parser.add_argument('--fp16-init-scale', default=2 ** 7, type=int,
-    #                     help='default FP16 loss scale')
-    # parser.add_argument('--fp16-scale-window', type=int,
-    #                     help='number of updates before increasing loss scale')
-    # parser.add_argument('--fp16-scale-tolerance', default=0.0, type=float,
-    #                     help='pct of updates that can overflow before decreasing the loss scale')
-    # parser.add_argument('--min-loss-scale', default=1e-4, type=float, metavar='D',
-    #                     help='minimum FP16 loss scale, after which training is stopped')
-    # parser.add_argument('--threshold-loss-scale', type=float,
-    #                     help='threshold FP16 loss scale from below')
-    # parser.add_argument('--user-dir', default=None,
-    #                     help='path to a python module containing custom extensions (tasks and/or architectures)')
-    # parser.add_argument('--empty-cache-freq', default=0, type=int,
-    #                     help='how often to clear the PyTorch CUDA cache (0 to disable)')
-    # parser.add_argument('--all-gather-list-size', default=16384, type=int,
-    #                     help='number of bytes reserved for gathering stats from workers')
-    #
-    # from ncc.registry import REGISTRIES
-    #
-    # for registry_name, REGISTRY in REGISTRIES.items():
-    #     parser.add_argument(
-    #         '--' + registry_name.replace('_', '-'),
-    #         default=REGISTRY['default'],
-    #         choices=REGISTRY['registry'].keys(),
-    #     )
-    #
-    # # Task definitions can be found under fairseq/tasks/
-    # from ncc.tasks import TASK_REGISTRY
-    #
-    # parser.add_argument('--task', metavar='TASK', default="translation",
-    #                     choices=TASK_REGISTRY.keys(),
-    #                     help='task')
-    # # fmt: on
-    #
-    # # ===========================
-    # group = parser.add_argument_group("Preprocessing")
-    # # fmt: off
-    # group.add_argument("-s", "--source-lang", default=None, metavar="SRC",
-    #                    help="source language")
-    # group.add_argument("-t", "--target-lang", default=None, metavar="TARGET",
-    #                    help="target language")
-    # group.add_argument("--trainpref", metavar="FP", default=None,
-    #                    help="train file prefix")
-    # group.add_argument("--validpref", metavar="FP", default=None,
-    #                    help="comma separated, valid file prefixes")
-    # group.add_argument("--testpref", metavar="FP", default=None,
-    #                    help="comma separated, test file prefixes")
-    # group.add_argument("--align-suffix", metavar="FP", default=None,
-    #                    help="alignment file suffix")
-    # group.add_argument("--destdir", metavar="DIR", default="data-bin",
-    #                    help="destination dir")
-    # group.add_argument("--thresholdtgt", metavar="N", default=0, type=int,
-    #                    help="map words appearing less than threshold times to unknown")
-    # group.add_argument("--thresholdsrc", metavar="N", default=0, type=int,
-    #                    help="map words appearing less than threshold times to unknown")
-    # group.add_argument("--tgtdict", metavar="FP",
-    #                    help="reuse given target dictionary")
-    # group.add_argument("--srcdict", metavar="FP",
-    #                    help="reuse given source dictionary")
-    # group.add_argument("--nwordstgt", metavar="N", default=-1, type=int,
-    #                    help="number of target words to retain")
-    # group.add_argument("--nwordssrc", metavar="N", default=-1, type=int,
-    #                    help="number of source words to retain")
-    # group.add_argument("--alignfile", metavar="ALIGN", default=None,
-    #                    help="an alignment file (optional)")
-    # parser.add_argument('--dataset-impl', metavar='FORMAT', default='mmap',
-    #                     choices=get_available_dataset_impl(),
-    #                     help='output dataset implementation')
-    # group.add_argument("--joined-dictionary", action="store_true",
-    #                    help="Generate joined dictionary")
-    # group.add_argument("--only-source", action="store_true",
-    #                    help="Only process the source language")
-    # group.add_argument("--padding-factor", metavar="N", default=8, type=int,
-    #                    help="Pad dictionary size to be multiple of N")
-    # group.add_argument("--workers", metavar="N", default=1, type=int,
-    #                    help="number of parallel workers")
-    # args = parser.parse_args()
-    # main(args)
+

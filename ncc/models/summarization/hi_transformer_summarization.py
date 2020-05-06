@@ -448,7 +448,7 @@ class TransformerDecoderLayer(nn.Module):
             query=x,
             key=x,
             value=x,
-            mask_future_timesteps=True,
+            #mask_future_timesteps=True,
             incremental_state=incremental_state,
             need_weights=False,
         )

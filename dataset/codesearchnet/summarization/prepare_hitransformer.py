@@ -3,7 +3,7 @@ import os, sys
 from dataset.codesearchnet.utils import util
 from dataset.codesearchnet.utils import util_path
 from dataset.codesearchnet.utils import util_ast
-from dataset.codesearchnet.utils.util_ast import CodeParser
+from ncc.utils.util_ast import CodeParser
 from dataset.codesearchnet.utils import constants
 from typing import Dict, Tuple, List
 import gzip
