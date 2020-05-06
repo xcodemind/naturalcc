@@ -21,7 +21,9 @@ from ncc import tasks
 from ncc.utils.util_file import load_yaml
 from ncc.utils import utils
 from ncc import LOGGER
+from .preprocess_helper import *
 import ujson
+
 
 
 # logging.basicConfig(
@@ -210,21 +212,21 @@ def make_binary_alignment_dataset(args, input_prefix, output_prefix, num_workers
     )
 
 
-def insert_sep_token(args, input_prefix, output_prefix, lang):
-    output_text_file = dest_path(args,
-                                 output_prefix,
-                                 # + ".{}-{}".format(args['preprocess']['source_lang'], args['preprocess']['target_lang'])
-                                 lang,
-                                 )
-    if lang == 'code':
-        #     insert <S_SEP> to .code files
-        with open(output_text_file, 'w') as output_file:
-            with open(file_name(input_prefix, lang), 'r') as input_file:
-                for line in input_file.readlines():
-                    line_ = ujson.loads(line)
-                    for count in [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]:  # to handle duplicate '\n'
-                        line_ = line_.replace('\n', ' <S_SEP> ', count)
-                    output_file.write(ujson.dumps(line_) + '\n')
+# def insert_sep_token(args, input_prefix, output_prefix, lang):
+#     output_text_file = dest_path(args,
+#                                  output_prefix,
+#                                  # + ".{}-{}".format(args['preprocess']['source_lang'], args['preprocess']['target_lang'])
+#                                  lang,
+#                                  )
+#     if lang == 'code':
+#         #     insert <S_SEP> to .code files
+#         with open(output_text_file, 'w') as output_file:
+#             with open(file_name(input_prefix, lang), 'r') as input_file:
+#                 for line in input_file.readlines():
+#                     line_ = ujson.loads(line)
+#                     for count in [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]:  # to handle duplicate '\n'
+#                         line_ = line_.replace('\n', ' <S_SEP> ', count)
+#                     output_file.write(ujson.dumps(line_) + '\n')
 
 
 def make_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers=1):
@@ -326,9 +328,9 @@ def main(args):
     modality = args['preprocess']['source_lang']
 
     # 0. insert special token
-    insert_sep_token(args, args['preprocess']['trainpref'], "train", 'code')
-    insert_sep_token(args, args['preprocess']['validpref'], "valid", 'code')
-    insert_sep_token(args, args['preprocess']['testpref'], "test", 'code')
+    insert_sep_tokens(args)
+    # insert_sep_token(args, args['preprocess']['validpref'], "valid", 'code')
+    # insert_sep_token(args, args['preprocess']['testpref'], "test", 'code')
 
     # 1. Build vocabulary (dictionary)
     LOGGER.info('Build vocabulary...')

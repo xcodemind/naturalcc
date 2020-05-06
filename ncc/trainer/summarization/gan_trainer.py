@@ -7,7 +7,7 @@ import time
 import torch
 from torch.optim.optimizer import Optimizer
 from ncc import LOGGER
-from ncc.trainer import Trainer
+from ncc.trainer.trainer_ import Trainer
 from ncc.model.template import IModel
 from ncc.dataset import UnilangDataloader
 from ncc.metric import BaseLoss
@@ -57,7 +57,7 @@ class GANTrainer(Trainer):
                     # self.proj
                     # self.fc
                     # self.activation
-                    #disc_loss = criterion(value, label)
+                    disc_loss = criterion(value, label)
                 elif alter_flag.flag == 'gan':
                     comment, comment_input, comment_target, comment_len, raw_comment = batch['comment']
                     enc_output, dec_hidden, enc_mask = model.encoder.forward(batch)
