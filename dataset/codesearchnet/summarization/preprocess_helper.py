@@ -3,6 +3,10 @@ import ujson
 import os
 
 
+S_SEP = '<S_SEP>'
+S_CLS = '<CLS>'
+S_MASK = '<MASK>'
+
 
 def file_name(prefix, lang):
     fname = prefix
@@ -25,19 +29,20 @@ def insert_sep_token(args, input_prefix, output_prefix, lang):
         with open(output_text_file, 'w') as output_file:
             with open(file_name(input_prefix, lang), 'r') as input_file:
                 for line in input_file.readlines():
-                    line_ = ujson.loads(line)
+                    ln = ujson.loads(line)
                     for count in [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]:  # to handle duplicate '\n'
-                        line_ = line_.replace('\n', ' <S_SEP> ', count)
-                    output_file.write(ujson.dumps(line_) + '\n')
+                        ln = ln.replace('\n', S_SEP, count)
+                        ln=S_CLS +ln
+                    output_file.write(ujson.dumps(ln) + '\n')
     else:
         raise ValueError(
-            "code dataset supported only 2020.0506"
+            "dataset 'code'  supported only 2020.0506"
         )
 
 def insert_sep_tokens(args,lang='code'):
-    preprocess='preprocess'
-    output_prefix=['train','valid','test']
+    PREPROCESS='preprocess'
+    output_prefix=['train','valid','test'] # insert spec tokens for all datasets.
     prefix='pref'
     for idx in output_prefix:
-        insert_sep_token(args,args[preprocess][idx+prefix],idx,lang)
+        insert_sep_token(args,args[PREPROCESS][idx+prefix],idx,lang)
 
