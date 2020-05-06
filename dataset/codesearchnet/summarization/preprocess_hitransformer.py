@@ -54,19 +54,6 @@ def parse_alignment(line):
 
 def train_path(args, lang):
     return "{}{}".format(args['preprocess']['trainpref'], ("." + lang) if lang else "")
-    # if lang == 'code':
-    #     return os.path.join(args['preprocess']['trainpref'], 'code', 'train', 'train_all.txt')
-    # elif lang == 'comment':
-    #     return os.path.join(args['preprocess']['trainpref'], 'docstring', 'train', 'train_all.txt')
-    # paths = []
-    # if lang == 'code':
-    #     for file in glob.glob(os.path.join(args['preprocess']['trainpref'], 'code', 'train', '*train_all*.txt')):
-    #         paths.append(os.path.join(args['preprocess']['trainpref'], file))
-    # elif lang == 'comment':
-    #     for file in glob.glob(os.path.join(args['preprocess']['trainpref'], 'docstring', 'train', '*train_all*.txt')):
-    #         paths.append(os.path.join(args['preprocess']['trainpref'], file))
-    # return paths
-
 
 def file_name(prefix, lang):
     fname = prefix

@@ -39,7 +39,7 @@ def insert_sep_token(args, input_prefix, output_prefix, lang):
                     output_file.write(ujson.dumps(ln) + '\n')
     else:
         raise ValueError(
-            "dataset 'code'  supported only 2020.0506"
+            "dataset 'code' supported only 2020.0506"
         )
 
 def insert_sep_tokens(args,lang='code'):
