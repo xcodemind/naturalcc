@@ -30,9 +30,9 @@ def insert_sep_token(args, input_prefix, output_prefix, lang):
             with open(file_name(input_prefix, lang), 'r') as input_file:
                 for line in input_file.readlines():
                     ln = ujson.loads(line)
-                    for count in [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]:  # to handle duplicate '\n'
+                    for count in range(10,1,-1):  # to handle duplicate '\n'
                         ln = ln.replace('\n', S_SEP, count)
-                        ln=S_CLS +ln
+                        ln=S_CLS +ln # profix <CLS>
                     output_file.write(ujson.dumps(ln) + '\n')
     else:
         raise ValueError(
@@ -41,8 +41,8 @@ def insert_sep_token(args, input_prefix, output_prefix, lang):
 
 def insert_sep_tokens(args,lang='code'):
     PREPROCESS='preprocess'
-    output_prefix=['train','valid','test'] # insert spec tokens for all datasets.
+    output_prefixs=['train','valid','test'] # insert spec tokens for all datasets.
     prefix='pref'
-    for idx in output_prefix:
+    for idx in output_prefixs:
         insert_sep_token(args,args[PREPROCESS][idx+prefix],idx,lang)
 
