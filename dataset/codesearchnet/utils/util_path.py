@@ -99,14 +99,12 @@ def __collect_sample(ast: Dict, MAX_PATH: int, ):
 
         if len(start) > 0 and len(connector) > 0 and len(finish) > 0:
             contexts.append([new_start, connector, new_finish])
-            if len(contexts) == MAX_PATH:
-                contexts
         else:
             # LOGGER.error(tree_path)
             pass
 
     assert len(contexts) > 0, Exception('ast\'s path is None')
-    return contexts
+    return contexts[:MAX_PATH]
 
 
 def ast_to_path(ast_tree: Dict, MAX_PATH=10):

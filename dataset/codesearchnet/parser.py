@@ -11,8 +11,10 @@ from tree_sitter import Language, Parser
 
 from dataset.codesearchnet.utils import constants
 from dataset.codesearchnet.utils import util
+from dataset.codesearchnet.utils import util_ast
 
-sys.setrecursionlimit(99999)  # recursion depth
+# ignore those ast whose size is too large. Therefore set it as a small number
+sys.setrecursionlimit(constants.RECURSION_DEPTH)  # recursion depth
 
 
 class CodeParser(object):
@@ -247,74 +249,6 @@ class CodeParser(object):
         dfs(constants.ROOT_NODE_NAME)
         return ast_tree
 
-    def reset_indices(self, ast_tree: Dict) -> Dict:
-        '''rename ast tree's node indices with consecutive indices'''
-        new_ind = 1
-        root_ind = 1
-        while 1:
-            root_node_ind = constants.NODE_FIX + str(root_ind)
-            if root_node_ind in ast_tree:
-                break
-            else:
-                root_ind += 1
-
-        def new_ndoe_name():
-            nonlocal new_ind
-            new_name = '_' + constants.NODE_FIX + str(new_ind)
-            new_ind += 1
-            return new_name
-
-        def dfs(cur_node_ind):
-            cur_node = ast_tree[cur_node_ind]
-            # change from cur_node_ind to new_cur_node_ind
-            # copy a same node with new name
-            new_cur_node_ind = new_ndoe_name()
-            ast_tree[new_cur_node_ind] = deepcopy(cur_node)
-
-            # update its parent's child nodes
-            if cur_node['parent'] is None:
-                pass
-            else:
-                parent_node = ast_tree[cur_node['parent']]
-                parent_node['children'][parent_node['children'].index(cur_node_ind)] = new_cur_node_ind
-
-            if cur_node['children'][0].startswith(constants.NODE_FIX):
-                # update its children nodes' parent
-                for child_name in cur_node['children']:
-                    ast_tree[child_name]['parent'] = new_cur_node_ind
-            else:
-                pass
-
-            # 2. delete old node
-            ast_tree.pop(cur_node_ind)
-
-            child_node_indices = util.get_tree_children_func(cur_node)
-
-            if len(child_node_indices) == 0:
-                return
-
-            for child_name in child_node_indices:
-                dfs(child_name)
-
-        dfs(root_node_ind)
-
-        # recover name
-        node_names = deepcopy(list(ast_tree.keys()))
-        for node_name in node_names:
-            node = deepcopy(ast_tree[node_name])
-            if node['children'][0].startswith('_' + constants.NODE_FIX):
-                node['children'] = [child_name[1:] for child_name in node['children']]
-            else:
-                pass
-            if node['parent'] == None:
-                pass
-            else:
-                node['parent'] = node['parent'][1:]
-            ast_tree[node_name[1:]] = node
-            ast_tree.pop(node_name)
-
-        return ast_tree
-
     def parse_raw_ast(self, code: str, ) -> Optional[Dict]:
         # must add this head for php code
         if self.LANGUAGE == 'php':
@@ -326,7 +260,14 @@ class CodeParser(object):
 
         code_lines = code.split('\n')  # raw code
         # 1) build ast tree in Dict type
-        code_tree = self.build_tree(ast_tree.root_node, code_lines)
+        try:
+            code_tree = self.build_tree(ast_tree.root_node, code_lines)
+        except RecursionError as err:
+            # RecursionError: maximum recursion depth exceeded while getting the str of an object
+            print(err)
+            # raw_ast is too large, skip this ast
+            return None
+
         # 2) delete comment node
         code_tree = self.delete_comment_node(code_tree)
         # 3) pop head node which has only 1 child
@@ -344,7 +285,7 @@ class CodeParser(object):
         if len(code_tree) == 0:
             return None
         # 4) reset tree indices
-        raw_ast = self.reset_indices(code_tree)  # reset node indices
+        raw_ast = util_ast.reset_indices(code_tree)  # reset node indices
         return raw_ast
 
     def parse_method(self, func_name: str, ) -> Optional[List[str]]:
@@ -360,7 +301,7 @@ class CodeParser(object):
         if len(method) > 0:
             return method
         else:
-            return None
+            return [constants.NO_METHOD]
 
     def parse_code_tokens(self, code_tokens: List[str], ) -> Union[None, List[str]]:
         '''

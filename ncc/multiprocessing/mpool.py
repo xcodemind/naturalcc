@@ -11,8 +11,8 @@ class MPool:
     """
 
     def __init__(self, processor_num: int = None, ):
-        self.processor_num = mp.cpu_count() if processor_num is None \
-            else processor_num
+        self.processor_num = 1 if processor_num is None \
+            else min(processor_num, mp.cpu_count())
 
     def feed(self, func: Any, params: List) -> List[Any]:
         data_buffer = mp.Queue()

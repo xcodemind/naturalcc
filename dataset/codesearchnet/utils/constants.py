@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
-import sys
-
-sys.path.append(os.path.abspath('.'))
 
 RAW_DATASET_DIR = '/data/wanyao/ghproj_d/naturalcodev3/codesearchnet/raw'
 TREE_SITTER_LIB_DIR = '/data/wanyao/yang/ghproj_d/GitHub/tree_sitter/'
@@ -41,6 +37,6 @@ PAD_TOKEN_IND = 0
 UNK_TOKEN_IND = 1
 VALID_VOCAB_START_IND = 2
 
-NO_COMMENT = '<NO_COMMENT>'
 NO_METHOD = '<NO_METHOD>'
 
+RECURSION_DEPTH = 999

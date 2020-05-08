@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
-import sys
-
-sys.path.append(os.path.abspath('.'))
-
 from typing import *
 import itertools
 import ujson
@@ -12,10 +7,9 @@ import ujson
 from ncc.utils.constants import *
 from ncc.data.dict import Dict as _Dict
 from ncc.utils.utils import *
-from dataset.utils.constants import MAX_TOKEN_SIZE
 
 
-def min_freq_and_sbt_flag(dataset_name: str) -> Tuple[bool, bool]:
+def min_freq_and_sbt_flag(dataset_name: str) -> Tuple:
     '''
     return min_freq and sbt_flag base on dataset_name
     if dataset_name = deepcom/deepcom2, then return min_freq=4, sbt_flag=True
@@ -24,7 +18,7 @@ def min_freq_and_sbt_flag(dataset_name: str) -> Tuple[bool, bool]:
     :return:
     '''
     min_freq = 2
-    if dataset_name in ['deepcom', 'deepcom2']:
+    if dataset_name == 'deepcom':
         sbt = True  # only True for deepcom dataset
         min_freq *= 2
     else:

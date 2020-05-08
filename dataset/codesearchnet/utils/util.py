@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import ujson
-from typing import Dict, Tuple, List, Any, Union, Sequence
+from typing import Dict, Tuple, List, Sequence
 from glob import glob
 import gzip, json, jsonlines
 import itertools

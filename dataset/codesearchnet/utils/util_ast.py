@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
-from typing import List, Dict
+from typing import List, Dict, Any
 
 import sys
+from copy import deepcopy
 
 from dataset.codesearchnet.utils import constants
 from dataset.codesearchnet.utils import util
-from dataset.codesearchnet.utils import util_path
 
-sys.setrecursionlimit(99999)  # recursion depth
+# ignore those ast whose size is too large. Therefore set it as a small number
+sys.setrecursionlimit(constants.RECURSION_DEPTH)  # recursion depth
 
 
 def delete_node_with_single_node(ast_tree: Dict) -> Dict:
@@ -160,6 +161,124 @@ def build_sbtao_tree(ast_tree: Dict, node_ind: str, to_lower: bool) -> List:
     return seq
 
 
-def parse_deepcom(ast_tree: dict, sbt_func: None, to_lower: bool):
+def parse_deepcom(ast_tree: dict, sbt_func: Any, to_lower: bool):
     sbt_seq = sbt_func(ast_tree, constants.ROOT_NODE_NAME, to_lower)
     return sbt_seq
+
+
+def delete_single_child_ndoe(ast_tree: Dict) -> Dict:
+    '''
+    delete nodes with single child node
+    :param ast_tree:
+    :return:
+    '''
+
+    def dfs(node_ind):
+        cur_node = ast_tree[node_ind]
+        child_node_indices = util.get_tree_children_func(cur_node)
+
+        # each ast tree generally is parsed from a method, so it has a "program" root node and a "method" node
+        # therefore, if current node is the root node with single child, we do not delete it
+        while len(child_node_indices) == 1 and cur_node['parent'] is not None:
+            # update its parent's children
+            parent_node = ast_tree[cur_node['parent']]
+            del_ind = parent_node['children'].index(node_ind)
+            del parent_node['children'][del_ind]
+            child_ind = child_node_indices[0]
+            # update its children's parent to its parent
+            ast_tree[child_ind]['parent'] = cur_node['parent']
+            # update its parent's children
+            parent_node['children'].insert(del_ind, child_ind)
+            # elete itself
+            ast_tree.pop(node_ind)
+
+            # update current info
+            node_ind = child_ind
+            cur_node = ast_tree[node_ind]
+            child_node_indices = util.get_tree_children_func(cur_node)
+
+        if len(child_node_indices) == 0:
+            return
+
+        for child_name in child_node_indices:
+            dfs(child_name)
+
+    dfs(constants.ROOT_NODE_NAME)
+    return ast_tree
+
+
+def reset_indices(ast_tree: Dict) -> Dict:
+    '''rename ast tree's node indices with consecutive indices'''
+    new_ind = 1
+    root_ind = 1
+    while 1:
+        root_node_ind = constants.NODE_FIX + str(root_ind)
+        if root_node_ind in ast_tree:
+            break
+        else:
+            root_ind += 1
+
+    def new_ndoe_name():
+        nonlocal new_ind
+        new_name = '_' + constants.NODE_FIX + str(new_ind)
+        new_ind += 1
+        return new_name
+
+    def dfs(cur_node_ind):
+        cur_node = ast_tree[cur_node_ind]
+        # change from cur_node_ind to new_cur_node_ind
+        # copy a same node with new name
+        new_cur_node_ind = new_ndoe_name()
+        ast_tree[new_cur_node_ind] = deepcopy(cur_node)
+
+        # update its parent's child nodes
+        if cur_node['parent'] is None:
+            pass
+        else:
+            parent_node = ast_tree[cur_node['parent']]
+            parent_node['children'][parent_node['children'].index(cur_node_ind)] = new_cur_node_ind
+
+        if cur_node['children'][0].startswith(constants.NODE_FIX):
+            # update its children nodes' parent
+            for child_name in cur_node['children']:
+                ast_tree[child_name]['parent'] = new_cur_node_ind
+        else:
+            pass
+
+        # 2. delete old node
+        ast_tree.pop(cur_node_ind)
+
+        child_node_indices = util.get_tree_children_func(cur_node)
+
+        if len(child_node_indices) == 0:
+            return
+
+        for child_name in child_node_indices:
+            dfs(child_name)
+
+    dfs(root_node_ind)
+
+    # recover name
+    node_names = deepcopy(list(ast_tree.keys()))
+    for node_name in node_names:
+        node = deepcopy(ast_tree[node_name])
+        if node['children'][0].startswith('_' + constants.NODE_FIX):
+            node['children'] = [child_name[1:] for child_name in node['children']]
+        else:
+            pass
+        if node['parent'] == None:
+            pass
+        else:
+            node['parent'] = node['parent'][1:]
+        ast_tree[node_name[1:]] = node
+        ast_tree.pop(node_name)
+
+    return ast_tree
+
+
+def parse_base(ast_tree: Dict) -> Dict:
+    # delete nodes with single node,eg. [1*NODEFIX1] ->  [1*NODEFIX2] -> ['void'] => [1*NODEFIX1] -> ['void']
+    ast_tree = delete_single_child_ndoe(ast_tree)
+    ast_tree = binarize_tree(ast_tree)  # to binary ast tree
+    ast_tree = reset_indices(ast_tree)  # reset node indices
+    return ast_tree
