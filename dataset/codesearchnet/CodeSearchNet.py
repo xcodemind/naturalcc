@@ -368,8 +368,6 @@ class CodeSearchNet(object):
                     writers['sbtao'].write(ujson.dumps(sbt) + '\n')
                 if 'bin_ast' in writers:
                     # ast
-                    from ipdb import set_trace
-                    set_trace()
                     bin_ast = util_ast.parse_base(raw_ast)
                     writers['bin_ast'].write(ujson.dumps(bin_ast) + '\n')
             data_line = reader.readline().strip()
@@ -431,6 +429,18 @@ class CodeSearchNet(object):
         for lng in constants.LANGUAGES:
             self.parse_new_tree_modalities(lng, modalities, overwrite)
 
+    def merge_attr_files(self):
+        for lng in constants.LANGUAGES:
+            for mode in constants.MODES:
+                src_dir = os.path.join(self._FLATTEN_DIR, lng, mode)
+                attrs = [dir for dir in os.listdir(src_dir) if os.path.isdir(os.path.join(src_dir, dir))]
+                for attr in attrs:
+                    src_files = sorted(glob.glob(os.path.join(src_dir, attr, '*.txt')))
+                    dst_file = os.path.join(self._FLATTEN_DIR, lng, '{}.{}'.format(mode, attr))
+                    cmd = 'cat {} > {}'.format(' '.join(src_files), dst_file)
+                    LOGGER.info(cmd)
+                    os.system(cmd)
+
 
 if __name__ == '__main__':
     from multiprocessing import cpu_count
@@ -439,7 +449,7 @@ if __name__ == '__main__':
     # download neccesary files
     dataset = CodeSearchNet(download=True, thread_num=cpu_count())
     # flatten raw files separately
-    # dataset.flatten_data_all(overwrite=True)
+    dataset.flatten_data_all(overwrite=True)
     # # parse raw_ast into other new tree modalities
-    # dataset.parse_new_tree_modalities_all(overwrite=False)
-    dataset.parse_new_tree_modalities(lng='ruby', overwrite=True)
+    dataset.parse_new_tree_modalities_all(overwrite=True)
+    dataset.merge_attr_files()
