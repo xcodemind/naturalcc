@@ -21,9 +21,8 @@ from ncc import tasks
 from ncc.utils.util_file import load_yaml
 from ncc.utils import utils
 from ncc import LOGGER
-from .preprocess_helper import *
+from .preprocess_helper import insert_sep_tokens
 import ujson
-
 
 
 # logging.basicConfig(
@@ -233,11 +232,12 @@ def make_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers=1):
     if args['preprocess']['dataset_impl'] == "raw":
         # Copy original text file to destination folder
         output_text_file = dest_path(args,
-            output_prefix, # + ".{}-{}".format(args['preprocess']['source_lang'], args['preprocess']['target_lang'])
-            lang,
-        )
+                                     output_prefix,
+                                     # + ".{}-{}".format(args['preprocess']['source_lang'], args['preprocess']['target_lang'])
+                                     lang,
+                                     )
         if lang == 'code':
-        #     insert <S_SEP> to .code files has been conducted in the first stage
+            #     insert <S_SEP> to .code files has been conducted in the first stage
             pass
         else:
             shutil.copyfile(file_name(input_prefix, lang), output_text_file)
@@ -249,7 +249,8 @@ def make_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers=1):
 
 def make_all(args, lang, vocab):
     if args['preprocess']['trainpref']:
-        make_dataset(args, vocab, args['preprocess']['trainpref'], "train", lang, num_workers=args['preprocess']['workers'])
+        make_dataset(args, vocab, args['preprocess']['trainpref'], "train", lang,
+                     num_workers=args['preprocess']['workers'])
     if args['preprocess']['validpref']:
         for k, validpref in enumerate(args['preprocess']['validpref'].split(",")):
             outprefix = "valid{}".format(k) if k > 0 else "valid"
@@ -261,12 +262,18 @@ def make_all(args, lang, vocab):
 
 
 def make_all_alignments(args):
-    if args['preprocess']['trainpref'] and os.path.exists(args['preprocess']['trainpref'] + "." + args['preprocess']['align_suffix']):
-        make_binary_alignment_dataset(args, args['preprocess']['trainpref'] + "." + args['preprocess']['align_suffix'], "train.align", num_workers=args['preprocess']['workers'])
-    if args['preprocess']['validpref'] and os.path.exists(args['preprocess']['validpref'] + "." + args['preprocess']['align_suffix']):
-        make_binary_alignment_dataset(args, args['preprocess']['validpref'] + "." + args['preprocess']['align_suffix'], "valid.align", num_workers=args['preprocess']['workers'])
-    if args['preprocess']['testpref'] and os.path.exists(args['preprocess']['testpref'] + "." + args['preprocess']['align_suffix']):
-        make_binary_alignment_dataset(args, args['preprocess']['testpref'] + "." + args['preprocess']['align_suffix'], "test.align", num_workers=args['preprocess']['workers'])
+    if args['preprocess']['trainpref'] and os.path.exists(
+            args['preprocess']['trainpref'] + "." + args['preprocess']['align_suffix']):
+        make_binary_alignment_dataset(args, args['preprocess']['trainpref'] + "." + args['preprocess']['align_suffix'],
+                                      "train.align", num_workers=args['preprocess']['workers'])
+    if args['preprocess']['validpref'] and os.path.exists(
+            args['preprocess']['validpref'] + "." + args['preprocess']['align_suffix']):
+        make_binary_alignment_dataset(args, args['preprocess']['validpref'] + "." + args['preprocess']['align_suffix'],
+                                      "valid.align", num_workers=args['preprocess']['workers'])
+    if args['preprocess']['testpref'] and os.path.exists(
+            args['preprocess']['testpref'] + "." + args['preprocess']['align_suffix']):
+        make_binary_alignment_dataset(args, args['preprocess']['testpref'] + "." + args['preprocess']['align_suffix'],
+                                      "test.align", num_workers=args['preprocess']['workers'])
 
 
 def binarize(args, filename, vocab, output_prefix, lang, offset, end, append_eos=True):
@@ -334,8 +341,10 @@ def main(args):
 
     # 1. Build vocabulary (dictionary)
     LOGGER.info('Build vocabulary...')
+    from ipdb import set_trace
+    set_trace()
     task = tasks.get_task(args['preprocess']['task'])
-    if args['preprocess']['joined_dictionary']:     # TODO: to be checked
+    if args['preprocess']['joined_dictionary']:  # TODO: to be checked
         assert not args['preprocess']['codedict'] or not args['preprocess']['tgtdict'], \
             "cannot use both --srcdict and --tgtdict with --joined-dictionary"
 
@@ -346,8 +355,9 @@ def main(args):
         # else:
         assert args['preprocess']['trainpref'], "--trainpref must be set if --codedict is not specified"
         src_dict = build_dictionary(args, task,
-            {train_path_(args, lang) for lang in args['preprocess']['source_lang'] + args['preprocess']['target_lang']}, src=True
-        )
+                                    {train_path_(args, lang) for lang in
+                                     args['preprocess']['source_lang'] + args['preprocess']['target_lang']}, src=True
+                                    )
         tgt_dict = src_dict
     else:
         # if args['preprocess']['codedict']:
@@ -370,7 +380,8 @@ def main(args):
                 tgt_dict = task.load_dictionary(args['preprocess']['tgtdict'])
             else:
                 assert args['preprocess']['trainpref'], "--trainpref must be set if --tgtdict is not specified"
-                tgt_dict = build_dictionary(args, task, modality, [train_path_(args, args['preprocess']['target_lang'])], tgt=True)
+                tgt_dict = build_dictionary(args, task, modality,
+                                            [train_path_(args, args['preprocess']['target_lang'])], tgt=True)
                 # tgt_dict = build_dictionary(train_path(args['preprocess']['target_lang']), tgt=True)
 
         else:
@@ -378,7 +389,7 @@ def main(args):
     LOGGER.info('Save vocabulary.')
     # for modality in args['preprocess']['source_lang']:
     if modality == 'path':
-        src_dict[0].save(dict_path(args, modality+'_border'))
+        src_dict[0].save(dict_path(args, modality + '_border'))
         src_dict[1].save(dict_path(args, modality + '_center'))
     else:
         src_dict.save(dict_path(args, modality))
@@ -452,7 +463,7 @@ def cli_main():
     # assert False
     print('args: ', type(args_))
     # config = run_init(args.yaml, config=None)
-    yaml_file = os.path.join(sys.path[0], args_.yaml)
+    yaml_file = os.path.join(os.path.dirname(__file__), args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
 
