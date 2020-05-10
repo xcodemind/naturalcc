@@ -18,12 +18,12 @@ class Dictionary(object):
     """A mapping from symbols to consecutive integers"""
 
     def __init__(
-        self,
-        pad="<pad>",
-        eos="</s>",
-        unk="<unk>",
-        bos="<s>",
-        extra_special_symbols=None,
+            self,
+            pad="<pad>",
+            eos="</s>",
+            unk="<unk>",
+            bos="<s>",
+            extra_special_symbols=None,
     ):
         self.unk_word, self.pad_word, self.eos_word = unk, pad, eos
         self.symbols = []
@@ -137,7 +137,7 @@ class Dictionary(object):
 
         c = Counter(
             dict(
-                sorted(zip(self.symbols[self.nspecial :], self.count[self.nspecial :]))
+                sorted(zip(self.symbols[self.nspecial:], self.count[self.nspecial:]))
             )
         )
         for symbol, count in c.most_common(nwords - self.nspecial):
@@ -233,7 +233,7 @@ class Dictionary(object):
                         "#fairseq:overwrite flag at the end of the corresponding row "
                         "in the dictionary file. If using the Camembert model, please "
                         "download an updated copy of the model file."
-                        .format(word)
+                            .format(word)
                     )
                 self.add_symbol(word, n=count, overwrite=overwrite)
             except ValueError:
@@ -261,8 +261,8 @@ class Dictionary(object):
         self._save(
             f,
             zip(
-                ex_keys + self.symbols[self.nspecial :],
-                ex_vals + self.count[self.nspecial :],
+                ex_keys + self.symbols[self.nspecial:],
+                ex_vals + self.count[self.nspecial:],
             ),
         )
 
@@ -272,13 +272,13 @@ class Dictionary(object):
         return t
 
     def encode_line(
-        self,
-        line,
-        line_tokenizer=tokenize_line,
-        add_if_not_exist=True,
-        consumer=None,
-        append_eos=True,
-        reverse_order=False,
+            self,
+            line,
+            line_tokenizer=tokenize_line,
+            add_if_not_exist=True,
+            consumer=None,
+            append_eos=True,
+            reverse_order=False,
     ):
         if line_tokenizer:
             words = line_tokenizer(line)
@@ -303,7 +303,7 @@ class Dictionary(object):
 
     @staticmethod
     def _add_file_to_dictionary_single_worker(
-        filename, tokenize, eos_word, worker_id=0, num_workers=1
+            filename, tokenize, eos_word, worker_id=0, num_workers=1
     ):
         counter = Counter()
         with open(PathManager.get_local_path(filename), "r", encoding="utf-8") as f:
@@ -457,7 +457,6 @@ class Dictionary(object):
                     filename, path_part, tokenize, dict.eos_word
                 )
             )
-
 
 
 class TruncatedDictionary(object):
