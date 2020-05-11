@@ -6,6 +6,7 @@
 """
 Data pre-processing: build vocabularies and binarize training data.
 """
+
 from collections import Counter
 from collections import OrderedDict
 from itertools import zip_longest
@@ -21,7 +22,12 @@ from ncc import tasks
 from ncc.utils.util_file import load_yaml
 from ncc.utils import utils
 from ncc import LOGGER
-from .preprocess_helper import insert_sep_tokens
+
+try:
+    from .preprocess_helper import insert_sep_tokens
+except:
+    from dataset.codesearchnet.summarization.preprocess_helper import insert_sep_tokens
+
 import ujson
 
 
@@ -341,8 +347,6 @@ def main(args):
 
     # 1. Build vocabulary (dictionary)
     LOGGER.info('Build vocabulary...')
-    from ipdb import set_trace
-    set_trace()
     task = tasks.get_task(args['preprocess']['task'])
     if args['preprocess']['joined_dictionary']:  # TODO: to be checked
         assert not args['preprocess']['codedict'] or not args['preprocess']['tgtdict'], \

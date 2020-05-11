@@ -40,3 +40,4 @@ src/test.py
 .idea/workspace.xml
 .idea/workspace.xml
 *.xml
+requirement.txt

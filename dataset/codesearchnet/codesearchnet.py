@@ -449,7 +449,7 @@ if __name__ == '__main__':
     # download neccesary files
     dataset = CodeSearchNet(download=True, thread_num=cpu_count())
     # flatten raw files separately
-    dataset.flatten_data_all(overwrite=True)
+    dataset.flatten_data_all()
     # # parse raw_ast into other new tree modalities
-    dataset.parse_new_tree_modalities_all(overwrite=True)
+    dataset.parse_new_tree_modalities_all()
     dataset.merge_attr_files()
