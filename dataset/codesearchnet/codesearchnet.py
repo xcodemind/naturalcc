@@ -346,9 +346,8 @@ class CodeSearchNet(object):
         for modal, modal_file in new_tree_modal_files.items():
             writers[modal] = open(modal_file, 'w')
 
-        # data_line = reader.readline().strip()
-        # while len(data_line) > 0:
-        for data_line in tqdm(reader.readlines()):
+        data_line = reader.readline().strip()
+        while len(data_line) > 0:
             raw_ast = json.loads(data_line)
             # because some raw_ast it is too large and thus time-consuming, we ignore it
             if len(raw_ast) > constants.MAX_AST_NODE_NUM:
@@ -380,7 +379,7 @@ class CodeSearchNet(object):
                     # ast
                     bin_ast = util_ast.parse_base(raw_ast)
                     writers['bin_ast'].write(ujson.dumps(bin_ast) + '\n')
-            # data_line = reader.readline().strip()
+            data_line = reader.readline().strip()
         reader.close()
         for writer in writers.values():
             writer.close()
