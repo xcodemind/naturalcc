@@ -352,7 +352,7 @@ class CodeSearchNet(object):
         while len(data_line) > 0:
             raw_ast = json.loads(data_line)
             # because some raw_ast it is too large and thus time-consuming, we ignore it
-            if len(raw_ast) > constants.MAX_AST_NODE_NUM:
+            if (raw_ast is not None) and (len(raw_ast) > constants.MAX_AST_NODE_NUM):
                 raw_ast = None
             if raw_ast is None:
                 # if no raw ast, its other tree modalities is None
@@ -484,7 +484,7 @@ if __name__ == '__main__':
     # download neccesary files
     dataset = CodeSearchNet(download=True, thread_num=cpu_count())
     # flatten raw files separately
-    dataset.flatten_data_all(overwrite=True)
+    # dataset.flatten_data_all(overwrite=True)
     # # parse raw_ast into other new tree modalities
     dataset.parse_new_tree_modalities_all(overwrite=True)
     dataset.merge_attr_files()
