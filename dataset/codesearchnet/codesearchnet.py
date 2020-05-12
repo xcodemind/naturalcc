@@ -468,6 +468,7 @@ class CodeSearchNet(object):
                     src_files = sorted(glob.glob(os.path.join(src_dir, attr, '*.txt')))
                     dst_file = os.path.join(self._FLATTEN_DIR, lng, '{}.{}'.format(mode, attr))
                     cmd = 'cat {} > {}'.format(' '.join(src_files), dst_file)
+                    LOGGER.info(cmd)
                     os.system(cmd)
 
     def close(self):
