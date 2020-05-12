@@ -1,18 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
-RAW_DATASET_DIR = '/data/wanyao/ghproj_d/naturalcodev3/codesearchnet/raw'
-TREE_SITTER_LIB_DIR = '/data/wanyao/yang/ghproj_d/GitHub/tree_sitter/'
-
-AST_NODE_CEILING = 200
-# KEY_DST_DIR = os.path.join(DATASET_DIR, str(AST_NODE_CEILING))
-PATH_K = 300
-
-RAW_KEYS = ['code', 'code_tokens', 'docstring', 'docstring_tokens', 'func_name', 'original_string',
-            'path', 'repo', 'sha', 'url']
-SAVE_KEYS = ['code', 'code_tokens', 'docstring', 'docstring_tokens', 'func_name', ]
-POP_KEYS = ['original_string', 'path', 'repo', 'sha', 'url', 'language', 'partition']
-
 LANGUAGES = ['ruby', 'python', 'java', 'go', 'php', 'javascript', ]
 MODES = ['train', 'valid', 'test']
 
@@ -40,3 +27,7 @@ VALID_VOCAB_START_IND = 2
 NO_METHOD = '<NO_METHOD>'
 
 RECURSION_DEPTH = 999
+
+MAX_AST_PATH_NUM = 300
+
+MAX_AST_NODE_NUM = 5000

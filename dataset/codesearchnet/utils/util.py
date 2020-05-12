@@ -77,23 +77,6 @@ def load_raw_filenames(data_dir: str, sort_func=None, debug=False, ) -> List[str
         return jsonl_gz_files
 
 
-# def load_raw_data(data_dir: str, debug=False, debug_size=None) -> List[Dict]:
-#     '''
-#     load jsonl.gz files
-#     :param data_dir: jsonl.gz file path, like /XX/*.jsonl.gz
-#     :param debug: debug mode,
-#     :return: code snippets list
-#     '''
-#     # load raw file
-#     jsonl_gz_files = glob(data_dir)
-#     if debug:
-#         jsonl_gz_files = jsonl_gz_files[:2]
-#     raw_dataset = list(load_jsonl_gzs(jsonl_gz_files))
-#     if debug:
-#         raw_dataset = raw_dataset[:debug_size]
-#     return raw_dataset
-
-
 def load_raw_data(data_dir: str, load_keys: List, debug=False, ) -> Dict:
     raw_data = {}
     for mode in constants.MODES:
@@ -293,41 +276,3 @@ def stress_tokens(tokens: Sequence) -> List:
 
 def filter_tokens(tokens: List) -> List:
     return list(itertools.chain(*[split_identifier(token.strip()) for token in tokens if len(token.strip()) > 0]))
-
-
-def parse_flatten(raw_filename: str, pop_keys: List[str], start_ind: int,
-                  so_file: str, language: str, dst_filenames: Dict, ) -> Tuple:
-    reader = gzip.GzipFile(raw_filename, 'r')
-    writers = {
-        key: open(dst_filename, 'w')
-        for key, dst_filename in dst_filenames.items()
-    }
-    code_parser = util_ast.CodeParser(so_file, language)
-    MAX_SUB_TOKEN_LEN = 0
-
-    data_line = reader.readline().strip()
-    while len(data_line) > 0:
-        data_line = json.loads(data_line)
-
-        for pop_key in pop_keys:
-            data_line.pop(pop_key)
-        data_line['index'] = start_ind
-
-        ################################################################
-        # parse method and ast
-        ################################################################
-        data_line['method'] = code_parser.parse_method(data_line['func_name'])
-        data_line['raw_ast'] = code_parser.parse_raw_ast(data_line['code'])
-        max_sub_token_len = 0
-        # get max length of a tree nodes' token list
-        for _, node in data_line['raw_ast'].items():
-            if len(node['children']) == 1:
-                max_sub_token_len = max(max_sub_token_len, len(split_identifier(node['children'][0])))
-        MAX_SUB_TOKEN_LEN = max(MAX_SUB_TOKEN_LEN, max_sub_token_len)
-
-        for key, entry in data_line.items():
-            writers[key].write(ujson.dumps(entry) + '\n')
-
-        start_ind += 1
-        data_line = reader.readline().strip()
-    return language, MAX_SUB_TOKEN_LEN,

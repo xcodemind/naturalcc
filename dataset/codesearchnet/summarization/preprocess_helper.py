@@ -2,6 +2,7 @@
 
 import os
 import ujson
+import re
 
 S_SEP = '<S_SEP>'
 S_CLS = '<CLS>'
@@ -34,9 +35,11 @@ def insert_sep_token(args, input_prefix, output_prefix, lang):
             with open(file_name(input_prefix, lang), 'r') as input_file:
                 for line in input_file.readlines():
                     ln = ujson.loads(line)
-                    for count in range(10, 1, -1):  # to handle duplicate '\n'
-                        ln = ln.replace('\n', S_SEP, count)
-                        ln = S_CLS + ln  # profix <CLS>
+                    # for count in range(10, 1, -1):  # to handle duplicate '\n'
+                    #     ln = ln.replace('\n', S_SEP, count)
+                    ln = re.sub('\n\s*\n', '\n', ln)  # remove "\n \n" -> \n
+                    ln = ln.replace('\n', S_SEP)
+                    ln = S_CLS + ln  # profix <CLS>
                     output_file.write(ujson.dumps(ln) + '\n')
     else:
         raise ValueError(

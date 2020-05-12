@@ -23,7 +23,14 @@ def load_yaml(yaml_file: str) -> Dict:
     :param yaml_file:
     '''
     with open(yaml_file, 'r', encoding='utf-8') as reader:
-        return yaml.safe_load(reader)
+        args = yaml.safe_load(reader)
+    if 'preprocess' in args:
+        # os.path.expanduser： ~/.ncc -> /home/user/.ncc
+        for key, value in args['preprocess'].items():
+            if isinstance(value, str) and value.startswith('~/'):
+                args['preprocess'][key] = os.path.expanduser(value)
+    return args
+
 
 # def load_args8yml(args):
 #     yaml_file = os.path.join(sys.path[0], args.yaml)
@@ -62,10 +69,10 @@ def load_args(yaml_file: str, args=None) -> Dict:
     for modal in dict_modalities:
         if len(lngs) > 1:
             args['dicts'][modal] = os.path.join(args['dataset']['dataset_dir'],
-                                                  '{}.{}.dict'.format('_'.join(lngs), modal))
+                                                '{}.{}.dict'.format('_'.join(lngs), modal))
         elif len(lngs) == 1:
             args['dicts'][modal] = os.path.join(args['dataset']['dataset_dir'], lngs[0],
-                                                  '{}.{}.dict'.format('_'.join(lngs), modal))
+                                                '{}.{}.dict'.format('_'.join(lngs), modal))
         else:
             raise NotImplementedError('dataset languages is None')
 
@@ -76,7 +83,7 @@ def load_args(yaml_file: str, args=None) -> Dict:
     return args
 
 
-def load_args_kd(yaml_file: str, args=None ) -> Dict:
+def load_args_kd(yaml_file: str, args=None) -> Dict:
     # load transfer learning args for later load dataset
     if args is None:
         args = load_yaml(yaml_file)
@@ -114,7 +121,8 @@ def load_args_kd(yaml_file: str, args=None ) -> Dict:
         lng_tt = 'N'
     lngs = sorted(lngs)
 
-    args['kd']['all_lng'] = 'ss_'+'_'.join(lng_ss)+'_st_'+'_'.join(lng_st)+'_ts_'+'_'.join(lng_ts)+'_tt_'+'_'.join(lng_tt)
+    args['kd']['all_lng'] = 'ss_' + '_'.join(lng_ss) + '_st_' + '_'.join(lng_st) + '_ts_' + '_'.join(
+        lng_ts) + '_tt_' + '_'.join(lng_tt)
     # pop path and substitute it with border/center
     dict_modalities = deepcopy(args['training']['code_modalities'])
     if 'path' in dict_modalities:
@@ -124,10 +132,10 @@ def load_args_kd(yaml_file: str, args=None ) -> Dict:
     for modal in dict_modalities:
         if len(lngs) > 1:
             args['dicts'][modal] = os.path.join(args['dataset']['dataset_dir'],
-                                                  '{}.{}.dict'.format('_'.join(lngs), modal))
+                                                '{}.{}.dict'.format('_'.join(lngs), modal))
         elif len(lngs) == 1:
             args['dicts'][modal] = os.path.join(args['dataset']['dataset_dir'], lngs[0],
-                                                  '{}.{}.dict'.format('_'.join(lngs), modal))
+                                                '{}.{}.dict'.format('_'.join(lngs), modal))
         else:
             raise NotImplementedError('dataset languages is None')
 

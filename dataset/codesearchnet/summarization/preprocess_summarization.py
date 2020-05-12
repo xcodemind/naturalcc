@@ -22,6 +22,7 @@ from ncc.utils.util_file import load_yaml
 from ncc.utils import utils
 from ncc import LOGGER
 
+
 # logging.basicConfig(
 #     format='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
 #     datefmt='%Y-%m-%d %H:%M:%S',
@@ -220,9 +221,10 @@ def make_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers=1):
     if args['preprocess']['dataset_impl'] == "raw":
         # Copy original text file to destination folder
         output_text_file = dest_path(args,
-            output_prefix, # + ".{}-{}".format(args['preprocess']['source_lang'], args['preprocess']['target_lang'])
-            lang,
-        )
+                                     output_prefix,
+                                     # + ".{}-{}".format(args['preprocess']['source_lang'], args['preprocess']['target_lang'])
+                                     lang,
+                                     )
         shutil.copyfile(file_name(input_prefix, lang), output_text_file)
     else:
         make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers)
@@ -230,7 +232,8 @@ def make_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers=1):
 
 def make_all(args, lang, vocab):
     if args['preprocess']['trainpref']:
-        make_dataset(args, vocab, args['preprocess']['trainpref'], "train", lang, num_workers=args['preprocess']['workers'])
+        make_dataset(args, vocab, args['preprocess']['trainpref'], "train", lang,
+                     num_workers=args['preprocess']['workers'])
     if args['preprocess']['validpref']:
         for k, validpref in enumerate(args['preprocess']['validpref'].split(",")):
             outprefix = "valid{}".format(k) if k > 0 else "valid"
@@ -242,12 +245,18 @@ def make_all(args, lang, vocab):
 
 
 def make_all_alignments(args):
-    if args['preprocess']['trainpref'] and os.path.exists(args['preprocess']['trainpref'] + "." + args['preprocess']['align_suffix']):
-        make_binary_alignment_dataset(args, args['preprocess']['trainpref'] + "." + args['preprocess']['align_suffix'], "train.align", num_workers=args['preprocess']['workers'])
-    if args['preprocess']['validpref'] and os.path.exists(args['preprocess']['validpref'] + "." + args['preprocess']['align_suffix']):
-        make_binary_alignment_dataset(args, args['preprocess']['validpref'] + "." + args['preprocess']['align_suffix'], "valid.align", num_workers=args['preprocess']['workers'])
-    if args['preprocess']['testpref'] and os.path.exists(args['preprocess']['testpref'] + "." + args['preprocess']['align_suffix']):
-        make_binary_alignment_dataset(args, args['preprocess']['testpref'] + "." + args['preprocess']['align_suffix'], "test.align", num_workers=args['preprocess']['workers'])
+    if args['preprocess']['trainpref'] and os.path.exists(
+            args['preprocess']['trainpref'] + "." + args['preprocess']['align_suffix']):
+        make_binary_alignment_dataset(args, args['preprocess']['trainpref'] + "." + args['preprocess']['align_suffix'],
+                                      "train.align", num_workers=args['preprocess']['workers'])
+    if args['preprocess']['validpref'] and os.path.exists(
+            args['preprocess']['validpref'] + "." + args['preprocess']['align_suffix']):
+        make_binary_alignment_dataset(args, args['preprocess']['validpref'] + "." + args['preprocess']['align_suffix'],
+                                      "valid.align", num_workers=args['preprocess']['workers'])
+    if args['preprocess']['testpref'] and os.path.exists(
+            args['preprocess']['testpref'] + "." + args['preprocess']['align_suffix']):
+        make_binary_alignment_dataset(args, args['preprocess']['testpref'] + "." + args['preprocess']['align_suffix'],
+                                      "test.align", num_workers=args['preprocess']['workers'])
 
 
 def binarize(args, filename, vocab, output_prefix, lang, offset, end, append_eos=True):
@@ -310,7 +319,7 @@ def main(args):
     # 1. Build vocabulary (dictionary)
     LOGGER.info('Build vocabulary...')
     task = tasks.get_task(args['preprocess']['task'])
-    if args['preprocess']['joined_dictionary']:     # TODO: to be checked
+    if args['preprocess']['joined_dictionary']:  # TODO: to be checked
         assert not args['preprocess']['codedict'] or not args['preprocess']['tgtdict'], \
             "cannot use both --srcdict and --tgtdict with --joined-dictionary"
 
@@ -321,8 +330,9 @@ def main(args):
         # else:
         assert args['preprocess']['trainpref'], "--trainpref must be set if --codedict is not specified"
         src_dict = build_dictionary(args, task,
-            {train_path(args, lang) for lang in args['preprocess']['source_lang'] + args['preprocess']['target_lang']}, src=True
-        )
+                                    {train_path(args, lang) for lang in
+                                     args['preprocess']['source_lang'] + args['preprocess']['target_lang']}, src=True
+                                    )
         tgt_dict = src_dict
     else:
         # if args['preprocess']['codedict']:
@@ -332,6 +342,7 @@ def main(args):
         for modality in args['preprocess']['source_lang']:
             assert args['preprocess']['trainpref'], "--trainpref must be set if --codedict is not specified"
             if modality == 'path':
+                pass
                 src_dict1, src_dict2 = build_dictionary(args, task, modality, [train_path(args, modality)], src=True)
                 # src_dict = build_dictionary(train_path(args['preprocess']['source_lang']), src=True)
                 src_dicts[modality] = [src_dict1, src_dict2]
@@ -345,7 +356,8 @@ def main(args):
                 tgt_dict = task.load_dictionary(args['preprocess']['tgtdict'])
             else:
                 assert args['preprocess']['trainpref'], "--trainpref must be set if --tgtdict is not specified"
-                tgt_dict = build_dictionary(args, task, modality, [train_path(args, args['preprocess']['target_lang'])], tgt=True)
+                tgt_dict = build_dictionary(args, task, modality, [train_path(args, args['preprocess']['target_lang'])],
+                                            tgt=True)
                 # tgt_dict = build_dictionary(train_path(args['preprocess']['target_lang']), tgt=True)
 
         else:
@@ -353,12 +365,14 @@ def main(args):
     LOGGER.info('Save vocabulary.')
     for modality in args['preprocess']['source_lang']:
         if modality == 'path':
-            src_dicts[modality][0].save(dict_path(args, modality+'_border'))
+            src_dicts[modality][0].save(dict_path(args, modality + '_border'))
             src_dicts[modality][1].save(dict_path(args, modality + '_center'))
         else:
             src_dicts[modality].save(dict_path(args, modality))
     if target and tgt_dict is not None:
         tgt_dict.save(dict_path(args, args['preprocess']['target_lang']))
+
+    exit()
 
     # sys.exit()
     # 2. Make dataset (raw or mmap..)
@@ -418,11 +432,10 @@ def main(args):
                 print("{} {}".format(src_dict[k], tgt_dict[v]), file=f)
 
 
-
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')
 
-    args_ = Argues('preprocess.yml')  # train_sl
+    args_ = Argues('preprocess_summarization.yml')  # train_sl
     LOGGER.info(args_)
     # print(type(args.multi_processing))
     # assert False
@@ -434,6 +447,7 @@ def cli_main():
 
     LOGGER.info(args)
     main(args)
+
 
 if __name__ == "__main__":
     cli_main()

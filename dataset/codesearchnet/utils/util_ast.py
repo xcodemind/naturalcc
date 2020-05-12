@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 import sys
 from copy import deepcopy
@@ -161,9 +161,14 @@ def build_sbtao_tree(ast_tree: Dict, node_ind: str, to_lower: bool) -> List:
     return seq
 
 
-def parse_deepcom(ast_tree: dict, sbt_func: Any, to_lower: bool):
-    sbt_seq = sbt_func(ast_tree, constants.ROOT_NODE_NAME, to_lower)
-    return sbt_seq
+def parse_deepcom(ast_tree: dict, sbt_func: Any, to_lower: bool) -> Optional[List]:
+    try:
+        sbt_seq = sbt_func(ast_tree, constants.ROOT_NODE_NAME, to_lower)
+        return sbt_seq
+    except Exception as err:
+        print(err)
+        print(ast_tree)
+        return None
 
 
 def delete_single_child_ndoe(ast_tree: Dict) -> Dict:
@@ -276,9 +281,19 @@ def reset_indices(ast_tree: Dict) -> Dict:
     return ast_tree
 
 
-def parse_base(ast_tree: Dict) -> Dict:
-    # delete nodes with single node,eg. [1*NODEFIX1] ->  [1*NODEFIX2] -> ['void'] => [1*NODEFIX1] -> ['void']
-    ast_tree = delete_single_child_ndoe(ast_tree)
-    ast_tree = binarize_tree(ast_tree)  # to binary ast tree
-    ast_tree = reset_indices(ast_tree)  # reset node indices
-    return ast_tree
+def parse_base(ast_tree: Dict) -> Optional[Dict]:
+    try:
+        # delete nodes with single node,eg. [1*NODEFIX1] ->  [1*NODEFIX2] -> ['void'] => [1*NODEFIX1] -> ['void']
+        ast_tree = delete_single_child_ndoe(ast_tree)
+        ast_tree = binarize_tree(ast_tree)  # to binary ast tree
+        ast_tree = reset_indices(ast_tree)  # reset node indices
+        return ast_tree
+    except Exception as err:
+        print(err)
+        print(ast_tree)
+        return None
+
+
+if __name__ == '__main__':
+    ast = {'NODEFIX1': {'node': 'public_keyword', 'parent': None, 'children': ['public']}}
+    parse_base(ast)

@@ -102,10 +102,14 @@ def __collect_sample(ast: Dict, MAX_PATH: int, ):
         else:
             # LOGGER.error(tree_path)
             pass
+    try:
+        assert len(contexts) > 0, Exception('ast\'s path is None')
+        return contexts[:MAX_PATH]
+    except Exception as err:
+        print(err)
+        print(ast)
+        return None
 
-    assert len(contexts) > 0, Exception('ast\'s path is None')
-    return contexts[:MAX_PATH]
 
-
-def ast_to_path(ast_tree: Dict, MAX_PATH=10):
+def ast_to_path(ast_tree: Dict, MAX_PATH: int):
     return __collect_sample(ast_tree, MAX_PATH)

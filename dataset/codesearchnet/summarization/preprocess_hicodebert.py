@@ -341,7 +341,7 @@ def main(args):
     modality = args['preprocess']['source_lang']
 
     # 0. insert special token
-    insert_sep_tokens(args)
+    # insert_sep_tokens(args)
     # insert_sep_token(args, args['preprocess']['validpref'], "valid", 'code')
     # insert_sep_token(args, args['preprocess']['testpref'], "test", 'code')
 

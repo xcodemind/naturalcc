@@ -13,6 +13,7 @@ import json
 import ujson
 from copy import deepcopy
 from tree_sitter import Language
+from tqdm import tqdm
 
 from dataset.codesearchnet.utils import constants
 from dataset.codesearchnet.utils import util
@@ -20,7 +21,8 @@ from dataset.codesearchnet.utils import util_path
 from dataset.codesearchnet.utils import util_ast
 from dataset.codesearchnet.parser import CodeParser
 
-from ncc.multiprocessing import mpool
+# from ncc.multiprocessing import mpool
+from ncc.multiprocessing import ppool
 from ncc import LOGGER
 
 
@@ -72,7 +74,7 @@ class CodeSearchNet(object):
         for lng in self.resources.keys():
             self.build(lng)
 
-        self.pool = mpool.MPool(thread_num)
+        self.pool = ppool.PPool(thread_num)
         self._set_raw_files()
 
     def _update_dirs(self):
@@ -313,8 +315,6 @@ class CodeSearchNet(object):
                         return False
             return True
 
-        # from ipdb import set_trace
-        # set_trace()
         if not overwrite and _check_flatten_files_exist():
             return
 
@@ -338,39 +338,53 @@ class CodeSearchNet(object):
         for lng in constants.LANGUAGES:
             self.flatten_data(lng, save_attrs, overwrite)
 
-    def _parse_new_tree_modalities(self, raw_ast_file: str, new_tree_modal_files: Dict, MAX_SUB_TOKEN_LEN: int, ):
+    @staticmethod
+    def _parse_new_tree_modalities(raw_ast_file: str, new_tree_modal_files: Dict, MAX_SUB_TOKEN_LEN: int, ):
+        LOGGER.info('Start parsing {}'.format(new_tree_modal_files))
         reader = open(raw_ast_file, 'r')
         writers = {}
         for modal, modal_file in new_tree_modal_files.items():
             writers[modal] = open(modal_file, 'w')
 
-        data_line = reader.readline().strip()
-        while len(data_line) > 0:
+        # data_line = reader.readline().strip()
+        # while len(data_line) > 0:
+        for data_line in tqdm(reader.readlines()):
             raw_ast = json.loads(data_line)
-
+            # because some raw_ast it is too large and thus time-consuming, we ignore it
+            if len(raw_ast) > constants.MAX_AST_NODE_NUM:
+                raw_ast = None
             if raw_ast is None:
                 # if no raw ast, its other tree modalities is None
                 for writer in writers.values():
                     writer.write(ujson.dumps(raw_ast) + '\n')
             else:
                 if 'path' in writers:
-                    path = util_path.ast_to_path(deepcopy(raw_ast), MAX_PATH=300)
+                    copy_raw_ast = deepcopy(raw_ast)
+                    path = util_path.ast_to_path(copy_raw_ast, MAX_PATH=constants.MAX_AST_PATH_NUM)
                     writers['path'].write(ujson.dumps(path) + '\n')
-                if 'sbt' in writers:
+                if ('sbt' in writers) or ('sbtao' in writers):
                     # sbt
-                    padded_raw_ast = util_ast.pad_leaf_node(deepcopy(raw_ast), MAX_SUB_TOKEN_LEN)
-                    sbt = util_ast.parse_deepcom(padded_raw_ast, util_ast.build_sbt_tree, to_lower=False)
-                    writers['sbt'].write(ujson.dumps(sbt) + '\n')
-                if 'sbtao' in writers:
-                    # sbt
-                    padded_raw_ast = util_ast.pad_leaf_node(deepcopy(raw_ast), MAX_SUB_TOKEN_LEN)
-                    sbt = util_ast.parse_deepcom(padded_raw_ast, util_ast.build_sbtao_tree, to_lower=False)
-                    writers['sbtao'].write(ujson.dumps(sbt) + '\n')
+                    copy_raw_ast = deepcopy(raw_ast)
+                    padded_raw_ast = util_ast.pad_leaf_node(copy_raw_ast, MAX_SUB_TOKEN_LEN)
+                    copy_padded_raw_ast = deepcopy(padded_raw_ast) if ('sbt' in writers) and ('sbtao' in writers) \
+                        else padded_raw_ast
+                    if 'sbt' in writers:
+                        # write sbt
+                        sbt = util_ast.parse_deepcom(padded_raw_ast, util_ast.build_sbt_tree, to_lower=False)
+                        writers['sbt'].write(ujson.dumps(sbt) + '\n')
+                    if 'sbtao' in writers:
+                        # write sbtao
+                        sbt = util_ast.parse_deepcom(copy_padded_raw_ast, util_ast.build_sbtao_tree, to_lower=False)
+                        writers['sbtao'].write(ujson.dumps(sbt) + '\n')
                 if 'bin_ast' in writers:
                     # ast
                     bin_ast = util_ast.parse_base(raw_ast)
                     writers['bin_ast'].write(ujson.dumps(bin_ast) + '\n')
-            data_line = reader.readline().strip()
+            # data_line = reader.readline().strip()
+        reader.close()
+        for writer in writers.values():
+            writer.close()
+        LOGGER.info('End parsing {}'.format(new_tree_modal_files))
 
     def parse_new_tree_modalities(self, lng: str, modalities: Optional[List] = None, overwrite: bool = False):
 
@@ -422,15 +436,32 @@ class CodeSearchNet(object):
                     modal_file = os.path.join(modal_dir, os.path.split(file)[-1])
                     new_tree_files[modal] = modal_file
                 params.append((file, new_tree_files, MAX_SUB_TOKEN_LEN,))
-        self._parse_new_tree_modalities(*params[0])
-        # self.pool.feed(func=self._parse_new_tree_modalities, params=params, )
+        # this may cause out of memory error because of recursion in ast processing, therefore we use single processor
+        # self._parse_new_tree_modalities(*params[1])
+        # for param in params:
+        #     self._parse_new_tree_modalities(*param)
+        self.pool.feed(func=CodeSearchNet._parse_new_tree_modalities, params=params, )
 
-    def parse_new_tree_modalities_all(self, modalities: Optional[List] = None, overwrite: bool = False):
-        for lng in constants.LANGUAGES:
+    def _lngs_init(self, lngs: Union[List, str, None] = None) -> List:
+        if lngs is None:
+            lngs = constants.LANGUAGES
+        elif isinstance(lngs, str):
+            lngs = [lngs]
+        elif isinstance(lngs, list):
+            pass
+        else:
+            raise NotImplementedError('Only None/List/str is available.')
+        return lngs
+
+    def parse_new_tree_modalities_all(self, lngs: Union[List, str, None] = None, modalities: Optional[List] = None, \
+                                      overwrite: bool = False):
+        lngs = self._lngs_init(lngs)
+        for lng in lngs:
             self.parse_new_tree_modalities(lng, modalities, overwrite)
 
-    def merge_attr_files(self):
-        for lng in constants.LANGUAGES:
+    def merge_attr_files(self, lngs: Union[List, str, None] = None):
+        lngs = self._lngs_init(lngs)
+        for lng in lngs:
             for mode in constants.MODES:
                 src_dir = os.path.join(self._FLATTEN_DIR, lng, mode)
                 attrs = [dir for dir in os.listdir(src_dir) if os.path.isdir(os.path.join(src_dir, dir))]
@@ -438,8 +469,10 @@ class CodeSearchNet(object):
                     src_files = sorted(glob.glob(os.path.join(src_dir, attr, '*.txt')))
                     dst_file = os.path.join(self._FLATTEN_DIR, lng, '{}.{}'.format(mode, attr))
                     cmd = 'cat {} > {}'.format(' '.join(src_files), dst_file)
-                    LOGGER.info(cmd)
                     os.system(cmd)
+
+    def close(self):
+        self.pool.close()
 
 
 if __name__ == '__main__':
@@ -449,7 +482,7 @@ if __name__ == '__main__':
     # download neccesary files
     dataset = CodeSearchNet(download=True, thread_num=cpu_count())
     # flatten raw files separately
-    dataset.flatten_data_all()
+    dataset.flatten_data_all(overwrite=True)
     # # parse raw_ast into other new tree modalities
-    dataset.parse_new_tree_modalities_all()
+    dataset.parse_new_tree_modalities_all(overwrite=True)
     dataset.merge_attr_files()
