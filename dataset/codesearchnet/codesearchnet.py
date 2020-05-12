@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from typing import *
+from typing import (
+    List, Dict, Optional, Union
+)
 
 import os
 import wget
