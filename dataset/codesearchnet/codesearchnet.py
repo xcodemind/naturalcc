@@ -468,7 +468,7 @@ class CodeSearchNet(object):
                 attrs = [dir for dir in os.listdir(src_dir) if os.path.isdir(os.path.join(src_dir, dir))]
                 for attr in attrs:
                     src_files = sorted(glob.glob(os.path.join(src_dir, attr, '*.txt')))
-                    dst_file = os.path.join(src_dir, '{}.{}'.format(mode, attr))
+                    dst_file = os.path.join(self._FLATTEN_DIR, lng, '{}.{}'.format(mode, attr))
                     cmd = 'cat {} > {}'.format(' '.join(src_files), dst_file)
                     LOGGER.info(cmd)
                     os.system(cmd)
@@ -484,7 +484,7 @@ if __name__ == '__main__':
     # download neccesary files
     dataset = CodeSearchNet(download=True, thread_num=cpu_count())
     # flatten raw files separately
-    # dataset.flatten_data_all(overwrite=True)
+    dataset.flatten_data_all(overwrite=True)
     # # parse raw_ast into other new tree modalities
-    # dataset.parse_new_tree_modalities_all(overwrite=True)
+    dataset.parse_new_tree_modalities_all(overwrite=True)
     dataset.merge_attr_files()
