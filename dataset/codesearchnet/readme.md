@@ -15,7 +15,7 @@
 
 ## 4) Merge Data of Same Parition[train/valid/test] and attributes into one
 1) Use cat command to merge those files into ```~/.ncc/CodeSearchNet/flatten/``` <br>
-e.g. ```~/.ncc/CodeSearchNet/flatten/ruby/train/index/*.txt``` => ```~/.ncc/CodeSearchNet/flatten/ruby/train.index```
+e.g. ```~/.ncc/CodeSearchNet/flatten/ruby/train/index/*.txt``` => ```~/.ncc/CodeSearchNet/flatten/ruby/train/train.index```
 
 # Command
 ```
