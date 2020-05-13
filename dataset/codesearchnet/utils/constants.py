@@ -3,8 +3,6 @@
 LANGUAGES = ['ruby', 'python', 'java', 'go', 'php', 'javascript', ]
 MODES = ['train', 'valid', 'test']
 
-# POP_KEYS = ['repo', 'path', 'language', 'original_string', 'partition', 'sha', 'url']
-
 MEANINGLESS_TOKENS = set(['(', ')', '[', ']', '{', '}', ';', '@', '#', ':', '()', '<>', '{}'])
 COMMENT_END_TOKENS = set(['{', '[', '('])
 SBT_PARENTHESES = ['(_SBT', ')_SBT']

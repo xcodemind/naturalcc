@@ -3,135 +3,97 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from typing import List, Union, Any
+
 import re
 import ujson
+import itertools
 
 SPACE_NORMALIZER = re.compile(r"\s+")
 PAD_WORD = '<PAD>'
 
-def tokenize_line(line):
+
+def tokenize_string(line: str) -> List[str]:
+    """split string by regrex [\s+]"""
     line = SPACE_NORMALIZER.sub(" ", line)
     line = line.strip()
     return line.split()
 
 
-def tokenize_tree_line(line):
+def tokenize_list(line: str) -> List[str]:
+    """directly return tokenized data"""
+    line = ujson.loads(line)
+    return line
+
+
+def tokenize_tree(line: str) -> List[str]:
+    """get tree nodes' sub-tokens, and filter pad tokens because DGL requires sub-tokens' lengths should be same"""
     line = ujson.loads(line)
     leaf_node_tokens = []
-    for _, node_info in line.items():
+    for node_info in line.values():
         if type(node_info['children'][-1]) == list:
             for token in node_info['children'][-1]:
                 if token != PAD_WORD:
                     leaf_node_tokens.append(token)
                 else:
                     break
-
     return leaf_node_tokens
 
 
-def tokenize_path_line(line):
+def tokenize_path(line: str):
+    """load path's border and center tokens"""
     line = ujson.loads(line)
-    border_list, center_list = [], []
-    for path in line:
-        head, center, tail = path
-        border_list.extend(head + tail)
-        center_list.extend(center)
-
+    head_list, center_list, tail_list = zip(*line)
+    border_list = head_list + tail_list
+    border_list, center_list, = map(
+        lambda lst: itertools.chain(*lst),
+        (border_list, center_list,)
+    )
     return border_list, center_list
 
 
-# def list_to_dict(dst_dir: str, dict_filename: str, min_freq=2):
-#     train_files = [file for file in glob('{}/*'.format(dst_dir)) if 'train' in file.split('/')[-1]]
-#     train_counters = []
-#     list_buffer = []
-#     for file in train_files:
-#         with open(file, 'r') as reader:
-#             line = reader.readline().strip()
-#             while len(line) > 0:
-#                 line = ujson.loads(line)
-#                 list_buffer.append(line)
-#
-#                 if len(list_buffer) >= 5000:
-#                     train_counters.append(Counter(itertools.chain(*list_buffer)))
-#                     list_buffer = []
-#
-#                 line = reader.readline().strip()
-#     if len(list_buffer) > 0:
-#         train_counters.append(Counter(itertools.chain(*list_buffer)))
-#         list_buffer = []
-#
-#     token_dict = merge_counters(train_counters)
-#     tokens_dict = {key: freq for key, freq in token_dict.items() if freq > min_freq}
-#     sorted_tokens = sort_by_freq(tokens_dict)
-#     dump_dict(sorted_tokens, dict_filename)
-#
-#
-# def tree_to_dict(dst_dir: str, dict_filename: str, min_freq=2):
-#     train_files = [file for file in glob('{}/*'.format(dst_dir)) if 'train' in file.split('/')[-1]]
-#     train_counters = []
-#     list_buffer = []
-#     for file in train_files:
-#         with open(file, 'r') as reader:
-#             line = reader.readline().strip()
-#             while len(line) > 0:
-#                 line = ujson.loads(line)
-#
-#                 leaf_node_tokens = []
-#                 for node_inf, node_info in line.items():
-#                     if type(node_info['children'][-1]) == list:
-#                         for token in node_info['children'][-1]:
-#                             if token != PAD_WORD:
-#                                 leaf_node_tokens.append(token)
-#                             else:
-#                                 break
-#                 list_buffer.append(leaf_node_tokens)
-#
-#                 if len(list_buffer) >= 5000:
-#                     train_counters.append(Counter(itertools.chain(*list_buffer)))
-#                     list_buffer = []
-#                 line = reader.readline().strip()
-#     if len(list_buffer) > 0:
-#         train_counters.append(Counter(itertools.chain(*list_buffer)))
-#         list_buffer = []
-#
-#     token_dict = merge_counters(train_counters)
-#     tokens_dict = {key: freq for key, freq in token_dict.items() if freq > min_freq}
-#     sorted_tokens = sort_by_freq(tokens_dict)
-#     dump_dict(sorted_tokens, dict_filename)
-#
-#
-# def path_to_dict(dst_dir: str, border_dict_filename: str, center_dict_filename: str, min_freq=2):
-#     train_files = [file for file in glob('{}/*'.format(dst_dir)) if 'train' in file.split('/')[-1]]
-#     border_counters, center_counters = [], []
-#     border_list_buffer, center_list_buffer = [], []
-#     for file in train_files:
-#         with open(file, 'r') as reader:
-#             line = reader.readline().strip()
-#             while len(line) > 0:
-#                 line = ujson.loads(line)
-#
-#                 for path in line:
-#                     head, center, tail = path
-#                     border_list_buffer.append(head + tail)
-#                     center_list_buffer.append(center)
-#
-#                 if len(border_list_buffer) >= 5000 or len(center_list_buffer) > 5000:
-#                     border_counters.append(Counter(itertools.chain(*border_list_buffer)))
-#                     center_counters.append(Counter(itertools.chain(*center_list_buffer)))
-#                     border_list_buffer, center_list_buffer = [], []
-#                 line = reader.readline().strip()
-#     if len(border_list_buffer) >= 0 or len(center_list_buffer) > 0:
-#         border_counters.append(Counter(itertools.chain(*border_list_buffer)))
-#         center_counters.append(Counter(itertools.chain(*center_list_buffer)))
-#         border_list_buffer, center_list_buffer = [], []
-#
-#     border_dict = merge_counters(border_counters)
-#     border_dict = {key: freq for key, freq in border_dict.items() if freq > min_freq}
-#     sorted_border_tokens = sort_by_freq(border_dict)
-#     dump_dict(sorted_border_tokens, border_dict_filename)
-#
-#     center_dict = merge_counters(center_counters)
-#     center_dict = {key: freq for key, freq in center_dict.items() if freq > min_freq}
-#     sorted_center_tokens = sort_by_freq(center_dict)
-#     dump_dict(sorted_center_tokens, center_dict_filename)
+def CSN_tokinzer(modal: str):
+    """
+    CodeSearchNet modalities = [
+        'bin_ast', 'code_tokens', 'docstring', 'func_name', 'method', 'path', 'sbt', 'tok',
+        'code', 'comment', 'docstring_tokens', 'index', 'original_string', 'raw_ast', 'sbtao',
+    ]
 
+    There remain 3 types of data:
+        1) data has been tokenized,
+            e.g. 'docstring',  'code', ('index', 'original_string', 'method')
+            we only recommend 'docstring'/'code' because
+                'method' has already been tokinzed into 'func_name'
+                'index' is a int number
+                'original_string' includes code, docstring and noise information
+        2) data remain as string type,
+            e.g. 'code_tokens', 'func_name', 'sbt', 'tok', 'comment', 'docstring_tokens', 'sbtao'
+        3) data has been tokenized but further serialized,
+            e.g. path ([head], [center], [tail]), 'bin_ast', 'raw_ast' (dict)
+    """
+    if modal in ['docstring', 'code', 'original_string', ]:
+        return tokenize_string
+    elif modal in ['code_tokens', 'func_name', 'sbt', 'tok', 'comment', 'docstring_tokens', 'sbtao', ]:
+        return tokenize_list
+    elif modal in ['bin_ast', 'raw_ast', ]:
+        return tokenize_tree
+    elif modal == 'path':
+        return tokenize_path
+    else:
+        raise NotImplementedError
+
+
+def tokinzer_returns(func: Any) -> int:
+    """return the number of a tokenizer function's return values"""
+    if func in [tokenize_path, ]:
+        return 2
+    elif func in [tokenize_string, tokenize_list, tokenize_path]:
+        return 1
+    else:
+        raise NotImplementedError('No such function in {}'.format(__file__))
+
+
+__all__ = (
+    CSN_tokinzer,
+    tokinzer_returns,
+)

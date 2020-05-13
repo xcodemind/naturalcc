@@ -3,15 +3,19 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from typing import *
+
 import os
+import ujson
 from collections import Counter
 from multiprocessing import Pool
+import itertools
 
 import torch
 from .binarizer import safe_readline
 from . import data_utils
 from ncc.utils.file_io import PathManager
-from ncc.utils.tokenizer import tokenize_line
+from ncc.utils import tokenizer
 
 
 class Dictionary(object):
@@ -213,18 +217,26 @@ class Dictionary(object):
                 )
             return
 
-        lines = f.readlines()
+        lines = ujson.loads(f.read())
         indices_start_line = self._load_meta(lines)
-
         for line in lines[indices_start_line:]:
             try:
-                line, field = line.rstrip().rsplit(" ", 1)
-                if field == "#fairseq:overwrite":
+                # fairseq raw code
+                # line, field = line.rstrip().rsplit(" ", 1)
+                # if field == "#fairseq:overwrite":
+                #     overwrite = True
+                #     line, field = line.rsplit(" ", 1)
+                # else:
+                #     overwrite = False
+                # count = int(field)
+
+                # read with ujson
+                if len(line) == 3 and line[-1] == "#fairseq:overwrite":
                     overwrite = True
-                    line, field = line.rsplit(" ", 1)
+                    line, count, _ = line
                 else:
                     overwrite = False
-                count = int(field)
+                    line, count = line
                 word = line
                 if word in self and not overwrite:
                     raise RuntimeError(
@@ -232,11 +244,11 @@ class Dictionary(object):
                         "Duplicate words can overwrite earlier ones by adding the "
                         "#fairseq:overwrite flag at the end of the corresponding row "
                         "in the dictionary file. If using the Camembert model, please "
-                        "download an updated copy of the model file."
-                            .format(word)
+                        "download an updated copy of the model file.".format(word)
                     )
                 self.add_symbol(word, n=count, overwrite=overwrite)
             except ValueError:
+                print(f)
                 raise ValueError(
                     "Incorrect dictionary format, expected '<token> <cnt> [flags]'"
                 )
@@ -246,8 +258,9 @@ class Dictionary(object):
             PathManager.mkdirs(os.path.dirname(f))
             with PathManager.open(f, "w", encoding="utf-8") as fd:
                 return self.save(fd)
-        for k, v in kv_iterator:
-            print("{} {}".format(k, v), file=f)
+        # for k, v in kv_iterator:
+        #     print("{} {}".format(k, v), file=f)
+        f.write(ujson.dumps([(k, v,) for k, v in kv_iterator]))
 
     def _get_meta(self):
         return [], []
@@ -274,7 +287,7 @@ class Dictionary(object):
     def encode_line(
             self,
             line,
-            line_tokenizer=tokenize_line,
+            line_tokenizer=tokenizer.tokenize_string,
             add_if_not_exist=True,
             consumer=None,
             append_eos=True,
@@ -303,9 +316,10 @@ class Dictionary(object):
 
     @staticmethod
     def _add_file_to_dictionary_single_worker(
-            filename, tokenize, eos_word, worker_id=0, num_workers=1
-    ):
-        counter = Counter()
+            filename: str, tokenize: Any, dict_num: int,
+            eos_word: Optional[str], worker_id: int = 0, num_workers: int = 1
+    ) -> List[Counter]:
+        counters = [Counter() for _ in range(dict_num)]
         with open(PathManager.get_local_path(filename), "r", encoding="utf-8") as f:
             size = os.fstat(f.fileno()).st_size
             chunk_size = size // num_workers
@@ -316,13 +330,17 @@ class Dictionary(object):
                 safe_readline(f)  # drop first incomplete line
             line = f.readline()
             while line:
-                for word in tokenize(line):
-                    counter.update([word])
-                counter.update([eos_word])
+                token_lists = tokenize(line)
+                if dict_num == 1:
+                    token_lists = [token_lists]
+                for idx, tokens in enumerate(token_lists):
+                    counters[idx].update(tokens)
+                    if eos_word is not None:
+                        counters[idx].update([eos_word])
                 if f.tell() > end:
                     break
                 line = f.readline()
-        return counter
+        return counters
 
     @staticmethod
     def _add_jsonfile_to_dictionary_single_worker(
@@ -378,11 +396,13 @@ class Dictionary(object):
         return counter
 
     @staticmethod
-    def add_file_to_dictionary(filename, dict, tokenize, num_workers):
-        def merge_result(counter):
-            for w, c in sorted(counter.items()):
-                dict.add_symbol(w, c)
+    def add_file_to_dictionary(filename: str, dicts: List, tokenize: Any, eos_word: Optional[str], num_workers: int):
+        def merge_result(counters: List[Counter]):
+            for idx in range(len(dicts)):
+                for w, c in sorted(counters[idx].items()):
+                    dicts[idx].add_symbol(w, c)
 
+        dict_num = len(dicts)
         if num_workers > 1:
             pool = Pool(processes=num_workers)
             results = []
@@ -390,7 +410,8 @@ class Dictionary(object):
                 results.append(
                     pool.apply_async(
                         Dictionary._add_file_to_dictionary_single_worker,
-                        (filename, tokenize, dict.eos_word, worker_id, num_workers),
+                        (filename, tokenize, dict_num,
+                         eos_word, worker_id, num_workers),
                     )
                 )
             pool.close()
@@ -400,7 +421,7 @@ class Dictionary(object):
         else:
             merge_result(
                 Dictionary._add_file_to_dictionary_single_worker(
-                    filename, tokenize, dict.eos_word
+                    filename, tokenize, dict_num, eos_word
                 )
             )
 

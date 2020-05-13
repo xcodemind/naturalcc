@@ -2,6 +2,8 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+
+from typing import *
 import os
 import json
 import itertools
@@ -20,20 +22,20 @@ from ncc.data.concat_dataset import ConcatDataset
 from ncc.data.prepend_token_dataset import PrependTokenDataset
 from ncc.data.language_pair_dataset import LanguagePairDataset
 from ncc.data.dictionary import Dictionary
-from ncc.utils import tokenizer # , utils # metrics, search,
+from ncc.utils import tokenizer  # , utils # metrics, search,
+
 
 def load_langpair_dataset(
-    data_path, split,
-    src, src_dict,
-    tgt, tgt_dict,
-    combine, dataset_impl, upsample_primary,
-    left_pad_source, left_pad_target, max_source_positions,
-    max_target_positions, prepend_bos=False, load_alignments=False,
-    truncate_source=False, append_source_id=False
+        data_path, split,
+        src, src_dict,
+        tgt, tgt_dict,
+        combine, dataset_impl, upsample_primary,
+        left_pad_source, left_pad_target, max_source_positions,
+        max_target_positions, prepend_bos=False, load_alignments=False,
+        truncate_source=False, append_source_id=False
 ):
-
     def split_exists(split, src, tgt, lang, data_path):
-        filename = os.path.join(data_path, '{}.{}'.format(split, src)) #-{}.{} , tgt, lang
+        filename = os.path.join(data_path, '{}.{}'.format(split, src))  # -{}.{} , tgt, lang
         return indexed_dataset.dataset_exists(filename, impl=dataset_impl)
 
     src_datasets = []
@@ -44,9 +46,9 @@ def load_langpair_dataset(
 
         # infer langcode
         if split_exists(split_k, src, tgt, src, data_path):
-            prefix = os.path.join(data_path, '{}.'.format(split_k)) # {}-{}. , src, tgt
+            prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , src, tgt
         elif split_exists(split_k, tgt, src, src, data_path):
-            prefix = os.path.join(data_path, '{}.'.format(split_k)) # {}-{}. , tgt, src
+            prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , tgt, src
 
         else:
             if k > 0:
@@ -215,9 +217,12 @@ class SummarizationTask(FairseqTask):
 
     @classmethod
     def build_dictionary(
-            cls, filenames, modality='code', workers=1, threshold=-1, nwords=-1, padding_factor=8
-    ):
-        """Build the dictionary
+            cls, filenames: List, modality: str, tokenize_func: Any,
+            eos_word: Optional[str] = None, workers: int = 1, threshold: int = -1, nwords: int = -1,
+            padding_factor: int = 8,
+    ) -> Union[List[Dictionary], Dictionary]:
+        """
+        Build the dictionary
 
         Args:
             filenames (list): list of filenames
@@ -229,40 +234,18 @@ class SummarizationTask(FairseqTask):
                 multiple of 8, which is important on some hardware (e.g., Nvidia
                 Tensor Cores).
         """
-        if modality == 'code':
-            d = Dictionary()
-            for filename in filenames:
-                Dictionary.add_file_to_dictionary(
-                    filename, d, tokenizer.tokenize_line, workers
-                )
-            d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
-            return d
-
-        elif modality == 'path':
-            # for border of path
-            d_border = Dictionary()
-            for filename in filenames:
-                Dictionary.add_listfile_to_dictionary(
-                    filename, d_border, 'border', tokenizer.tokenize_path_line, workers
-                )
-            d_border.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
-            # for center of path
-            d_center = Dictionary()
-            for filename in filenames:
-                Dictionary.add_listfile_to_dictionary(
-                    filename, d_center, 'center', tokenizer.tokenize_path_line, workers
-                )
-            d_center.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
-            return d_border, d_center
-
-        elif modality == 'bin_ast':
-            d = Dictionary()
-            for filename in filenames:
-                Dictionary.add_jsonfile_to_dictionary(
-                    filename, d, tokenizer.tokenize_tree_line, workers
-                )
-            d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
-            return d
+        dict_num = tokenizer.tokinzer_returns(tokenize_func)
+        dicts = [Dictionary() for _ in range(dict_num)]
+        for filename in filenames:
+            Dictionary.add_file_to_dictionary(
+                filename, dicts, tokenize_func, eos_word, workers
+            )
+        for dict in dicts:
+            dict.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
+        if dict_num > 1:
+            return dicts
+        else:
+            return dicts[0]
 
     @property
     def source_dictionary(self):

@@ -6,7 +6,6 @@
 import os
 from collections import Counter
 
-from .tokenizer_fair import tokenize_line
 import torch
 
 
@@ -23,20 +22,21 @@ def safe_readline(f):
 class Binarizer:
     @staticmethod
     def binarize(
-        filename,
-        dict,
-        consumer,
-        tokenize=tokenize_line,
-        append_eos=True,
-        reverse_order=False,
-        offset=0,
-        end=-1,
-        already_numberized=False,
+            filename,
+            dict,
+            consumer,
+            tokenize,
+            append_eos=True,
+            reverse_order=False,
+            offset=0,
+            end=-1,
+            already_numberized=False,
     ):
-        nseq, ntok = 0, 0
-        replaced = Counter()
+        nseq, ntok = 0, 0  # nseq = sentence number, ntok = token number
+        replaced = Counter()  # un-recorded tokens
 
         def replaced_consumer(word, idx):
+            """save un-recorded token"""
             if idx == dict.unk_index and word != dict.unk_word:
                 replaced.update([word])
 
