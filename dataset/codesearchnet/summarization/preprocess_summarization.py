@@ -6,6 +6,8 @@
 """
 Data pre-processing: build vocabularies and binarize training data.
 """
+from typing import *
+
 from collections import Counter
 from collections import OrderedDict
 from itertools import zip_longest
@@ -18,55 +20,17 @@ import sys
 from collections import namedtuple
 import torch
 from ncc import tasks
+from ncc.data import Dictionary
 from ncc.utils.util_file import load_yaml
-from ncc.utils import utils
+from ncc.utils import (
+    utils, tokenizer
+)
 from ncc import LOGGER
 
 
-# logging.basicConfig(
-#     format='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
-#     datefmt='%Y-%m-%d %H:%M:%S',
-#     level=logging.INFO,
-#     stream=sys.stdout,
-# )
-# logger = logging.getLogger('preprocess')
-
-
-def parse_alignment(line):
-    """
-    Parses a single line from the alingment file.
-
-    Args:
-        line (str): String containing the alignment of the format:
-            <src_idx_1>-<tgt_idx_1> <src_idx_2>-<tgt_idx_2> ..
-            <src_idx_m>-<tgt_idx_m>. All indices are 0 indexed.
-
-    Returns:
-        torch.IntTensor: packed alignments of shape (2 * m).
-    """
-    alignments = line.strip().split()
-    parsed_alignment = torch.IntTensor(2 * len(alignments))
-    for idx, alignment in enumerate(alignments):
-        src_idx, tgt_idx = alignment.split("-")
-        parsed_alignment[2 * idx] = int(src_idx)
-        parsed_alignment[2 * idx + 1] = int(tgt_idx)
-    return parsed_alignment
-
-
 def train_path(args, lang):
+    """get train data path"""
     return "{}{}".format(args['preprocess']['trainpref'], ("." + lang) if lang else "")
-    # if lang == 'code':
-    #     return os.path.join(args['preprocess']['trainpref'], 'code', 'train', 'train_all.txt')
-    # elif lang == 'comment':
-    #     return os.path.join(args['preprocess']['trainpref'], 'docstring', 'train', 'train_all.txt')
-    # paths = []
-    # if lang == 'code':
-    #     for file in glob.glob(os.path.join(args['preprocess']['trainpref'], 'code', 'train', '*train_all*.txt')):
-    #         paths.append(os.path.join(args['preprocess']['trainpref'], file))
-    # elif lang == 'comment':
-    #     for file in glob.glob(os.path.join(args['preprocess']['trainpref'], 'docstring', 'train', '*train_all*.txt')):
-    #         paths.append(os.path.join(args['preprocess']['trainpref'], file))
-    # return paths
 
 
 def file_name(prefix, lang):
@@ -76,19 +40,43 @@ def file_name(prefix, lang):
     return fname
 
 
-def dest_path(args, prefix, lang):
-    return os.path.join(args['preprocess']['destdir'], file_name(prefix, lang))
+######################################################################
+# dictionary functions
+######################################################################
+
+def dict_path(args: Dict, modality: str) -> List[str]:
+    """Get vocab token file. This file is not dictionary file. Dictionary file will be written later."""
+
+    def _default_path():
+        if modality == 'path':
+            dict_path = [
+                os.path.join(os.path.join(args['preprocess']['destdir'], 'dict.{}_border.txt'.format(modality))),
+                os.path.join(os.path.join(args['preprocess']['destdir'], 'dict.{}_center.txt'.format(modality))),
+            ]
+        else:
+            dict_path = [
+                os.path.join(os.path.join(args['preprocess']['destdir'], 'dict.{}.txt'.format(modality)))
+            ]
+        return dict_path
+
+    if '{}_dict'.format(modality) in args['preprocess']:
+        dict_path = args['preprocess']['{}_dict'.format(modality)]
+        if dict_path is None:
+            return _default_path()
+        else:
+            return dict_path
+    else:
+        return _default_path()
 
 
-def dict_path(args, lang):
-    return dest_path(args, "dict", lang) + ".txt"
-
-
-def build_dictionary(args, task, modality, filenames, src=False, tgt=False):
-    assert src ^ tgt
+def build_dictionary(args: Dict, task, modality: str, filenames, src=False, tgt=False) \
+        -> Union[List[Dictionary], Dictionary]:
+    """build dictionary for modality"""
+    assert src ^ tgt, RuntimeError('Cannot build dictionary for source and target domain at the same time.')
     return task.build_dictionary(
         filenames,
         modality=modality,
+        tokenize_func=tokenizer.CSN_tokinzer(modality),
         workers=args['preprocess']['workers'],
         threshold=args['preprocess']['thresholdsrc'] if src else args['preprocess']['thresholdtgt'],
         nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
@@ -96,10 +84,87 @@ def build_dictionary(args, task, modality, filenames, src=False, tgt=False):
     )
 
 
+def load_dict(args: Dict, task, modality: str, overwrite: bool):
+    """load dict from (default) dictionary file path. if not exit, load from raw data and save it at default path"""
+    dict_filenames = dict_path(args, modality)
+    all_file_exit = all([os.path.exists(filename) for filename in dict_filenames])
+    if all_file_exit and (not overwrite):
+        LOGGER.info('Dict({}) exists and overwrite=False, skip this.'.format(dict_filenames))
+        dicts = [
+            Dictionary.load(filename)
+            for filename in dict_filenames
+        ]
+        if len(dicts) == 1:
+            dicts = dicts[0]
+    else:
+        # update dict from data
+        dicts = build_dictionary(args, task, modality, [train_path(args, modality)], src=True)
+        # save dict
+        LOGGER.info('Save dict(s) for {} in {}.'.format(modality, dict_filenames))
+        if isinstance(dicts, Dictionary) and len(dict_filenames) == 1:
+            dicts.save(dict_filenames[0])
+        else:
+            for dict_filename, dict in zip(dict_filenames, dicts):
+                dict.save(dict_filename)
+    return dicts
+
+
+def build_vocab_dict(args: Dict, overwrite: bool = False):
+    """Build vocabulary (dictionary) for source and target domain"""
+    LOGGER.info('Build vocabularies...')
+    task = tasks.get_task(args['preprocess']['task'])
+    src_dicts = OrderedDict()
+    assert args['preprocess']['trainpref'], RuntimeError('Build vocabularies from train dataset, but it is null.')
+    for modality in args['preprocess']['source_lang']:
+        src_dicts[modality] = load_dict(args, task, modality, overwrite)
+    return src_dicts
+
+
+######################################################################
+# dataset functions
+######################################################################
+
+
+def dest_path(args, prefix, lang):
+    return os.path.join(args['preprocess']['destdir'], file_name(prefix, lang))
+
+
+def dataset_dest_prefix(args, output_prefix, lang):
+    """dataset file name without extension"""
+    dest_file = os.path.join(args['preprocess']['destdir'], '.'.join([output_prefix, lang]))
+    return dest_file
+
+
+def dataset_dest_file(args, output_prefix, lang, extension: str):
+    """generate bin file for each modality"""
+    base = dataset_dest_prefix(args, output_prefix, lang)
+    return "{}.{}".format(base, extension)
+
+
+def binarize(args, filename, vocab, output_prefix, lang, offset, end, append_eos=True):
+    """binarize function for multi-processing"""
+    ds_file = dataset_dest_file(args, output_prefix, lang, extension='bin')
+    ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(vocab))
+
+    def consumer(tensor):
+        ds.add_item(tensor)
+
+    res = Binarizer.binarize(filename, vocab, consumer, tokenize=tokenizer.tokenize_list,
+                             append_eos=append_eos, offset=offset, end=end)
+    ds.finalize(dataset_dest_file(args, output_prefix, lang, extension="idx"))
+    return res
+
+
+def get_offsets(input_file, num_workers):
+    """get pointers' start index for multi-processing"""
+    return Binarizer.find_offsets(input_file, num_workers)
+
+
 def make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers):
+    """make binary dataset"""
     LOGGER.info("[{}] Dictionary: {} types".format(lang, len(vocab) - 1))
     n_seq_tok = [0, 0]
-    replaced = Counter()
+    replaced = Counter()  # save un-recorded tokens
 
     def merge_result(worker_result):
         replaced.update(worker_result["replaced"])
@@ -109,7 +174,8 @@ def make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_work
     input_file = "{}{}".format(
         input_prefix, ("." + lang) if lang is not None else ""
     )
-    # input_file = os.path.join(input_prefix, 'code', 'train', 'train_all.txt', )
+    # split a file into different parts
+    # if use multi-processing, we first process 2nd to last file
     offsets = Binarizer.find_offsets(input_file, num_workers)
     pool = None
     if num_workers > 1:
@@ -130,17 +196,18 @@ def make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_work
                 callback=merge_result
             )
         pool.close()
-
-    ds = indexed_dataset.make_builder(dataset_dest_file(args, output_prefix, lang, "bin"),
-                                      impl=args['preprocess']['dataset_impl'], vocab_size=len(vocab))
+    # process 1th file, if multi-processing available. If not, process all file
+    ds_file = dataset_dest_file(args, output_prefix, lang, extension='bin')
+    ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(vocab))
     merge_result(
         Binarizer.binarize(
             input_file, vocab, lambda t: ds.add_item(t),
-            offset=0, end=offsets[1]
+            tokenize=tokenizer.tokenize_list, offset=0, end=offsets[1]
         )
     )
     if num_workers > 1:
         pool.join()
+        # merge sub-processors' index and data files into final files and delete them.
         for worker_id in range(1, num_workers):
             prefix = "{}{}".format(output_prefix, worker_id)
             temp_file_path = dataset_dest_prefix(args, prefix, lang)
@@ -148,7 +215,7 @@ def make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_work
             os.remove(indexed_dataset.data_file_path(temp_file_path))
             os.remove(indexed_dataset.index_file_path(temp_file_path))
 
-    ds.finalize(dataset_dest_file(args, output_prefix, lang, "idx"))
+    ds.finalize(dataset_dest_file(args, output_prefix, lang, extension="idx"))
 
     LOGGER.info(
         "[{}] {}: {} sents, {} tokens, {:.3}% replaced by {}".format(
@@ -162,62 +229,12 @@ def make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_work
     )
 
 
-def make_binary_alignment_dataset(args, input_prefix, output_prefix, num_workers):
-    nseq = [0]
-
-    def merge_result(worker_result):
-        nseq[0] += worker_result['nseq']
-
-    input_file = input_prefix
-    offsets = Binarizer.find_offsets(input_file, num_workers)
-    pool = None
-    if num_workers > 1:
-        pool = Pool(processes=num_workers - 1)
-        for worker_id in range(1, num_workers):
-            prefix = "{}{}".format(output_prefix, worker_id)
-            pool.apply_async(
-                binarize_alignments,
-                (
-                    args,
-                    input_file,
-                    utils.parse_alignment,
-                    prefix,
-                    offsets[worker_id],
-                    offsets[worker_id + 1]
-                ),
-                callback=merge_result
-            )
-        pool.close()
-
-    ds = indexed_dataset.make_builder(dataset_dest_file(args, output_prefix, None, "bin"),
-                                      impl=args['preprocess']['dataset_impl'])
-
-    merge_result(
-        Binarizer.binarize_alignments(
-            input_file, utils.parse_alignment, lambda t: ds.add_item(t),
-            offset=0, end=offsets[1]
-        )
-    )
-    if num_workers > 1:
-        pool.join()
-        for worker_id in range(1, num_workers):
-            prefix = "{}{}".format(output_prefix, worker_id)
-            temp_file_path = dataset_dest_prefix(args, prefix, None)
-            ds.merge_file_(temp_file_path)
-            os.remove(indexed_dataset.data_file_path(temp_file_path))
-            os.remove(indexed_dataset.index_file_path(temp_file_path))
-
-    ds.finalize(dataset_dest_file(args, output_prefix, None, "idx"))
-
-    LOGGER.info(
-        "[alignments] {}: parsed {} alignments".format(
-            input_file,
-            nseq[0]
-        )
-    )
-
-
 def make_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers=1):
+    """
+    build raw/bin dataset
+    1) raw dataset: copy raw files
+    2) bin dataset: build bin
+    """
     if args['preprocess']['dataset_impl'] == "raw":
         # Copy original text file to destination folder
         output_text_file = dest_path(args,
@@ -244,207 +261,28 @@ def make_all(args, lang, vocab):
             make_dataset(args, vocab, testpref, outprefix, lang, num_workers=args['preprocess']['workers'])
 
 
-def make_all_alignments(args):
-    if args['preprocess']['trainpref'] and os.path.exists(
-            args['preprocess']['trainpref'] + "." + args['preprocess']['align_suffix']):
-        make_binary_alignment_dataset(args, args['preprocess']['trainpref'] + "." + args['preprocess']['align_suffix'],
-                                      "train.align", num_workers=args['preprocess']['workers'])
-    if args['preprocess']['validpref'] and os.path.exists(
-            args['preprocess']['validpref'] + "." + args['preprocess']['align_suffix']):
-        make_binary_alignment_dataset(args, args['preprocess']['validpref'] + "." + args['preprocess']['align_suffix'],
-                                      "valid.align", num_workers=args['preprocess']['workers'])
-    if args['preprocess']['testpref'] and os.path.exists(
-            args['preprocess']['testpref'] + "." + args['preprocess']['align_suffix']):
-        make_binary_alignment_dataset(args, args['preprocess']['testpref'] + "." + args['preprocess']['align_suffix'],
-                                      "test.align", num_workers=args['preprocess']['workers'])
-
-
-def binarize(args, filename, vocab, output_prefix, lang, offset, end, append_eos=True):
-    ds = indexed_dataset.make_builder(dataset_dest_file(args, output_prefix, lang, "bin"),
-                                      impl=args['preprocess']['dataset_impl'], vocab_size=len(vocab))
-
-    def consumer(tensor):
-        ds.add_item(tensor)
-
-    res = Binarizer.binarize(filename, vocab, consumer, append_eos=append_eos,
-                             offset=offset, end=end)
-    ds.finalize(dataset_dest_file(args, output_prefix, lang, "idx"))
-    return res
-
-
-def binarize_alignments(args, filename, parse_alignment, output_prefix, offset, end):
-    ds = indexed_dataset.make_builder(dataset_dest_file(args, output_prefix, None, "bin"),
-                                      impl=args['preprocess']['dataset_impl'], vocab_size=None)
-
-    def consumer(tensor):
-        ds.add_item(tensor)
-
-    res = Binarizer.binarize_alignments(filename, parse_alignment, consumer, offset=offset,
-                                        end=end)
-    ds.finalize(dataset_dest_file(args, output_prefix, None, "idx"))
-    return res
-
-
-def dataset_dest_prefix(args, output_prefix, lang):
-    base = "{}/{}".format(args['preprocess']['destdir'], output_prefix)
-    if lang is not None:
-        lang_part = ".{}-{}.{}".format(args['preprocess']['source_lang'], args['preprocess']['target_lang'], lang)
-    elif args['preprocess']['only_source']:
-        lang_part = ""
-    else:
-        lang_part = ".{}-{}".format(args['preprocess']['source_lang'], args['preprocess']['target_lang'])
-
-    return "{}{}".format(base, lang_part)
-
-
-def dataset_dest_file(args, output_prefix, lang, extension):
-    base = dataset_dest_prefix(args, output_prefix, lang)
-    return "{}.{}".format(base, extension)
-
-
-def get_offsets(input_file, num_workers):
-    return Binarizer.find_offsets(input_file, num_workers)
+def build_dataset(args: Dict, dicts: Dict[str, Dictionary]):
+    """build dataset for modal"""
+    for modal, dict in dicts.items():
+        LOGGER.info('Building dataset for {}'.format(modal))
+        if modal == 'path':
+            make_all(args, modal, dict)
 
 
 def main(args):
-    # utils.import_user_module(args)
+    LOGGER.info('mkdir for {} task'.format(args['preprocess']['task']))
     os.makedirs(args['preprocess']['destdir'], exist_ok=True)
-    target = not args['preprocess']['only_source']
-
-    # if not args['preprocess']['codedict'] and os.path.exists(dict_path(args, args['preprocess']['source_lang'])):
-    #     raise FileExistsError(dict_path(args, args['preprocess']['source_lang']))
-    # if target and not args['preprocess']['tgtdict'] and os.path.exists(dict_path(args, args['preprocess']['target_lang'])):
-    #     raise FileExistsError(dict_path(args, args['preprocess']['target_lang']))
-
-    # 1. Build vocabulary (dictionary)
-    LOGGER.info('Build vocabulary...')
-    task = tasks.get_task(args['preprocess']['task'])
-    if args['preprocess']['joined_dictionary']:  # TODO: to be checked
-        assert not args['preprocess']['codedict'] or not args['preprocess']['tgtdict'], \
-            "cannot use both --srcdict and --tgtdict with --joined-dictionary"
-
-        # if args['preprocess']['codedict']:
-        #     src_dict = task.load_dictionary(args['preprocess']['srcdict'])
-        # elif args['preprocess']['tgtdict']:
-        #     src_dict = task.load_dictionary(args['preprocess']['tgtdict'])
-        # else:
-        assert args['preprocess']['trainpref'], "--trainpref must be set if --codedict is not specified"
-        src_dict = build_dictionary(args, task,
-                                    {train_path(args, lang) for lang in
-                                     args['preprocess']['source_lang'] + args['preprocess']['target_lang']}, src=True
-                                    )
-        tgt_dict = src_dict
-    else:
-        # if args['preprocess']['codedict']:
-        #     src_dict = task.load_dictionary(args['preprocess']['codedict'])
-        # else:
-        src_dicts = OrderedDict()
-        for modality in args['preprocess']['source_lang']:
-            assert args['preprocess']['trainpref'], "--trainpref must be set if --codedict is not specified"
-            if modality == 'path':
-                pass
-                src_dict1, src_dict2 = build_dictionary(args, task, modality, [train_path(args, modality)], src=True)
-                # src_dict = build_dictionary(train_path(args['preprocess']['source_lang']), src=True)
-                src_dicts[modality] = [src_dict1, src_dict2]
-            else:
-                src_dict = build_dictionary(args, task, modality, [train_path(args, modality)], src=True)
-                # src_dict = build_dictionary(train_path(args['preprocess']['source_lang']), src=True)
-                src_dicts[modality] = src_dict
-
-        if target:
-            if args['preprocess']['tgtdict']:
-                tgt_dict = task.load_dictionary(args['preprocess']['tgtdict'])
-            else:
-                assert args['preprocess']['trainpref'], "--trainpref must be set if --tgtdict is not specified"
-                tgt_dict = build_dictionary(args, task, modality, [train_path(args, args['preprocess']['target_lang'])],
-                                            tgt=True)
-                # tgt_dict = build_dictionary(train_path(args['preprocess']['target_lang']), tgt=True)
-
-        else:
-            tgt_dict = None
-    LOGGER.info('Save vocabulary.')
-    for modality in args['preprocess']['source_lang']:
-        if modality == 'path':
-            src_dicts[modality][0].save(dict_path(args, modality + '_border'))
-            src_dicts[modality][1].save(dict_path(args, modality + '_center'))
-        else:
-            src_dicts[modality].save(dict_path(args, modality))
-    if target and tgt_dict is not None:
-        tgt_dict.save(dict_path(args, args['preprocess']['target_lang']))
-
-    exit()
-
-    # sys.exit()
-    # 2. Make dataset (raw or mmap..)
-    LOGGER.info('Make dataset...')
-    # make_all(args, args['preprocess']['source_lang'], src_dict) # TODO: source_lang -> modalities
-    make_all(args, 'code', src_dict)
-    make_all(args, 'path', src_dict)
-    make_all(args, 'bin_ast', src_dict)
-    make_all(args, 'sbt', src_dict)
-    if target:
-        make_all(args, args['preprocess']['target_lang'], tgt_dict)
-    if args['preprocess']['align_suffix']:
-        make_all_alignments(args)
-
-    LOGGER.info("Wrote preprocessed data to {}".format(args['preprocess']['destdir']))
-
-    if args['preprocess']['alignfile']:
-        assert args['preprocess']['trainpref'], "--trainpref must be set if --alignfile is specified"
-        src_file_name = train_path(args, args['preprocess']['source_lang'])
-        tgt_file_name = train_path(args, args['preprocess']['target_lang'])
-        freq_map = {}
-        with open(args['preprocess']['alignfile'], "r", encoding='utf-8') as align_file:
-            with open(src_file_name, "r", encoding='utf-8') as src_file:
-                with open(tgt_file_name, "r", encoding='utf-8') as tgt_file:
-                    for a, s, t in zip_longest(align_file, src_file, tgt_file):
-                        si = src_dict.encode_line(s, add_if_not_exist=False)
-                        ti = tgt_dict.encode_line(t, add_if_not_exist=False)
-                        ai = list(map(lambda x: tuple(x.split("-")), a.split()))
-                        for sai, tai in ai:
-                            srcidx = si[int(sai)]
-                            tgtidx = ti[int(tai)]
-                            if srcidx != src_dict.unk() and tgtidx != tgt_dict.unk():
-                                assert srcidx != src_dict.pad()
-                                assert srcidx != src_dict.eos()
-                                assert tgtidx != tgt_dict.pad()
-                                assert tgtidx != tgt_dict.eos()
-
-                                if srcidx not in freq_map:
-                                    freq_map[srcidx] = {}
-                                if tgtidx not in freq_map[srcidx]:
-                                    freq_map[srcidx][tgtidx] = 1
-                                else:
-                                    freq_map[srcidx][tgtidx] += 1
-
-        align_dict = {}
-        for srcidx in freq_map.keys():
-            align_dict[srcidx] = max(freq_map[srcidx], key=freq_map[srcidx].get)
-
-        with open(
-                os.path.join(
-                    args['preprocess']['destdir'],
-                    "alignment.{}-{}.txt".format(args['preprocess']['source_lang'], args['preprocess']['target_lang']),
-                ),
-                "w", encoding='utf-8'
-        ) as f:
-            for k, v in align_dict.items():
-                print("{} {}".format(src_dict[k], tgt_dict[v]), file=f)
+    src_dicts = build_vocab_dict(args, overwrite=False)
+    build_dataset(args, src_dicts)
 
 
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')
-
     args_ = Argues('preprocess_summarization.yml')  # train_sl
     LOGGER.info(args_)
-    # print(type(args.multi_processing))
-    # assert False
-    print('args: ', type(args_))
-    # config = run_init(args.yaml, config=None)
-    yaml_file = os.path.join(sys.path[0], args_.yaml)
+    yaml_file = os.path.join(os.path.dirname(__file__), args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
-
     LOGGER.info(args)
     main(args)
 
@@ -452,109 +290,3 @@ def cli_main():
 if __name__ == "__main__":
     cli_main()
     sys.exit()
-    # # cli_main()
-    # # parser = get_parser("Preprocessing", default_task)
-    # parser = argparse.ArgumentParser()
-    # # Before creating the true parser, we need to import optional user module
-    # # in order to eagerly import custom tasks, optimizers, architectures, etc.
-    # usr_parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
-    # usr_parser.add_argument("--user-dir", default=None)
-    # usr_args, _ = usr_parser.parse_known_args()
-    # # utils.import_user_module(usr_args)
-    #
-    # parser = argparse.ArgumentParser(allow_abbrev=False)
-    # # fmt: off
-    # parser.add_argument('--no-progress-bar', action='store_true', help='disable progress bar')
-    # parser.add_argument('--log-interval', type=int, default=100, metavar='N',
-    #                     help='log progress every N batches (when progress bar is disabled)')
-    # parser.add_argument('--log-format', default=None, help='log format to use',
-    #                     choices=['json', 'none', 'simple', 'tqdm'])
-    # parser.add_argument('--tensorboard-logdir', metavar='DIR', default='',
-    #                     help='path to save logs for tensorboard, should match --logdir '
-    #                          'of running tensorboard (default: no tensorboard logging)')
-    # parser.add_argument('--seed', default=1, type=int, metavar='N',
-    #                     help='pseudo random number generator seed')
-    # parser.add_argument('--cpu', action='store_true', help='use CPU instead of CUDA')
-    # parser.add_argument('--fp16', action='store_true', help='use FP16')
-    # parser.add_argument('--memory-efficient-fp16', action='store_true',
-    #                     help='use a memory-efficient version of FP16 training; implies --fp16')
-    # parser.add_argument('--fp16-no-flatten-grads', action='store_true',
-    #                     help='don\'t flatten FP16 grads tensor')
-    # parser.add_argument('--fp16-init-scale', default=2 ** 7, type=int,
-    #                     help='default FP16 loss scale')
-    # parser.add_argument('--fp16-scale-window', type=int,
-    #                     help='number of updates before increasing loss scale')
-    # parser.add_argument('--fp16-scale-tolerance', default=0.0, type=float,
-    #                     help='pct of updates that can overflow before decreasing the loss scale')
-    # parser.add_argument('--min-loss-scale', default=1e-4, type=float, metavar='D',
-    #                     help='minimum FP16 loss scale, after which training is stopped')
-    # parser.add_argument('--threshold-loss-scale', type=float,
-    #                     help='threshold FP16 loss scale from below')
-    # parser.add_argument('--user-dir', default=None,
-    #                     help='path to a python module containing custom extensions (tasks and/or architectures)')
-    # parser.add_argument('--empty-cache-freq', default=0, type=int,
-    #                     help='how often to clear the PyTorch CUDA cache (0 to disable)')
-    # parser.add_argument('--all-gather-list-size', default=16384, type=int,
-    #                     help='number of bytes reserved for gathering stats from workers')
-    #
-    # from ncc.registry import REGISTRIES
-    #
-    # for registry_name, REGISTRY in REGISTRIES.items():
-    #     parser.add_argument(
-    #         '--' + registry_name.replace('_', '-'),
-    #         default=REGISTRY['default'],
-    #         choices=REGISTRY['registry'].keys(),
-    #     )
-    #
-    # # Task definitions can be found under fairseq/tasks/
-    # from ncc.tasks import TASK_REGISTRY
-    #
-    # parser.add_argument('--task', metavar='TASK', default="translation",
-    #                     choices=TASK_REGISTRY.keys(),
-    #                     help='task')
-    # # fmt: on
-    #
-    # # ===========================
-    # group = parser.add_argument_group("Preprocessing")
-    # # fmt: off
-    # group.add_argument("-s", "--source-lang", default=None, metavar="SRC",
-    #                    help="source language")
-    # group.add_argument("-t", "--target-lang", default=None, metavar="TARGET",
-    #                    help="target language")
-    # group.add_argument("--trainpref", metavar="FP", default=None,
-    #                    help="train file prefix")
-    # group.add_argument("--validpref", metavar="FP", default=None,
-    #                    help="comma separated, valid file prefixes")
-    # group.add_argument("--testpref", metavar="FP", default=None,
-    #                    help="comma separated, test file prefixes")
-    # group.add_argument("--align-suffix", metavar="FP", default=None,
-    #                    help="alignment file suffix")
-    # group.add_argument("--destdir", metavar="DIR", default="data-bin",
-    #                    help="destination dir")
-    # group.add_argument("--thresholdtgt", metavar="N", default=0, type=int,
-    #                    help="map words appearing less than threshold times to unknown")
-    # group.add_argument("--thresholdsrc", metavar="N", default=0, type=int,
-    #                    help="map words appearing less than threshold times to unknown")
-    # group.add_argument("--tgtdict", metavar="FP",
-    #                    help="reuse given target dictionary")
-    # group.add_argument("--srcdict", metavar="FP",
-    #                    help="reuse given source dictionary")
-    # group.add_argument("--nwordstgt", metavar="N", default=-1, type=int,
-    #                    help="number of target words to retain")
-    # group.add_argument("--nwordssrc", metavar="N", default=-1, type=int,
-    #                    help="number of source words to retain")
-    # group.add_argument("--alignfile", metavar="ALIGN", default=None,
-    #                    help="an alignment file (optional)")
-    # parser.add_argument('--dataset-impl', metavar='FORMAT', default='mmap',
-    #                     choices=get_available_dataset_impl(),
-    #                     help='output dataset implementation')
-    # group.add_argument("--joined-dictionary", action="store_true",
-    #                    help="Generate joined dictionary")
-    # group.add_argument("--only-source", action="store_true",
-    #                    help="Only process the source language")
-    # group.add_argument("--padding-factor", metavar="N", default=8, type=int,
-    #                    help="Pad dictionary size to be multiple of N")
-    # group.add_argument("--workers", metavar="N", default=1, type=int,
-    #                    help="number of parallel workers")
-    # args = parser.parse_args()
-    # main(args)
