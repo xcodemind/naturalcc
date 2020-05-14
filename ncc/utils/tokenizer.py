@@ -52,7 +52,7 @@ def tokenize_path(line: str):
     return border_list, center_list
 
 
-def CSN_tokinzer(modal: str):
+def CSN_tokenizer(modal: str):
     """
     CodeSearchNet modalities = [
         'bin_ast', 'code_tokens', 'docstring', 'func_name', 'method', 'path', 'sbt', 'tok',
@@ -94,6 +94,6 @@ def tokinzer_returns(func: Any) -> int:
 
 
 __all__ = (
-    CSN_tokinzer,
+    CSN_tokenizer,
     tokinzer_returns,
 )
