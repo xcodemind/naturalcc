@@ -64,13 +64,13 @@ def tokenize_path(line: str, add_cls: bool = False) -> List[str]:
     add_cls: add cls at 1st position of path
     """
     line = ujson.loads(line)
-    paths = []
+    paths = [CLS] if add_cls else []
     for idx, path in enumerate(line):
         head, body, tail = path
-        path = head + [H_SEP] + body + [T_SEP] + tail + [P_SEP]
-        if add_cls:
-            path = [CLS]
+        path = head + [H_SEP] + body + [T_SEP] + tail
         paths.extend(path)
+        if idx < len(line) - 1:
+            paths.append(P_SEP)
     return paths
 
 
