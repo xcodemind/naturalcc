@@ -20,18 +20,18 @@ preprocess:
   task: summarization # task', metavar='TASK', default="translation", choices=TASK_REGISTRY.keys(), help='task'
   source_lang:
     - code
-#    - path
-#    - code  #", default=None, metavar="SRC", help="source language"
-#    - bin_ast
-#    - docstring
+  #    - path
+  #    - code  #", default=None, metavar="SRC", help="source language"
+  #    - bin_ast
+  #    - docstring
   target_lang: docstring #", default=None, metavar="TARGET", help="target language"
   # ~ path for dataset default. e.g.  for CodeSearchNet, ~/flatten = ~/.ncc/CodeSearchNet/flatten
   trainpref: ~/.ncc/CodeSearchNet/flatten/ruby/train #", metavar="FP", default=None, help="train file prefix"
   validpref: ~/.ncc/CodeSearchNet/flatten/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
   testpref:  ~/.ncc/CodeSearchNet/flatten/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
-#  trainpref_: ~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/train #", metavar="FP", default=None, help="train file prefix"
-#  validpref_: ~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/valid #", metavar="FP", default=None, help="train file prefix"
-#  testpref_:  ~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/test  #", metavar="FP", default=None, help="train file prefix"
+  #  trainpref_: ~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/train #", metavar="FP", default=None, help="train file prefix"
+  #  validpref_: ~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/valid #", metavar="FP", default=None, help="train file prefix"
+  #  testpref_:  ~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/test  #", metavar="FP", default=None, help="train file prefix"
 
   align_suffix: ~ # ", metavar="FP", default=None, help="alignment file suffix"
   destdir: ~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin #", metavar="DIR", default="data-bin", help="destination dir"

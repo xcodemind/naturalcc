@@ -52,7 +52,7 @@ class CodeSearchNet(object):
     _LIB_DIR = 'libs'  # tree-sitter libraries
     _SO_DIR = 'so'  # tree-sitter *.so files
     _RAW_DIR = 'raw'  # raw data
-    _DATA_DIR = 'data'  # extracted data
+    _UNZIP_DIR = 'raw_unzip'  # extracted data
     _FLATTEN_DIR = 'flatten'  # flatten data
     _MAX_SUB_TOKEN_LEN_FILENAME = 'max_sub_token_len.txt'
 
@@ -85,7 +85,7 @@ class CodeSearchNet(object):
         self._LIB_DIR = os.path.join(self.root, self._LIB_DIR)
         self._SO_DIR = os.path.join(self.root, self._SO_DIR)
         self._RAW_DIR = os.path.join(self.root, self._RAW_DIR)
-        self._DATA_DIR = os.path.join(self.root, self._DATA_DIR)
+        self._UNZIP_DIR = os.path.join(self.root, self._UNZIP_DIR)
         self._FLATTEN_DIR = os.path.join(self.root, self._FLATTEN_DIR)
 
     def _check_exists(self) -> bool:
@@ -118,24 +118,24 @@ class CodeSearchNet(object):
         data_file = os.path.join(self._RAW_DIR, '{}.zip'.format(lng))
         src_dst_files = []
         LOGGER.info('Extracting raw data files from {} to {}. If already existed, skip it.'.format(
-            data_file, self._DATA_DIR))
+            data_file, self._UNZIP_DIR))
         with zipfile.ZipFile(data_file, 'r') as file_list:
             for file_info in file_list.filelist:
                 src_file = file_info.filename
                 if str.endswith(src_file, '.jsonl.gz'):
                     # exist in current direction and their sizes are same
-                    dst_file = os.path.join(self._DATA_DIR, lng, os.path.split(src_file)[-1])
+                    dst_file = os.path.join(self._UNZIP_DIR, lng, os.path.split(src_file)[-1])
                     if (os.path.exists(dst_file)) and (os.path.getsize(dst_file) == file_info.file_size):
                         pass
                     else:
-                        file_list.extract(src_file, path=self._DATA_DIR)
-                        src_file = os.path.join(self._DATA_DIR, src_file)
+                        file_list.extract(src_file, path=self._UNZIP_DIR)
+                        src_file = os.path.join(self._UNZIP_DIR, src_file)
                         src_dst_files.append([src_file, dst_file])
         for src_file, dst_file in src_dst_files:
-            dst_file = os.path.join(self._DATA_DIR, lng, os.path.split(src_file)[-1])
+            dst_file = os.path.join(self._UNZIP_DIR, lng, os.path.split(src_file)[-1])
             shutil.move(src=src_file, dst=dst_file)
         # delete tmp direction, e.g. ~/.ncc/data/ruby/final
-        del_dir = os.path.join(self._DATA_DIR, lng, 'final')
+        del_dir = os.path.join(self._UNZIP_DIR, lng, 'final')
         shutil.rmtree(del_dir, ignore_errors=True)
 
     def build(self, lng: str):
@@ -182,7 +182,7 @@ class CodeSearchNet(object):
         self.raw_files = {
             lng: {
                 mode: sorted(
-                    glob.glob(os.path.join(self._DATA_DIR, lng, '*{}*.jsonl.gz'.format(mode))),
+                    glob.glob(os.path.join(self._UNZIP_DIR, lng, '*{}*.jsonl.gz'.format(mode))),
                     key=lambda filename: int(os.path.split(filename)[-1].split('.')[0].split('_')[-1]),
                 )
                 for mode in constants.MODES

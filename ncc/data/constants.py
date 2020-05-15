@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+MODES = ['train', 'valid', 'test']
+
 PAD = "<pad>"
 EOS = "</s>"
 UNK = "<unk>"
@@ -12,9 +14,11 @@ PATH_SEPS = [H_SEP, T_SEP, P_SEP]
 # for bert
 S_SEP = '<S_SEP>'
 CLS = '<CLS>'
+SNT_SEPS = [S_SEP, CLS]
 
 __all__ = [
+    'MODES',
     'PAD', 'EOS', 'UNK', 'BOS',
     'H_SEP', 'T_SEP', 'P_SEP', 'PATH_SEPS',
-    'S_SEP', 'CLS',
+    'S_SEP', 'CLS', 'SNT_SEPS',
 ]
