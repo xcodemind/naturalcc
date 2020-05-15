@@ -218,10 +218,10 @@ class SummarizationTask(FairseqTask):
 
     @classmethod
     def build_dictionary(
-            cls, filenames: List, modality: str, tokenize_func: Any,
+            cls, filenames: List, tokenize_func: Any,
             eos_word: Optional[str] = None, workers: int = 1, threshold: int = -1, nwords: int = -1,
             padding_factor: int = 8,
-    ) -> Dictionary:
+    ) -> Dictionary: #, modality: str,
         """
         Build the dictionary
 
@@ -235,7 +235,7 @@ class SummarizationTask(FairseqTask):
                 multiple of 8, which is important on some hardware (e.g., Nvidia
                 Tensor Cores).
         """
-        dict = Dictionary(attr=modality)
+        dict = Dictionary()
         for filename in filenames:
             Dictionary.add_file_to_dictionary(
                 filename, dict, tokenize_func, eos_word, workers

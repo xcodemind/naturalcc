@@ -12,7 +12,7 @@ T_SEP = '<T_SEP>'
 P_SEP = '<P_SEP>'
 PATH_SEPS = [H_SEP, T_SEP, P_SEP]
 # for bert
-S_SEP = '<S_SEP>'
+S_SEP = '<SSEP>'
 CLS = '<CLS>'
 SNT_SEPS = [S_SEP, CLS]
 

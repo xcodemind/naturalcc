@@ -12,11 +12,11 @@ from multiprocessing import Pool
 import itertools
 
 import torch
-from .binarizer import safe_readline
-from . import data_utils
-from . import constants
+from ncc.data.binarizer import safe_readline
+from ncc.data import data_utils
+from ncc.data import constants
 from ncc.utils.file_io import PathManager
-from ncc.utils import tokenizer
+# from ncc.utils import tokenizer
 
 
 class Dictionary(object):
@@ -29,7 +29,7 @@ class Dictionary(object):
             unk=constants.UNK,
             bos=constants.BOS,
             extra_special_symbols=None,
-            attr: str = None,  # special attribute may need extra_special_symbols
+            # attr: str = None,  # special attribute may need extra_special_symbols
     ):
         self.unk_word, self.pad_word, self.eos_word = unk, pad, eos
         self.symbols = []
@@ -42,15 +42,15 @@ class Dictionary(object):
         if extra_special_symbols:
             for s in extra_special_symbols:
                 self.add_symbol(s)
-        self._attr_special_symbols(attr)
+        # self._attr_special_symbols(attr)
         self.nspecial = len(self.symbols)
 
-    def _attr_special_symbols(self, attr: str = None):
-        if attr is None:
-            return
-        elif attr == 'path':
-            for s in constants.PATH_SEPS:
-                self.add_symbol(s, overwrite=False)
+    # def _attr_special_symbols(self, attr: str = None):
+    #     if attr is None:
+    #         return
+    #     elif attr == 'path':
+    #         for s in constants.PATH_SEPS:
+    #             self.add_symbol(s, overwrite=False)
 
     def __eq__(self, other):
         return self.indices == other.indices

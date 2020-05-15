@@ -14,11 +14,32 @@ from multiprocessing import Pool
 
 # from ncc.data.encoders.gpt2_bpe_utils import get_encoder
 import sentencepiece as spm
+import ujson
+import re
+# S_SEP = '<S_SEP>'
+# CLS = '<CLS>'
+from ncc.data import constants
+
+def build_model(input, model_prefix, vocab_size):
+    spm.SentencePieceTrainer.Train('--input={} --model_prefix={} --vocab_size={}'.format(input, model_prefix, vocab_size))
 
 
-def build_model(args):
-    spm.SentencePieceTrainer.Train('--input={} --model_prefix={} --vocab_size={}'.format(args.inputs[0], args.model_prefix, args.vocab_size))
-
+def insert_sep_token(input_file):
+    # output_text_file = dest_path(args,
+    #                              output_prefix,
+    #                              # + ".{}-{}".format(args['preprocess']['source_lang'], args['preprocess']['target_lang'])
+    #                              lang,
+    #                              )
+    with open(input_file + '_inserted', 'w') as out_file:
+        with open(input_file, 'r') as in_file:
+            for line in in_file.readlines():
+                ln = ujson.loads(line)
+                # for count in range(10, 1, -1):  # to handle duplicate '\n'
+                #     ln = ln.replace('\n', S_SEP, count)
+                ln = re.sub('\n\s*\n', '\n', ln)  # remove "\n \n" -> \n
+                ln = ln.replace('\n', ' ' + constants.S_SEP + ' ')  # should be whitespace before and after S_SEP
+                ln = constants.CLS + ' ' + ln  # profix <CLS>, should be whitespace after the CLS
+                out_file.write(ujson.dumps(ln) + '\n')
 
 def main(args):
     assert len(args.inputs) == len(args.outputs), \
@@ -148,8 +169,17 @@ if __name__ == "__main__":
         action="store_true",
         help="keep empty lines",
     )
+    parser.add_argument(
+        "--insert",
+        action="store_true",
+        help="keep empty lines",
+    )
     parser.add_argument("--workers", type=int, default=20)
     args = parser.parse_args()
-    if 'train' in args.inputs[0]:
-        build_model(args)
+    input_file = args.inputs[0]
+
+    if args.insert:
+        insert_sep_token(input_file)
+    if 'train' in input_file:  # only build wordpiece model on train files
+        build_model(input_file + '_inserted', args.model_prefix, args.vocab_size)
     main(args)
