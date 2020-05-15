@@ -110,10 +110,11 @@ def build_vocab_dict(args: Dict, overwrite: bool = False):
         # dict_filenames = dict_path(args, modality)
         # all_file_exit = all([os.path.exists(filename) for filename in dict_filenames])
         # if all_file_exit and (not overwrite):
-        dict_filename = dict_path(args, args['preprocess']['source_lang'])
-        if dict_filename and (not overwrite):
-            LOGGER.info('Dict({}) exists and overwrite=False, skip this.'.format(dict_filename))
-            src_dict = task.load_dictionary(dict_filename)
+        # dict_filename = dict_path(args, args['preprocess']['source_lang'])
+        # if dict_filename and (not overwrite):
+        #     LOGGER.info('Dict({}) exists and overwrite=False, skip this.'.format(dict_filename))
+        if args['preprocess']['srcdict']:
+            src_dict = task.load_dictionary(args['preprocess']['srcdict'])
             # if len(dicts) == 1:
             #     dicts = dicts[0]
         else:
@@ -127,12 +128,13 @@ def build_vocab_dict(args: Dict, overwrite: bool = False):
     else:
         # for modality in args['preprocess']['source_lang']:
         # src_dicts[modality] = load_dict(args, task, modality, overwrite)
-        dict_filename = dict_path(args, args['preprocess']['source_lang'])
+        # dict_filename = dict_path(args, args['preprocess']['source_lang'])
         # all_file_exit = all([os.path.exists(filename) for filename in dict_filenames])
         # if all_file_exit and (not overwrite):
-        if dict_filename and (not overwrite):
-            LOGGER.info('Dict({}) exists and overwrite=False, skip this.'.format(dict_filename))
-            src_dict = task.load_dictionary(dict_filename)
+        # if dict_filename and (not overwrite):
+        #     LOGGER.info('Dict({}) exists and overwrite=False, skip this.'.format(dict_filename))
+        if args['preprocess']['srcdict']:
+            src_dict = task.load_dictionary(args['preprocess']['srcdict'])
             # if len(dicts) == 1:
             #     dicts = dicts[0]
         else:
@@ -286,10 +288,10 @@ def make_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers=1):
         else:
             shutil.copyfile(file_name(input_prefix, lang), output_text_file)
     else:
-        if lang == 'docstring':
-            make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers)
-        else:
-            make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers)
+        # if lang == 'docstring':
+        #     make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers)
+        # else:
+        make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers)
 
 
 def make_all(args, lang, vocab):

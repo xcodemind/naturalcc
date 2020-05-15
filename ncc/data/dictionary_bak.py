@@ -196,15 +196,16 @@ class Dictionary(object):
         return self.unk_index
 
     @classmethod
-    def load(cls, f):
+    def load(cls, f, attr: str = None):
         """Loads the dictionary from a text file with the format:
+
         ```
         <symbol0> <count0>
         <symbol1> <count1>
         ...
         ```
         """
-        d = cls()
+        d = cls(attr=attr)
         d.add_from_file(f)
         return d
 
@@ -226,18 +227,26 @@ class Dictionary(object):
                 )
             return
 
-        lines = f.readlines()
+        lines = ujson.loads(f.read())
         indices_start_line = self._load_meta(lines)
-
         for line in lines[indices_start_line:]:
             try:
-                line, field = line.rstrip().rsplit(" ", 1)
-                if field == "#fairseq:overwrite":
+                # fairseq raw code
+                # line, field = line.rstrip().rsplit(" ", 1)
+                # if field == "#fairseq:overwrite":
+                #     overwrite = True
+                #     line, field = line.rsplit(" ", 1)
+                # else:
+                #     overwrite = False
+                # count = int(field)
+
+                # read with ujson
+                if len(line) == 3 and line[-1] == "#fairseq:overwrite":
                     overwrite = True
-                    line, field = line.rsplit(" ", 1)
+                    line, count, _ = line
                 else:
                     overwrite = False
-                count = int(field)
+                    line, count = line
                 word = line
                 if word in self and not overwrite:
                     raise RuntimeError(
@@ -245,11 +254,11 @@ class Dictionary(object):
                         "Duplicate words can overwrite earlier ones by adding the "
                         "#fairseq:overwrite flag at the end of the corresponding row "
                         "in the dictionary file. If using the Camembert model, please "
-                        "download an updated copy of the model file."
-                            .format(word)
+                        "download an updated copy of the model file.".format(word)
                     )
                 self.add_symbol(word, n=count, overwrite=overwrite)
             except ValueError:
+                print(f)
                 raise ValueError(
                     "Incorrect dictionary format, expected '<token> <cnt> [flags]'"
                 )
@@ -259,8 +268,9 @@ class Dictionary(object):
             PathManager.mkdirs(os.path.dirname(f))
             with PathManager.open(f, "w", encoding="utf-8") as fd:
                 return self.save(fd)
-        for k, v in kv_iterator:
-            print("{} {}".format(k, v), file=f)
+        # for k, v in kv_iterator:
+        #     print("{} {}".format(k, v), file=f)
+        f.write(ujson.dumps([(k, v,) for k, v in kv_iterator]))
 
     def _get_meta(self):
         return [], []
