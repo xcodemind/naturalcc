@@ -8,7 +8,10 @@ from typing import List, Union, Any
 import re
 import ujson
 import itertools
-from ncc.data.constants import PAD
+from ncc.data.constants import (
+    H_SEP, T_SEP, P_SEP,
+    PAD, CLS, S_SEP,
+)
 
 SPACE_NORMALIZER = re.compile(r"\s+")
 
@@ -55,19 +58,23 @@ def tokenize_body(line: str) -> List[str]:
     return line
 
 
-# def tokenize_path(line: str):
-#     """load path's border and center tokens"""
-#     line = ujson.loads(line)
-#     head_list, center_list, tail_list = zip(*line)
-#     border_list = head_list + tail_list
-#     border_list, center_list, = map(
-#         lambda lst: itertools.chain(*lst),
-#         (border_list, center_list,)
-#     )
-#     return border_list, center_list
+def tokenize_path(line: str, add_cls: bool = False) -> List[str]:
+    """
+    load path's head/body/tail tokens
+    add_cls: add cls at 1st position of path
+    """
+    line = ujson.loads(line)
+    paths = []
+    for idx, path in enumerate(line):
+        head, body, tail = path
+        path = head + [H_SEP] + body + [T_SEP] + tail + [P_SEP]
+        if add_cls:
+            path = [CLS]
+        paths.extend(path)
+    return paths
 
 
-def CSN_tokinzer(modal: str):
+def CSN_tokenizer(modal: str):
     """
     CodeSearchNet modalities = [
         'bin_ast', 'code_tokens', 'docstring', 'func_name', 'method', 'path', 'sbt', 'tok',
@@ -92,6 +99,8 @@ def CSN_tokinzer(modal: str):
         return tokenize_list
     elif modal in ['bin_ast', 'raw_ast', ]:
         return tokenize_tree
+    elif modal == 'path':
+        return tokenize_path
     elif modal == 'body':
         return tokenize_body
     elif modal == 'border':
@@ -111,6 +120,7 @@ def CSN_tokinzer(modal: str):
 
 
 __all__ = (
-    CSN_tokinzer,
+    tokenize_string, tokenize_list, tokenize_tree, tokenize_path,
+    CSN_tokenizer,
     # tokinzer_returns,
 )

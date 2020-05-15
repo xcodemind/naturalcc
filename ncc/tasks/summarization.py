@@ -22,6 +22,7 @@ from ncc.data.concat_dataset import ConcatDataset
 from ncc.data.prepend_token_dataset import PrependTokenDataset
 from ncc.data.language_pair_dataset import LanguagePairDataset
 from ncc.data.dictionary import Dictionary
+# from ncc.data.constants import *
 from ncc.utils import tokenizer  # , utils # metrics, search,
 
 
@@ -220,7 +221,7 @@ class SummarizationTask(FairseqTask):
             cls, filenames: List, modality: str, tokenize_func: Any,
             eos_word: Optional[str] = None, workers: int = 1, threshold: int = -1, nwords: int = -1,
             padding_factor: int = 8,
-    ) -> Union[List[Dictionary], Dictionary]:
+    ) -> Dictionary:
         """
         Build the dictionary
 
@@ -234,18 +235,13 @@ class SummarizationTask(FairseqTask):
                 multiple of 8, which is important on some hardware (e.g., Nvidia
                 Tensor Cores).
         """
-        dict_num = tokenizer.tokinzer_returns(tokenize_func)
-        dicts = [Dictionary() for _ in range(dict_num)]
+        dict = Dictionary(attr=modality)
         for filename in filenames:
             Dictionary.add_file_to_dictionary(
-                filename, dicts, tokenize_func, eos_word, workers
+                filename, dict, tokenize_func, eos_word, workers
             )
-        for dict in dicts:
-            dict.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
-        if dict_num > 1:
-            return dicts
-        else:
-            return dicts[0]
+        dict.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
+        return dict
 
     @property
     def source_dictionary(self):

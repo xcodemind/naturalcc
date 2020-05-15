@@ -16,6 +16,7 @@ from tokenizers import ByteLevelBPETokenizer
 from tokenizers.processors import BertProcessing
 import ujson
 
+
 def __best_fitting_dtype(vocab_size=None):
     if vocab_size is not None and vocab_size < 65500:
         return np.uint16
@@ -182,7 +183,7 @@ class IndexedDataset(FairseqDataset):
     @staticmethod
     def exists(path):
         return (
-            os.path.exists(index_file_path(path)) and os.path.exists(data_file_path(path))
+                os.path.exists(index_file_path(path)) and os.path.exists(data_file_path(path))
         )
 
     @property
@@ -353,9 +354,9 @@ class IndexedRawPathDataset(FairseqDataset):
     Original lines are also kept in memory"""
 
     def __init__(self, path, dictionary, append_eos=True, reverse_order=False):
-        self.tokens_list = {'head':[], 'center':[], 'tail':[]}
+        self.tokens_list = {'head': [], 'center': [], 'tail': []}
         # self.lines = []
-        self.sizes = {'head':[], 'center':[], 'tail': []}
+        self.sizes = {'head': [], 'center': [], 'tail': []}
         self.append_eos = append_eos
         self.reverse_order = reverse_order
         self.read_data(path, dictionary)
@@ -373,7 +374,7 @@ class IndexedRawPathDataset(FairseqDataset):
                     head, center, tail = path
                     head_tokens = border_dictionary.encode_line(
                         head, line_tokenizer=None, add_if_not_exist=False,
-                        append_eos=self.append_eos, reverse_order=self.reverse_order,).long()
+                        append_eos=self.append_eos, reverse_order=self.reverse_order, ).long()
                     tail_tokens = border_dictionary.encode_line(
                         tail, line_tokenizer=None, add_if_not_exist=False,
                         append_eos=self.append_eos, reverse_order=self.reverse_order, ).long()
@@ -470,7 +471,8 @@ class BertDataset(FairseqDataset):
             # for i in range(0, len(tokenized_text) - block_size + 1, block_size):  # Truncate in block of block_size
             #     self.tokens_list.append(tokenizer.build_inputs_with_special_tokens(tokenized_text[i: i + block_size]))
             # self.sizes = np.array(self.sizes)
-        self.tokens_list = tokenizer.batch_encode_plus(self.lines, add_special_tokens=True, max_length=block_size)["input_ids"]
+        self.tokens_list = tokenizer.batch_encode_plus(self.lines, add_special_tokens=True, max_length=block_size)[
+            "input_ids"]
         self.sizes = np.array([len(tok) for tok in self.tokens_list])
         self.tokens_list = [torch.LongTensor(tok) for tok in self.tokens_list]
 
@@ -578,11 +580,12 @@ class MMapIndexedDataset(torch.utils.data.Dataset):
         def writer(cls, path, dtype):
             class _Writer(object):
                 def __enter__(self):
+                    """for with open. this init method"""
                     self._file = open(path, 'wb')
 
-                    self._file.write(cls._HDR_MAGIC)
-                    self._file.write(struct.pack('<Q', 1))
-                    self._file.write(struct.pack('<B', code(dtype)))
+                    self._file.write(cls._HDR_MAGIC)  # self-defined format
+                    self._file.write(struct.pack('<Q', 1))  # version number, occupying 8 bit
+                    self._file.write(struct.pack('<B', code(dtype)))  # data type, 1 bit
 
                     return self
 
@@ -711,22 +714,28 @@ class MMapIndexedDataset(torch.utils.data.Dataset):
     @staticmethod
     def exists(path):
         return (
-            os.path.exists(index_file_path(path)) and os.path.exists(data_file_path(path))
+                os.path.exists(index_file_path(path)) and os.path.exists(data_file_path(path))
         )
 
 
 class MMapIndexedDatasetBuilder(object):
+    """memory-mapping dataset builder with index"""
+
     def __init__(self, out_file, dtype=np.int64):
         self._data_file = open(out_file, 'wb')
         self._dtype = dtype
         self._sizes = []
 
     def add_item(self, tensor):
-        np_array = np.array(tensor.numpy(), dtype=self._dtype)
-        self._data_file.write(np_array.tobytes(order='C'))
+        # write an array
+        np_array = np.array(tensor.numpy(), dtype=self._dtype)  # type transform
+        # bin file
+        self._data_file.write(np_array.tobytes(order='C'))  # write np.array into C stream
+        # idx file
         self._sizes.append(np_array.size)
 
     def merge_file_(self, another_file):
+        """merge sub file(bin/idx) for multi-processing"""
         # Concatenate index
         index = MMapIndexedDataset.Index(index_file_path(another_file))
         assert index.dtype == self._dtype
@@ -736,6 +745,7 @@ class MMapIndexedDatasetBuilder(object):
 
         # Concatenate data
         with open(data_file_path(another_file), 'rb') as f:
+            # append sub-bin/idx files to 1st bin/idx file
             shutil.copyfileobj(f, self._data_file)
 
     def finalize(self, index_file):

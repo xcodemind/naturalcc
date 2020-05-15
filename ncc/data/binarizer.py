@@ -3,7 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from typing import *
+
 import os
+import ujson
 from collections import Counter
 
 import torch
@@ -23,7 +26,7 @@ class Binarizer:
     @staticmethod
     def binarize(
             filename,
-            dict,
+            dict,  # Ditionary
             consumer,
             tokenize,
             append_eos=True,

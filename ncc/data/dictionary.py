@@ -14,6 +14,7 @@ import itertools
 import torch
 from .binarizer import safe_readline
 from . import data_utils
+from . import constants
 from ncc.utils.file_io import PathManager
 from ncc.utils import tokenizer
 
@@ -23,11 +24,12 @@ class Dictionary(object):
 
     def __init__(
             self,
-            pad="<pad>",
-            eos="</s>",
-            unk="<unk>",
-            bos="<s>",
+            pad=constants.PAD,
+            eos=constants.EOS,
+            unk=constants.UNK,
+            bos=constants.BOS,
             extra_special_symbols=None,
+            attr: str = None,  # special attribute may need extra_special_symbols
     ):
         self.unk_word, self.pad_word, self.eos_word = unk, pad, eos
         self.symbols = []
@@ -40,7 +42,15 @@ class Dictionary(object):
         if extra_special_symbols:
             for s in extra_special_symbols:
                 self.add_symbol(s)
+        self._attr_special_symbols(attr)
         self.nspecial = len(self.symbols)
+
+    def _attr_special_symbols(self, attr: str = None):
+        if attr is None:
+            return
+        elif attr == 'path':
+            for s in constants.PATH_SEPS:
+                self.add_symbol(s, overwrite=False)
 
     def __eq__(self, other):
         return self.indices == other.indices
@@ -186,7 +196,7 @@ class Dictionary(object):
         return self.unk_index
 
     @classmethod
-    def load(cls, f):
+    def load(cls, f, attr: str = None):
         """Loads the dictionary from a text file with the format:
 
         ```
@@ -195,7 +205,7 @@ class Dictionary(object):
         ...
         ```
         """
-        d = cls()
+        d = cls(attr=attr)
         d.add_from_file(f)
         return d
 
@@ -287,7 +297,7 @@ class Dictionary(object):
     def encode_line(
             self,
             line,
-            line_tokenizer=tokenizer.tokenize_string,
+            line_tokenizer,
             add_if_not_exist=True,
             consumer=None,
             append_eos=True,
@@ -316,36 +326,9 @@ class Dictionary(object):
 
     @staticmethod
     def _add_file_to_dictionary_single_worker(
-            filename: str, tokenize: Any, dict_num: int,
+            filename: str, tokenize: Any,
             eos_word: Optional[str], worker_id: int = 0, num_workers: int = 1
-    ) -> List[Counter]:
-        counters = [Counter() for _ in range(dict_num)]
-        with open(PathManager.get_local_path(filename), "r", encoding="utf-8") as f:
-            size = os.fstat(f.fileno()).st_size
-            chunk_size = size // num_workers
-            offset = worker_id * chunk_size
-            end = offset + chunk_size
-            f.seek(offset)
-            if offset > 0:
-                safe_readline(f)  # drop first incomplete line
-            line = f.readline()
-            while line:
-                token_lists = tokenize(line)
-                if dict_num == 1:
-                    token_lists = [token_lists]
-                for idx, tokens in enumerate(token_lists):
-                    counters[idx].update(tokens)
-                    if eos_word is not None:
-                        counters[idx].update([eos_word])
-                if f.tell() > end:
-                    break
-                line = f.readline()
-        return counters
-
-    @staticmethod
-    def _add_jsonfile_to_dictionary_single_worker(
-            filename, tokenize, eos_word, worker_id=0, num_workers=1
-    ):
+    ) -> Counter:
         counter = Counter()
         with open(PathManager.get_local_path(filename), "r", encoding="utf-8") as f:
             size = os.fstat(f.fileno()).st_size
@@ -357,52 +340,21 @@ class Dictionary(object):
                 safe_readline(f)  # drop first incomplete line
             line = f.readline()
             while line:
-                # TODO: ujson
-                for word in tokenize(line):
-                    counter.update([word])
-                # counter.update([eos_word])
+                tokens = tokenize(line)
+                counter.update(tokens)
+                if eos_word is not None:
+                    counter.update([eos_word])
                 if f.tell() > end:
                     break
                 line = f.readline()
         return counter
 
     @staticmethod
-    def _add_listfile_to_dictionary_single_worker(
-            filename, path_part, tokenize, eos_word, worker_id=0, num_workers=1
-    ):
-        counter = Counter()
-        with open(PathManager.get_local_path(filename), "r", encoding="utf-8") as f:
-            size = os.fstat(f.fileno()).st_size
-            chunk_size = size // num_workers
-            offset = worker_id * chunk_size
-            end = offset + chunk_size
-            f.seek(offset)
-            if offset > 0:
-                safe_readline(f)  # drop first incomplete line
-            line = f.readline()
-            while line:
-                # TODO: ujson
-                border_words, center_words = tokenize(line)
-                if path_part == 'border':
-                    for word in border_words:
-                        counter.update([word])
-                elif path_part == 'center':
-                    for word in center_words:
-                        counter.update([word])
-                # counter.update([eos_word])
-                if f.tell() > end:
-                    break
-                line = f.readline()
-        return counter
+    def add_file_to_dictionary(filename: str, dict, tokenize: Any, eos_word: Optional[str], num_workers: int):
+        def merge_result(counter: Counter):
+            for w, c in sorted(counter.items()):
+                dict.add_symbol(w, c)
 
-    @staticmethod
-    def add_file_to_dictionary(filename: str, dicts: List, tokenize: Any, eos_word: Optional[str], num_workers: int):
-        def merge_result(counters: List[Counter]):
-            for idx in range(len(dicts)):
-                for w, c in sorted(counters[idx].items()):
-                    dicts[idx].add_symbol(w, c)
-
-        dict_num = len(dicts)
         if num_workers > 1:
             pool = Pool(processes=num_workers)
             results = []
@@ -410,8 +362,7 @@ class Dictionary(object):
                 results.append(
                     pool.apply_async(
                         Dictionary._add_file_to_dictionary_single_worker,
-                        (filename, tokenize, dict_num,
-                         eos_word, worker_id, num_workers),
+                        (filename, tokenize, eos_word, worker_id, num_workers),
                     )
                 )
             pool.close()
@@ -421,61 +372,7 @@ class Dictionary(object):
         else:
             merge_result(
                 Dictionary._add_file_to_dictionary_single_worker(
-                    filename, tokenize, dict_num, eos_word
-                )
-            )
-
-    @staticmethod
-    def add_jsonfile_to_dictionary(filename, dict, tokenize, num_workers):
-        def merge_result(counter):
-            for w, c in sorted(counter.items()):
-                dict.add_symbol(w, c)
-
-        if num_workers > 1:
-            pool = Pool(processes=num_workers)
-            results = []
-            for worker_id in range(num_workers):
-                results.append(
-                    pool.apply_async(
-                        Dictionary._add_jsonfile_to_dictionary_single_worker,
-                        (filename, tokenize, dict.eos_word, worker_id, num_workers),
-                    )
-                )
-            pool.close()
-            pool.join()
-            for r in results:
-                merge_result(r.get())
-        else:
-            merge_result(
-                Dictionary._add_jsonfile_to_dictionary_single_worker(
-                    filename, tokenize, dict.eos_word
-                )
-            )
-
-    @staticmethod
-    def add_listfile_to_dictionary(filename, dict, path_part, tokenize, num_workers):
-        def merge_result(counter):
-            for w, c in sorted(counter.items()):
-                dict.add_symbol(w, c)
-
-        if num_workers > 1:
-            pool = Pool(processes=num_workers)
-            results = []
-            for worker_id in range(num_workers):
-                results.append(
-                    pool.apply_async(
-                        Dictionary._add_listfile_to_dictionary_single_worker,
-                        (filename, path_part, tokenize, dict.eos_word, worker_id, num_workers),
-                    )
-                )
-            pool.close()
-            pool.join()
-            for r in results:
-                merge_result(r.get())
-        else:
-            merge_result(
-                Dictionary._add_listfile_to_dictionary_single_worker(
-                    filename, path_part, tokenize, dict.eos_word
+                    filename, tokenize, eos_word
                 )
             )
 

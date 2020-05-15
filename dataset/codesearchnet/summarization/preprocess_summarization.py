@@ -26,6 +26,7 @@ from ncc.utils import (
     utils, tokenizer
 )
 from ncc import LOGGER
+from copy import deepcopy
 
 
 def train_path(args, lang):
@@ -44,19 +45,11 @@ def file_name(prefix, lang):
 # dictionary functions
 ######################################################################
 
-def dict_path(args: Dict, modality: str) -> List[str]:
+def dict_path(args: Dict, modality: str) -> str:
     """Get vocab token file. This file is not dictionary file. Dictionary file will be written later."""
 
     def _default_path():
-        if modality == 'path':
-            dict_path = [
-                os.path.join(os.path.join(args['preprocess']['destdir'], 'dict.{}_border.txt'.format(modality))),
-                os.path.join(os.path.join(args['preprocess']['destdir'], 'dict.{}_center.txt'.format(modality))),
-            ]
-        else:
-            dict_path = [
-                os.path.join(os.path.join(args['preprocess']['destdir'], 'dict.{}.txt'.format(modality)))
-            ]
+        dict_path = os.path.join(os.path.join(args['preprocess']['destdir'], 'dict.{}.txt'.format(modality)))
         return dict_path
 
     if '{}_dict'.format(modality) in args['preprocess']:
@@ -76,7 +69,7 @@ def build_dictionary(args: Dict, task, modality: str, filenames, src=False, tgt=
     return task.build_dictionary(
         filenames,
         modality=modality,
-        tokenize_func=tokenizer.CSN_tokinzer(modality),
+        tokenize_func=tokenizer.CSN_tokenizer(modality),
         workers=args['preprocess']['workers'],
         threshold=args['preprocess']['thresholdsrc'] if src else args['preprocess']['thresholdtgt'],
         nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
@@ -86,27 +79,17 @@ def build_dictionary(args: Dict, task, modality: str, filenames, src=False, tgt=
 
 def load_dict(args: Dict, task, modality: str, overwrite: bool):
     """load dict from (default) dictionary file path. if not exit, load from raw data and save it at default path"""
-    dict_filenames = dict_path(args, modality)
-    all_file_exit = all([os.path.exists(filename) for filename in dict_filenames])
-    if all_file_exit and (not overwrite):
-        LOGGER.info('Dict({}) exists and overwrite=False, skip this.'.format(dict_filenames))
-        dicts = [
-            Dictionary.load(filename)
-            for filename in dict_filenames
-        ]
-        if len(dicts) == 1:
-            dicts = dicts[0]
+    dict_filename = dict_path(args, modality)
+    if os.path.exists(dict_filename) and (not overwrite):
+        LOGGER.info('Dict({}) exists and overwrite=False, skip this.'.format(dict_filename))
+        dict = Dictionary.load(dict_filename, attr=modality)
     else:
         # update dict from data
-        dicts = build_dictionary(args, task, modality, [train_path(args, modality)], src=True)
+        dict = build_dictionary(args, task, modality, [train_path(args, modality)], src=True)
         # save dict
-        LOGGER.info('Save dict(s) for {} in {}.'.format(modality, dict_filenames))
-        if isinstance(dicts, Dictionary) and len(dict_filenames) == 1:
-            dicts.save(dict_filenames[0])
-        else:
-            for dict_filename, dict in zip(dict_filenames, dicts):
-                dict.save(dict_filename)
-    return dicts
+        LOGGER.info('Save dict(s) for {} in {}.'.format(modality, dict_filename))
+        dict.save(dict_filename)
+    return dict
 
 
 def build_vocab_dict(args: Dict, overwrite: bool = False):
@@ -115,8 +98,8 @@ def build_vocab_dict(args: Dict, overwrite: bool = False):
     task = tasks.get_task(args['preprocess']['task'])
     src_dicts = OrderedDict()
     assert args['preprocess']['trainpref'], RuntimeError('Build vocabularies from train dataset, but it is null.')
-    for modality in args['preprocess']['source_lang']:
-        src_dicts[modality] = load_dict(args, task, modality, overwrite)
+    for modal in args['preprocess']['source_lang']:
+        src_dicts[modal] = load_dict(args, task, modal, overwrite)
     return src_dicts
 
 
@@ -149,7 +132,7 @@ def binarize(args, filename, vocab, output_prefix, lang, offset, end, append_eos
     def consumer(tensor):
         ds.add_item(tensor)
 
-    res = Binarizer.binarize(filename, vocab, consumer, tokenize=tokenizer.tokenize_list,
+    res = Binarizer.binarize(filename, vocab, consumer, tokenize=tokenizer.CSN_tokenizer(lang),
                              append_eos=append_eos, offset=offset, end=end)
     ds.finalize(dataset_dest_file(args, output_prefix, lang, extension="idx"))
     return res
@@ -171,14 +154,14 @@ def make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_work
         n_seq_tok[0] += worker_result["nseq"]
         n_seq_tok[1] += worker_result["ntok"]
 
-    input_file = "{}{}".format(
-        input_prefix, ("." + lang) if lang is not None else ""
-    )
+    input_file = '{}.{}'.format(input_prefix, lang)
     # split a file into different parts
     # if use multi-processing, we first process 2nd to last file
+    # 1.txt -> 10 processor, 0(p0)(0-99), 100(p1)(100-199), ...
     offsets = Binarizer.find_offsets(input_file, num_workers)
     pool = None
     if num_workers > 1:
+        # p1-pN -> (1 bin-txt, 1 idx), (N bin-txt, N idx)
         pool = Pool(processes=num_workers - 1)
         for worker_id in range(1, num_workers):
             prefix = "{}{}".format(output_prefix, worker_id)
@@ -197,21 +180,24 @@ def make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_work
             )
         pool.close()
     # process 1th file, if multi-processing available. If not, process all file
+    # p0 -> 0,end
     ds_file = dataset_dest_file(args, output_prefix, lang, extension='bin')
     ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(vocab))
     merge_result(
         Binarizer.binarize(
             input_file, vocab, lambda t: ds.add_item(t),
-            tokenize=tokenizer.tokenize_list, offset=0, end=offsets[1]
+            tokenize=tokenizer.CSN_tokenizer(lang), offset=0, end=offsets[1]
         )
     )
     if num_workers > 1:
+        # p1-pN
         pool.join()
         # merge sub-processors' index and data files into final files and delete them.
         for worker_id in range(1, num_workers):
             prefix = "{}{}".format(output_prefix, worker_id)
             temp_file_path = dataset_dest_prefix(args, prefix, lang)
             ds.merge_file_(temp_file_path)
+            # idx, txt
             os.remove(indexed_dataset.data_file_path(temp_file_path))
             os.remove(indexed_dataset.index_file_path(temp_file_path))
 
@@ -265,15 +251,14 @@ def build_dataset(args: Dict, dicts: Dict[str, Dictionary]):
     """build dataset for modal"""
     for modal, dict in dicts.items():
         LOGGER.info('Building dataset for {}'.format(modal))
-        if modal == 'path':
-            make_all(args, modal, dict)
+        make_all(args, modal, dict)
 
 
 def main(args):
     LOGGER.info('mkdir for {} task'.format(args['preprocess']['task']))
     os.makedirs(args['preprocess']['destdir'], exist_ok=True)
-    src_dicts = build_vocab_dict(args, overwrite=False)
-    build_dataset(args, src_dicts)
+    dicts = build_vocab_dict(args, overwrite=False)
+    build_dataset(args, dicts)
 
 
 def cli_main():

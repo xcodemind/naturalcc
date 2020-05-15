@@ -6,6 +6,7 @@ from copy import deepcopy
 
 from dataset.codesearchnet.utils import constants
 from dataset.codesearchnet.utils import util
+from ncc.data.constants import PAD
 
 # ignore those ast whose size is too large. Therefore set it as a small number
 sys.setrecursionlimit(constants.RECURSION_DEPTH)  # recursion depth
@@ -103,7 +104,7 @@ def split_and_pad_token(token: str, MAX_TOKEN_LIST_LEN: int, to_lower: bool = Tr
     return tokens
 
 
-def pad_leaf_node(ast_tree: Dict, MAX_LEN: int, to_lower: bool = True, PAD_TOKEN: str = constants.PAD_WORD) -> Dict:
+def pad_leaf_node(ast_tree: Dict, MAX_LEN: int, to_lower: bool = True, PAD_TOKEN: str = PAD) -> Dict:
     '''
     pad leaf node's child into [XX, [XX, ...]]
     :param ast_tree:

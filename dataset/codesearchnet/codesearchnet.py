@@ -10,12 +10,12 @@ import zipfile
 import glob
 import gzip
 import shutil
-import numpy as np
 import json
 import ujson
+import itertools
+import numpy as np
 from copy import deepcopy
 from tree_sitter import Language
-from tqdm import tqdm
 
 from dataset.codesearchnet.utils import constants
 from dataset.codesearchnet.utils import util
@@ -26,6 +26,8 @@ from dataset.codesearchnet.parser import CodeParser
 # from ncc.multiprocessing import mpool
 from ncc.multiprocessing import ppool
 from ncc import LOGGER
+
+PATH = ['head', 'body', 'tail']
 
 
 class CodeSearchNet(object):
@@ -346,6 +348,15 @@ class CodeSearchNet(object):
         reader = open(raw_ast_file, 'r')
         writers = {}
         for modal, modal_file in new_tree_modal_files.items():
+            if modal == 'path':
+                # path =[[head], [body], [tail]] -> head, body, tail
+                # for path modal, we save it as whole, and at the same time, save it as apart
+                # add an extra border file composed of head and tail for head/tail dictionary
+                for path_modal in PATH + ['border']:
+                    path_dir, path_filename = os.path.split(modal_file)
+                    path_modal_dir = os.path.join(path_dir, path_modal)
+                    os.makedirs(path_modal_dir, exist_ok=True)
+                    writers[path_modal] = open(os.path.join(path_modal_dir, path_filename), 'w')
             writers[modal] = open(modal_file, 'w')
 
         data_line = reader.readline().strip()
@@ -362,11 +373,17 @@ class CodeSearchNet(object):
                 if 'path' in writers:
                     copy_raw_ast = deepcopy(raw_ast)
                     path = util_path.ast_to_path(copy_raw_ast, MAX_PATH=constants.MAX_AST_PATH_NUM)
-                    writers['path'].write(ujson.dumps(path) + '\n')
+                    writers['path'].write(ujson.dumps(path) + '\n')  # save path as whole
+                    # save path as separate
+                    head, body, tail = zip(*path)
+                    border = head + tail
+                    writers['border'].write(ujson.dumps(list(itertools.chain(*border))) + '\n')
+                    for path_modal, path_data in zip(PATH, [head, body, tail]):
+                        writers[path_modal].write(ujson.dumps(path_data) + '\n')
                 if ('sbt' in writers) or ('sbtao' in writers):
                     # sbt
                     copy_raw_ast = deepcopy(raw_ast)
-                    padded_raw_ast = util_ast.pad_leaf_node(copy_raw_ast, MAX_SUB_TOKEN_LEN)
+                    padded_raw_ast = util_ast.pad_leaf_node(copy_raw_ast, MAX_SUB_TOKEN_LEN, to_lower=False)
                     copy_padded_raw_ast = deepcopy(padded_raw_ast) if ('sbt' in writers) and ('sbtao' in writers) \
                         else padded_raw_ast
                     if 'sbt' in writers:
@@ -379,7 +396,7 @@ class CodeSearchNet(object):
                         writers['sbtao'].write(ujson.dumps(sbt) + '\n')
                 if 'bin_ast' in writers:
                     # ast
-                    bin_ast = util_ast.parse_base(raw_ast)
+                    bin_ast = util_ast.pad_leaf_node(util_ast.parse_base(raw_ast), MAX_SUB_TOKEN_LEN, to_lower=False)
                     writers['bin_ast'].write(ujson.dumps(bin_ast) + '\n')
             data_line = reader.readline().strip()
         reader.close()
@@ -460,13 +477,22 @@ class CodeSearchNet(object):
         for lng in lngs:
             self.parse_new_tree_modalities(lng, modalities, overwrite)
 
-    def merge_attr_files(self, lngs: Union[List, str, None] = None):
+    def merge_attr_files(self, lngs: Union[List, str, None] = None, attrs: Optional[List] = None):
         lngs = self._lngs_init(lngs)
         for lng in lngs:
             for mode in constants.MODES:
                 src_dir = os.path.join(self._FLATTEN_DIR, lng, mode)
-                attrs = [dir for dir in os.listdir(src_dir) if os.path.isdir(os.path.join(src_dir, dir))]
+                if attrs is None:
+                    attrs = [dir for dir in os.listdir(src_dir) if os.path.isdir(os.path.join(src_dir, dir))]
                 for attr in attrs:
+                    if attr == 'path':
+                        # merge head/body/tail data
+                        for path_modal in PATH + ['border']:
+                            src_files = sorted(glob.glob(os.path.join(src_dir, attr, path_modal, '*.txt')))
+                            dst_file = os.path.join(self._FLATTEN_DIR, lng, '{}.{}'.format(mode, path_modal))
+                            cmd = 'cat {} > {}'.format(' '.join(src_files), dst_file)
+                            LOGGER.info(cmd)
+                            os.system(cmd)
                     src_files = sorted(glob.glob(os.path.join(src_dir, attr, '*.txt')))
                     dst_file = os.path.join(self._FLATTEN_DIR, lng, '{}.{}'.format(mode, attr))
                     cmd = 'cat {} > {}'.format(' '.join(src_files), dst_file)
@@ -477,6 +503,10 @@ class CodeSearchNet(object):
         self.pool.close()
 
 
+__all__ = (
+    CodeSearchNet, PATH,
+)
+
 if __name__ == '__main__':
     from multiprocessing import cpu_count
 
@@ -484,7 +514,12 @@ if __name__ == '__main__':
     # download neccesary files
     dataset = CodeSearchNet(download=True, thread_num=cpu_count())
     # flatten raw files separately
-    dataset.flatten_data_all(overwrite=True)
+    # dataset.flatten_data_all(overwrite=True)
     # # parse raw_ast into other new tree modalities
-    dataset.parse_new_tree_modalities_all(overwrite=True)
-    dataset.merge_attr_files()
+    # dataset.parse_new_tree_modalities_all(overwrite=True)
+    # dataset.merge_attr_files()
+
+    lng = 'ruby'
+    # dataset.flatten_data(lng, overwrite=True)
+    # dataset.parse_new_tree_modalities(lng, modalities=['path'], overwrite=True)
+    dataset.merge_attr_files(lng)
