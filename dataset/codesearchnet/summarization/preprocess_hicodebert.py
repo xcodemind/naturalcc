@@ -36,10 +36,14 @@ CLS = '<CLS>'
 # except:
 #     from dataset.codesearchnet.summarization.preprocess_helper import insert_sep_tokens
 
-
+# train_path is for build dictionary. Currently, we only insert <S_SEP> to code modality
 def train_path(args, lang):
+    # if lang in args['preprocess']['source_lang']:
     if args['preprocess']['inserted']:
-        return "{}_inserted{}".format(args['preprocess']['trainpref'], ("." + lang) if lang else "")
+        if lang == 'code':
+            return "{}_inserted{}".format(args['preprocess']['trainpref'], ("." + lang) if lang else "")
+        else:
+            return "{}{}".format(args['preprocess']['trainpref'], ("." + lang) if lang else "")
     else:
         return "{}{}".format(args['preprocess']['trainpref'], ("." + lang) if lang else "")
 
@@ -54,20 +58,21 @@ def file_name(prefix, lang, inserted=False):
 ######################################################################
 # dictionary functions
 ######################################################################
-
+# TODO: 可以简化一下，我们目前就假设path只有一个dictionary
 def dict_path(args: Dict, modality: str) -> List[str]:
     """Get vocab token file. This file is not dictionary file. Dictionary file will be written later."""
 
     def _default_path():
-        if modality == 'path':
-            dict_path = [
-                os.path.join(os.path.join(args['preprocess']['destdir'], 'dict.{}_border.txt'.format(modality))),
-                os.path.join(os.path.join(args['preprocess']['destdir'], 'dict.{}_center.txt'.format(modality))),
-            ]
-        else:
-            dict_path = [
-                os.path.join(os.path.join(args['preprocess']['destdir'], 'dict.{}.txt'.format(modality)))
-            ]
+        # if modality == 'path':
+        #     dict_path = [
+        #         os.path.join(os.path.join(args['preprocess']['destdir'], 'dict.{}_border.txt'.format(modality))),
+        #         os.path.join(os.path.join(args['preprocess']['destdir'], 'dict.{}_center.txt'.format(modality))),
+        #     ]
+        # else:
+        #     dict_path = [
+        #         os.path.join(os.path.join(args['preprocess']['destdir'], 'dict.{}.txt'.format(modality)))
+        #     ]
+        dict_path = os.path.join(os.path.join(args['preprocess']['destdir'], 'dict.{}.txt'.format(modality)))
         return dict_path
 
     if '{}_dict'.format(modality) in args['preprocess']:
@@ -92,30 +97,25 @@ def build_dictionary(args, task, modality, filenames, src=False, tgt=False):
         padding_factor=args['preprocess']['padding_factor'],
     )
 
-
-def load_dict(args: Dict, task, modality: str, overwrite: bool):
-    """load dict from (default) dictionary file path. if not exit, load from raw data and save it at default path"""
-    dict_filenames = dict_path(args, modality)
-    all_file_exit = all([os.path.exists(filename) for filename in dict_filenames])
-    if all_file_exit and (not overwrite):
-        LOGGER.info('Dict({}) exists and overwrite=False, skip this.'.format(dict_filenames))
-        dicts = [
-            Dictionary.load(filename)
-            for filename in dict_filenames
-        ]
-        if len(dicts) == 1:
-            dicts = dicts[0]
-    else:
-        # update dict from data
-        dicts = build_dictionary(args, task, modality, [train_path(args, modality)], src=True)
-        # save dict
-        LOGGER.info('Save dict(s) for {} in {}.'.format(modality, dict_filenames))
-        if isinstance(dicts, Dictionary) and len(dict_filenames) == 1:
-            dicts.save(dict_filenames[0])
-        else:
-            for dict_filename, dict in zip(dict_filenames, dicts):
-                dict.save(dict_filename)
-    return dicts
+# 这个名字没取好，经常很难理解，而且save操作也不应该放在这里，所以就不抽象出来了
+# def load_dict(args: Dict, task, modality: str, overwrite: bool):
+#     """load dict from (default) dictionary file path. if not exit, load from raw data and save it at default path"""
+#     dict_filenames = dict_path(args, modality)
+#     all_file_exit = all([os.path.exists(filename) for filename in dict_filenames])
+#     if all_file_exit and (not overwrite):
+#         LOGGER.info('Dict({}) exists and overwrite=False, skip this.'.format(dict_filenames))
+#         # dicts = [
+#         #     Dictionary.load(filename)
+#         #     for filename in dict_filenames
+#         # ]
+#         dicts = task.load_dictionaries(dict_filenames)
+#         if len(dicts) == 1:
+#             dicts = dicts[0]
+#     else:
+#         # update dict from data
+#         dicts = build_dictionary(args, task, modality, [train_path(args, modality)], src=True)
+#
+#     return dicts
 
 
 def build_vocab_dict(args: Dict, overwrite: bool = False):
@@ -124,9 +124,64 @@ def build_vocab_dict(args: Dict, overwrite: bool = False):
     task = tasks.get_task(args['preprocess']['task'])
     src_dicts = OrderedDict()
     assert args['preprocess']['trainpref'], RuntimeError('Build vocabularies from train dataset, but it is null.')
-    for modality in args['preprocess']['source_lang']:
-        src_dicts[modality] = load_dict(args, task, modality, overwrite)
-    return src_dicts
+    target = not args['preprocess']['only_source']
+
+    # for joined dictionary
+    if args['preprocess']['joined_dictionary']:
+        for modality in args['preprocess']['source_lang']:
+            # src_dicts[modality] = load_dict(args, task, modality, overwrite)
+            # dict_filenames = dict_path(args, modality)
+            # all_file_exit = all([os.path.exists(filename) for filename in dict_filenames])
+            # if all_file_exit and (not overwrite):
+            dict_filename = dict_path(args, modality)
+            if dict_filename and (not overwrite):
+                LOGGER.info('Dict({}) exists and overwrite=False, skip this.'.format(dict_filename))
+                src_dicts[modality] = task.load_dictionary(dict_filename)
+                # if len(dicts) == 1:
+                #     dicts = dicts[0]
+            else:
+                # build dictionary from source_lang and target_lang
+                src_dicts[modality] = build_dictionary(args, task, modality, {train_path(args, modality) for modality in args['preprocess']['source_lang']+[args['preprocess']['target_lang']]}, src=True)
+
+        # the tgt_dict equals
+        tgt_dict = src_dicts['code'] if 'code' in src_dicts else None
+        # tgt_dict = src_dicts.values()[-1]
+
+    else:
+        for modality in args['preprocess']['source_lang']:
+            # src_dicts[modality] = load_dict(args, task, modality, overwrite)
+            dict_filename = dict_path(args, modality)
+            # all_file_exit = all([os.path.exists(filename) for filename in dict_filenames])
+            # if all_file_exit and (not overwrite):
+            if dict_filename and (not overwrite):
+                LOGGER.info('Dict({}) exists and overwrite=False, skip this.'.format(dict_filename))
+                src_dicts[modality] = task.load_dictionary(dict_filename)
+                # if len(dicts) == 1:
+                #     dicts = dicts[0]
+            else:
+                # update dict from data
+                src_dicts[modality] = build_dictionary(args, task, modality, {train_path(args, modality)}, src=True)
+
+        if target:
+            # tgt_dict = load_dict(args, task, args['preprocess']['target_lang'], overwrite)
+            tgt_dict = build_dictionary(args, task, args['preprocess']['target_lang'], {train_path(args, modality)}, src=True)
+        else:
+            tgt_dict = None
+
+    # save src dict
+    for modality, src_dict in src_dicts.items():
+        dict_filename = dict_path(args, modality)
+        LOGGER.info('Save dict(s) for {} in {}.'.format(modality, dict_filename))
+        # if isinstance(dicts, Dictionary) and len(dict_filenames) == 1:
+        #     dicts.save(dict_filenames[0])
+        # else:
+        #     for dict_filename, dict in zip(dict_filenames, dicts):
+        #         dict.save(dict_filename)
+        src_dict.save(dict_filename)
+    # save tgt dict
+    tgt_dict.save(dict_path(args, args['preprocess']['target_lang']))
+
+    return src_dicts, tgt_dict
 
 
 ######################################################################
@@ -248,13 +303,15 @@ def make_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers=1):
                                      # + ".{}-{}".format(args['preprocess']['source_lang'], args['preprocess']['target_lang'])
                                      lang,
                                      )
-        if lang == 'code':
-            #     insert <S_SEP> to .code files has been conducted in the first stage
-            shutil.copyfile(file_name(input_prefix, lang, inserted=args['preprocess']['inserted']), output_text_file)
+        if lang == 'docstring':  # since docstring did't be inserted <S_SEP>, therefore the inserted should be set to False
+            shutil.copyfile(file_name(input_prefix, lang, inserted=False), output_text_file)
         else:
             shutil.copyfile(file_name(input_prefix, lang, inserted=args['preprocess']['inserted']), output_text_file)
     else:
-        make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers, inserted=args['preprocess']['inserted'])
+        if lang == 'docstring':
+            make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers, inserted=False)
+        else:
+            make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers, inserted=args['preprocess']['inserted'])
 
 
 def make_all(args, lang, vocab):
@@ -271,16 +328,19 @@ def make_all(args, lang, vocab):
             make_dataset(args, vocab, testpref, outprefix, lang, num_workers=args['preprocess']['workers'])
 
 
-def build_dataset(args: Dict, dicts: Dict[str, Dictionary]):
+def build_dataset(args: Dict, src_dicts: Dict[str, Dictionary], tgt_dict: Dictionary):
     """build dataset for modal"""
-    for modality, dict in dicts.items():
+    for modality, src_dict in src_dicts.items():
         LOGGER.info('Building dataset for {}'.format(modality))
-        if modality == 'path':
-            make_all(args, modality, dict)
-        elif modality == 'code':
-            make_all(args, modality, dict)
-        else:
-            make_all(args, modality, dict)
+        # if modality == 'path':
+        #     make_all(args, modality, src_dict)
+        # elif modality == 'code':
+        #     make_all(args, modality, src_dict)
+        # else:
+        make_all(args, modality, src_dict)
+    target = not args['preprocess']['only_source']
+    if target:
+        make_all(args, args['preprocess']['target_lang'], tgt_dict)
 
 
 def insert_sep_token(args, input_prefix, output_prefix, lang):
@@ -317,9 +377,9 @@ def main(args):
         insert_sep_token(args, args['preprocess']['testpref'], 'test_inserted', 'code')
 
     # 1. build vocabulary
-    src_dicts = build_vocab_dict(args, overwrite=True)
+    src_dicts, tgt_dict = build_vocab_dict(args, overwrite=True)
     # 2. build dataset
-    build_dataset(args, src_dicts)
+    build_dataset(args, src_dicts, tgt_dict)
 
 
 def cli_main():
