@@ -8,9 +8,9 @@ from typing import List, Union, Any
 import re
 import ujson
 import itertools
+from ncc.data.constants import PAD
 
 SPACE_NORMALIZER = re.compile(r"\s+")
-PAD_WORD = '<PAD>'
 
 
 def tokenize_string(line: str) -> List[str]:
@@ -33,23 +33,38 @@ def tokenize_tree(line: str) -> List[str]:
     for node_info in line.values():
         if type(node_info['children'][-1]) == list:
             for token in node_info['children'][-1]:
-                if token != PAD_WORD:
+                if token != PAD:
                     leaf_node_tokens.append(token)
                 else:
                     break
     return leaf_node_tokens
 
 
-def tokenize_path(line: str):
-    """load path's border and center tokens"""
+def tokenize_border(line: str) -> List[str]:
+    """process head/tail of path line"""
     line = ujson.loads(line)
-    head_list, center_list, tail_list = zip(*line)
-    border_list = head_list + tail_list
-    border_list, center_list, = map(
-        lambda lst: itertools.chain(*lst),
-        (border_list, center_list,)
-    )
-    return border_list, center_list
+    head, tail = line
+    line = itertools.chain(*(head + tail))
+    return line
+
+
+def tokenize_body(line: str) -> List[str]:
+    """process body of path line"""
+    line = ujson.loads(line)
+    line = itertools.chain(*line)
+    return line
+
+
+# def tokenize_path(line: str):
+#     """load path's border and center tokens"""
+#     line = ujson.loads(line)
+#     head_list, center_list, tail_list = zip(*line)
+#     border_list = head_list + tail_list
+#     border_list, center_list, = map(
+#         lambda lst: itertools.chain(*lst),
+#         (border_list, center_list,)
+#     )
+#     return border_list, center_list
 
 
 def CSN_tokinzer(modal: str):
@@ -77,23 +92,25 @@ def CSN_tokinzer(modal: str):
         return tokenize_list
     elif modal in ['bin_ast', 'raw_ast', ]:
         return tokenize_tree
-    elif modal == 'path':
-        return tokenize_path
+    elif modal == 'body':
+        return tokenize_body
+    elif modal == 'border':
+        return tokenize_list
     else:
         raise NotImplementedError
 
 
-def tokinzer_returns(func: Any) -> int:
-    """return the number of a tokenizer function's return values"""
-    if func in [tokenize_path, ]:
-        return 2
-    elif func in [tokenize_string, tokenize_list, tokenize_path]:
-        return 1
-    else:
-        raise NotImplementedError('No such function in {}'.format(__file__))
+# def tokinzer_returns(func: Any) -> int:
+#     """return the number of a tokenizer function's return values"""
+#     if func in [tokenize_path, ]:
+#         return 2
+#     elif func in [tokenize_string, tokenize_list, tokenize_multi_list, ]:
+#         return 1
+#     else:
+#         raise NotImplementedError('No such function in {}'.format(__file__))
 
 
 __all__ = (
     CSN_tokinzer,
-    tokinzer_returns,
+    # tokinzer_returns,
 )
