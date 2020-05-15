@@ -4,7 +4,7 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
+# comand: python -m dataset.codesearchnet.summarization.multiprocessing_wordpiece_encoder --inputs ~/.ncc/CodeSearchNet/flatten/ruby/train.code --model-prefix ~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/wordpiece_bpe/codesearchnet --outputs ~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/codesearchnet.train.bpe --keep-empty --format piece --vocab-size 50000 --insert --workers 40
 import argparse
 import contextlib
 import sys
@@ -21,7 +21,8 @@ import re
 from ncc.data import constants
 
 def build_model(input, model_prefix, vocab_size):
-    spm.SentencePieceTrainer.Train('--input={} --model_prefix={} --vocab_size={}'.format(input, model_prefix, vocab_size))
+    spm.SentencePieceTrainer.Train('--input={} --model_prefix={} --vocab_size={} --user_defined_symbols={},{}'.format(input, model_prefix, vocab_size, constants.CLS, constants.S_SEP))
+    # spm.SentencePieceTrainer.Train('--input={} --model_prefix={} --vocab_size={}'.format(input, model_prefix, vocab_size))
 
 
 def insert_sep_token(input_file):
@@ -125,6 +126,7 @@ class MultiprocessingEncoder(object):
 
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser()
     # parser.add_argument(
     #     "--encoder-json",
@@ -176,10 +178,22 @@ if __name__ == "__main__":
     )
     parser.add_argument("--workers", type=int, default=20)
     args = parser.parse_args()
+
+    # sp = spm.SentencePieceProcessor()
+    # sp.Load('{}.model'.format(args.model_prefix))
+    # s= "13 23 24 6 3 21 237 12 203 4 204 11 5 6 7 3 537 4 204 10 2707 4 204 12 203 4 204 8 207 11 5 6 7 3 2063 4 204 12 203 4 204 11 5 6 7 3 299 5 6 7 3 528 5 6 7 3 2063 4 204 12 1069 4 204 11 5 6 7 3 15 22"
+    # txt = sp.decode_ids([int(i) for i in s.split(' ')])
+    # print (txt)
+    # sys.exit()
+
+
     input_file = args.inputs[0]
 
     if args.insert:
         insert_sep_token(input_file)
     if 'train' in input_file:  # only build wordpiece model on train files
         build_model(input_file + '_inserted', args.model_prefix, args.vocab_size)
+        args.inputs = [input + '_inserted' for input in args.inputs]
+    # build_model(input_file, args.model_prefix, args.vocab_size)
+
     main(args)
