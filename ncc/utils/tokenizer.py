@@ -15,6 +15,13 @@ from ncc.data.constants import (
 
 SPACE_NORMALIZER = re.compile(r"\s+")
 
+# For compatibility
+def tokenize_line(line: str) -> List[str]:
+    """split string by regrex [\s+]"""
+    line = SPACE_NORMALIZER.sub(" ", line)
+    line = line.strip()
+    return line.split()
+
 
 def tokenize_string(line: str) -> List[str]:
     """split string by regrex [\s+]"""
@@ -119,8 +126,8 @@ def CSN_tokenizer(modal: str):
 #         raise NotImplementedError('No such function in {}'.format(__file__))
 
 
-__all__ = (
-    tokenize_string, tokenize_list, tokenize_tree, tokenize_path,
-    CSN_tokenizer,
-    # tokinzer_returns,
-)
+# __all__ = (
+#     'tokenize_line', 'tokenize_string', 'tokenize_list', 'tokenize_tree', 'tokenize_path',
+#     'CSN_tokenizer',
+#     # tokinzer_returns,
+# )

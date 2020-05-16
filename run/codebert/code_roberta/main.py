@@ -292,7 +292,7 @@ def cli_main():
     # assert False
     print('args_: ', type(args_))
     # args = run_init(args.yaml, args=None)
-    yaml_file = os.path.join(sys.path[0], args_.yaml)
+    yaml_file = os.path.join(os.path.dirname(__file__), args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
 

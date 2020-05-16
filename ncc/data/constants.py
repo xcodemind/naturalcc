@@ -15,6 +15,7 @@ SNT_SEPS = [S_SEP, CLS]
 # for path
 H_SEP = '<H_SEP>'
 T_SEP = '<T_SEP>'
+P_SEP = '<P_SEP>'
 PATH_SEPS = [H_SEP, T_SEP, S_SEP]
 
 __all__ = [

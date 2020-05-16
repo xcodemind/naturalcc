@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import logging
 import os
 import numpy as np
 from ncc.data import data_utils
@@ -20,41 +19,13 @@ from ncc.tasks.fairseq_task import FairseqTask
 from ncc.tasks import register_task
 from ncc.data.encoders.utils import get_whole_word_mask
 from ncc.utils import utils
-# from ncc.data.tokenizer.tokenization_roberta import RobertaTokenizer
 from ncc.data.dictionary import Dictionary
 from ncc import LOGGER
-# logger = logging.getLogger(__name__)
 
 
-@register_task('masked_lm')
-class MaskedLMTask(FairseqTask):
+@register_task('masked_code_docstring')
+class MaskedCodeDocstringTask(FairseqTask):
     """Task for training masked language models (e.g., BERT, RoBERTa)."""
-
-    # @staticmethod
-    # def add_args(parser):
-    #     """Add task-specific arguments to the parser."""
-    #     parser.add_argument('data', help='colon separated path to data directories list, \
-    #                         will be iterated upon during epochs in round-robin manner')
-    #     parser.add_argument('--sample-break-mode', default='complete',
-    #                         choices=['none', 'complete', 'complete_doc', 'eos'],
-    #                         help='If omitted or "none", fills each sample with tokens-per-sample '
-    #                              'tokens. If set to "complete", splits samples only at the end '
-    #                              'of sentence, but may include multiple sentences per sample. '
-    #                              '"complete_doc" is similar but respects doc boundaries. '
-    #                              'If set to "eos", includes only one sentence per sample.')
-    #     parser.add_argument('--tokens-per-sample', default=512, type=int,
-    #                         help='max number of total tokens over all segments '
-    #                              'per sample for BERT dataset')
-    #     parser.add_argument('--mask-prob', default=0.15, type=float,
-    #                         help='probability of replacing a token with mask')
-    #     parser.add_argument('--leave-unmasked-prob', default=0.1, type=float,
-    #                         help='probability that a masked token is unmasked')
-    #     parser.add_argument('--random-token-prob', default=0.1, type=float,
-    #                         help='probability of replacing a token with a random token')
-    #     parser.add_argument('--freq-weighted-replacement', default=False, action='store_true',
-    #                         help='sample random replacement words based on word frequencies')
-    #     parser.add_argument('--mask-whole-words', default=False, action='store_true',
-    #                         help='mask whole words; you may also want to set --bpe')
 
     def __init__(self, args, dictionary):
         super().__init__(args)
@@ -72,22 +43,6 @@ class MaskedLMTask(FairseqTask):
         LOGGER.info('dictionary: {} types'.format(len(dictionary)))
         return cls(args, dictionary)
 
-    # def build_model(self, args, config):
-    #     """
-    #     Build the :class:`~fairseq.models.BaseFairseqModel` instance for this
-    #     task.
-    #
-    #     Args:
-    #         args (argparse.Namespace): parsed command-line arguments
-    #
-    #     Returns:
-    #         a :class:`~fairseq.models.BaseFairseqModel` instance
-    #     """
-    #     from ncc import models
-    #     # assert 0
-    #     args['model']['arch'] = '{}_{}'.format(args['model']['arch'], args['common']['task'])
-    #     return models.build_model(args, config, self)
-
     def load_dataset_raw(self, split, epoch=1, combine=False, **kwargs):
         paths = utils.split_paths(self.args['task']['data'])
         assert len(paths) > 0
@@ -104,6 +59,7 @@ class MaskedLMTask(FairseqTask):
         # )
         dataset = data_utils.load_indexed_dataset(
             path=split_path,
+            modality='text',
             dictionary=self.source_dictionary,
             tokenizer=None,  # the tokenizer is only for huggingface
             dataset_impl=self.args['dataset']['dataset_impl'],
@@ -207,10 +163,18 @@ class MaskedLMTask(FairseqTask):
         # split_path = os.path.join(data_path, split)
         split_path = os.path.join(data_path, '{}.code.bpe'.format(split))
 
+        # dataset = data_utils.load_indexed_dataset(
+        #     split_path,
+        #     dictionary=self.source_dictionary,
+        #     self.args['dataset']['dataset_impl'],
+        #     combine=combine,
+        # )
         dataset = data_utils.load_indexed_dataset(
-            split_path,
-            self.source_dictionary,
-            self.args['dataset']['dataset_impl'],
+            path=split_path,
+            modality='text',
+            dictionary=self.source_dictionary,
+            tokenizer=None,  # the tokenizer is only for huggingface
+            dataset_impl=self.args['dataset']['dataset_impl'],
             combine=combine,
         )
         if dataset is None:

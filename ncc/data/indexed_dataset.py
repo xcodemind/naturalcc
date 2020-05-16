@@ -15,7 +15,7 @@ from .fairseq_dataset import FairseqDataset
 from tokenizers import ByteLevelBPETokenizer
 from tokenizers.processors import BertProcessing
 import ujson
-
+from ncc.utils import tokenizer
 
 def __best_fitting_dtype(vocab_size=None):
     if vocab_size is not None and vocab_size < 65500:
@@ -54,6 +54,7 @@ def make_builder(out_file, impl, vocab_size=None):
 def make_dataset(path, impl, modality='text', fix_lua_indexing=False, dictionary=None, tokenizer=None):
     if impl == 'raw' and IndexedRawTextDataset.exists(path):
         assert dictionary is not None
+        print('modality: ', modality)
         if modality == 'path':
             print('dictionary: ', dictionary)
             return IndexedRawPathDataset(path, dictionary)
@@ -257,7 +258,7 @@ class IndexedRawTextDataset(FairseqDataset):
             for line in f:
                 self.lines.append(line.strip('\n'))
                 tokens = dictionary.encode_line(
-                    line, add_if_not_exist=False,
+                    line, tokenizer.tokenize_line, add_if_not_exist=False,
                     append_eos=self.append_eos, reverse_order=self.reverse_order,
                 ).long()
                 self.tokens_list.append(tokens)

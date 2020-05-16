@@ -73,6 +73,7 @@ def collate_paths(values, pad_idx, eos_idx=None, left_pad=False, move_eos_to_beg
             copy_tensor(v, res[i][j][size - len(v):] if left_pad else res[i][:len(v)])
     return res
 
+
 def load_indexed_dataset(path, modality='text', dictionary=None, tokenizer=None, dataset_impl=None, combine=False, default='cached'):
     """A helper function for loading indexed datasets.
 
@@ -97,6 +98,8 @@ def load_indexed_dataset(path, modality='text', dictionary=None, tokenizer=None,
         dataset_impl_k = dataset_impl
         if dataset_impl_k is None:
             dataset_impl_k = indexed_dataset.infer_dataset_impl(path_k)
+
+        # def make_dataset(path, impl, modality='text', fix_lua_indexing=False, dictionary=None, tokenizer=None):
 
         dataset = indexed_dataset.make_dataset(
             path_k,

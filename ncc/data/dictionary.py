@@ -16,7 +16,7 @@ from ncc.data.binarizer import safe_readline
 from ncc.data import data_utils
 from ncc.data import constants
 from ncc.utils.file_io import PathManager
-# from ncc.utils import tokenizer
+from ncc.utils import tokenizer # import tokenize_line
 
 
 class Dictionary(object):
@@ -284,19 +284,46 @@ class Dictionary(object):
         t[-1] = self.eos()
         return t
 
+    # def encode_line(
+    #         self,
+    #         line,
+    #         line_tokenizer,
+    #         add_if_not_exist=True,
+    #         consumer=None,
+    #         append_eos=True,
+    #         reverse_order=False,
+    # ):
+    #     if line_tokenizer:
+    #         words = line_tokenizer(line)
+    #     else:
+    #         words = line
+    #     if reverse_order:
+    #         words = list(reversed(words))
+    #     nwords = len(words)
+    #     ids = torch.IntTensor(nwords + 1 if append_eos else nwords)
+    #
+    #     for i, word in enumerate(words):
+    #         if add_if_not_exist:
+    #             idx = self.add_symbol(word)
+    #         else:
+    #             idx = self.index(word)
+    #         if consumer is not None:
+    #             consumer(word, idx)
+    #         ids[i] = idx
+    #     if append_eos:
+    #         ids[nwords] = self.eos_index
+    #     return ids
+
     def encode_line(
-            self,
-            line,
-            line_tokenizer,
-            add_if_not_exist=True,
-            consumer=None,
-            append_eos=True,
-            reverse_order=False,
+        self,
+        line,
+        line_tokenizer, # =tokenizer.tokenize_line
+        add_if_not_exist=True,
+        consumer=None,
+        append_eos=True,
+        reverse_order=False,
     ):
-        if line_tokenizer:
-            words = line_tokenizer(line)
-        else:
-            words = line
+        words = line_tokenizer(line)
         if reverse_order:
             words = list(reversed(words))
         nwords = len(words)
