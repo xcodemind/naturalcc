@@ -348,15 +348,15 @@ class CodeSearchNet(object):
         reader = open(raw_ast_file, 'r')
         writers = {}
         for modal, modal_file in new_tree_modal_files.items():
-            if modal == 'path':
-                # path =[[head], [body], [tail]] -> head, body, tail
-                # for path modal, we save it as whole, and at the same time, save it as apart
-                # add an extra border file composed of head and tail for head/tail dictionary
-                for path_modal in PATH + ['border']:
-                    path_dir, path_filename = os.path.split(modal_file)
-                    path_modal_dir = os.path.join(path_dir, path_modal)
-                    os.makedirs(path_modal_dir, exist_ok=True)
-                    writers[path_modal] = open(os.path.join(path_modal_dir, path_filename), 'w')
+            # if modal == 'path':
+            #     # path =[[head], [body], [tail]] -> head, body, tail
+            #     # for path modal, we save it as whole, and at the same time, save it as apart
+            #     # add an extra border file composed of head and tail for head/tail dictionary
+            #     for path_modal in PATH + ['border']:
+            #         path_dir, path_filename = os.path.split(modal_file)
+            #         path_modal_dir = os.path.join(path_dir, path_modal)
+            #         os.makedirs(path_modal_dir, exist_ok=True)
+            #         writers[path_modal] = open(os.path.join(path_modal_dir, path_filename), 'w')
             writers[modal] = open(modal_file, 'w')
 
         data_line = reader.readline().strip()
@@ -372,14 +372,15 @@ class CodeSearchNet(object):
             else:
                 if 'path' in writers:
                     copy_raw_ast = deepcopy(raw_ast)
-                    path = util_path.ast_to_path(copy_raw_ast, MAX_PATH=constants.MAX_AST_PATH_NUM)
+                    path = util_path.ast_to_path(copy_raw_ast, MAX_PATH=constants.MAX_AST_PATH_NUM,
+                                                 to_lower=False, split=False)
                     writers['path'].write(ujson.dumps(path) + '\n')  # save path as whole
-                    # save path as separate
-                    head, body, tail = zip(*path)
-                    border = head + tail
-                    writers['border'].write(ujson.dumps(list(itertools.chain(*border))) + '\n')
-                    for path_modal, path_data in zip(PATH, [head, body, tail]):
-                        writers[path_modal].write(ujson.dumps(path_data) + '\n')
+                    # # save path as separate
+                    # head, body, tail = zip(*path)
+                    # border = head + tail
+                    # writers['border'].write(ujson.dumps(list(itertools.chain(*border))) + '\n')
+                    # for path_modal, path_data in zip(PATH, [head, body, tail]):
+                    #     writers[path_modal].write(ujson.dumps(path_data) + '\n')
                 if ('sbt' in writers) or ('sbtao' in writers):
                     # sbt
                     copy_raw_ast = deepcopy(raw_ast)
@@ -485,14 +486,6 @@ class CodeSearchNet(object):
                 if attrs is None:
                     attrs = [dir for dir in os.listdir(src_dir) if os.path.isdir(os.path.join(src_dir, dir))]
                 for attr in attrs:
-                    if attr == 'path':
-                        # merge head/body/tail data
-                        for path_modal in PATH + ['border']:
-                            src_files = sorted(glob.glob(os.path.join(src_dir, attr, path_modal, '*.txt')))
-                            dst_file = os.path.join(self._FLATTEN_DIR, lng, '{}.{}'.format(mode, path_modal))
-                            cmd = 'cat {} > {}'.format(' '.join(src_files), dst_file)
-                            LOGGER.info(cmd)
-                            os.system(cmd)
                     src_files = sorted(glob.glob(os.path.join(src_dir, attr, '*.txt')))
                     dst_file = os.path.join(self._FLATTEN_DIR, lng, '{}.{}'.format(mode, attr))
                     cmd = 'cat {} > {}'.format(' '.join(src_files), dst_file)
@@ -521,5 +514,5 @@ if __name__ == '__main__':
 
     lng = 'ruby'
     # dataset.flatten_data(lng, overwrite=True)
-    # dataset.parse_new_tree_modalities(lng, modalities=['path'], overwrite=True)
-    dataset.merge_attr_files(lng)
+    dataset.parse_new_tree_modalities(lng, modalities=['path'], overwrite=True)
+    dataset.merge_attr_files(lng, attrs=['path'])

@@ -6,7 +6,7 @@ import os
 import re
 import ujson
 import shutil
-from multiprocessing import Pool
+import itertools
 
 from ncc import LOGGER
 from ncc.utils import tokenizer
@@ -16,6 +16,7 @@ from ncc.data import (
     indexed_dataset,
 )
 from ncc.data.binarizer import Binarizer
+from ncc.multiprocessing import mreader
 
 
 def train_path(args, lang):
@@ -230,3 +231,23 @@ def make_all(args: Dict, attr: str, dict: Dictionary, modes: Optional[List] = No
         file_prefix = args['preprocess']['{}pref'.format(mode)]
         if file_prefix:
             make_dataset(args, dict, file_prefix, mode, attr, num_workers=args['preprocess']['workers'])
+
+
+def path_special_symbols(files: List[str]) -> Set:
+    """get special symbols of path for bert bpe encoding"""
+    special_symbols = set()
+
+    def path_body_tokens(line: str, *args, **kwargs):
+        line = ujson.loads(line.strip())
+        paths = line[len(constants.CLS):].split(constants.S_SEP)
+        body = [tokenizer.tokenize_string(
+            re.split(r'{}|{}'.format(constants.H_SEP, constants.T_SEP), path)[1]
+        ) for path in paths]
+        return set(itertools.chain(*body))
+
+    for file in files:
+        print(file)
+        mtokens = mreader.readline(file, path_body_tokens)
+        for tokens in itertools.chain(*mtokens):
+            special_symbols.update(tokens)
+    return special_symbols

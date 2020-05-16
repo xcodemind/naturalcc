@@ -9,7 +9,7 @@ import re
 import ujson
 import itertools
 from ncc.data.constants import (
-    H_SEP, T_SEP, P_SEP,
+    H_SEP, T_SEP,
     PAD, CLS, S_SEP,
 )
 
