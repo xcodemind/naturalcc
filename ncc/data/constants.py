@@ -18,6 +18,9 @@ T_SEP = '<T_SEP>'
 P_SEP = '<P_SEP>'
 PATH_SEPS = [H_SEP, T_SEP, S_SEP]
 
+# sentencepiece space tag for bep encoding
+SP_SPACE = '▁'
+
 __all__ = [
     'MODES',
     'PAD', 'EOS', 'UNK', 'BOS',

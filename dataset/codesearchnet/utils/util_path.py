@@ -8,6 +8,10 @@ from . import constants
 from typing import Dict
 import re
 import itertools
+from ncc.data.constants import (
+    CLS, S_SEP, H_SEP, T_SEP
+)
+from random import shuffle
 
 MAX_PATH_LENTH = 8
 MAX_PATH_WIDTH = 2
@@ -70,46 +74,33 @@ def __raw_tree_paths(ast, node_index=constants.ROOT_NODE_NAME, ):
     return tree_paths
 
 
-def __delim_name(name):
-    def camel_case_split(identifier):
-        matches = re.finditer(
-            '.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)',
-            identifier,
-        )
-        return [m.group(0) for m in matches]
-
-    blocks = []
-    for underscore_block in name.split('_'):
-        blocks.extend(camel_case_split(underscore_block))
-
-    return '|'.join(block.lower() for block in blocks)
-
-
-def __collect_sample(ast: Dict, MAX_PATH: int, ):
-    tree_paths = __raw_tree_paths(ast, )
+def __collect_sample(ast: Dict, MAX_PATH: int, to_lower: bool, split: bool):
+    tree_paths = __raw_tree_paths(ast)
     contexts = []
     for tree_path in tree_paths:
         start, connector, finish = tree_path
 
-        # start, finish = __delim_name(start), __delim_name(finish)
-        new_start, new_finish = [str.lower(token) for token in util.split_identifier(start)], \
-                                [str.lower(token) for token in util.split_identifier(finish)]
+        if split:
+            start = [str.lower(token) if to_lower else token for token in util.split_identifier(start)]
+            start = ' '.join(start)
+            finish = [str.lower(token) if to_lower else token for token in util.split_identifier(finish)]
+            finish = ' '.join(finish)
 
-        connector = [ast[v]['node'] for v in connector]
-
-        if len(start) > 0 and len(connector) > 0 and len(finish) > 0:
-            contexts.append([new_start, connector, new_finish])
-        else:
-            # LOGGER.error(tree_path)
-            pass
+        connector = ' '.join([ast[v]['node'] for v in connector])
+        # contexts.append([start, connector, finish])  # append a path
+        contexts.append(' '.join([start, H_SEP, connector, T_SEP, finish]))
     try:
         assert len(contexts) > 0, Exception('ast\'s path is None')
-        return contexts[:MAX_PATH]
+        if len(contexts) > MAX_PATH:
+            shuffle(contexts)
+            contexts = contexts[:MAX_PATH]
+        contexts = CLS + ' ' + ' {} '.format(S_SEP).join(contexts)
+        return contexts
     except Exception as err:
         print(err)
         print(ast)
         return None
 
 
-def ast_to_path(ast_tree: Dict, MAX_PATH: int):
-    return __collect_sample(ast_tree, MAX_PATH)
+def ast_to_path(ast_tree: Dict, MAX_PATH: int, to_lower: bool, split: bool = True):
+    return __collect_sample(ast_tree, MAX_PATH, to_lower, split)
