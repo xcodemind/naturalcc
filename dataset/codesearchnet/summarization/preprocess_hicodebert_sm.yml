@@ -37,17 +37,17 @@ preprocess:
   destdir: ~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin #", metavar="DIR", default="data-bin", help="destination dir"
   thresholdtgt: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
   thresholdsrc: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
-  tgtdict: ~ # /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/data-bin/dict.comment.txt # ", metavar="FP", help="reuse given target dictionary"
-  srcdict: ~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/wordpiece_bpe/codesearchnet.vocab
+  tgtdict: ~ # ~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/wordpiece_bpe/codesearchnet_joined.vocab # /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/data-bin/dict.comment.txt # ", metavar="FP", help="reuse given target dictionary"
+  srcdict: ~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/wordpiece_bpe/codesearchnet_joined_fairseq.vocab
 #  codedict: ~ # /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/data-bin/dict.code.txt #", metavar="FP", help="reuse given source dictionary"
 #  pathdict: ~
 #  astdict: ~
   nwordstgt: -1 #", metavar="N", default=-1, type=int, help="number of target words to retain"
   nwordssrc: -1 #", metavar="N", default=-1, type=int, help="number of source words to retain"
   alignfile: ~ #", metavar="ALIGN", default=None, help="an alignment file (optional)"
-  dataset_impl: raw #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
-  joined_dictionary: 0 # ", action="store_true", help="Generate joined dictionary"
+  dataset_impl: mmap # raw #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
+  joined_dictionary: 1 # ", action="store_true", help="Generate joined dictionary"
   only_source: 0 # ", action="store_true", help="Only process the source language"
   padding_factor: 8 #", metavar="N", default=8, type=int, help="Pad dictionary size to be multiple of N"
-  workers: 1 # ", metavar="N", default=1, type=int, help="number of parallel workers"
+  workers: 10 # ", metavar="N", default=1, type=int, help="number of parallel workers"
   inserted: 1

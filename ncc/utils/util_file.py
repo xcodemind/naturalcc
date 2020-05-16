@@ -29,6 +29,10 @@ def load_yaml(yaml_file: str) -> Dict:
         for key, value in args['preprocess'].items():
             if isinstance(value, str) and value.startswith('~/'):
                 args['preprocess'][key] = os.path.expanduser(value)
+            if isinstance(value, list):
+                for i, val in enumerate(value):
+                    if val.startswith('~/'):
+                        value[i] = os.path.expanduser(val)
     return args
 
 
