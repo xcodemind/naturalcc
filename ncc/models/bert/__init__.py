@@ -10,7 +10,7 @@
 from .model import *
 from .modeling_bert import BertModel
 from .modeling_roberta import RobertaModel
-
+from .codebert_unilm import *
 
 __all__ = [
     'BertModel',

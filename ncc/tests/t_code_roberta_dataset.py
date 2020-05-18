@@ -118,7 +118,8 @@ if __name__ == '__main__':
         # input_feeding=dataset.input_feeding,
     )
     print(batch)
-    model(batch['net_input'])
+    # model(*batch)
+    model(batch['input_ids'], batch['segment_ids'], batch['input_mask'])
     sys.exit()
 
     # data_iter = iter(dataloader)

@@ -20,61 +20,61 @@ import sys
 # SENT_SEP = '<S_SEP>'
 
 
-def find_sep(src, sep_id):
-    sep_pos = []
-    for i, v in enumerate(src):
-        if sep_id == v:
-            sep_pos.append(i)
-    return sep_pos
+# def find_sep(src, sep_id):
+#     sep_pos = []
+#     for i, v in enumerate(src):
+#         if sep_id == v:
+#             sep_pos.append(i)
+#     return sep_pos
 
 
-# tokens are left-padding
-def docs2tensor(docs, pad_idx):
-    doc_sep_pos = map(lambda x: x[1], docs)
-    max_nsent = max(map(len, doc_sep_pos))
-    srcs = map(lambda x: x[0], docs)
-    max_seqlen = max(map(len, srcs))
-    bsz = len(docs)
-    # print('max_nsent', max_nsent)
-    # print('max_seqlen', max_seqlen)
-    src_tokens = torch.LongTensor(bsz, max_seqlen).fill_(pad_idx)
-    doc_pad_mask = torch.ByteTensor(bsz, max_nsent).fill_(1)
-    src_sent_ends = torch.LongTensor(bsz, max_nsent).fill_(0)   # assume default sentence ends (for padding) are 0s
-    for i in range(bsz):
-        src, sep_pos = docs[i]
-        src_tokens[i, 0:len(src)] = src
-        doc_pad_mask[i, 0:len(sep_pos)] = 0
-        src_sent_ends[i, 0:len(sep_pos)] = torch.LongTensor(sep_pos)
-
-    return src_tokens, doc_pad_mask, src_sent_ends
-
-
-def create_src_tok_batch(samples, sep_id, eos_idx, pad_idx):
-    docs = []
-    for sample in samples:
-        src = sample['source']
-        if src[-1] != sep_id:
-            src_len = src.size(0)
-            new_src = src.new(src_len + 1)
-            new_src[0:src_len] = src
-            new_src[-1] = sep_id
-            src = new_src
-
-        sep_pos = find_sep(src, sep_id)
-        docs.append((src, sep_pos))
-
-    return docs2tensor(docs, pad_idx)
+# # tokens are left-padding
+# def docs2tensor(docs, pad_idx):
+#     doc_sep_pos = map(lambda x: x[1], docs)
+#     max_nsent = max(map(len, doc_sep_pos))
+#     srcs = map(lambda x: x[0], docs)
+#     max_seqlen = max(map(len, srcs))
+#     bsz = len(docs)
+#     # print('max_nsent', max_nsent)
+#     # print('max_seqlen', max_seqlen)
+#     src_tokens = torch.LongTensor(bsz, max_seqlen).fill_(pad_idx)
+#     doc_pad_mask = torch.ByteTensor(bsz, max_nsent).fill_(1)
+#     src_sent_ends = torch.LongTensor(bsz, max_nsent).fill_(0)   # assume default sentence ends (for padding) are 0s
+#     for i in range(bsz):
+#         src, sep_pos = docs[i]
+#         src_tokens[i, 0:len(src)] = src
+#         doc_pad_mask[i, 0:len(sep_pos)] = 0
+#         src_sent_ends[i, 0:len(sep_pos)] = torch.LongTensor(sep_pos)
+#
+#     return src_tokens, doc_pad_mask, src_sent_ends
 
 
-def create_target_batch(samples, pad_idx):
-    maxlen = max([len(s['target']) for s in samples])
-    bsz = len(samples)
-    target = torch.LongTensor(bsz, maxlen).fill_(pad_idx)
-    for i, s in enumerate(samples):
-        tgt = s['target']
-        tgt_len = len(tgt)
-        target[i, 0:tgt_len] = tgt
-    return target
+# def create_src_tok_batch(samples, sep_id, eos_idx, pad_idx):
+#     docs = []
+#     for sample in samples:
+#         src = sample['source']
+#         if src[-1] != sep_id:
+#             src_len = src.size(0)
+#             new_src = src.new(src_len + 1)
+#             new_src[0:src_len] = src
+#             new_src[-1] = sep_id
+#             src = new_src
+#
+#         sep_pos = find_sep(src, sep_id)
+#         docs.append((src, sep_pos))
+#
+#     return docs2tensor(docs, pad_idx)
+
+
+# def create_target_batch(samples, pad_idx):
+#     maxlen = max([len(s['target']) for s in samples])
+#     bsz = len(samples)
+#     target = torch.LongTensor(bsz, maxlen).fill_(pad_idx)
+#     for i, s in enumerate(samples):
+#         tgt = s['target']
+#         tgt_len = len(tgt)
+#         target[i, 0:tgt_len] = tgt
+#     return target
 
 
 def collate(samples, src_dict, tgt_dict, left_pad_source=True, left_pad_target=False):
