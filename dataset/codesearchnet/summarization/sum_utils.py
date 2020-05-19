@@ -4,11 +4,16 @@ from typing import *
 
 import os
 import re
+import sys
 import ujson
 import shutil
 import itertools
+import contextlib
+import sentencepiece as spm
+from multiprocessing import Pool, cpu_count
 
 from ncc import LOGGER
+from ncc.data import constants
 from ncc.utils import tokenizer
 from ncc.data import (
     Dictionary,
@@ -27,16 +32,19 @@ def train_path(args, lang):
         return "{}{}".format(args['preprocess']['trainpref'], ("." + lang) if lang else "")
 
 
-def insert_sep_token(src_file: str, tgt_file: str):
-    """insert function"""
-    # insert <S_SEP> to .code files
-    with open(src_file, 'r') as reader:
-        with open(tgt_file, 'w') as writer:
+def insert_sep_token(input_file: str, output_file: Optional[str] = None, overwrite: bool = False):
+    """insert CLS/S_SEP for bert"""
+    if output_file is None:
+        input_file = input_file + '_inserted'
+    if os.path.exists(output_file) and not overwrite:
+        return
+    with open(output_file, 'w') as writer:
+        with open(input_file, 'r') as reader:
             for line in reader.readlines():
                 ln = ujson.loads(line)
                 ln = re.sub('\n\s*\n', '\n', ln)  # remove "\n \n" -> \n
-                ln = ln.replace('\n', constants.S_SEP)
-                ln = constants.CLS + ln  # profix <CLS>
+                ln = ln.replace('\n', ' ' + constants.S_SEP + ' ')  # should be whitespace before and after S_SEP
+                ln = constants.CLS + ' ' + ln  # profix <CLS>, should be whitespace after the CLS
                 writer.write(ujson.dumps(ln) + '\n')
 
 
@@ -251,3 +259,147 @@ def path_special_symbols(files: List[str]) -> Set:
         for tokens in itertools.chain(*mtokens):
             special_symbols.update(tokens)
     return special_symbols
+
+
+def get_special_symbols(args: Dict) -> Optional[List]:
+    """some modality need special symbols"""
+
+    def _special_symbols(args: Dict) -> Optional[Set]:
+        special_symbols = set([constants.CLS])
+        if args.modality in ['code']:
+            special_symbols.update([constants.S_SEP])
+        elif args.modality in ['path']:
+            special_symbols.update([constants.H_SEP, constants.T_SEP, constants.S_SEP])
+            special_symbols.update(path_special_symbols(args.input_files))
+        else:
+            return None
+        return special_symbols
+
+    default_special_symbols_files = os.path.join(args.tgt_dir, args.language, '.{}.ss'.format(args.modality))
+    if os.path.exists(default_special_symbols_files) and (not args.overwrite):
+        with open(default_special_symbols_files, 'r') as reader:
+            special_symbols = [line.rstrip('\n') for line in reader.readlines()]
+    else:
+        special_symbols = _special_symbols(args)
+        if special_symbols is None:
+            return special_symbols
+        with open(default_special_symbols_files, 'w') as writer:
+            for symbol in special_symbols:
+                writer.write(symbol + '\n')
+    return special_symbols
+
+
+def combine_special_symbols(tokens: List, special_symbols: Optional[Set]) -> List:
+    """merge _ and special_symbols, e.g. _ <CLS> => _<CLS>"""
+    if special_symbols is None:
+        return tokens
+    new_tokens = []
+    idx = 0
+    while idx < len(tokens) - 1:
+        if (tokens[idx] == constants.SP_SPACE) and (tokens[idx + 1] in special_symbols):
+            new_tokens.append(tokens[idx] + tokens[idx + 1])
+            idx += 2
+        else:
+            new_tokens.append(tokens[idx])
+            idx += 1
+    if idx == len(tokens):
+        new_tokens.append(tokens[-1])
+    return new_tokens
+
+
+def build_model(file: str, model_name: str, vocab_size: int, special_symbols: Optional[Set] = None,
+                overwrite: bool = False):
+    os.makedirs(os.path.dirname(model_name), exist_ok=True)
+    if os.path.exists('{}.model'.format(model_name)) and os.path.exists('{}.vocab'.format(model_name)) \
+            and not overwrite:
+        return
+    params = '--input={} --model_prefix={} --vocab_size={} --hard_vocab_limit=false'. \
+        format(file, model_name, vocab_size)
+    if special_symbols is not None:
+        params += ' --user_defined_symbols={}'.format(','.join(special_symbols))
+    spm.SentencePieceTrainer.Train(params)
+
+
+class BPEEncoder(object):
+
+    def __init__(self, args):
+        self.args = args
+
+    def initializer(self):
+        global sp
+        # bpe = get_encoder(self.args.encoder_json, self.args.vocab_bpe)
+        sp = spm.SentencePieceProcessor()
+        sp.Load('{}.model'.format(self.args.bpe_model))
+
+    def encode(self, line):
+        global sp
+        if self.args.format == 'id':
+            ids = sp.EncodeAsIds(line)
+            return list(map(str, ids))
+        elif self.args.format == 'piece':
+            pieces = sp.EncodeAsPieces(line)
+            return pieces
+
+    def decode(self, tokens):
+        global sp
+        # return bpe.decode(tokens)
+        if self.args.format == 'id':
+            return sp.DecodeIds(tokens)
+        elif self.args.format == 'piece':
+            return sp.DecodePieces(tokens)
+
+    def encode_lines(self, lines):
+        """
+        Encode a set of lines. All lines will be encoded together.
+        """
+        enc_lines = []
+        for line in lines:
+            line = line.strip()
+            line = ujson.loads(line)
+            if len(line) == 0 and not self.args.keep_empty:
+                return ["EMPTY", None]
+            tokens = self.encode(line)
+            tokens = combine_special_symbols(tokens, self.args.special_symbols)
+            enc_lines.append(" ".join(tokens))
+        return ["PASS", enc_lines]
+
+    def decode_lines(self, lines):
+        dec_lines = []
+        for line in lines:
+            tokens = map(int, line.strip().split())
+            dec_lines.append(self.decode(tokens))
+        return ["PASS", dec_lines]
+
+
+def write_bpe_files(args: Dict, input_file: List[str], output_file: List[str]):
+    assert len(input_file) == len(output_file) == 1, \
+        RuntimeError("number of input and output paths should match with 1")
+
+    with contextlib.ExitStack() as stack:
+        input_files = [
+            stack.enter_context(open(input, "r", encoding="utf-8"))
+            if input != "-" else sys.stdin
+            for input in input_file
+        ]
+        output_files = [
+            stack.enter_context(open(output, "w", encoding="utf-8"))
+            if output != "-" else sys.stdout
+            for output in output_file
+        ]
+
+        encoder = BPEEncoder(args)
+        with Pool(args.workers, initializer=encoder.initializer) as pool:
+            encoded_lines = pool.imap(encoder.encode_lines, zip(*input_files), 100)
+
+            stats = Counter()
+            for i, (filt, enc_lines) in enumerate(encoded_lines, start=1):
+                if filt == "PASS":
+                    for enc_line, output_h in zip(enc_lines, output_files):
+                        print(enc_line, file=output_h)
+                else:
+                    stats["num_filtered_" + filt] += 1
+                if i % 10000 == 0:
+                    print("processed {} lines".format(i), file=sys.stderr)
+
+            for k, v in stats.most_common():
+                print("[{}] filtered {} lines".format(k, v), file=sys.stderr)

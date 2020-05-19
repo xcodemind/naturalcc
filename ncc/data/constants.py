@@ -29,6 +29,9 @@ S2S_BOS = '<S2S_BOS>'
 # sentencepiece space tag for bep encoding
 SP_SPACE = '▁'
 
+# only for code modality in bert
+INSERTED = '_inserted'
+
 # tobe updated
 # __all__ = [
 #     'MODES',
