@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from typing import (
-    List, Dict, Optional, Union
+    List, Dict, Set,
+    Optional, Union
 )
 
 import os
@@ -26,8 +27,6 @@ from dataset.codesearchnet.parser import CodeParser
 # from ncc.multiprocessing import mpool
 from ncc.multiprocessing import ppool
 from ncc import LOGGER
-
-PATH = ['head', 'body', 'tail']
 
 
 class CodeSearchNet(object):
@@ -55,6 +54,18 @@ class CodeSearchNet(object):
     _UNZIP_DIR = 'raw_unzip'  # extracted data
     _FLATTEN_DIR = 'flatten'  # flatten data
     _MAX_SUB_TOKEN_LEN_FILENAME = 'max_sub_token_len.txt'
+
+    def _lngs_init(self, lngs: Union[List, str, None] = None) -> List:
+        if lngs is None:
+            lngs = constants.LANGUAGES
+        elif isinstance(lngs, str):
+            lngs = [lngs]
+        elif isinstance(lngs, list):
+            for lng in lngs:
+                assert lng in constants.LANGUAGES, RuntimeError('{} is not in {}'.format(lng, constants.LANGUAGES))
+        else:
+            raise NotImplementedError('Only None/List/str is available.')
+        return lngs
 
     def __init__(self, root: str = None, download: bool = False,
                  thread_num: int = None):
@@ -211,7 +222,7 @@ class CodeSearchNet(object):
         }
         return raw_start_idx
 
-    def _flatten(self, lng: str, save_attrs: List, raw_file: str, mode: str,
+    def _flatten(self, lng: str, save_attrs: Set, raw_file: str, mode: str,
                  start_idx: int = None) -> int:
 
         def get_idx_filename(raw_filename) -> str:
@@ -221,8 +232,7 @@ class CodeSearchNet(object):
             return idx_filename
 
         if start_idx is not None:
-            save_attrs.append('index')
-        save_attrs = set(save_attrs)
+            save_attrs.add('index')
 
         so_file = os.path.join(self._SO_DIR, '{}.so'.format(lng))
         parser = CodeParser(so_file, lng, to_lower=False)
@@ -242,7 +252,9 @@ class CodeSearchNet(object):
             for attr in self.attrs:
                 if attr not in save_attrs:
                     code_info.pop(attr)
-            code_info['index'] = start_idx  # add index for data
+            if 'index' in save_attrs:
+                code_info['index'] = start_idx  # add index for data
+                start_idx += 1
             if 'tok' in save_attrs:
                 code_info['tok'] = parser.parse_code_tokens(code_info['code_tokens'])
                 if code_info['tok'] is None:
@@ -256,7 +268,8 @@ class CodeSearchNet(object):
                 else:
                     for _, node in code_info['raw_ast'].items():
                         if len(node['children']) == 1:
-                            max_sub_token_len = max(max_sub_token_len, len(util.split_identifier(node['children'][0])))
+                            max_sub_token_len = max(max_sub_token_len,
+                                                    len(util.split_identifier(node['children'][0])))
                 MAX_SUB_TOKEN_LEN = max(MAX_SUB_TOKEN_LEN, max_sub_token_len)
             if 'comment' in save_attrs:
                 code_info['comment'] = parser.parse_comment(code_info['docstring'], code_info['docstring_tokens'])
@@ -264,11 +277,12 @@ class CodeSearchNet(object):
                     code_info['comment'] = code_info['docstring_tokens']
             if 'method' in save_attrs:
                 code_info['method'] = parser.parse_method(code_info['func_name'])
+            if 'docstring' in save_attrs:
+                code_info['docstring'] = code_info['docstring'].split('\n')[0]
             # write
             for key, entry in code_info.items():
                 writers[key].write(ujson.dumps(entry) + '\n')
 
-            start_idx += 1
             data_line = reader.readline().strip()
         return MAX_SUB_TOKEN_LEN
 
@@ -283,13 +297,15 @@ class CodeSearchNet(object):
             return excluded_attrs
 
         if save_attrs is None:
-            save_attrs = ['code', 'code_tokens', 'docstring', 'docstring_tokens', 'func_name', 'original_string', ]
+            save_attrs = ['code', 'code_tokens', 'docstring', 'docstring_tokens',
+                          'func_name', 'original_string', 'index']
         else:
             # if save_attrs is set, then check
             excluded_attrs = _check_attrs_valid()
             if len(excluded_attrs) > 0:
                 raise RuntimeError('{} Dataset do not include attributes:{}.'.format(
                     self.__class__.__name__, excluded_attrs))
+        save_attrs = set(save_attrs)
         """
         1) [method] is sequence modal of [func_name]
         2) [raw_ast] is ast modal of [code]
@@ -298,13 +314,13 @@ class CodeSearchNet(object):
         ** if [tok] or [comment] is None, use [code_tokens] or [docstring_tokens] as alternative
         """
         if 'func_name' in save_attrs:
-            save_attrs.append('method')
+            save_attrs.add('method')
         if 'code' in save_attrs:
-            save_attrs.append('raw_ast')
+            save_attrs.add('raw_ast')
         if ('code' in save_attrs) and ('code_tokens' in save_attrs):
-            save_attrs.append('tok')
+            save_attrs.add('tok')
         if ('docstring' in save_attrs) and ('docstring_tokens' in save_attrs):
-            save_attrs.append('comment')
+            save_attrs.add('comment')
 
         def _check_flatten_files_exist():
             """a simple check method"""
@@ -322,24 +338,29 @@ class CodeSearchNet(object):
         if not overwrite and _check_flatten_files_exist():
             return
 
-        start_idx = self._get_start_idx(lng)
-
         params = []
+        if 'index' in save_attrs:
+            start_idx = self._get_start_idx(lng)
+        else:
+            start_idx = {mode: itertools.repeat(None) for mode in constants.MODES}
         for mode in constants.MODES:
             for data_file, id in zip(self.raw_files[lng][mode], start_idx[mode]):
                 params.append((lng, save_attrs, data_file, mode, id,))
         # max_sub_token_len = self._flatten(*params[0])
         max_sub_token_len = self.pool.feed(func=self._flatten, params=params, )
-        max_sub_token_len = max(max_sub_token_len)
-        # write max_sub_token_len for bin-ast
-        max_sub_token_len_filename = os.path.join(self._FLATTEN_DIR, lng, self._MAX_SUB_TOKEN_LEN_FILENAME)
-        with open(max_sub_token_len_filename, 'w') as writer:
-            writer.write(str(max_sub_token_len))
-        LOGGER.info('Save flatten data and {}\'s max sub-token info in {}'.format(
-            lng, os.path.join(self._FLATTEN_DIR, lng)))
 
-    def flatten_data_all(self, save_attrs: List = None, overwrite: bool = False):
-        for lng in constants.LANGUAGES:
+        if 'code' in save_attrs:
+            max_sub_token_len = max(max_sub_token_len)
+            # write max_sub_token_len for bin-ast
+            max_sub_token_len_filename = os.path.join(self._FLATTEN_DIR, lng, self._MAX_SUB_TOKEN_LEN_FILENAME)
+            with open(max_sub_token_len_filename, 'w') as writer:
+                writer.write(str(max_sub_token_len))
+            LOGGER.info('Save flatten data and {}\'s max sub-token info in {}'.format(
+                lng, os.path.join(self._FLATTEN_DIR, lng)))
+
+    def flatten_data_all(self, lngs: Union[List, str, None] = None, save_attrs: List = None, overwrite: bool = False):
+        lngs = self._lngs_init(lngs)
+        for lng in lngs:
             self.flatten_data(lng, save_attrs, overwrite)
 
     @staticmethod
@@ -397,7 +418,8 @@ class CodeSearchNet(object):
                         writers['sbtao'].write(ujson.dumps(sbt) + '\n')
                 if 'bin_ast' in writers:
                     # ast
-                    bin_ast = util_ast.pad_leaf_node(util_ast.parse_base(raw_ast), MAX_SUB_TOKEN_LEN, to_lower=False)
+                    bin_ast = util_ast.pad_leaf_node(util_ast.parse_base(raw_ast), MAX_SUB_TOKEN_LEN,
+                                                     to_lower=False)
                     writers['bin_ast'].write(ujson.dumps(bin_ast) + '\n')
             data_line = reader.readline().strip()
         reader.close()
@@ -455,22 +477,8 @@ class CodeSearchNet(object):
                     modal_file = os.path.join(modal_dir, os.path.split(file)[-1])
                     new_tree_files[modal] = modal_file
                 params.append((file, new_tree_files, MAX_SUB_TOKEN_LEN,))
-        # this may cause out of memory error because of recursion in ast processing, therefore we use single processor
         # self._parse_new_tree_modalities(*params[1])
-        # for param in params:
-        #     self._parse_new_tree_modalities(*param)
         self.pool.feed(func=CodeSearchNet._parse_new_tree_modalities, params=params, )
-
-    def _lngs_init(self, lngs: Union[List, str, None] = None) -> List:
-        if lngs is None:
-            lngs = constants.LANGUAGES
-        elif isinstance(lngs, str):
-            lngs = [lngs]
-        elif isinstance(lngs, list):
-            pass
-        else:
-            raise NotImplementedError('Only None/List/str is available.')
-        return lngs
 
     def parse_new_tree_modalities_all(self, lngs: Union[List, str, None] = None, modalities: Optional[List] = None, \
                                       overwrite: bool = False):
@@ -497,22 +505,5 @@ class CodeSearchNet(object):
 
 
 __all__ = (
-    CodeSearchNet, PATH,
+    'CodeSearchNet',
 )
-
-if __name__ == '__main__':
-    from multiprocessing import cpu_count
-
-    print(os.getpid())
-    # download neccesary files
-    dataset = CodeSearchNet(download=True, thread_num=cpu_count())
-    # flatten raw files separately
-    # dataset.flatten_data_all(overwrite=True)
-    # # parse raw_ast into other new tree modalities
-    # dataset.parse_new_tree_modalities_all(overwrite=True)
-    # dataset.merge_attr_files()
-
-    lng = 'ruby'
-    # dataset.flatten_data(lng, overwrite=True)
-    dataset.parse_new_tree_modalities(lng, modalities=['path'], overwrite=True)
-    dataset.merge_attr_files(lng, attrs=['path'])
