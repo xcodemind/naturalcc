@@ -6,9 +6,6 @@
 RoBERTa: A Robustly Optimized BERT Pretraining Approach.
 """
 import sys
-
-import logging
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -17,17 +14,13 @@ from ncc.utils import utils
 from ncc.models import (
     FairseqLanguageModel,
     register_model,
-    register_model_architecture,
+    # register_model_architecture,
 )
 from ncc.modules.summarization.fairseq_decoder import FairseqDecoder
-from ncc.modules import (
-    LayerNorm,
-    TransformerSentenceEncoder,
-)
-from ncc.modules.transformer_sentence_encoder import init_bert_params
-
-from .hub_interface import RobertaHubInterface
-
+from ncc.modules.layer_norm import LayerNorm
+from ncc.modules.codebert.unilm_transformer_sentence_encoder import init_bert_params
+from ncc.modules.codebert.unilm_transformer_sentence_encoder import UnilmTransformerSentenceEncoder
+from ncc.models.bert.hub_interface import RobertaHubInterface
 from ncc import LOGGER
 
 
@@ -67,7 +60,7 @@ class CodeBertUnilmModel(FairseqLanguageModel):
         return cls(args, encoder)
 
     def forward_(self, src_tokens, features_only=False, return_all_hiddens=False, classification_head_name=None,
-                **kwargs):
+                 **kwargs):
         if classification_head_name is not None:
             features_only = True
 
@@ -77,9 +70,10 @@ class CodeBertUnilmModel(FairseqLanguageModel):
             x = self.classification_heads[classification_head_name](x)
         return x, extra
 
-    def forward(self, input_ids, segment_ids, input_mask, lm_label_ids=None, is_next=None):
+    def forward(self, src_tokens, segment_labels, attention_mask, mask_qkv=None, **kwargs):
         print('forward...')
-        pass
+        sequence_output, pooled_output = self.decoder(src_tokens, segment_labels, attention_mask,
+                                                      output_all_encoded_layers=False, mask_qkv=mask_qkv, **kwargs)
 
     def register_classification_head(self, name, num_classes=None, inner_dim=None, **kwargs):
         """Register a classification head."""
@@ -266,7 +260,7 @@ class RobertaEncoder(FairseqDecoder):
         #         traceable: bool = False,
         # ) -> None:
         #
-        self.sentence_encoder = TransformerSentenceEncoder(
+        self.sentence_encoder = UnilmTransformerSentenceEncoder(
             padding_idx=dictionary.pad(),
             vocab_size=len(dictionary),
             num_encoder_layers=args['model']['encoder_layers'],
@@ -290,7 +284,8 @@ class RobertaEncoder(FairseqDecoder):
             weight=self.sentence_encoder.embed_tokens.weight,
         )
 
-    def forward(self, src_tokens, features_only=False, return_all_hiddens=False, masked_tokens=None, **unused):
+    def forward(self, src_tokens, segment_labels, attention_mask, features_only=False, return_all_hiddens=False,
+                masked_tokens=None, **unused):
         """
         Args:
             src_tokens (LongTensor): input tokens of shape `(batch, src_len)`
@@ -307,14 +302,15 @@ class RobertaEncoder(FairseqDecoder):
                   is a list of hidden states. Note that the hidden
                   states have shape `(src_len, batch, vocab)`.
         """
-        x, extra = self.extract_features(src_tokens, return_all_hiddens=return_all_hiddens)
+        x, extra = self.extract_features(src_tokens, segment_labels, attention_mask,
+                                         return_all_hiddens=return_all_hiddens)
         if not features_only:
             x = self.output_layer(x, masked_tokens=masked_tokens)
         return x, extra
 
-    def extract_features(self, src_tokens, return_all_hiddens=False, **unused):
+    def extract_features(self, src_tokens, segment_labels, attention_mask, return_all_hiddens=False, **unused):
         inner_states, _ = self.sentence_encoder(
-            src_tokens,
+            src_tokens, segment_labels, attention_mask,
             last_state_only=not return_all_hiddens,
         )
         features = inner_states[-1].transpose(0, 1)  # T x B x C -> B x T x C

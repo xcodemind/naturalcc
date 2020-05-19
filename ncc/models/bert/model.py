@@ -20,10 +20,12 @@ from ncc.models import (
     register_model_architecture,
 )
 from ncc.modules.summarization.fairseq_decoder import FairseqDecoder
-from ncc.modules import (
-    LayerNorm,
-    TransformerSentenceEncoder,
-)
+# from ncc.modules import (
+#     LayerNorm,
+#     TransformerSentenceEncoder,
+# )
+from ncc.modules.layer_norm import LayerNorm
+from ncc.modules.transformer_sentence_encoder import TransformerSentenceEncoder
 from ncc.modules.transformer_sentence_encoder import init_bert_params
 
 from .hub_interface import RobertaHubInterface

@@ -117,9 +117,12 @@ if __name__ == '__main__':
         left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
         # input_feeding=dataset.input_feeding,
     )
+    torch.cuda.set_device(0)
+    # batch.cuda()
+    model.cuda()
     print(batch)
     # model(*batch)
-    model(batch['input_ids'], batch['segment_ids'], batch['input_mask'])
+    model(batch['net_input']['input_ids'].cuda(), batch['net_input']['segment_ids'].cuda(), batch['net_input']['input_mask'].cuda())
     sys.exit()
 
     # data_iter = iter(dataloader)

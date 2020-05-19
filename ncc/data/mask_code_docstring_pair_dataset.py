@@ -113,13 +113,20 @@ def collate(samples, src_dict, tgt_dict, left_pad_source=True, left_pad_target=F
     # # print('target', target.size())
 
     example = {
-        'input_ids': input_ids,  # list
-        'segment_ids': segment_ids,  # list
-        'input_mask': input_mask,  # LongTensor
-        'mask_qkv': mask_qkv,  # list
-        'masked_ids': masked_ids,  # list
-        'masked_pos': masked_pos,  # list
-        'masked_weights': masked_weights,  # list
+        # 'input_ids': input_ids,  # list
+        # 'segment_ids': segment_ids,  # list
+        # 'input_mask': input_mask,  # LongTensor
+        # 'mask_qkv': mask_qkv,  # list
+        # 'masked_ids': masked_ids,  # list
+        # 'masked_pos': masked_pos,  # list
+        # 'masked_weights': masked_weights,  # list
+        'net_input': {
+            'src_tokens': input_ids,
+            'segment_labels': segment_ids,
+            'attention_mask': input_mask,
+            # 'mask_qkv': mask_qkv
+        },
+        'target': masked_ids
         # 'self.task_idx': self.task_idx,
     }
     return example
@@ -411,6 +418,7 @@ class MaskCodeDocstringPairDataset(FairseqDataset):
             'input_mask': input_mask,  # LongTensor
             'mask_qkv': mask_qkv,  # list
             'masked_ids': masked_ids,  # list
+            # 'masked_ids': masked_ids,  # list
             'masked_pos': masked_pos,  # list
             'masked_weights': masked_weights,  # list
             # 'self.task_idx': self.task_idx,
@@ -470,7 +478,8 @@ class MaskCodeDocstringPairDataset(FairseqDataset):
     def size(self, index):
         """Return an example's size as a float or tuple. This value is used when
         filtering a dataset with ``--max-positions``."""
-        return (self.src_sizes[index], self.tgt_sizes[index] if self.tgt_sizes is not None else 0)
+        # return (self.src_sizes[index], self.tgt_sizes[index] if self.tgt_sizes is not None else 0)
+        return self.src_sizes[index]+self.tgt_sizes[index]
 
     def ordered_indices(self):
         """Return an ordered list of indices. Batches will be constructed based
