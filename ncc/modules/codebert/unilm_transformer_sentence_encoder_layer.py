@@ -61,6 +61,7 @@ class UnilmTransformerSentenceEncoderLayer(nn.Module):
         self,
         x: torch.Tensor,
         self_attn_mask: torch.Tensor = None,
+        self_attn_mask_unilm: torch.Tensor = None,
         self_attn_padding_mask: torch.Tensor = None,
         mask_qkv=None, segment_labels=None,
     ):
@@ -75,7 +76,7 @@ class UnilmTransformerSentenceEncoderLayer(nn.Module):
             value=x,
             key_padding_mask=self_attn_padding_mask,
             need_weights=False,
-            attn_mask=self_attn_mask,
+            attn_mask_unilm=self_attn_mask_unilm,
             mask_qkv=mask_qkv, segment_labels=segment_labels
         )
         x = F.dropout(x, p=self.dropout, training=self.training)

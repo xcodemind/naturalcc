@@ -183,7 +183,7 @@ class UnilmTransformerSentenceEncoder(nn.Module):
         self,
         tokens: torch.Tensor,
         segment_labels: torch.Tensor = None,
-        attention_mask=None,
+        attention_mask_unilm=None,
         last_state_only: bool = False,
         positions: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -227,7 +227,7 @@ class UnilmTransformerSentenceEncoder(nn.Module):
             # add LayerDrop (see https://arxiv.org/abs/1909.11556 for description)
             dropout_probability = random.uniform(0, 1)
             if not self.training or (dropout_probability > self.layerdrop):
-                x, _ = layer(x, self_attn_mask=attention_mask, self_attn_padding_mask=padding_mask, mask_qkv=None, segment_labels=None)
+                x, _ = layer(x, self_attn_mask_unilm=attention_mask_unilm, self_attn_padding_mask=padding_mask, mask_qkv=None, segment_labels=None)
                 if not last_state_only:
                     inner_states.append(x)
 

@@ -23,6 +23,7 @@ from ncc.logging import metrics, progress_bar
 from ncc.utils import utils
 from ncc.data import iterators
 
+
 @metrics.aggregate('train')
 def train(args, trainer, task, epoch_itr):
     """Train the model for one epoch."""
@@ -69,24 +70,51 @@ def train(args, trainer, task, epoch_itr):
             # the end-of-epoch stats will still be preserved
             metrics.reset_meters('train_inner')
 
-        # if (
-        #     not args['dataset']['disable_validation']
-        #     and args['checkpoint']['save_interval_updates'] > 0
-        #     and num_updates % args['checkpoint']['save_interval_updates'] == 0
-        #     and num_updates > 0
-        # ):
-        #     valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
-        #     checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, valid_losses[0])
+        if (
+                not args['dataset']['disable_validation']
+                and args['checkpoint']['save_interval_updates'] > 0
+                and num_updates % args['checkpoint']['save_interval_updates'] == 0
+                and num_updates > 0
+        ):
+            valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
+            checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, valid_losses[0])
 
         if num_updates >= max_update:
             break
 
     # log end-of-epoch stats
-        stats = get_training_stats(metrics.get_smoothed_values('train'))
-        progress.print(stats, tag='train', step=num_updates)
+    stats = get_training_stats(metrics.get_smoothed_values('train'))
+    progress.print(stats, tag='train', step=num_updates)
 
     # reset epoch-level meters
     metrics.reset_meters('train')
+
+
+def get_training_stats(stats):
+    if 'nll_loss' in stats and 'ppl' not in stats:
+        stats['ppl'] = utils.get_perplexity(stats['nll_loss'])
+    stats['wall'] = round(metrics.get_meter('default', 'wall').elapsed_time, 0)
+    return stats
+
+
+def should_stop_early(args, valid_loss):
+    # skip check if no validation was done in the current epoch
+    if valid_loss is None:
+        return False
+    if args['checkpoint']['patience'] <= 0:
+        return False
+
+    def is_better(a, b):
+        return a > b if args['checkpoint']['maximize_best_checkpoint_metric'] else a < b
+
+    prev_best = getattr(should_stop_early, 'best', None)
+    if prev_best is None or is_better(valid_loss, prev_best):
+        should_stop_early.best = valid_loss
+        should_stop_early.num_runs = 0
+        return False
+    else:
+        should_stop_early.num_runs += 1
+        return should_stop_early.num_runs >= args['checkpoint']['patience']
 
 
 def validate(args, trainer, task, epoch_itr, subsets):
@@ -154,40 +182,13 @@ def get_valid_stats(args, trainer, stats):
     return stats
 
 
-def get_training_stats(stats):
-    if 'nll_loss' in stats and 'ppl' not in stats:
-        stats['ppl'] = utils.get_perplexity(stats['nll_loss'])
-    stats['wall'] = round(metrics.get_meter('default', 'wall').elapsed_time, 0)
-    return stats
-
-
-def should_stop_early(config, valid_loss):
-    # skip check if no validation was done in the current epoch
-    if valid_loss is None:
-        return False
-    if config['checkpoint']['patience'] <= 0:
-        return False
-
-    def is_better(a, b):
-        return a > b if config['checkpoint']['maximize_best_checkpoint_metric'] else a < b
-
-    prev_best = getattr(should_stop_early, 'best', None)
-    if prev_best is None or is_better(valid_loss, prev_best):
-        should_stop_early.best = valid_loss
-        should_stop_early.num_runs = 0
-        return False
-    else:
-        should_stop_early.num_runs += 1
-        return should_stop_early.num_runs >= config['checkpoint']['patience']
-
-
 def single_main(args, init_distributed=False):
     # utils.import_user_module(args) # TODO: delete
 
-    # assert args['dataset']['max_tokens'] is not None or args['dataset']['max_sentences'] is not None, \
-    #     'Must specify batch size either with --max-tokens or --max-sentences'
+    assert args['dataset']['max_tokens'] is not None or args['dataset']['max_sentences'] is not None, \
+        'Must specify batch size either with --max-tokens or --max-sentences'
 
-    # Setup CUDA, GPU & distributed training
+    # Initialize CUDA and distributed training
     if torch.cuda.is_available() and not args['common']['cpu']:
         torch.cuda.set_device(args['distributed_training']['device_id'])
     np.random.seed(args['common']['seed'])
@@ -195,7 +196,6 @@ def single_main(args, init_distributed=False):
     if init_distributed:
         args['distributed_training']['distributed_rank'] = distributed_utils.distributed_init(args)
 
-    # Verify checkpoint directory
     if distributed_utils.is_master(args):
         checkpoint_utils.verify_checkpoint_directory(args['checkpoint']['save_dir'])
 
@@ -203,17 +203,14 @@ def single_main(args, init_distributed=False):
     LOGGER.info(args)
 
     # Setup task, e.g., translation, language modeling, etc.
-    task = tasks.setup_task(args) # task.tokenizer
-    # # build model_config
-    # config = task.build_config(args)
-    # Build model and criterion
-    model = task.build_model(args) # , config
-    # model_config = task.build_model_config()
+    task = tasks.setup_task(args)
 
     # Load valid dataset (we load training data below, based on the latest checkpoint)
-    # for valid_sub_split in args['dataset']['valid_subset'].split(','):
-    #     task.load_dataset(valid_sub_split, combine=False, epoch=1)
+    for valid_sub_split in args['dataset']['valid_subset'].split(','):
+        task.load_dataset(valid_sub_split, combine=False, epoch=1)
 
+    # Build model and criterion
+    model = task.build_model(args)
     criterion = task.build_criterion(args)
     LOGGER.info(model)
     LOGGER.info('model {}, criterion {}'.format(args['model']['arch'], criterion.__class__.__name__))
@@ -225,14 +222,14 @@ def single_main(args, init_distributed=False):
     # Build trainer
     trainer = Trainer(args, task, model, criterion)
     LOGGER.info('training on {} GPUs'.format(args['distributed_training']['distributed_world_size']))
-    # LOGGER.info('max tokens per GPU = {} and max sentences per GPU = {}'.format(
-    #     args['dataset']['max_tokens'],
-    #     args['dataset']['max_sentences'],
-    # ))
+    LOGGER.info('max tokens per GPU = {} and max sentences per GPU = {}'.format(
+        args['dataset']['max_tokens'],
+        args['dataset']['max_sentences'],
+    ))
 
     # Load the latest checkpoint if one is available and restore the
     # corresponding train iterator
-    extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer, combine=False)
+    extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer)
 
     # Train until the learning rate gets too small
     max_epoch = args['optimization']['max_epoch'] or math.inf
@@ -242,12 +239,13 @@ def single_main(args, init_distributed=False):
     train_meter.start()
     valid_subsets = args['dataset']['valid_subset'].split(',')
     while (
-        lr > args['optimization']['min_lr']
-        and epoch_itr.next_epoch_idx <= max_epoch
-        and trainer.get_num_updates() < max_update
+            lr > args['optimization']['min_lr']
+            and epoch_itr.next_epoch_idx <= max_epoch
+            and trainer.get_num_updates() < max_update
     ):
         # train for one epoch
-        valid_losses = train(args, trainer, task, epoch_itr) # max_update
+        train(args, trainer, task, epoch_itr)
+        sys.exit()
         if not args['dataset']['disable_validation'] and epoch_itr.epoch % args['dataset']['validate_interval'] == 0:
             valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
         else:
@@ -262,12 +260,12 @@ def single_main(args, init_distributed=False):
 
         # early stop
         if should_stop_early(args, valid_losses[0]):
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(args['checkpoint']['patience']))
+            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
+                args['checkpoint']['patience']))
             break
 
         epoch_itr = trainer.get_train_iterator(
             epoch_itr.next_epoch_idx,
-            combine=False,
             # sharded data: get train iterator for next epoch
             load_dataset=(os.pathsep in getattr(args, 'data', '')),
         )
@@ -288,50 +286,20 @@ def cli_main():
     # Argues = namedtuple('Argues', 'yaml task lang_mode method_name train_mode dataset_type multi_processing')
     Argues = namedtuple('Argues', 'yaml')
 
-    args_ = Argues('ruby.yml')  # train_sl
+    args_ = Argues('ruby.yml')  # train_sl. ruby.yml
     LOGGER.info(args_)
     # print(type(args.multi_processing))
     # assert False
-    print('args: ', type(args_))
-    # config = run_init(args.yaml, config=None)
-    yaml_file = os.path.join(sys.path[0], args_.yaml)
+    print('args_: ', type(args_))
+    # args = run_init(args.yaml, args=None)
+    yaml_file = os.path.join(os.path.dirname(__file__), args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
 
     LOGGER.info(args)
 
-    if args['model']['arch'] in ['bert', 'roberta', 'distilbert', 'camembert'] and not args['task']['mlm']:
-        raise ValueError(
-            "BERT and RoBERTa-like models do not have LM heads but masked LM heads. They must be run using the --mlm "
-            "flag (masked language modeling)."
-        )
-    # if args.eval_data_file is None and args.do_eval:
-    #     raise ValueError(
-    #         "Cannot do evaluation without an evaluation data file. Either supply a file to --eval_data_file "
-    #         "or remove the --do_eval argument."
-    #     )
-    # if args.should_continue:
-    #     sorted_checkpoints = _sorted_checkpoints(args)
-    #     if len(sorted_checkpoints) == 0:
-    #         raise ValueError("Used --should_continue but no checkpoint was found in --output_dir.")
-    #     else:
-    #         args.model_name_or_path = sorted_checkpoints[-1]
-
-    # if (
-    #         os.path.exists(args.output_dir)
-    #         and os.listdir(args.output_dir)
-    #         and args.do_train
-    #         and not args.overwrite_output_dir
-    # ):
-    #     raise ValueError(
-    #         "Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(
-    #             args.output_dir
-    #         )
-    #     )
-
     if args['distributed_training']['distributed_init_method'] is None:
         distributed_utils.infer_init_method(args)
-
 
     if args['distributed_training']['distributed_init_method'] is not None:
         # distributed training
@@ -353,7 +321,7 @@ def cli_main():
         args['distributed_training']['distributed_rank'] = None  # set based on device id
         torch.multiprocessing.spawn(
             fn=distributed_main,
-            args=(args, ),
+            args=(args,),
             nprocs=args['distributed_training']['distributed_world_size'],
         )
     else:

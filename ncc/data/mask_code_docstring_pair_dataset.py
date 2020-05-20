@@ -81,9 +81,9 @@ def collate(samples, src_dict, tgt_dict, left_pad_source=True, left_pad_target=F
     if len(samples) == 0:
         return {}
 
-    input_ids = torch.LongTensor([s['input_ids'] for s in samples])
-    segment_ids = torch.LongTensor([s['segment_ids'] for s in samples])
-    input_mask = torch.cat([s['input_mask'] for s in samples])
+    src_tokens = torch.LongTensor([s['src_tokens'] for s in samples])
+    segment_labels = torch.LongTensor([s['segment_labels'] for s in samples])
+    attention_mask_unilm = torch.stack([s['attention_mask_unilm'] for s in samples])
     mask_qkv = []
     for s in samples:
         if s['mask_qkv']:
@@ -121,9 +121,9 @@ def collate(samples, src_dict, tgt_dict, left_pad_source=True, left_pad_target=F
         # 'masked_pos': masked_pos,  # list
         # 'masked_weights': masked_weights,  # list
         'net_input': {
-            'src_tokens': input_ids,
-            'segment_labels': segment_ids,
-            'attention_mask': input_mask,
+            'src_tokens': src_tokens,
+            'segment_labels': segment_labels,
+            'attention_mask_unilm': attention_mask_unilm,
             # 'mask_qkv': mask_qkv
         },
         'target': masked_ids
@@ -413,9 +413,9 @@ class MaskCodeDocstringPairDataset(FairseqDataset):
         #     'target': tgt_item,
         # }
         example = {
-            'input_ids': input_ids,  # list
-            'segment_ids': segment_ids,  # list
-            'input_mask': input_mask,  # LongTensor
+            'src_tokens': input_ids,  # list
+            'segment_labels': segment_ids,  # list
+            'attention_mask_unilm': input_mask,  # LongTensor
             'mask_qkv': mask_qkv,  # list
             'masked_ids': masked_ids,  # list
             # 'masked_ids': masked_ids,  # list

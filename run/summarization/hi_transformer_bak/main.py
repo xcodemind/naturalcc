@@ -22,7 +22,8 @@ from ncc.utils.util_file import load_yaml
 from ncc.logging import metrics, progress_bar
 from ncc.utils import utils
 from ncc.data import iterators
-
+from ncc.utils.file_utils import remove_files as remove_files
+from pathlib import Path
 @metrics.aggregate('train')
 def train(args, trainer, task, epoch_itr):
     """Train the model for one epoch."""
@@ -88,7 +89,6 @@ def train(args, trainer, task, epoch_itr):
     # reset epoch-level meters
     metrics.reset_meters('train')
 
-
 def validate(args, trainer, task, epoch_itr, subsets):
     """Evaluate the model on the validation set(s) and return the losses."""
 
@@ -139,7 +139,6 @@ def validate(args, trainer, task, epoch_itr, subsets):
         valid_losses.append(stats[args['checkpoint']['best_checkpoint_metric']])
     return valid_losses
 
-
 def get_valid_stats(args, trainer, stats):
     if 'nll_loss' in stats and 'ppl' not in stats:
         stats['ppl'] = utils.get_perplexity(stats['nll_loss'])
@@ -153,13 +152,11 @@ def get_valid_stats(args, trainer, stats):
         )
     return stats
 
-
 def get_training_stats(stats):
     if 'nll_loss' in stats and 'ppl' not in stats:
         stats['ppl'] = utils.get_perplexity(stats['nll_loss'])
     stats['wall'] = round(metrics.get_meter('default', 'wall').elapsed_time, 0)
     return stats
-
 
 def should_stop_early(config, valid_loss):
     # skip check if no validation was done in the current epoch
@@ -180,6 +177,12 @@ def should_stop_early(config, valid_loss):
         should_stop_early.num_runs += 1
         return should_stop_early.num_runs >= config['checkpoint']['patience']
 
+def remove_files(path,ext_name):
+    for f in Path(path).glob('{}.{}'.format('*',ext_name)):
+        try:
+            os.remove(f)
+        except OSError as e:
+            print("Error: %s : %s" % (f, e.strerror))
 
 def single_main(args, init_distributed=False):
     # utils.import_user_module(args) # TODO: delete
@@ -197,10 +200,11 @@ def single_main(args, init_distributed=False):
 
     # Verify checkpoint directory
     if distributed_utils.is_master(args):
+        save_dir = args['checkpoint']['save_dir']
         checkpoint_utils.verify_checkpoint_directory(args['checkpoint']['save_dir'])
-
+        remove_files(save_dir, 'pt') # clean check points before training
     # Print args
-    LOGGER.info(args)
+    #LOGGER.info(args)
 
     # Setup task, e.g., translation, language modeling, etc.
     task = tasks.setup_task(args) # task.tokenizer
@@ -215,8 +219,8 @@ def single_main(args, init_distributed=False):
     #     task.load_dataset(valid_sub_split, combine=False, epoch=1)
 
     criterion = task.build_criterion(args)
-    LOGGER.info(model)
-    LOGGER.info('model {}, criterion {}'.format(args['model']['arch'], criterion.__class__.__name__))
+    #LOGGER.info(model)
+    LOGGER.info('Model name: {}, Criterion : {}'.format(args['model']['arch'], criterion.__class__.__name__))
     LOGGER.info('num. model params: {} (num. trained: {})'.format(
         sum(p.numel() for p in model.parameters()),
         sum(p.numel() for p in model.parameters() if p.requires_grad),
@@ -224,7 +228,7 @@ def single_main(args, init_distributed=False):
 
     # Build trainer
     trainer = Trainer(args, task, model, criterion)
-    LOGGER.info('training on {} GPUs'.format(args['distributed_training']['distributed_world_size']))
+    LOGGER.info('Training on {} GPUs'.format(args['distributed_training']['distributed_world_size']))
     # LOGGER.info('max tokens per GPU = {} and max sentences per GPU = {}'.format(
     #     args['dataset']['max_tokens'],
     #     args['dataset']['max_sentences'],
@@ -232,7 +236,7 @@ def single_main(args, init_distributed=False):
 
     # Load the latest checkpoint if one is available and restore the
     # corresponding train iterator
-    extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer, combine=False)
+    extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer, combine=False) # load dataset
 
     # Train until the learning rate gets too small
     max_epoch = args['optimization']['max_epoch'] or math.inf
@@ -274,13 +278,11 @@ def single_main(args, init_distributed=False):
     train_meter.stop()
     LOGGER.info('done training in {:.1f} seconds'.format(train_meter.sum))
 
-
 def distributed_main(i, args, start_rank=0):
     args['distributed_training']['device_id'] = i
     if args['distributed_training']['distributed_rank'] is None:  # torch.multiprocessing.spawn
         args['distributed_training']['distributed_rank'] = start_rank + i
     single_main(args, init_distributed=True)
-
 
 def cli_main():
     # args = get_args()
@@ -305,29 +307,7 @@ def cli_main():
             "BERT and RoBERTa-like models do not have LM heads but masked LM heads. They must be run using the --mlm "
             "flag (masked language modeling)."
         )
-    # if args.eval_data_file is None and args.do_eval:
-    #     raise ValueError(
-    #         "Cannot do evaluation without an evaluation data file. Either supply a file to --eval_data_file "
-    #         "or remove the --do_eval argument."
-    #     )
-    # if args.should_continue:
-    #     sorted_checkpoints = _sorted_checkpoints(args)
-    #     if len(sorted_checkpoints) == 0:
-    #         raise ValueError("Used --should_continue but no checkpoint was found in --output_dir.")
-    #     else:
-    #         args.model_name_or_path = sorted_checkpoints[-1]
 
-    # if (
-    #         os.path.exists(args.output_dir)
-    #         and os.listdir(args.output_dir)
-    #         and args.do_train
-    #         and not args.overwrite_output_dir
-    # ):
-    #     raise ValueError(
-    #         "Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(
-    #             args.output_dir
-    #         )
-    #     )
 
     if args['distributed_training']['distributed_init_method'] is None:
         distributed_utils.infer_init_method(args)

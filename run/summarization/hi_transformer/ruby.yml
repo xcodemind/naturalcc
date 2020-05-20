@@ -80,7 +80,7 @@ distributed_training:
   local_rank: -1 # type=int, default=-1, help="For distributed training: local_rank"
 
 task:
-  data: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/data-bin #/tmp/pycharm_project_249/data-bin # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/data-bin # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 #  sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
 #  tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
 #  mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
@@ -118,7 +118,7 @@ task:
 
 
 model:
-  arch: hi_transformer_summarization # hi_transformer
+  arch: hi_transformer_summarization # hi_transformer, lstm
 #  code_modalities:
 #    - tok
     #    - ast
@@ -129,8 +129,12 @@ model:
   encoder_embed_path: ~ #', type=str, metavar='STR', help='path to pre-trained encoder embedding'
   encoder_freeze_embed: 0 #', action='store_true', help='freeze encoder embeddings'
   encoder_hidden_size: 512 #', type=int, metavar='N', help='encoder hidden size'
+  encoder_ffn_embed_dim: 2048 #', type=int, metavar='N', help='encoder embedding dimension for FFN'
   encoder_layers: 1 #', type=int, metavar='N', help='number of encoder layers'
   encoder_bidirectional: 0 #, action='store_true', help='make all layers of encoder bidirectional'
+  encoder_learned_pos: 0 # default=False, action='store_true', help='use learned positional embeddings in the encoder')
+  encoder_attention_heads: 8 #', type=int, metavar='N',help='num encoder attention heads'
+  encoder_normalize_before: 0 #', default=False, action='store_true', help='apply layernorm before each encoder block'
   # decoder
   decoder_embed_dim: 512 # ', type=int, metavar='N', help='decoder embedding dimension'
   decoder_embed_path: ~ #', type=str, metavar='STR', help='path to pre-trained decoder embedding'
@@ -139,26 +143,22 @@ model:
   decoder_layers: 1 #', type=int, metavar='N', help='number of decoder layers'
   decoder_out_embed_dim: 512 #', type=int, metavar='N', help='decoder output embedding dimension'
   decoder_attention: ~ #', type=str, metavar='BOOL', help='decoder attention'
-  adaptive_softmax_cutoff: ~ #', metavar='EXPR', help='comma separated list of adaptive softmax cutoff points. Must be used with adaptive_loss criterion'
-  share_decoder_input_output_embed: 0 #', default=False, action='store_true', help='share decoder input and output embeddings'
-  share_all_embeddings: 0 #', default=False, action='store_true', help='share encoder, decoder and output embeddings (requires shared dictionary and embed dim)'
-  # Granular dropout settings (if not specified these default to --dropout)
-  encoder_dropout_in: 0.1 #', type=float, metavar='D', help='dropout probability for encoder input embedding'
-  encoder_dropout_out: 0.1 #', type=float, metavar='D', help='dropout probability for encoder output'
-  decoder_dropout_in: 0.1 #' type=float, metavar='D', help='dropout probability for decoder input embedding'
-  decoder_dropout_out: 0.1 #', type=float, metavar='D', help='dropout probability for decoder output'
-  dropout: 0.1 # '--dropout', type=float, metavar='D', help='dropout probability')
-  encoder_learned_pos: 0 # default=False, action='store_true', help='use learned positional embeddings in the encoder')
-  encoder_attention_heads: 8 #', type=int, metavar='N',help='num encoder attention heads'
-  attention_dropout: 0.1
-  relu_dropout: 0.1 # ', type=float, metavar='D', help='dropout probability after ReLU in FFN'
-  encoder_normalize_before: 0 #', default=False, action='store_true', help='apply layernorm before each encoder block'
-  encoder_ffn_embed_dim: 2048 #', type=int, metavar='N', help='encoder embedding dimension for FFN'
   decoder_learned_pos: 0 #, default=False, action='store_true', help='use learned positional embeddings in the decoder'
   decoder_attention_heads: 8 #', type=int, metavar='N', help='num decoder attention heads'
   decoder_normalize_before: 0 #', default=False, action='store_true', help='apply layernorm before each decoder block'
   decoder_ffn_embed_dim: 512 #', type=int, metavar='N', help='decoder embedding dimension for FFN'
 
+  adaptive_softmax_cutoff: ~ #', metavar='EXPR', help='comma separated list of adaptive softmax cutoff points. Must be used with adaptive_loss criterion'
+  share_decoder_input_output_embed: 0 #', default=False, action='store_true', help='share decoder input and output embeddings'
+  share_all_embeddings: 0 #', default=False, action='store_true', help='share encoder, decoder and output embeddings (requires shared dictionary and embed dim)'
+  # Granular dropout settings (if not specified these default to --dropout)
+  dropout: 0.1 # '--dropout', type=float, metavar='D', help='dropout probability')
+  attention_dropout: 0.1 #', type=float, metavar='D', help='dropout probability for attention weights'
+  relu_dropout: 0.1 # ', type=float, metavar='D', help='dropout probability after ReLU in FFN'
+  encoder_dropout_in: 0.1 #', type=float, metavar='D', help='dropout probability for encoder input embedding'
+  encoder_dropout_out: 0.1 #', type=float, metavar='D', help='dropout probability for encoder output'
+  decoder_dropout_in: 0.1 #' type=float, metavar='D', help='dropout probability for decoder input embedding'
+  decoder_dropout_out: 0.1 #', type=float, metavar='D', help='dropout probability for decoder output'
   # network: decoder
 #  attn_type: ~ # ~, general, dot, mlp, intra
 #  attn_unit: 512 # （固定，不要调）
@@ -166,7 +166,6 @@ model:
   #  intra_attn_eps: 1e-12
   pointer: False # pointer-generator, True, False
 #  max_predict_length: 60 # （固定，不要调）max generation length for decoder
-#  dropout: 0.2 # （固定，不要调）dropout
 #  decoder_input_feed: False # （固定，不要调）True, False
   max_source_positions: 1e5
   max_target_positions: 1e5
@@ -233,7 +232,7 @@ checkpoint:
   best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
 #  patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
-  save_dir: /tmp/pycharm_project_249/checkpoint/result # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
+  save_dir: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/summarization/result # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
   model_name_or_path: ~ # default=None, type=str, help="The model checkpoint for weights initialization. Leave None if you want to train a model from scratch.",
   cache_dir: ~ # default=None, type=str, help="Optional directory to store the pre-trained models downloaded from s3 (instead of the default one)",
