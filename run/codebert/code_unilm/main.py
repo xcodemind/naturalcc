@@ -245,7 +245,6 @@ def single_main(args, init_distributed=False):
     ):
         # train for one epoch
         train(args, trainer, task, epoch_itr)
-        sys.exit()
         if not args['dataset']['disable_validation'] and epoch_itr.epoch % args['dataset']['validate_interval'] == 0:
             valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
         else:
