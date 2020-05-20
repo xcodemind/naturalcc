@@ -28,7 +28,9 @@ if __name__ == '__main__':
     # assert False
     print('args: ', type(args_))
     # config = run_init(args.yaml, config=None)
-    yaml_file = os.path.join('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3/run/codebert/code_roberta/', args_.yaml)
+    # yaml_file = os.path.join('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3/run/codebert/code_roberta/', args_.yaml)
+    yaml_file = os.path.join('../../../naturalcodev3/run/codebert/code_roberta/', args_.yaml)
+    yaml_file = os.path.realpath(yaml_file)
     # yaml_file = os.path.join('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3/run/summarization/seq2seq/', args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
