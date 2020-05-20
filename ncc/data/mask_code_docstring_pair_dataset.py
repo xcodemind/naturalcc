@@ -275,9 +275,9 @@ class MaskCodeDocstringPairDataset(FairseqDataset):
         # else:
         #     item = ['[CLS]'] + src_item + ['[SEP]'] + tgt_item + ['[SEP]']
         if self.s2s_special_token:
-            item = torch.cat([src_item, torch.LongTensor(self.src_dict.index(constants.S2S_SEP)), tgt_item, torch.LongTensor(self.src_dict.index(constants.SEP))])
+            item = torch.cat([src_item, torch.LongTensor([self.src_dict.index(constants.S2S_SEP)]), tgt_item, torch.LongTensor([self.src_dict.index(constants.SEP)])])
         else:
-            item = torch.cat([src_item, torch.LongTensor(self.src_dict.index(constants.SEP)), tgt_item, torch.LongTensor(self.src_dict.index(constants.SEP))])
+            item = torch.cat([src_item, torch.LongTensor([self.src_dict.index(constants.SEP)]), tgt_item, torch.LongTensor([self.src_dict.index(constants.SEP)])])
 
         # TODO: assign segment ids to each code statement
         segment_ids = [4] * (len(src_item) + 1) + [5] * (len(tgt_item) + 1)

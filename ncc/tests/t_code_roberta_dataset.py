@@ -117,12 +117,17 @@ if __name__ == '__main__':
         left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
         # input_feeding=dataset.input_feeding,
     )
-    torch.cuda.set_device(0)
+    # torch.cuda.set_device(0)
     # batch.cuda()
-    model.cuda()
+    # model.cuda()
     print(batch)
+    sys.exit()
     # model(*batch)
-    model(batch['net_input']['input_ids'].cuda(), batch['net_input']['segment_ids'].cuda(), batch['net_input']['input_mask'].cuda())
+    # 'src_tokens': input_ids,
+    # 'segment_labels': segment_ids,
+    # 'attention_mask': input_mask,
+    # model(batch['net_input']['src_tokens'].cuda(), batch['net_input']['segment_labels'].cuda(), batch['net_input']['attention_mask'].cuda())
+    model(batch['net_input']['src_tokens'], batch['net_input']['segment_labels'], batch['net_input']['attention_mask'])
     sys.exit()
 
     # data_iter = iter(dataloader)
