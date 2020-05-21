@@ -41,7 +41,7 @@ from ncc.data import constants
 #          =args['task']['load_alignments'],
 #         truncate_source=args['task']['truncate_source'],
 #     )
-def load_masked_code_docstring_dataset(
+def load_masked_code_docstring_dataset_unilm(
         data_path, split,
         src, src_dict,
         tgt, tgt_dict,
@@ -162,8 +162,8 @@ def load_masked_code_docstring_dataset(
     # )
 
 
-@register_task('masked_code_docstring')
-class MaskedCodeDocstringTask(FairseqTask):
+@register_task('masked_code_docstring_unilm')
+class MaskedCodeDocstringUnilmTask(FairseqTask):
     """Task for training masked language models (e.g., BERT, RoBERTa)."""
 
     def __init__(self, args, src_dict, tgt_dict):
@@ -325,7 +325,7 @@ class MaskedCodeDocstringTask(FairseqTask):
         # infer langcode
         src, tgt = self.args['task']['source_lang'], self.args['task']['target_lang']
 
-        self.datasets[split] = load_masked_code_docstring_dataset(
+        self.datasets[split] = load_masked_code_docstring_dataset_unilm(
             data_path, split, src, self.src_dict, tgt, self.tgt_dict,
             combine=combine, dataset_impl=self.args['dataset']['dataset_impl'],
             upsample_primary=self.args['task']['upsample_primary'],

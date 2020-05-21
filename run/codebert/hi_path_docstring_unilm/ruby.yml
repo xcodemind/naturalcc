@@ -80,7 +80,7 @@ task:
   pooler_activation_fn: 'tanh' # choices=utils.get_available_activation_fns(), help='Which activation function to use for pooler layer.'
 
 model:
-  arch: roberta # '-a', default='fconv', metavar='ARCH', choices=ARCH_MODEL_REGISTRY.keys(), help='Model Architecture'
+  arch: hi_path_docstring_unilm # '-a', default='fconv', metavar='ARCH', choices=ARCH_MODEL_REGISTRY.keys(), help='Model Architecture'
   pooler_dropout: 0.0 # type=float, metavar='D', help='dropout probability in the masked_lm pooler layers'
   activation_fn: gelu # choices=utils.get_available_activation_fns(), help='activation function to use'
   dropout: 0.1 # type=float, metavar='D', help='dropout probability'
