@@ -54,11 +54,11 @@ def load_masked_code_docstring_dataset_roberta(args, epoch,
     #     )
 
     # tgt_dataset
-    tgt_dataset = data_utils.load_indexed_dataset(target_path, 'text', tgt_dict, dataset_impl)
-
-    eos = None
-    align_dataset = None
-    tgt_dataset_sizes = tgt_dataset.sizes if tgt_dataset is not None else None
+    # tgt_dataset = data_utils.load_indexed_dataset(target_path, 'text', tgt_dict, dataset_impl)
+    #
+    # eos = None
+    # align_dataset = None
+    # tgt_dataset_sizes = tgt_dataset.sizes if tgt_dataset is not None else None
 
     # if dataset is None:
     #     raise FileNotFoundError('Dataset not found: {} ({})'.format(split, split_path))
