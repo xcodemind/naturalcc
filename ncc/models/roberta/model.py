@@ -24,11 +24,11 @@ from ncc.modules.summarization.fairseq_decoder import FairseqDecoder
 #     LayerNorm,
 #     TransformerSentenceEncoder,
 # )
-from ncc.modules.layer_norm import LayerNorm
-from ncc.modules.transformer_sentence_encoder import TransformerSentenceEncoder
-from ncc.modules.transformer_sentence_encoder import init_bert_params
+from ncc.modules.roberta.layer_norm import LayerNorm
+from ncc.modules.roberta.transformer_sentence_encoder import TransformerSentenceEncoder
+from ncc.modules.roberta.transformer_sentence_encoder import init_bert_params
 
-from .hub_interface import RobertaHubInterface
+from ncc.models.hub_interface import RobertaHubInterface
 
 logger = logging.getLogger(__name__)
 

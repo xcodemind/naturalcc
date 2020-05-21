@@ -17,10 +17,10 @@ from ncc.models import (
     # register_model_architecture,
 )
 from ncc.modules.summarization.fairseq_decoder import FairseqDecoder
-from ncc.modules.layer_norm import LayerNorm
+from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.codebert.unilm_transformer_sentence_encoder import init_bert_params
 from ncc.modules.codebert.unilm_transformer_sentence_encoder import UnilmTransformerSentenceEncoder
-from ncc.models.bert.hub_interface import RobertaHubInterface
+from ncc.models.hub_interface import RobertaHubInterface
 from ncc import LOGGER
 
 

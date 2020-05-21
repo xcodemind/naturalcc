@@ -25,7 +25,7 @@ from torch.nn import CrossEntropyLoss
 from torch.nn import functional as F
 
 from ncc.utils.activations import get_activation
-from ncc.config.bert.configuration_utils import PretrainedConfig
+from ncc.config.huggingface.configuration_utils import PretrainedConfig
 from ncc.utils.file_utils import (
     DUMMY_INPUTS,
     TF2_WEIGHTS_NAME,

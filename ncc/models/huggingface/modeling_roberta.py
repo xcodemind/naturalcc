@@ -22,10 +22,10 @@ import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss, MSELoss
 
-from ncc.config.bert.configuration_roberta import RobertaConfig
+from ncc.config.huggingface.configuration_roberta import RobertaConfig
 from ncc.utils.file_utils import add_start_docstrings, add_start_docstrings_to_callable
-from ncc.models.bert.modeling_bert import BertEmbeddings, BertLayerNorm, BertModel, BertPreTrainedModel, gelu
-from ncc.models.bert.modeling_utils import create_position_ids_from_input_ids
+from ncc.models.huggingface.modeling_bert import BertEmbeddings, BertLayerNorm, BertModel, BertPreTrainedModel, gelu
+from ncc.models.huggingface.modeling_utils import create_position_ids_from_input_ids
 from ncc.models import register_model
 
 logger = logging.getLogger(__name__)

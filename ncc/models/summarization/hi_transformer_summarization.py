@@ -14,9 +14,9 @@ import torch.nn.functional as F
 #     LearnedPositionalEmbedding, MultiheadAttention,
 #     SinusoidalPositionalEmbedding,
 # )
-from ncc.modules.learned_positional_embedding import LearnedPositionalEmbedding
+from ncc.modules.roberta.learned_positional_embedding import LearnedPositionalEmbedding
 from ncc.modules.attention.multihead_attention import MultiheadAttention
-from ncc.modules.sinusoidal_positional_embedding_hibert import SinusoidalPositionalEmbedding
+from ncc.modules.roberta.sinusoidal_positional_embedding_hibert import SinusoidalPositionalEmbedding
 from ncc.modules.summarization.fairseq_incremental_decoder import FairseqIncrementalDecoder
 from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
 from ncc.models.fairseq_model import FairseqEncoderDecoderModel

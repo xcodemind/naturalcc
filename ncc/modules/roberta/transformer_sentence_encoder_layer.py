@@ -12,7 +12,7 @@ from ncc.utils import utils
 #     LayerNorm,
 #     MultiheadAttention,
 # )
-from ncc.modules.layer_norm import LayerNorm
+from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.attention.multihead_attention import MultiheadAttention
 
 class TransformerSentenceEncoderLayer(nn.Module):

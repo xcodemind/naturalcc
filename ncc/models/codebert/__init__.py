@@ -7,12 +7,11 @@
 # from .model import *  # noqa
 # from .model_camembert import *  # noqa
 # from .model_xlmr import *  # noqa
-from .model import *
-from .modeling_bert import BertModel
-from .modeling_roberta import RobertaModel
-from .codebert_unilm import *
 
-__all__ = [
-    'BertModel',
-    'RobertaModel'
-]
+from .codebert_unilm import *
+from .codebert_roberta import *
+
+# __all__ = [
+#     'BertModel',
+#     'RobertaModel'
+# ]

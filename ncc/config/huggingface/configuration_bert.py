@@ -18,7 +18,7 @@
 
 import logging
 from ncc.config import register_config
-from ncc.config.bert.configuration_utils import PretrainedConfig
+from ncc.config.huggingface.configuration_utils import PretrainedConfig
 
 
 logger = logging.getLogger(__name__)
