@@ -72,8 +72,10 @@ class CodeBertUnilmModel(FairseqLanguageModel):
 
     def forward(self, src_tokens, segment_labels, attention_mask_unilm, mask_qkv=None, **kwargs):
         print('forward...')
-        sequence_output, pooled_output = self.decoder(src_tokens, segment_labels, attention_mask_unilm,
+        x, extra = self.decoder(src_tokens, segment_labels, attention_mask_unilm,
                                                       output_all_encoded_layers=False, mask_qkv=mask_qkv, **kwargs)
+
+        return x, extra
 
     def register_classification_head(self, name, num_classes=None, inner_dim=None, **kwargs):
         """Register a classification head."""
