@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ncc.utils import utils
-from ncc.modules.layer_norm import LayerNorm
+from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.attention.unilm_multihead_attention import UnilmMultiheadAttention
 
 

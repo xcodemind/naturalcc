@@ -36,13 +36,13 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, Dataset, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
-from ncc.models.bert.modeling_bert import BertForMaskedLM
-from ncc.models.bert.modeling_roberta import RobertaForMaskedLM
-from ncc.config.bert.configuration_bert import BertConfig
-from ncc.config.bert.configuration_roberta import RobertaConfig
+from ncc.models.huggingface.modeling_bert import BertForMaskedLM
+from ncc.models.huggingface.modeling_roberta import RobertaForMaskedLM
+from ncc.config.huggingface.configuration_bert import BertConfig
+from ncc.config.huggingface.configuration_roberta import RobertaConfig
 from ncc.data.tokenizer.tokenization_bert import BertTokenizer
 from ncc.data.tokenizer.tokenization_roberta import RobertaTokenizer
-from ncc.models.bert.modeling_utils import PreTrainedModel
+from ncc.models.huggingface.modeling_utils import PreTrainedModel
 from ncc.utils.tokenization_utils import PreTrainedTokenizer
 from ncc.utils.file_utils import WEIGHTS_NAME
 from ncc.optim.optimization import get_linear_schedule_with_warmup
