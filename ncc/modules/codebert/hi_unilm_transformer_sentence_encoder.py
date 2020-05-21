@@ -18,7 +18,7 @@ from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.attention.unilm_multihead_attention import UnilmMultiheadAttention
 from ncc.modules.roberta.positional_embedding import PositionalEmbedding
 from ncc.modules.codebert.unilm_transformer_sentence_encoder_layer import UnilmTransformerSentenceEncoderLayer
-
+from ncc.modules.roberta.transformer_sentence_encoder_layer import TransformerSentenceEncoderLayer
 import random
 
 
@@ -156,6 +156,24 @@ class HiUnilmTransformerSentenceEncoder(nn.Module):
             ]
         )
 
+        self.ast_layers = nn.ModuleList(
+            [
+                TransformerSentenceEncoderLayer(
+                    embedding_dim=self.embedding_dim,
+                    ffn_embedding_dim=ffn_embedding_dim,
+                    num_attention_heads=num_attention_heads,
+                    dropout=self.dropout,
+                    attention_dropout=attention_dropout,
+                    activation_dropout=activation_dropout,
+                    activation_fn=activation_fn,
+                    add_bias_kv=add_bias_kv,
+                    add_zero_attn=add_zero_attn,
+                    export=export,
+                )
+                for _ in range(num_encoder_layers)
+            ]
+        )
+
         if encoder_normalize_before:
             self.emb_layer_norm = LayerNorm(self.embedding_dim, export=export)
         else:
@@ -232,6 +250,21 @@ class HiUnilmTransformerSentenceEncoder(nn.Module):
                     inner_states.append(x)
 
         sentence_rep = x[0, :, :]
+
+
+        # TODO: ast layer transformer
+        sent_repr = sentence_rep
+        # sent_repr = get_sent_end_repr(x, src_sent_ends)
+        # print('sent_repr', sent_repr.size())
+        # sent_repr = sent_repr + doc_pos
+        # print('sent_repr after', sent_repr.size())
+        # n_sent x bsz x C
+        sent_repr = sent_repr.transpose(0, 1)
+        for ast_layer in self.ast_layers:
+            # add LayerDrop (see https://arxiv.org/abs/1909.11556 for description)
+            dropout_probability = random.uniform(0, 1)
+            if not self.training or (dropout_probability > self.layerdrop):
+                sent_repr, _ = ast_layer(sent_repr, ast_pad_mask)
 
         if last_state_only:
             inner_states = [x]
