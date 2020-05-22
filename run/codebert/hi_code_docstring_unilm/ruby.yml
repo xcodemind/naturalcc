@@ -13,8 +13,8 @@ common:
   log_format: simple # default=None, help='log format to use', choices=['json', 'none', 'simple', 'tqdm']
   tensorboard_logdir: '' # default='', help='path to save logs for tensorboard, should match --logdir of running tensorboard (default: no tensorboard logging)'
   seed: 1 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
-  cpu: 0 # action='store_true', help='use CPU instead of CUDA'
-  fp16: 1 # action='store_true', help='use FP16'
+  cpu: 1 # action='store_true', help='use CPU instead of CUDA'
+  fp16: 0 # action='store_true', help='use FP16'
   memory_efficient_fp16: 0 # action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
   fp16_no_flatten_grads: 0 # action='store_true', help='don\'t flatten FP16 grads tensor'
   fp16_init_scale: 128 # 2 ** 7 # default=2 ** 7, type=int, help='default FP16 loss scale'
@@ -25,7 +25,7 @@ common:
   user_dir: ~ # default=None, help='path to a python module containing custom extensions (tasks and/or architectures)'
   empty_cache_freq: 0 # type=int, help='how often to clear the PyTorch CUDA cache (0 to disable)'
   all_gather_list_size: 16384 # default=16384, type=int, help='number of bytes reserved for gathering stats from workers'
-  task: masked_lm # task
+  task: masked_code_docstring_unilm # masked_code_docstring # masked_lm # task
 
 dataset:
   num_workers: 1 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
@@ -33,9 +33,9 @@ dataset:
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
   max_sentences: 16 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
-  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
-  train_subset: train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
-  valid_subset: valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
+  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
+  train_subset: test # train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
+  valid_subset: test # valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
   validate_interval: 1 # type=int, default=1, metavar='N', help='validate every N epochs'
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
   disable_validation: ~ # action='store_true',help='disable validation'
@@ -66,8 +66,9 @@ distributed_training:
 
   global_sync_iter: 50 # default=50, type=int, help="Iteration for syncing global model",
   warmup_iterations: 500 # default=500, type=int, help="warmup iterations for model to broadcast",
+
 task:
-  data: /data/wanyao/ghproj_d/naturalcodev3/wikitext-103-raw-bak # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
   tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
   mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
@@ -78,8 +79,19 @@ task:
 
   pooler_activation_fn: 'tanh' # choices=utils.get_available_activation_fns(), help='Which activation function to use for pooler layer.'
 
+  # for summarization
+  source_lang: code
+  target_lang: docstring
+  load_alignments: 0 #', action='store_true', help='load the binarized alignments'
+  left_pad_source: 1 #', default='True', type=str, metavar='BOOL', help='pad the source on the left'
+  left_pad_target: 0 #', default='False', type=str, metavar='BOOL', help='pad the target on the left'
+  max_source_positions: 1024 #', default=1024, type=int, metavar='N', help='max number of tokens in the source sequence'
+  max_target_positions: 1024 #', default=1024, type=int, metavar='N', help='max number of tokens in the target sequence'
+  upsample_primary: 1 #', default=1, type=int, help='amount to upsample primary dataset'
+  truncate_source: 0 #', action='store_true', default=False, help='truncate source to max-source-positions'
+
 model:
-  arch: roberta # '-a', default='fconv', metavar='ARCH', choices=ARCH_MODEL_REGISTRY.keys(), help='Model Architecture'
+  arch: hi_code_docstring_unilm #roberta # '-a', default='fconv', metavar='ARCH', choices=ARCH_MODEL_REGISTRY.keys(), help='Model Architecture'
   pooler_dropout: 0.0 # type=float, metavar='D', help='dropout probability in the masked_lm pooler layers'
   activation_fn: gelu # choices=utils.get_available_activation_fns(), help='activation function to use'
   dropout: 0.1 # type=float, metavar='D', help='dropout probability'
@@ -95,7 +107,7 @@ model:
   decoder_embed_path: '' # type=str, metavar='STR', help='path to pre-trained decoder embedding'
   decoder_embed_dim: 0 # type=int, metavar='N', help='decoder embedding dimension'
   decoder_ffn_embed_dim: 0 # type=int, metavar='N', help='decoder embedding dimension for FFN'
-  decoder_layers: 0 # type=int, metavar='N', help='num decoder layers'
+  decoder_layers: 12 # type=int, metavar='N', help='num decoder layers'
   decoder_attention_heads: 0 # type=int, metavar='N', help='num decoder attention heads'
   decoder_learned_pos: 0 # action='store_true', help='use learned positional embeddings in the decoder'
   decoder_normalize_before: 0 # action='store_true', help='apply layernorm before each decoder block'
@@ -145,7 +157,7 @@ optimization:
     log-keys: '' # type=str, default=None, help='output keys to log'
 
 checkpoint:
-  save_dir: /data/wanyao/ghproj_d/naturalcodev3/wikitext-103-raw-bak/checkpoints # default='checkpoints', help='path to save checkpoints'
+  save_dir: ~/.ncc/CodeSearchNet/summarization/checkpoints # default='checkpoints', help='path to save checkpoints'
   restore_file: checkpoint_last.pt # default='checkpoint_last.pt', help='filename from which to load checkpoint (default: <save-dir>/checkpoint_last.pt'
   reset_dataloader: ~ # action='store_true', help='if set, does not reload dataloader state from the checkpoint'
   reset_lr_scheduler: ~ # action='store_true', help='if set, does not load lr scheduler state from the checkpoint'

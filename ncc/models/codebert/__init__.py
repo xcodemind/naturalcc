@@ -8,9 +8,9 @@
 # from .model_camembert import *  # noqa
 # from .model_xlmr import *  # noqa
 
-from .codebert_unilm import *
-from .codebert_roberta import *
-
+from .code_docstring_unilm import *
+from .code_docstring_roberta import *
+from .hi_code_docstring_unilm import *
 # __all__ = [
 #     'BertModel',
 #     'RobertaModel'

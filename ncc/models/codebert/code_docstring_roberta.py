@@ -24,8 +24,8 @@ from ncc.models.hub_interface import RobertaHubInterface
 from ncc import LOGGER
 
 
-@register_model('codebert_roberta')
-class CodeBertRobertaModel(FairseqLanguageModel):
+@register_model('code_docstring_roberta')
+class CodeDocstringRobertaModel(FairseqLanguageModel):
 
     @classmethod
     def hub_models(cls):
