@@ -6,10 +6,11 @@
 from typing import *
 
 import os
+import torch
 import ujson
 from collections import Counter
 
-import torch
+from ncc.utils.tokenizer import tokenize_string
 
 
 def safe_readline(f):
@@ -28,7 +29,7 @@ class Binarizer:
             filename,
             dict,  # Ditionary
             consumer,
-            tokenize,
+            tokenize=tokenize_string,
             append_eos=True,
             reverse_order=False,
             offset=0,
