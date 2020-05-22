@@ -21,3 +21,7 @@ sys.path:  ['/data/wanyao/Dropbox/ghproj-titan/naturalcode/src', '/home/wanyao/a
 包括了naturalcode根目录 和naturalcode/src，所以此时所有包都可以这样调用from ncc.xxx import xxx
 最后发布开源代码的时候，install会自动配置这个path变量
 -----------------------------------------
+
+Cython error
+如果提示 "pip install --editable"，说明cython/cpp文件没有编译，需要在v3根目录运行
+"python setup.py build_ext --inplace"
