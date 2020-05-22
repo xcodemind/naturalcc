@@ -5,12 +5,18 @@
 
 from typing import *
 
+import re
 import os
 import torch
 import ujson
 from collections import Counter
 
-from ncc.utils.tokenizer import tokenize_string
+
+def tokenize_string(line: str) -> List[str]:
+    """split string by regrex [\s+]"""
+    line = re.split(r'\s+', ' ', line)
+    line = line.strip()
+    return line.split()
 
 
 def safe_readline(f):
