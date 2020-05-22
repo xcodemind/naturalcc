@@ -88,7 +88,7 @@ class CodeSearchNet(object):
         for lng in self.resources.keys():
             self.build(lng)
 
-        self.pool = ppool.PPool(thread_num)
+        self.pool = PPool(thread_num)
         self._set_raw_files()
 
     def _update_dirs(self):

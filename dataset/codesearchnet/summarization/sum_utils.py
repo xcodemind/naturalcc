@@ -246,7 +246,7 @@ def path_special_symbols(files: List[str]) -> Set:
 
     def path_body_tokens(line: str, *args, **kwargs):
         line = ujson.loads(line.strip())
-        paths = line[len(constants.CLS):].split(constants.S_SEP)
+        paths = line.split(constants.S_SEP)
         body = [tokenizer.tokenize_string(
             re.split(r'{}|{}'.format(constants.H_SEP, constants.T_SEP), path)[1]
         ) for path in paths]
@@ -326,6 +326,7 @@ def build_model(file: str, model_name: str, vocab_size: int, special_symbols: Op
         format(','.join(file), model_name, vocab_size)
     if special_symbols is not None:
         params += ' --user_defined_symbols={}'.format(','.join(special_symbols))
+    LOGGER.info(params)
     spm.SentencePieceTrainer.Train(params)
 
 
