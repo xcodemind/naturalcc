@@ -84,6 +84,8 @@ if __name__ == "__main__":
     build_model(train_input_files, args.bpe_models, args.vocab_size, args.special_symbols)
 
     for modality in args.modalities:
+        # modality = 'path'
+        # modality = 'docstring'
         for input_file, output_file in zip(args.input_files[modality], args.output_files[modality]):
             LOGGER.info('write {} into {}'.format(input_file, output_file))
             write_bpe_files(args, [input_file], [output_file])

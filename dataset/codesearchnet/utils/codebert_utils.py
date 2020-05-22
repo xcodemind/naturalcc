@@ -298,6 +298,23 @@ def get_special_symbols(args: Dict) -> Optional[Set]:
     return special_symbols
 
 
+# def combine_special_symbols(tokens: List, special_symbols: Optional[Set]) -> List:
+#     """merge _ and special_symbols, e.g. _ <CLS> => _<CLS>"""
+#     if special_symbols is None:
+#         return tokens
+#     new_tokens = []
+#     idx = 0
+#     while idx < len(tokens) - 1:
+#         if (tokens[idx] == constants.SP_SPACE) and (tokens[idx + 1] in special_symbols):
+#             new_tokens.append(tokens[idx] + tokens[idx + 1])
+#             idx += 2
+#         else:
+#             new_tokens.append(tokens[idx])
+#             idx += 1
+#     if idx == len(tokens):
+#         new_tokens.append(tokens[-1])
+#     return new_tokens
+
 def combine_special_symbols(tokens: List, special_symbols: Optional[Set]) -> List:
     """merge _ and special_symbols, e.g. _ <CLS> => _<CLS>"""
     if special_symbols is None:
@@ -305,7 +322,7 @@ def combine_special_symbols(tokens: List, special_symbols: Optional[Set]) -> Lis
     new_tokens = []
     idx = 0
     while idx < len(tokens) - 1:
-        if (tokens[idx] == constants.SP_SPACE) and (tokens[idx + 1] in special_symbols):
+        if (tokens[idx] == constants.SP_SPACE) and (not tokens[idx + 1][0] == constants.SP_SPACE):
             new_tokens.append(tokens[idx] + tokens[idx + 1])
             idx += 2
         else:
@@ -325,6 +342,8 @@ def build_model(file: str, model_name: str, vocab_size: int, special_symbols: Op
     params = '--input={} --model_prefix={} --vocab_size={} --hard_vocab_limit=false'. \
         format(','.join(file), model_name, vocab_size)
     if special_symbols is not None:
+        special_symbols = sorted(list(special_symbols))
+        # special_symbols = [symbol.replace('\"', '\\"') for symbol in special_symbols]
         params += ' --user_defined_symbols={}'.format(','.join(special_symbols))
     LOGGER.info(params)
     spm.SentencePieceTrainer.train(params)
@@ -368,6 +387,7 @@ class WordpieceEncoder(object):
             line = ujson.loads(line)
             if len(line) == 0 and not self.args.keep_empty:
                 return ["EMPTY", None]
+            # line = ' "_operator '
             tokens = self.encode(line)
             tokens = combine_special_symbols(tokens, self.args.special_symbols)
             enc_lines.append(" ".join(tokens))
