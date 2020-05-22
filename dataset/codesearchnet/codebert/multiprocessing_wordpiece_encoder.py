@@ -14,7 +14,7 @@ from multiprocessing import cpu_count
 from ncc import LOGGER
 from ncc.data import constants
 from ncc.data.constants import INSERTED
-from dataset.codesearchnet.summarization.sum_utils import (
+from dataset.codesearchnet.utils.codebert_utils import (
     get_special_symbols,
     insert_sep_token,
     build_model,

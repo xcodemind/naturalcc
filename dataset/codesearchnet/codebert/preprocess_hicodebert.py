@@ -32,7 +32,8 @@ from ncc.utils import (
 from ncc.utils.util_file import load_yaml
 from ncc import LOGGER
 
-from dataset.codesearchnet.summarization.sum_utils import *
+from dataset.codesearchnet.utils.codebert_utils import load_dict, dest_path, file_name, make_all, make_binary_dataset, \
+    insert_sep_token
 
 
 def build_vocab_dict(args: Dict, overwrite: bool = False):
