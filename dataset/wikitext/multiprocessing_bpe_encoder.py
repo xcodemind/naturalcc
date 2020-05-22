@@ -8,6 +8,7 @@
 import argparse
 import contextlib
 import sys
+import os
 
 from collections import Counter
 from multiprocessing import Pool
@@ -25,24 +26,24 @@ def main():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--encoder-json",
+        "--encoder-json", default='~/.ncc/wikitext-103-raw/gpt2_bpe/encoder.json',
         help='path to encoder.json',
     )
     parser.add_argument(
-        "--vocab-bpe",
+        "--vocab-bpe", default='~/.ncc/wikitext-103-raw/gpt2_bpe/vocab.bpe',
         type=str,
         help='path to vocab.bpe',
     )
     parser.add_argument(
         "--inputs",
         nargs="+",
-        default=['-'],
+        default=['~/.ncc/wikitext-103-raw/raw/wiki.valid.raw'],
         help="input files to filter/encode",
     )
     parser.add_argument(
         "--outputs",
         nargs="+",
-        default=['-'],
+        default=['~/.ncc/wikitext-103-raw/wiki.valid.bpe'],
         help="path to save encoded outputs",
     )
     parser.add_argument(
@@ -52,6 +53,11 @@ def main():
     )
     parser.add_argument("--workers", type=int, default=20)
     args = parser.parse_args()
+
+    args.encoder_json = os.path.expanduser(args.encoder_json)
+    args.vocab_bpe = os.path.expanduser(args.vocab_bpe)
+    args.inputs = [os.path.expanduser(input) for input in args.inputs]
+    args.outputs = [os.path.expanduser(output) for output in args.outputs]
 
     assert len(args.inputs) == len(args.outputs), \
         "number of input and output paths should match"

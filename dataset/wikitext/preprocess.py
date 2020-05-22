@@ -57,7 +57,6 @@ def parse_alignment(line):
 def main(args):
 
     # utils.import_user_module(args)
-
     os.makedirs(args.destdir, exist_ok=True)
 
     logger.addHandler(logging.FileHandler(
@@ -492,4 +491,10 @@ if __name__ == "__main__":
     group.add_argument("--workers", metavar="N", default=1, type=int,
                        help="number of parallel workers")
     args = parser.parse_args()
+
+    args.trainpref = os.path.expanduser(args.trainpref)
+    args.validpref = os.path.expanduser(args.validpref)
+    args.testpref = os.path.expanduser(args.testpref)
+    args.destdir = os.path.expanduser(args.destdir)
+
     main(args)

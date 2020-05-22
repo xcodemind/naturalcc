@@ -68,7 +68,7 @@ class MaskedLMTask(FairseqTask):
     def setup_task(cls, args, **kwargs):
         paths = utils.split_paths(args['task']['data'])
         assert len(paths) > 0
-        dictionary = Dictionary.load(os.path.join(paths[0], 'dict.code.txt'))
+        dictionary = Dictionary.load(os.path.join(paths[0], 'dict.txt'))
         LOGGER.info('dictionary: {} types'.format(len(dictionary)))
         return cls(args, dictionary)
 
@@ -205,12 +205,12 @@ class MaskedLMTask(FairseqTask):
         assert len(paths) > 0
         data_path = paths[(epoch - 1) % len(paths)]
         # split_path = os.path.join(data_path, split)
-        split_path = os.path.join(data_path, '{}.code.bpe'.format(split))
+        split_path = os.path.join(data_path, '{}.bpe'.format(split))
 
         dataset = data_utils.load_indexed_dataset(
-            split_path,
-            self.source_dictionary,
-            self.args['dataset']['dataset_impl'],
+            path=split_path,
+            dictionary=self.source_dictionary,
+            dataset_impl=self.args['dataset']['dataset_impl'],
             combine=combine,
         )
         if dataset is None:

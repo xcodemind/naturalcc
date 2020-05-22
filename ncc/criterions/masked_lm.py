@@ -56,7 +56,7 @@ class MaskedLmLoss(FairseqCriterion):
 
         logits = model(**sample['net_input'], masked_tokens=masked_tokens)[0]
         targets = model.get_targets(sample, [logits])
-        # targets = targets[masked_tokens] TODO
+        targets = targets[masked_tokens] #TODO
 
         # (masked_lm_loss), prediction_scores, (hidden_states), (attentions)
         # outputs = model(sample['net_input']['src_tokens'], masked_lm_labels=sample['target'])# if args.mlm else model(inputs, labels=labels)

@@ -12,11 +12,19 @@ import ujson
 from collections import Counter
 
 
-def tokenize_string(line: str) -> List[str]:
-    """split string by regrex [\s+]"""
-    line = re.split(r'\s+', ' ', line)
+SPACE_NORMALIZER = re.compile(r"\s+")
+
+
+def tokenize_string(line):
+    line = SPACE_NORMALIZER.sub(" ", line)
     line = line.strip()
     return line.split()
+
+# def tokenize_string(line: str) -> List[str]:
+#     """split string by regrex [\s+]"""
+#     line = re.split(r'\s+', ' ', line)
+#     line = line.strip()
+#     return line.split()
 
 
 def safe_readline(f):
