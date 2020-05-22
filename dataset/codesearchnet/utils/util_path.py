@@ -74,6 +74,26 @@ def __raw_tree_paths(ast, node_index=constants.ROOT_NODE_NAME, ):
     return tree_paths
 
 
+def mark2string(connector):
+    # mapping = {
+    #     ',_operator': 'comma_operator',
+    #     '"_operator': 'dquote_operator',
+    #     '\'_operator': 'squote_operator',
+    # }
+    new_connector = [None] * len(connector)
+    for idx, element in enumerate(connector):
+        if ',_operator' in element:
+            element = element.replace(',_operator', 'comma_operator')
+        elif '"_operator' in element:
+            element = element.replace('"_operator', 'dquote_operator')
+        elif '\'_operator' in element:
+            element = element.replace('\'_operator', 'squote_operator')
+        else:
+            pass
+        new_connector[idx] = element
+    return new_connector
+
+
 def __collect_sample(ast: Dict, MAX_PATH: int, to_lower: bool, split: bool):
     tree_paths = __raw_tree_paths(ast)
     contexts = []
@@ -87,8 +107,7 @@ def __collect_sample(ast: Dict, MAX_PATH: int, to_lower: bool, split: bool):
             finish = ' '.join(finish)
 
         connector = [ast[v]['node'] for v in connector]
-        # sentencepiece libray use ',' as spliter, to avoid conflict
-        connector = [elmnt.replace(',', 'comma') if ',' in elmnt else elmnt for elmnt in connector]
+        connector = mark2string(connector)
         connector = ' '.join(connector)
         # contexts.append([start, connector, finish])  # append a path
         contexts.append(' '.join([start, H_SEP, connector, T_SEP, finish]))

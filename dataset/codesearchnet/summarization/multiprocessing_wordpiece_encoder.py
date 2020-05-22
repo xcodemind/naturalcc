@@ -31,7 +31,7 @@ if __name__ == "__main__":
     parser.add_argument("--language", type=str, help='sentencepiece tokenizer for language')
     parser.add_argument("--modalities", type=list, help='sentencepiece tokenizer for modalities')
     parser.add_argument("--tgt-dir", type=str,
-                        default='~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/',
+                        default='~/.ncc/CodeSearchNet/codebert/hicodebert-data-bin/',
                         help='save dir for sentencepiece bpe models or save files')
     # parser.add_argument("--bpe-dir", type=str, default='wordpiece_bpe', help='wordpiece_bpe modal save direction')
     parser.add_argument("--keep-empty", type=bool, default=True, help="keep empty lines")
@@ -84,6 +84,8 @@ if __name__ == "__main__":
     build_model(train_input_files, args.bpe_models, args.vocab_size, args.special_symbols)
 
     for modality in args.modalities:
+        # modality = 'path'
+        # modality = 'docstring'
         for input_file, output_file in zip(args.input_files[modality], args.output_files[modality]):
             LOGGER.info('write {} into {}'.format(input_file, output_file))
             write_bpe_files(args, [input_file], [output_file])
