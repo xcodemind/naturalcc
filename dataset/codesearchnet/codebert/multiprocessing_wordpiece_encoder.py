@@ -31,7 +31,7 @@ if __name__ == "__main__":
     parser.add_argument("--language", type=str, help='sentencepiece tokenizer for language')
     parser.add_argument("--modalities", type=list, help='sentencepiece tokenizer for modalities')
     parser.add_argument("--tgt-dir", type=str,
-                        default='~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/',
+                        default='~/.ncc/CodeSearchNet/codebert/hicodebert-data-bin/',
                         help='save dir for sentencepiece bpe models or save files')
     # parser.add_argument("--bpe-dir", type=str, default='wordpiece_bpe', help='wordpiece_bpe modal save direction')
     parser.add_argument("--keep-empty", type=bool, default=True, help="keep empty lines")
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     # args.format = 'piece'
     args.language = 'ruby'
     # code, docstring, path
-    args.modalities = ['code', 'path', ]
+    args.modalities = ['code',] # 'path',
     # args.modalities = ['code', 'docstring', ]
     args.workers = min(args.workers, cpu_count())
     # args.src_dir = '~/.ncc/CodeSearchNet/flatten'
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     if 'code' in args.modalities:
         input_inserted_files = [in_file + INSERTED for in_file in args.input_files['code']]
         for in_file, out_file in zip(args.input_files['code'], input_inserted_files):
-            insert_sep_token(in_file, out_file)
+            insert_sep_token(in_file, out_file, overwrite=True)
         args.input_files['code'] = input_inserted_files
 
     # only build wordpiece model on train files

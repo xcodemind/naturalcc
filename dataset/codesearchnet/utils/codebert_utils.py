@@ -31,7 +31,7 @@ def train_path(args, lang):
         return "{}{}".format(args['preprocess']['trainpref'], ("." + lang) if lang else "")
 
 
-def insert_sep_token(input_file: str, output_file: Optional[str] = None, overwrite: bool = False):
+def insert_sep_token(input_file: str, output_file: Optional[str] = None, overwrite: bool = True):
     """insert CLS/S_SEP for bert"""
     if output_file is None:
         input_file = input_file + '_inserted'
