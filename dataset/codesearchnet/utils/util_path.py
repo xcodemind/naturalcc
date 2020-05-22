@@ -86,7 +86,10 @@ def __collect_sample(ast: Dict, MAX_PATH: int, to_lower: bool, split: bool):
             finish = [str.lower(token) if to_lower else token for token in util.split_identifier(finish)]
             finish = ' '.join(finish)
 
-        connector = ' '.join([ast[v]['node'] for v in connector])
+        connector = [ast[v]['node'] for v in connector]
+        # sentencepiece libray use ',' as spliter, to avoid conflict
+        connector = [elmnt.replace(',', 'comma') if ',' in elmnt else elmnt for elmnt in connector]
+        connector = ' '.join(connector)
         # contexts.append([start, connector, finish])  # append a path
         contexts.append(' '.join([start, H_SEP, connector, T_SEP, finish]))
     try:

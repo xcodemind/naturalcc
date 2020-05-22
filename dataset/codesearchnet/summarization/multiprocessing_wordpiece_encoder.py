@@ -44,8 +44,8 @@ if __name__ == "__main__":
     # args.format = 'piece'
     args.language = 'ruby'
     # code, docstring, path
-    args.modalities = ['path', 'code']
-    # args.modalities = ['docstring', 'code']
+    args.modalities = ['code', 'path', ]
+    # args.modalities = ['code', 'docstring', ]
     args.workers = min(args.workers, cpu_count())
     # args.src_dir = '~/.ncc/CodeSearchNet/flatten'
     args.src_dir = os.path.expanduser(args.src_dir)
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     os.makedirs(tgt_dir, exist_ok=True)
     args.output_files = {
         modality: [
-            os.path.join(tgt_dir, '{}.{}'.format(mode, modality))
+            os.path.join(tgt_dir, '{}.{}.bpe'.format(mode, modality))
             for mode in constants.MODES
         ]
         for modality in args.modalities

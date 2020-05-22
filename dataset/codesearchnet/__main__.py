@@ -18,7 +18,7 @@ def main(*args, **kwargs):
     tree_attrs = ['path']
     all_attrs = flatten_attrs + tree_attrs
     # flatten raw files separately
-    dataset.flatten_data_all(lngs, save_attrs=flatten_attrs, overwrite=True)
+    # dataset.flatten_data_all(lngs, save_attrs=flatten_attrs, overwrite=True)
     # # parse raw_ast into other new tree modalities
     dataset.parse_new_tree_modalities_all(lngs, modalities=tree_attrs, overwrite=True)
     # use cat command to merge files

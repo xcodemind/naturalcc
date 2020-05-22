@@ -327,7 +327,7 @@ def build_model(file: str, model_name: str, vocab_size: int, special_symbols: Op
     if special_symbols is not None:
         params += ' --user_defined_symbols={}'.format(','.join(special_symbols))
     LOGGER.info(params)
-    spm.SentencePieceTrainer.Train(params)
+    spm.SentencePieceTrainer.train(params)
 
 
 class WordpieceEncoder(object):

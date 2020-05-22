@@ -476,7 +476,7 @@ class CodeSearchNet(object):
                     modal_file = os.path.join(modal_dir, os.path.split(file)[-1])
                     new_tree_files[modal] = modal_file
                 params.append((file, new_tree_files, MAX_SUB_TOKEN_LEN,))
-        # self._parse_new_tree_modalities(*params[1])
+        # self._parse_new_tree_modalities(*params[-1])
         self.pool.feed(func=CodeSearchNet._parse_new_tree_modalities, params=params, )
 
     def parse_new_tree_modalities_all(self, lngs: Union[List, str, None] = None, modalities: Optional[List] = None, \
