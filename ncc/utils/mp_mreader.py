@@ -3,9 +3,8 @@
 from typing import *
 
 import os
-from .ppool import (
-    PPool, cpu_count,
-)
+from pathos.multiprocessing import cpu_count
+from .mp_ppool import PPool
 
 
 def _safe_readline(f):

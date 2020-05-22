@@ -17,6 +17,7 @@ from tokenizers.processors import BertProcessing
 import ujson
 from ncc.utils import tokenizer
 
+
 def __best_fitting_dtype(vocab_size=None):
     if vocab_size is not None and vocab_size < 65500:
         return np.uint16

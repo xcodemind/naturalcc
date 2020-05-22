@@ -94,7 +94,7 @@ def __collect_sample(ast: Dict, MAX_PATH: int, to_lower: bool, split: bool):
         if len(contexts) > MAX_PATH:
             shuffle(contexts)
             contexts = contexts[:MAX_PATH]
-        contexts = CLS + ' ' + ' {} '.format(S_SEP).join(contexts)
+        contexts = ' {} '.format(S_SEP).join(contexts)
         return contexts
     except Exception as err:
         print(err)

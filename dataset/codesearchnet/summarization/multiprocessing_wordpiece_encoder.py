@@ -7,8 +7,19 @@
 
 import argparse
 
+import os
+import itertools
+from multiprocessing import cpu_count
+
+from ncc import LOGGER
+from ncc.data import constants
 from ncc.data.constants import INSERTED
-from dataset.codesearchnet.summarization.sum_utils import *
+from dataset.codesearchnet.summarization.sum_utils import (
+    get_special_symbols,
+    insert_sep_token,
+    build_model,
+    write_bpe_files,
+)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -18,7 +29,7 @@ if __name__ == "__main__":
                         default='~/.ncc/CodeSearchNet/flatten',
                         help='source data')
     parser.add_argument("--language", type=str, help='sentencepiece tokenizer for language')
-    parser.add_argument("--modality", type=str, help='sentencepiece tokenizer for modality')
+    parser.add_argument("--modalities", type=list, help='sentencepiece tokenizer for modalities')
     parser.add_argument("--tgt-dir", type=str,
                         default='~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/wordpiece_bpe/',
                         help='save dir for sentencepiece bpe models or save files')
@@ -32,35 +43,44 @@ if __name__ == "__main__":
     # args.format = 'piece'
     args.language = 'ruby'
     # code, docstring, path
-    args.modality = 'path'
+    args.modalities = ['path', 'code']
+    # args.modalities = ['docstring', 'code']
     args.workers = min(args.workers, cpu_count())
     # args.src_dir = '~/.ncc/CodeSearchNet/flatten'
     args.src_dir = os.path.expanduser(args.src_dir)
     # args.tgt_dir = '~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/wordpiece_bpe/'
     args.tgt_dir = os.path.expanduser(args.tgt_dir)
-    args.bpe_model = os.path.join(args.tgt_dir, args.language, args.modality)
-    input_files = [
-        os.path.join(args.src_dir, args.language, '{}.{}'.format(mode, args.modality))
-        for mode in constants.MODES
-    ]
-    output_files = [
-        os.path.join(args.tgt_dir, args.language, '{}.{}'.format(mode, args.modality))
-        for mode in constants.MODES
-    ]
+    args.bpe_models = os.path.join(args.tgt_dir, args.language, '_'.join(sorted(args.modalities)))
+
+    args.input_files = {
+        modality: [
+            os.path.join(args.src_dir, args.language, '{}.{}'.format(mode, modality))
+            for mode in constants.MODES
+        ]
+        for modality in args.modalities
+    }
+    args.output_files = {
+        modality: [
+            os.path.join(args.tgt_dir, args.language, '{}.{}'.format(mode, modality))
+            for mode in constants.MODES
+        ]
+        for modality in args.modalities
+    }
 
     os.makedirs(os.path.join(args.tgt_dir, args.language), exist_ok=True)
     args.special_symbols = get_special_symbols(args)
 
-    if args.modality == 'code':
-        input_inserted_files = [in_file + INSERTED for in_file in input_files]
-        for in_file, out_file in zip(input_files, input_inserted_files):
+    if 'code' in args.modalities:
+        input_inserted_files = [in_file + INSERTED for in_file in args.input_files['code']]
+        for in_file, out_file in zip(args.input_files['code'], input_inserted_files):
             insert_sep_token(in_file, out_file)
-        input_files = input_inserted_files
+        args.input_files['code'] = input_inserted_files
 
-    for in_file in input_files:
-        if 'train' in in_file:  # only build wordpiece model on train files
-            build_model(in_file, args.bpe_model, args.vocab_size, args.special_symbols)
+    # only build wordpiece model on train files
+    train_input_files = [file for file in itertools.chain(*args.input_files.values()) if 'train' in file]
+    build_model(train_input_files, args.bpe_models, args.vocab_size, args.special_symbols)
 
-    for input_file, output_file in zip(input_files, output_files):
-        LOGGER.info('write {} into {}'.format(input_file, output_file))
-        write_bpe_files(args, [input_file], [output_file])
+    for modality in args.modalities:
+        for input_file, output_file in zip(args.input_files[modality], args.output_files[modality]):
+            LOGGER.info('write {} into {}'.format(input_file, output_file))
+            write_bpe_files(args, [input_file], [output_file])

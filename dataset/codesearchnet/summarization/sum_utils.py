@@ -10,10 +10,9 @@ import shutil
 import itertools
 import contextlib
 import sentencepiece as spm
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 
 from ncc import LOGGER
-from ncc.data import constants
 from ncc.utils import tokenizer
 from ncc.data import (
     Dictionary,
@@ -21,7 +20,7 @@ from ncc.data import (
     indexed_dataset,
 )
 from ncc.data.binarizer import Binarizer
-from ncc.multiprocessing import mreader
+import ncc.utils.mp_mreader as mreader
 
 
 def train_path(args, lang):
@@ -44,7 +43,7 @@ def insert_sep_token(input_file: str, output_file: Optional[str] = None, overwri
                 ln = ujson.loads(line)
                 ln = re.sub('\n\s*\n', '\n', ln)  # remove "\n \n" -> \n
                 ln = ln.replace('\n', ' ' + constants.S_SEP + ' ')  # should be whitespace before and after S_SEP
-                ln = constants.CLS + ' ' + ln  # profix <CLS>, should be whitespace after the CLS
+                # ln = constants.CLS + ' ' + ln  # profix <CLS>, should be whitespace after the CLS
                 writer.write(ujson.dumps(ln) + '\n')
 
 
@@ -261,31 +260,41 @@ def path_special_symbols(files: List[str]) -> Set:
     return special_symbols
 
 
-def get_special_symbols(args: Dict) -> Optional[List]:
+def get_special_symbols(args: Dict) -> Optional[Set]:
     """some modality need special symbols"""
 
-    def _special_symbols(args: Dict) -> Optional[Set]:
-        special_symbols = set([constants.CLS])
-        if args.modality in ['code']:
+    def _special_symbols(args: Dict, modality: str) -> Optional[Set]:
+        special_symbols = set()
+        if modality in ['code']:
             special_symbols.update([constants.S_SEP])
-        elif args.modality in ['path']:
+        elif modality in ['path']:
             special_symbols.update([constants.H_SEP, constants.T_SEP, constants.S_SEP])
-            special_symbols.update(path_special_symbols(args.input_files))
+            special_symbols.update(path_special_symbols(args.input_files[modality]))
         else:
             return None
         return special_symbols
 
-    default_special_symbols_files = os.path.join(args.tgt_dir, args.language, '.{}.ss'.format(args.modality))
-    if os.path.exists(default_special_symbols_files) and (not args.overwrite):
-        with open(default_special_symbols_files, 'r') as reader:
-            special_symbols = [line.rstrip('\n') for line in reader.readlines()]
-    else:
-        special_symbols = _special_symbols(args)
-        if special_symbols is None:
-            return special_symbols
-        with open(default_special_symbols_files, 'w') as writer:
-            for symbol in special_symbols:
-                writer.write(symbol + '\n')
+    def _get_special_symbols(args: Dict, modality: str) -> Optional[Set]:
+        default_special_symbols_files = os.path.join(args.tgt_dir, args.language, '.{}.ss'.format(modality))
+        if os.path.exists(default_special_symbols_files) and (not args.overwrite):
+            with open(default_special_symbols_files, 'r') as reader:
+                special_symbols = [line.rstrip('\n') for line in reader.readlines()]
+        else:
+            special_symbols = _special_symbols(args, modality)
+            if special_symbols is None:
+                return special_symbols
+            with open(default_special_symbols_files, 'w') as writer:
+                for symbol in special_symbols:
+                    writer.write(symbol + '\n')
+        return special_symbols
+
+    special_symbols = set()
+    for modality in args.modalities:
+        sp_symbols = _get_special_symbols(args, modality)
+        if sp_symbols is None:
+            pass
+        else:
+            special_symbols.update(sp_symbols)
     return special_symbols
 
 
@@ -314,13 +323,13 @@ def build_model(file: str, model_name: str, vocab_size: int, special_symbols: Op
             and not overwrite:
         return
     params = '--input={} --model_prefix={} --vocab_size={} --hard_vocab_limit=false'. \
-        format(file, model_name, vocab_size)
+        format(','.join(file), model_name, vocab_size)
     if special_symbols is not None:
         params += ' --user_defined_symbols={}'.format(','.join(special_symbols))
     spm.SentencePieceTrainer.Train(params)
 
 
-class BPEEncoder(object):
+class WordpieceEncoder(object):
 
     def __init__(self, args):
         self.args = args
@@ -329,7 +338,7 @@ class BPEEncoder(object):
         global sp
         # bpe = get_encoder(self.args.encoder_json, self.args.vocab_bpe)
         sp = spm.SentencePieceProcessor()
-        sp.Load('{}.model'.format(self.args.bpe_model))
+        sp.Load('{}.model'.format(self.args.bpe_models))
 
     def encode(self, line):
         global sp
@@ -387,7 +396,7 @@ def write_bpe_files(args: Dict, input_file: List[str], output_file: List[str]):
             for output in output_file
         ]
 
-        encoder = BPEEncoder(args)
+        encoder = WordpieceEncoder(args)
         with Pool(args.workers, initializer=encoder.initializer) as pool:
             encoded_lines = pool.imap(encoder.encode_lines, zip(*input_files), 100)
 

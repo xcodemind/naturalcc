@@ -24,8 +24,7 @@ from dataset.codesearchnet.utils import util_path
 from dataset.codesearchnet.utils import util_ast
 from dataset.codesearchnet.parser import CodeParser
 
-# from ncc.multiprocessing import mpool
-from ncc.multiprocessing import ppool
+from ncc.utils.mp_ppool import PPool
 from ncc import LOGGER
 
 

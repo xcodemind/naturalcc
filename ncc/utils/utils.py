@@ -199,8 +199,6 @@ def clean_up_sentence(sentence: torch.Tensor, remove_UNK=False, remove_EOS=False
     return sentence
 
 
-
-
 def indices_to_words(src_list: List, vocab: _Dict, oov_vocab: List) -> List:
     pred_list = [None] * len(src_list)  # src_list.size(0)
     for ind, src_index in enumerate(src_list):
@@ -215,6 +213,7 @@ def indices_to_words(src_list: List, vocab: _Dict, oov_vocab: List) -> List:
         else:
             pred_list[ind] = p
     return pred_list
+
 
 def masked_softmax(vector: torch.Tensor,
                    mask: torch.Tensor,
@@ -252,10 +251,6 @@ def masked_softmax(vector: torch.Tensor,
     return result
 
 
-
-
-
-
 # utils from fairseq.utils.py
 # Copyright (c) Facebook, Inc. and its affiliates.
 #
@@ -281,7 +276,6 @@ from ncc.logging.meters import safe_round
 from ncc.modules.gelu import gelu, gelu_accurate
 from ncc.modules.attention.multihead_attention import MultiheadAttention
 from torch import Tensor
-
 
 logger = logging.getLogger(__name__)
 
@@ -327,19 +321,19 @@ def move_to_cuda(sample):
 
 
 def get_incremental_state(
-    module: MultiheadAttention,
-    incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]],
-    key: str,
+        module: MultiheadAttention,
+        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]],
+        key: str,
 ) -> Optional[Dict[str, Optional[Tensor]]]:
     """Helper for getting incremental state for an nn.Module."""
     return module.get_incremental_state(incremental_state, key)
 
 
 def set_incremental_state(
-    module: MultiheadAttention,
-    incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]],
-    key: str,
-    value: Dict[str, Optional[Tensor]],
+        module: MultiheadAttention,
+        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]],
+        key: str,
+        value: Dict[str, Optional[Tensor]],
 ) -> Optional[Dict[str, Dict[str, Optional[Tensor]]]]:
     """Helper for setting incremental state for an nn.Module."""
     if incremental_state is not None:
@@ -419,7 +413,7 @@ def replace_unk(hypo_str, src_str, alignment, align_dict, unk):
 
 
 def post_process_prediction(
-    hypo_tokens, src_str, alignment, align_dict, tgt_dict, remove_bpe=None
+        hypo_tokens, src_str, alignment, align_dict, tgt_dict, remove_bpe=None
 ):
     hypo_str = tgt_dict.string(hypo_tokens, remove_bpe)
     if align_dict is not None:
@@ -481,7 +475,7 @@ def buffered_arange(max):
 
 
 def convert_padding_direction(
-    src_tokens, padding_idx, right_to_left=False, left_to_right=False
+        src_tokens, padding_idx, right_to_left=False, left_to_right=False
 ):
     assert right_to_left ^ left_to_right
     pad_mask = src_tokens.eq(padding_idx)
