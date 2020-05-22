@@ -11,7 +11,7 @@ import torch.nn.functional as F
 from ncc.utils import utils
 from torch import Tensor, nn
 from torch.nn import Parameter
-from ncc.incremental_decoding_utils import with_incremental_state
+from ncc.utils.incremental_decoding_utils import with_incremental_state
 
 
 @with_incremental_state
