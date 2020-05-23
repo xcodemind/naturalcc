@@ -16,7 +16,7 @@ from ncc.data.binarizer import safe_readline
 from ncc.data import data_utils
 from ncc.data import constants
 from ncc.utils.file_io import PathManager
-from ncc.utils import tokenizer # import tokenize_line
+from ncc.utils import tokenizer  # import tokenize_line
 
 
 class Dictionary(object):
@@ -315,13 +315,13 @@ class Dictionary(object):
     #     return ids
 
     def encode_line(
-        self,
-        line,
-        line_tokenizer, # =tokenizer.tokenize_line
-        add_if_not_exist=True,
-        consumer=None,
-        append_eos=True,
-        reverse_order=False,
+            self,
+            line,
+            line_tokenizer,  # =tokenizer.tokenize_line
+            add_if_not_exist=True,
+            consumer=None,
+            append_eos=True,
+            reverse_order=False,
     ):
         words = line_tokenizer(line)
         if reverse_order:

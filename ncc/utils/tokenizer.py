@@ -15,6 +15,7 @@ from ncc.data.constants import (
 
 SPACE_NORMALIZER = re.compile(r"\s+")
 
+
 # For compatibility
 def tokenize_line(line: str) -> List[str]:
     """split string by regrex [\s+]"""
@@ -100,34 +101,18 @@ def CSN_tokenizer(modal: str):
         3) data has been tokenized but further serialized,
             e.g. path ([head], [center], [tail]), 'bin_ast', 'raw_ast' (dict)
     """
-    if modal in ['docstring', 'code', 'original_string', ]:
-        return tokenize_string
-    elif modal in ['code_tokens', 'func_name', 'sbt', 'tok', 'comment', 'docstring_tokens', 'sbtao', ]:
-        return tokenize_list
-    elif modal in ['bin_ast', 'raw_ast', ]:
-        return tokenize_tree
-    elif modal == 'path':
-        return tokenize_path
-    elif modal == 'body':
-        return tokenize_body
-    elif modal == 'border':
-        return tokenize_list
-    else:
-        raise NotImplementedError
-
-
-# def tokinzer_returns(func: Any) -> int:
-#     """return the number of a tokenizer function's return values"""
-#     if func in [tokenize_path, ]:
-#         return 2
-#     elif func in [tokenize_string, tokenize_list, tokenize_multi_list, ]:
-#         return 1
-#     else:
-#         raise NotImplementedError('No such function in {}'.format(__file__))
-
-
-# __all__ = (
-#     'tokenize_line', 'tokenize_string', 'tokenize_list', 'tokenize_tree', 'tokenize_path',
-#     'CSN_tokenizer',
-#     # tokinzer_returns,
-# )
+    # if modal in ['docstring', 'code', 'original_string', ]:
+    #     return tokenize_string
+    # elif modal in ['code_tokens', 'func_name', 'sbt', 'tok', 'comment', 'docstring_tokens', 'sbtao', ]:
+    #     return tokenize_list
+    # elif modal in ['bin_ast', 'raw_ast', ]:
+    #     return tokenize_tree
+    # elif modal == 'path':
+    #     return tokenize_path
+    # elif modal == 'body':
+    #     return tokenize_body
+    # elif modal == 'border':
+    #     return tokenize_list
+    # else:
+    #     raise NotImplementedError
+    return tokenize_string
