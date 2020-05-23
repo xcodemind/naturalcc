@@ -45,7 +45,7 @@ def DistributedFairseqModel(args, model):
         init_kwargs = dict(
             module=model,
             world_size=args.distributed_world_size,
-            buffer_size=2**28,
+            buffer_size=2 ** 28,
         )
     else:
         raise ValueError('Unknown --ddp-backend: ' + args.ddp_backend)

@@ -8,6 +8,8 @@ Data pre-processing: build vocabularies and binarize training data.
 """
 from typing import Dict, List
 
+import argparse
+
 import os
 import re
 import ujson
@@ -32,8 +34,9 @@ from ncc.utils import (
 from ncc.utils.util_file import load_yaml
 from ncc import LOGGER
 
-from dataset.codesearchnet.utils.codebert_utils import load_dict, dest_path, file_name, make_all, make_binary_dataset, \
-    insert_sep_token
+from dataset.codesearchnet.utils.codebert_utils import (
+    build_dictionary, make_all, make_binary_dataset,
+)
 
 
 def build_vocab_dict(args: Dict, overwrite: bool = False):
@@ -41,20 +44,20 @@ def build_vocab_dict(args: Dict, overwrite: bool = False):
     LOGGER.info('Build vocabularies...')
     task = tasks.get_task(args['preprocess']['task'])
     src_dicts = OrderedDict()
-    assert args['preprocess']['trainpref'], RuntimeError('Build vocabularies from train dataset, but it is null.')
-    target = not args['preprocess']['only_source']
+
+    assert args['preprocess']['joined_dictionary']
+
+    joined_dictionary_filename = os.path.join(args['preprocess']['destdir'],
+                                              os.path.split(args['preprocess']['srcdict'])[-1])
+    if os.path.exists(joined_dictionary_filename):
+        joined_dictionary = Dictionary.load(joined_dictionary_filename)
+    else:
+        joined_dictionary = Dictionary.load(args['preprocess']['srcdict'])
+        joined_dictionary.save(joined_dictionary_filename)
 
     for modality in args['preprocess']['source_lang']:
-        src_dicts[modality] = load_dict(args, task, modality, overwrite)
-    # for joined dictionary
-    if args['preprocess']['joined_dictionary']:
-        # the tgt_dict equals
-        tgt_dict = src_dicts['code'] if 'code' in src_dicts else None
-    else:
-        if target:
-            tgt_dict = load_dict(args, task, args['preprocess']['target_lang'], overwrite)
-        else:
-            tgt_dict = None
+        src_dicts[modality] = joined_dictionary
+    tgt_dict = joined_dictionary
     return src_dicts, tgt_dict
 
 
@@ -63,49 +66,18 @@ def build_vocab_dict(args: Dict, overwrite: bool = False):
 ######################################################################
 
 
-def make_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers=1):
-    if args['preprocess']['dataset_impl'] == "raw":
-        # Copy original text file to destination folder
-        output_text_file = dest_path(args,
-                                     output_prefix,
-                                     # + ".{}-{}".format(args['preprocess']['source_lang'], args['preprocess']['target_lang'])
-                                     lang,
-                                     )
-        if lang == 'docstring':  # since docstring did't be inserted <S_SEP>, therefore the inserted should be set to False
-            shutil.copyfile(file_name(input_prefix, lang, inserted=False), output_text_file)
-        else:
-            shutil.copyfile(file_name(input_prefix, lang, inserted=args['preprocess']['inserted']), output_text_file)
-    else:
-        if lang == 'docstring':
-            make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers, inserted=False)
-        else:
-            make_binary_dataset(args, vocab, input_prefix, output_prefix, lang, num_workers,
-                                inserted=args['preprocess']['inserted'])
-
-
 def build_dataset(args: Dict, src_dicts: Dict[str, Dictionary], tgt_dict: Dictionary):
     """build dataset for modal"""
     for modality, src_dict in src_dicts.items():
         LOGGER.info('Building dataset for {}'.format(modality))
         make_all(args, modality, src_dict)
-    target = not args['preprocess']['only_source']
-    if target:
+    if not args['preprocess']['only_source']:
         make_all(args, args['preprocess']['target_lang'], tgt_dict)
-
-
-def build_insert_files(args: Dict, attr: str):
-    """insert special tokens for the code modality"""
-    for mode in constants.MODES:
-        src_file = file_name(args['preprocess']['{}pref'.format(mode)], attr)
-        tgt_file = file_name(args['preprocess']['{}pref'.format(mode)], attr, inserted=True)
-        insert_sep_token(src_file, tgt_file)
 
 
 def main(args):
     LOGGER.info('mkdir for {} task'.format(args['preprocess']['task']))
     os.makedirs(args['preprocess']['destdir'], exist_ok=True)
-    build_insert_files(args, attr='code')
-    exit()
     # 1. build vocabulary
     src_dicts, tgt_dict = build_vocab_dict(args, overwrite=True)
     # 2. build dataset

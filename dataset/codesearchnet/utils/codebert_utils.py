@@ -20,7 +20,10 @@ from ncc.data import (
     indexed_dataset,
 )
 from ncc.data.binarizer import Binarizer
+from ncc.data.constants import (PAD, EOS, UNK, BOS)
 import ncc.utils.mp_mreader as mreader
+
+DICTIONARY_CONTAINED = set([PAD, EOS, UNK, BOS])
 
 
 def train_path(args, lang):
@@ -37,6 +40,7 @@ def insert_sep_token(input_file: str, output_file: Optional[str] = None, overwri
         input_file = input_file + '_inserted'
     if os.path.exists(output_file) and not overwrite:
         return
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
     with open(output_file, 'w') as writer:
         with open(input_file, 'r') as reader:
             for line in reader.readlines():
@@ -74,7 +78,6 @@ def build_dictionary(args: Dict, task, modality: str, filenames, src=False, tgt=
     assert src ^ tgt, RuntimeError('Cannot build dictionary for source and target domain at the same time.')
     return task.build_dictionary(
         filenames,
-        modality=modality,
         tokenize_func=tokenizer.CSN_tokenizer(modality),
         workers=args['preprocess']['workers'],
         threshold=args['preprocess']['thresholdsrc'] if src else args['preprocess']['thresholdtgt'],
@@ -88,7 +91,7 @@ def load_dict(args: Dict, task, modality: str, overwrite: bool):
     dict_filename = dict_path(args, modality)
     if os.path.exists(dict_filename) and (not overwrite):
         LOGGER.info('Dict({}) exists and overwrite=False, skip this.'.format(dict_filename))
-        dict = Dictionary.load(dict_filename, attr=modality)
+        dict = Dictionary.load(dict_filename)
     else:
         # update dict from data
         dict = build_dictionary(args, task, modality, [train_path(args, modality)], src=True)
@@ -98,38 +101,27 @@ def load_dict(args: Dict, task, modality: str, overwrite: bool):
     return dict
 
 
+def vocab2dict(vocab_file: str, dict_file: str = None):
+    if dict_file is None:
+        dict_file = vocab_file.replace('.vocab', '.dict')
+    with open(vocab_file, 'r', encoding='UTF-8') as reader:
+        with open(dict_file, 'w', encoding='UTF-8') as writer:
+            for line in reader:
+                token, _ = line.rstrip('\n').split('\t')
+                if token in DICTIONARY_CONTAINED:
+                    continue
+                writer.write('{} {}\n'.format(token, 1))
+
+
 ######################################################################
 # dataset functions
 ######################################################################
 
 
-def file_name(file_prefix: str, attr: str, inserted: bool = False) -> str:
-    fname = file_prefix + '_inserted' if inserted else file_prefix
-    if attr is not None:
-        fname += ".{lang}".format(lang=attr)
-    return fname
-
-
-def dest_path(args: Dict, file_prefix: str, attr: str) -> str:
-    return os.path.join(args['preprocess']['destdir'], file_name(file_prefix, attr))
-
-
-def dataset_dest_prefix(args: Dict, file_prefix: str, attr: str):
-    """dataset file name without extension"""
-    dest_file = os.path.join(args['preprocess']['destdir'], '.'.join([file_prefix, attr]))
-    return dest_file
-
-
-def dataset_dest_file(args: Dict, file_prefix: str, attr: str, extension: str):
-    """generate bin file for each modality"""
-    base = dataset_dest_prefix(args, file_prefix, attr)
-    return "{}.{}".format(base, extension)
-
-
-def binarize(args: Dict, filename: str, dict: Dictionary, file_prefix: str, attr: str,
+def binarize(args: Dict, filename: str, dict: Dictionary, in_file: str, attr: str,
              offset: int, end: int, append_eos: bool = True):
     """binarize function for multi-processing"""
-    ds_file = dataset_dest_file(args, file_prefix, attr, extension='bin')
+    ds_file = '{}.bin'.format(in_file)
     ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(dict))
 
     def consumer(tensor):
@@ -137,12 +129,12 @@ def binarize(args: Dict, filename: str, dict: Dictionary, file_prefix: str, attr
 
     res = Binarizer.binarize(filename, dict, consumer, tokenize=tokenizer.CSN_tokenizer(attr),
                              append_eos=append_eos, offset=offset, end=end)
-    ds.finalize(dataset_dest_file(args, file_prefix, attr, extension="idx"))
+    ds.finalize('{}.idx'.format(in_file))
     return res
 
 
-def make_binary_dataset(args: Dict, dict: Dictionary, input_prefix, output_prefix,
-                        attr: str, num_workers: int, inserted: bool = False):
+def make_binary_dataset(args: Dict, dict: Dictionary, input_file, output_file,
+                        attr: str, num_workers: int):
     """make binary dataset"""
     LOGGER.info("[{}] Dictionary: {} types".format(attr, len(dict) - 1))
     n_seq_tok = [0, 0]
@@ -153,8 +145,6 @@ def make_binary_dataset(args: Dict, dict: Dictionary, input_prefix, output_prefi
         n_seq_tok[0] += worker_result["nseq"]
         n_seq_tok[1] += worker_result["ntok"]
 
-    input_prefix = input_prefix + '_inserted' if inserted else input_prefix
-    input_file = '{}.{}'.format(input_prefix, attr)
     # split a file into different parts
     # if use multi-processing, we first process 2nd to last file
     # 1.txt -> 10 processor, 0(p0)(0-99), 100(p1)(100-199), ...
@@ -164,7 +154,7 @@ def make_binary_dataset(args: Dict, dict: Dictionary, input_prefix, output_prefi
         # p1-pN -> (1 bin-txt, 1 idx), (N bin-txt, N idx)
         pool = Pool(processes=num_workers - 1)
         for worker_id in range(1, num_workers):
-            prefix = "{}{}".format(output_prefix, worker_id)
+            prefix = "{}{}".format(output_file, worker_id)
             pool.apply_async(
                 binarize,
                 (
@@ -181,7 +171,7 @@ def make_binary_dataset(args: Dict, dict: Dictionary, input_prefix, output_prefi
         pool.close()
     # process 1th file, if multi-processing available. If not, process all file
     # p0 -> 0,end
-    ds_file = dataset_dest_file(args, output_prefix, attr, extension='bin')
+    ds_file = '{}.bin'.format(output_file)
     ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(dict))
     merge_result(
         Binarizer.binarize(
@@ -194,14 +184,12 @@ def make_binary_dataset(args: Dict, dict: Dictionary, input_prefix, output_prefi
         pool.join()
         # merge sub-processors' index and data files into final files and delete them.
         for worker_id in range(1, num_workers):
-            prefix = "{}{}".format(output_prefix, worker_id)
-            temp_file_path = dataset_dest_prefix(args, prefix, attr)
+            temp_file_path = "{}{}".format(output_file, worker_id)
             ds.merge_file_(temp_file_path)
             # idx, txt
             os.remove(indexed_dataset.data_file_path(temp_file_path))
             os.remove(indexed_dataset.index_file_path(temp_file_path))
-
-    ds.finalize(dataset_dest_file(args, output_prefix, attr, extension="idx"))
+    ds.finalize('{}.idx'.format(output_file))
 
     LOGGER.info(
         "[{}] {}: {} sents, {} tokens, {:.3}% replaced by {}".format(
@@ -215,29 +203,24 @@ def make_binary_dataset(args: Dict, dict: Dictionary, input_prefix, output_prefi
     )
 
 
-def make_dataset(args: Dict, dict: Dictionary, input_prefix, output_prefix, attr: str,
-                 num_workers: int = 1):
+def make_all(args: Dict, attr: str, dict: Dictionary, modes: Optional[List] = None):
     """
+    build dataset with dictionary for [train/valid/test] mode
+
     build raw/bin dataset
     1) raw dataset: copy raw files
     2) bin dataset: build bin files
     """
-    if args['preprocess']['dataset_impl'] == "raw":
-        # Copy original text file to destination folder
-        output_text_file = dest_path(args, output_prefix, attr, )
-        shutil.copyfile(file_name(input_prefix, attr), output_text_file)
-    else:
-        make_binary_dataset(args, dict, input_prefix, output_prefix, attr, num_workers)
-
-
-def make_all(args: Dict, attr: str, dict: Dictionary, modes: Optional[List] = None):
-    """build dataset with dictionary for [train/valid/test] mode"""
     if modes is None:
         modes = constants.MODES
     for mode in modes:
-        file_prefix = args['preprocess']['{}pref'.format(mode)]
-        if file_prefix:
-            make_dataset(args, dict, file_prefix, mode, attr, num_workers=args['preprocess']['workers'])
+        src_file = os.path.join(args['preprocess']['{}pref'.format(mode)], '.'.join([mode, attr]))
+        tgt_file = os.path.join(args['preprocess']['destdir'], '.'.join([mode, attr]))
+        if args['preprocess']['dataset_impl'] == "raw":
+            # Copy original text file to destination folder
+            shutil.copyfile(src_file, tgt_file)
+        else:
+            make_binary_dataset(args, dict, src_file, tgt_file, attr, args['preprocess']['workers'])
 
 
 def path_special_symbols(files: List[str]) -> Set:
@@ -275,7 +258,7 @@ def get_special_symbols(args: Dict) -> Optional[Set]:
         return special_symbols
 
     def _get_special_symbols(args: Dict, modality: str) -> Optional[Set]:
-        default_special_symbols_files = os.path.join(args.tgt_dir, args.language, '.{}.ss'.format(modality))
+        default_special_symbols_files = os.path.join(args.tgt_dir, '.{}.ss'.format(modality))
         if os.path.exists(default_special_symbols_files) and (not args.overwrite):
             with open(default_special_symbols_files, 'r') as reader:
                 special_symbols = [line.rstrip('\n') for line in reader.readlines()]
@@ -283,6 +266,7 @@ def get_special_symbols(args: Dict) -> Optional[Set]:
             special_symbols = _special_symbols(args, modality)
             if special_symbols is None:
                 return special_symbols
+            os.makedirs(os.path.dirname(default_special_symbols_files), exist_ok=True)
             with open(default_special_symbols_files, 'w') as writer:
                 for symbol in special_symbols:
                     writer.write(symbol + '\n')
@@ -339,14 +323,16 @@ def build_model(file: str, model_name: str, vocab_size: int, special_symbols: Op
     if os.path.exists('{}.model'.format(model_name)) and os.path.exists('{}.vocab'.format(model_name)) \
             and not overwrite:
         return
-    params = '--input={} --model_prefix={} --vocab_size={} --hard_vocab_limit=false'. \
-        format(','.join(file), model_name, vocab_size)
+    params = '--input={} --model_prefix={} --hard_vocab_limit=false'.format(','.join(file), model_name)
     if special_symbols is not None:
-        special_symbols = sorted(list(special_symbols))
-        # special_symbols = [symbol.replace('\"', '\\"') for symbol in special_symbols]
+        # PAD, EOS, UNK, BOS is automatically added into Dictionary building, so narrow vocab_size
+        vocab_size -= len(special_symbols & DICTIONARY_CONTAINED)
         params += ' --user_defined_symbols={}'.format(','.join(special_symbols))
+    params += ' --vocab_size={}'.format(vocab_size)
+
     LOGGER.info(params)
     spm.SentencePieceTrainer.train(params)
+    vocab2dict(vocab_file='{}.vocab'.format(model_name))
 
 
 class WordpieceEncoder(object):
@@ -389,7 +375,7 @@ class WordpieceEncoder(object):
                 return ["EMPTY", None]
             # line = ' "_operator '
             tokens = self.encode(line)
-            tokens = combine_special_symbols(tokens, self.args.special_symbols)
+            # tokens = combine_special_symbols(tokens, self.args.special_symbols)
             enc_lines.append(" ".join(tokens))
         return ["PASS", enc_lines]
 

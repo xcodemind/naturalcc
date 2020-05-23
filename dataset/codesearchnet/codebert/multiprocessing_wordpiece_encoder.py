@@ -31,7 +31,7 @@ if __name__ == "__main__":
     parser.add_argument("--language", type=str, help='sentencepiece tokenizer for language')
     parser.add_argument("--modalities", type=list, help='sentencepiece tokenizer for modalities')
     parser.add_argument("--tgt-dir", type=str,
-                        default='~/.ncc/CodeSearchNet/codebert/hicodebert-data-bin/',
+                        default='~/.ncc/CodeSearchNet/codebert/',
                         help='save dir for sentencepiece bpe models or save files')
     # parser.add_argument("--bpe-dir", type=str, default='wordpiece_bpe', help='wordpiece_bpe modal save direction')
     parser.add_argument("--keep-empty", type=bool, default=True, help="keep empty lines")
@@ -44,15 +44,20 @@ if __name__ == "__main__":
     # args.format = 'piece'
     args.language = 'ruby'
     # code, docstring, path
-    args.modalities = ['code',] # 'path',
-    # args.modalities = ['code', 'docstring', ]
-    args.workers = min(args.workers, cpu_count())
-    # args.src_dir = '~/.ncc/CodeSearchNet/flatten'
-    args.src_dir = os.path.expanduser(args.src_dir)
-    # args.tgt_dir = '~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin/'
-    args.tgt_dir = os.path.expanduser(args.tgt_dir)
-    args.bpe_models = os.path.join(args.tgt_dir, args.language, '_'.join(sorted(args.modalities)), 'codesearchnet')
+    # args.modalities = ['path', 'docstring', ]
+    args.modalities = ['code', 'docstring', ]
 
+    # ============================ #
+    # we recommend below configure as freeze
+    # ============================ #
+    args.workers = min(args.workers, cpu_count())
+    args.src_dir = os.path.expanduser(args.src_dir)
+    args.tgt_dir = os.path.expanduser(args.tgt_dir)
+
+    # flatten/train.code -> codebert/data-raw/train.code, ruby/code_docstring/.model(vocab) -> codebert/data-mmap/(NCC)dict,NCC-bin
+    # def test(args)...  -> _ def _ tes t ( args ) ->
+    # code/docstring     ->
+    RAW_DATA_DIR = os.path.join(args.tgt_dir, 'data-raw')
     args.input_files = {
         modality: [
             os.path.join(args.src_dir, args.language, '{}.{}'.format(mode, modality))
@@ -61,11 +66,11 @@ if __name__ == "__main__":
         for modality in args.modalities
     }
 
-    tgt_dir = os.path.join(args.tgt_dir, args.language, '_'.join(sorted(args.modalities)))
-    os.makedirs(tgt_dir, exist_ok=True)
+    args.tgt_dir = os.path.join(RAW_DATA_DIR, args.language, '_'.join(sorted(args.modalities)))
+    args.bpe_models = os.path.join(args.tgt_dir, 'codesearchnet')
     args.output_files = {
         modality: [
-            os.path.join(tgt_dir, '{}.{}.bpe'.format(mode, modality))
+            os.path.join(args.tgt_dir, '{}.{}'.format(mode, modality))
             for mode in constants.MODES
         ]
         for modality in args.modalities
@@ -76,7 +81,7 @@ if __name__ == "__main__":
     if 'code' in args.modalities:
         input_inserted_files = [in_file + INSERTED for in_file in args.input_files['code']]
         for in_file, out_file in zip(args.input_files['code'], input_inserted_files):
-            insert_sep_token(in_file, out_file, overwrite=True)
+            insert_sep_token(in_file, out_file)
         args.input_files['code'] = input_inserted_files
 
     # only build wordpiece model on train files
@@ -84,8 +89,6 @@ if __name__ == "__main__":
     build_model(train_input_files, args.bpe_models, args.vocab_size, args.special_symbols)
 
     for modality in args.modalities:
-        # modality = 'path'
-        # modality = 'docstring'
         for input_file, output_file in zip(args.input_files[modality], args.output_files[modality]):
             LOGGER.info('write {} into {}'.format(input_file, output_file))
             write_bpe_files(args, [input_file], [output_file])
