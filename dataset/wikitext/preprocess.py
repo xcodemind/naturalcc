@@ -254,7 +254,7 @@ def main(args):
         if args.dataset_impl == "raw":
             # Copy original text file to destination folder
             output_text_file = dest_path(
-                output_prefix + ".{}-{}".format(args.source_lang, args.target_lang),
+                output_prefix, # '.bpe' #".{}-{}".format(args.source_lang, args.target_lang),
                 lang,
             )
             shutil.copyfile(file_name(input_prefix, lang), output_text_file)
@@ -496,5 +496,6 @@ if __name__ == "__main__":
     args.validpref = os.path.expanduser(args.validpref)
     args.testpref = os.path.expanduser(args.testpref)
     args.destdir = os.path.expanduser(args.destdir)
+    args.srcdict = os.path.expanduser(args.srcdict)
 
     main(args)
