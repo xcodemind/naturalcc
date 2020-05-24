@@ -24,7 +24,7 @@ from ncc import LOGGER
 from ncc.data.append_token_dataset import AppendTokenDataset
 from ncc.data.truncate_dataset import TruncateDataset
 from ncc.data.strip_token_dataset import StripTokenDataset
-from ncc.data.concat_dataset import ConcatDataset
+from ncc.data.concat_column_dataset import ConcatColumnDataset
 from ncc.data.prepend_token_dataset import PrependTokenDataset
 from ncc.data.mask_code_docstring_pair_dataset import MaskCodeDocstringPairDataset
 from ncc.data import constants
@@ -39,42 +39,21 @@ def load_masked_code_docstring_dataset_roberta(args, epoch,
         max_target_positions, prepend_bos=False, load_alignments=False,
         truncate_source=False, append_source_id=False):
 
-    src_path = os.path.join(data_path, '{}.code.bpe'.format(split))
-    target_path = os.path.join(data_path, '{}.docstring.bpe'.format(split))
+    source_path = os.path.join(data_path, '{}.code'.format(split))
+    target_path = os.path.join(data_path, '{}.docstring'.format(split))
 
-    # src_dataset
-    src_dataset = data_utils.load_indexed_dataset(src_path, 'text', src_dict, dataset_impl)
-    # if truncate_source:
-    #     src_dataset = AppendTokenDataset(
-    #         TruncateDataset(
-    #             StripTokenDataset(src_dataset, src_dict.eos()),
-    #             max_source_positions - 1,
-    #         ),
-    #         src_dict.eos(),
-    #     )
-
-    # tgt_dataset
-    # tgt_dataset = data_utils.load_indexed_dataset(target_path, 'text', tgt_dict, dataset_impl)
-    #
-    # eos = None
-    # align_dataset = None
-    # tgt_dataset_sizes = tgt_dataset.sizes if tgt_dataset is not None else None
-
-    # if dataset is None:
-    #     raise FileNotFoundError('Dataset not found: {} ({})'.format(split, split_path))
-
-    # create continuous blocks of tokens
-    # dataset = TokenBlockDataset(
-    #     dataset,
-    #     dataset.sizes,
-    #     self.args['task']['tokens_per_sample'] - 1,  # one less for <s>
-    #     pad=self.tokenizer.pad_token_id,  # source_dictionary.pad(),
-    #     eos=self.tokenizer.eos_token_id,  # .source_dictionary.eos(),
-    #     break_mode=self.args['task']['sample_break_mode'],
-    # )
+    # source_dataset
+    source_dataset = data_utils.load_indexed_dataset(source_path, 'text', src_dict, tokenizer=None, dataset_impl=dataset_impl)
+    if source_dataset is None:
+        raise FileNotFoundError('Dataset not found: {} ({})'.format(split, source_path))
+    # target_dataset
+    target_dataset = data_utils.load_indexed_dataset(target_path, 'text', tgt_dict, tokenizer=None, dataset_impl=dataset_impl)
+    if target_dataset is None:
+        raise FileNotFoundError('Dataset not found: {} ({})'.format(split, target_path))
 
     # concate dataset
-    dataset = src_dataset
+    dataset = ConcatColumnDataset([source_dataset, target_dataset])
+    # create continuous blocks of tokens
     dataset = TokenBlockDataset(
         dataset,
         dataset.sizes,
@@ -86,25 +65,12 @@ def load_masked_code_docstring_dataset_roberta(args, epoch,
     # LOGGER.info('loaded {} blocks from: {}'.format(len(dataset), split_path))
 
     # # prepend beginning-of-sentence token (<s>, equiv. to [CLS] in BERT)
-    # dataset = PrependTokenDataset(dataset, self.tokenizer.bos_token_id) # .source_dictionary.bos()
+    dataset = PrependTokenDataset(dataset, src_dict.bos())  # .source_dictionary.bos()
     #
     # # create masked input and targets
     mask_whole_words = get_whole_word_mask(args, src_dict) \
         if args['task']['mask_whole_words'] else None
-    #
-    # src_dataset, tgt_dataset = MaskTokensDataset.apply_mask(
-    #     dataset,
-    #     # self.source_dictionary,
-    #     tokenizer=self.tokenizer,
-    #     pad_idx=self.tokenizer.pad_token_id, # .source_dictionary.pad(),
-    #     mask_idx=self.tokenizer.mask_token_id, #self.mask_idx,
-    #     seed=self.args['common']['seed'],
-    #     mask_prob=self.args['task']['mask_prob'],
-    #     leave_unmasked_prob=self.args['task']['leave_unmasked_prob'],
-    #     random_token_prob=self.args['task']['random_token_prob'],
-    #     freq_weighted_replacement=self.args['task']['freq_weighted_replacement'],
-    #     mask_whole_words=mask_whole_words,
-    # )
+
     src_dataset, tgt_dataset = MaskTokensDataset.apply_mask(
         dataset,
         src_dict,

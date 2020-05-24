@@ -183,15 +183,8 @@ class RobertaLMHead(nn.Module):
     def forward(self, features, masked_tokens=None, **kwargs):
         # Only project the unmasked tokens while training,
         # saves both memory and computation
-        # from ipdb import set_trace
-        # set_trace()
         if masked_tokens is not None:
-            new_masked_tokens = masked_tokens.unsqueeze(-1).expand(-1, -1, features.size(-1))
-            _pad_tensor = torch.zeros(features.size(0), features.size(1) - new_masked_tokens.size(1),
-                                      features.size(-1)).bool()
-            new_masked_tokens = torch.cat([new_masked_tokens, _pad_tensor], dim=1)
-            # features = features[masked_tokens, :]
-            features = features * new_masked_tokens.float()
+            features = features[masked_tokens, :]
 
         x = self.dense(features)
         x = self.activation_fn(x)

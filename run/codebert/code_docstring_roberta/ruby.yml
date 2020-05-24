@@ -14,7 +14,7 @@ common:
   tensorboard_logdir: '' # default='', help='path to save logs for tensorboard, should match --logdir of running tensorboard (default: no tensorboard logging)'
   seed: 1 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
   cpu: 0 # action='store_true', help='use CPU instead of CUDA'
-  fp16: 1 # action='store_true', help='use FP16'
+  fp16: 0 # action='store_true', help='use FP16'
   memory_efficient_fp16: 0 # action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
   fp16_no_flatten_grads: 0 # action='store_true', help='don\'t flatten FP16 grads tensor'
   fp16_init_scale: 128 # 2 ** 7 # default=2 ** 7, type=int, help='default FP16 loss scale'

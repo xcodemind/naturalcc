@@ -32,18 +32,14 @@ def load_masked_code_dataset_roberta(args, epoch,
         max_target_positions, prepend_bos=False, load_alignments=False,
         truncate_source=False, append_source_id=False):
 
-    if dataset_impl == 'raw':
-        source_path = os.path.join(data_path, '{}.code'.format(split))
-    else:
-        source_path = os.path.join(data_path, '{}.code'.format(split))
+    source_path = os.path.join(data_path, '{}.code'.format(split))
 
-    # target_path = os.path.join(data_path, '{}.docstring.bpe'.format(split))
-
-    # source_dataset
     # 'text' represent the modality, will be changed
     dataset = data_utils.load_indexed_dataset(source_path, 'text', src_dict, tokenizer=None, dataset_impl=dataset_impl)
-    # concate dataset
-    # dataset = src_dataset
+    if dataset is None:
+        raise FileNotFoundError('Dataset not found: {} ({})'.format(split, split_path))
+
+    # create continuous blocks of tokens
     dataset = TokenBlockDataset(
         dataset,
         dataset.sizes,
@@ -55,7 +51,7 @@ def load_masked_code_dataset_roberta(args, epoch,
     # LOGGER.info('loaded {} blocks from: {}'.format(len(dataset), split_path))
 
     # # prepend beginning-of-sentence token (<s>, equiv. to [CLS] in BERT)
-    dataset = PrependTokenDataset(dataset, src_dict.bos()) # .source_dictionary.bos()
+    dataset = PrependTokenDataset(dataset, src_dict.bos())  # .source_dictionary.bos()
     #
     # # create masked input and targets
     mask_whole_words = get_whole_word_mask(args, src_dict) \
