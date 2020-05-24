@@ -10,7 +10,7 @@ import ujson
 import itertools
 from ncc.data.constants import (
     H_SEP, T_SEP,
-    PAD, CLS, S_SEP,
+    PAD, CLS, P_SEP,
 )
 
 SPACE_NORMALIZER = re.compile(r"\s+")

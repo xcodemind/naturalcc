@@ -11,6 +11,8 @@
 from .code_docstring_unilm import *
 from .code_docstring_roberta import *
 from .hi_code_docstring_unilm import *
+from .code_roberta import *
+
 # __all__ = [
 #     'BertModel',
 #     'RobertaModel'

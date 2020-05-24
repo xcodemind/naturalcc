@@ -14,7 +14,7 @@ common:
   tensorboard_logdir: '' # default='', help='path to save logs for tensorboard, should match --logdir of running tensorboard (default: no tensorboard logging)'
   seed: 1 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
   cpu: 0 # action='store_true', help='use CPU instead of CUDA'
-  fp16: 1 # action='store_true', help='use FP16'
+  fp16: 0 # action='store_true', help='use FP16'
   memory_efficient_fp16: 0 # action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
   fp16_no_flatten_grads: 0 # action='store_true', help='don\'t flatten FP16 grads tensor'
   fp16_init_scale: 128 # 2 ** 7 # default=2 ** 7, type=int, help='default FP16 loss scale'
@@ -33,7 +33,7 @@ dataset:
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
   max_sentences: 16 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
-  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
+  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
   train_subset: test # train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
   valid_subset: test # valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
   validate_interval: 1 # type=int, default=1, metavar='N', help='validate every N epochs'
@@ -46,6 +46,7 @@ dataset:
   num_shards: 1 # default=1, type=int, metavar='N', help='shard generation over N shards'
   shard_id: 0 # default=0, type=int, metavar='ID', help='id of the shard to generate (id < num_shards)'
 
+  joined_dictionary: 1
 
 
 distributed_training:
@@ -68,7 +69,7 @@ distributed_training:
   warmup_iterations: 500 # default=500, type=int, help="warmup iterations for model to broadcast",
 
 task:
-  data: ~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/CodeSearchNet/codebert/data-mmap/ruby/code_docstring # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
   tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
   mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
@@ -157,7 +158,7 @@ optimization:
     log-keys: '' # type=str, default=None, help='output keys to log'
 
 checkpoint:
-  save_dir: ~/.ncc/CodeSearchNet/summarization/checkpoints # default='checkpoints', help='path to save checkpoints'
+  save_dir: ~/.ncc/CodeSearchNet/codebert/checkpoints # default='checkpoints', help='path to save checkpoints'
   restore_file: checkpoint_last.pt # default='checkpoint_last.pt', help='filename from which to load checkpoint (default: <save-dir>/checkpoint_last.pt'
   reset_dataloader: ~ # action='store_true', help='if set, does not reload dataloader state from the checkpoint'
   reset_lr_scheduler: ~ # action='store_true', help='if set, does not load lr scheduler state from the checkpoint'

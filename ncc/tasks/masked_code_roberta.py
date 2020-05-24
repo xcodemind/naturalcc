@@ -32,13 +32,18 @@ def load_masked_code_dataset_roberta(args, epoch,
         max_target_positions, prepend_bos=False, load_alignments=False,
         truncate_source=False, append_source_id=False):
 
-    src_path = os.path.join(data_path, '{}.code.bpe'.format(split))
+    if dataset_impl == 'raw':
+        source_path = os.path.join(data_path, '{}.code'.format(split))
+    else:
+        source_path = os.path.join(data_path, '{}.code'.format(split))
+
     # target_path = os.path.join(data_path, '{}.docstring.bpe'.format(split))
 
-    # src_dataset
-    src_dataset = data_utils.load_indexed_dataset(src_path, 'text', src_dict, dataset_impl)
+    # source_dataset
+    # 'text' represent the modality, will be changed
+    dataset = data_utils.load_indexed_dataset(source_path, 'text', src_dict, tokenizer=None, dataset_impl=dataset_impl)
     # concate dataset
-    dataset = src_dataset
+    # dataset = src_dataset
     dataset = TokenBlockDataset(
         dataset,
         dataset.sizes,
@@ -50,7 +55,7 @@ def load_masked_code_dataset_roberta(args, epoch,
     # LOGGER.info('loaded {} blocks from: {}'.format(len(dataset), split_path))
 
     # # prepend beginning-of-sentence token (<s>, equiv. to [CLS] in BERT)
-    # dataset = PrependTokenDataset(dataset, self.tokenizer.bos_token_id) # .source_dictionary.bos()
+    dataset = PrependTokenDataset(dataset, src_dict.bos()) # .source_dictionary.bos()
     #
     # # create masked input and targets
     mask_whole_words = get_whole_word_mask(args, src_dict) \
@@ -60,7 +65,7 @@ def load_masked_code_dataset_roberta(args, epoch,
         dataset,
         src_dict,
         pad_idx=src_dict.pad(),
-        mask_idx=src_dict.index(constants.T_MASK), #self.mask_idx,
+        mask_idx=src_dict.index(constants.MASK), #self.mask_idx,
         seed=args['common']['seed'],
         mask_prob=args['task']['mask_prob'],
         leave_unmasked_prob=args['task']['leave_unmasked_prob'],
@@ -114,29 +119,35 @@ class MaskedCodeRobertaTask(FairseqTask):
         self.seed = args['common']['seed']
 
         # add mask token
-        # self.mask_idx = dictionary.add_symbol('<mask>')
+        # self.mask_idx = src_dict.add_symbol(constants.MASK)
 
     @classmethod
     def setup_task(cls, args, **kwargs):
         paths = utils.split_paths(args['task']['data'])
         assert len(paths) > 0
         # dictionary = Dictionary.load(os.path.join(paths[0], 'dict.code.txt'))
-        src_dict = cls.load_dictionary(
-            os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['source_lang'])))  # args['task']['source_lang']
-        tgt_dict = cls.load_dictionary(
-            os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['target_lang'])))
+        if args['dataset']['joined_dictionary']:
+            src_dict = cls.load_dictionary(
+                os.path.join(paths[0],
+                             '{}.dict.txt'.format(args['task']['source_lang'])))  # args['task']['source_lang']
+            tgt_dict = src_dict
+        else:
+            src_dict = cls.load_dictionary(
+                os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['source_lang'])))  # args['task']['source_lang']
+            tgt_dict = cls.load_dictionary(
+                os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['target_lang'])))
 
-        src_dict.add_symbol(constants.S_SEP)
-        src_dict.add_symbol(constants.S2S_SEP)
-        src_dict.add_symbol(constants.CLS)
-        src_dict.add_symbol(constants.T_MASK)
+        # src_dict.add_symbol(constants.S_SEP)
+        # src_dict.add_symbol(constants.S2S_SEP)
+        # src_dict.add_symbol(constants.CLS)
+        src_dict.add_symbol(constants.MASK)
         src_dict.add_symbol(constants.SEP)
 
-        tgt_dict.add_symbol(constants.S2S_BOS)
-        tgt_dict.add_symbol(constants.T_MASK)
-        tgt_dict.add_symbol(constants.SEP)
-        print('<T_MASK> id is', src_dict.index('<T_MASK>'))
-        print('<T_MASK> id is', tgt_dict.index('<T_MASK>'))
+        # tgt_dict.add_symbol(constants.S2S_BOS)
+        # tgt_dict.add_symbol(constants.T_MASK)
+        # tgt_dict.add_symbol(constants.SEP)
+        # print('<T_MASK> id is', src_dict.index('<T_MASK>'))
+        # print('<T_MASK> id is', tgt_dict.index('<T_MASK>'))
 
         assert src_dict.pad() == tgt_dict.pad()
         assert src_dict.eos() == tgt_dict.eos()

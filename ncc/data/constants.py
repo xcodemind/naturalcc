@@ -7,6 +7,9 @@ EOS = "</s>"
 UNK = "<unk>"
 BOS = "<s>"
 
+MASK = '<MASK>'
+SEP = '<SEP>'
+
 # for code bert
 S_SEP = '<S_SEP>'  # statement seperator
 CLS = '<CLS>'
@@ -22,7 +25,6 @@ LN_MASK = '<LN_MASK>'  # leaf node mask
 IN_MASK = '<IN_MASK>'  # intermediate node mask
 
 # for unilm
-SEP = '<SEP>'
 S2S_SEP = '<S2S_SEP>'
 S2S_BOS = '<S2S_BOS>'
 
