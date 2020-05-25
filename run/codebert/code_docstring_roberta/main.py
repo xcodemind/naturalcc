@@ -200,7 +200,7 @@ def single_main(args, init_distributed=False):
         checkpoint_utils.verify_checkpoint_directory(args['checkpoint']['save_dir'])
 
     # Print args
-    LOGGER.info(args)
+    # LOGGER.info(args)
 
     # Setup task, e.g., translation, language modeling, etc.
     task = tasks.setup_task(args)
@@ -212,7 +212,7 @@ def single_main(args, init_distributed=False):
     # Build model and criterion
     model = task.build_model(args)
     criterion = task.build_criterion(args)
-    LOGGER.info(model)
+    # LOGGER.info(model)
     LOGGER.info('model {}, criterion {}'.format(args['model']['arch'], criterion.__class__.__name__))
     LOGGER.info('num. model params: {} (num. trained: {})'.format(
         sum(p.numel() for p in model.parameters()),

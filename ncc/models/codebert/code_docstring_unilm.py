@@ -23,6 +23,8 @@ from ncc.modules.codebert.unilm_transformer_sentence_encoder import UnilmTransfo
 from ncc.models.hub_interface import RobertaHubInterface
 from ncc import LOGGER
 
+from ncc.data.constants import INF
+
 
 @register_model('code_docstring_unilm')
 class CodeDocstringUnilmModel(FairseqLanguageModel):
@@ -71,9 +73,8 @@ class CodeDocstringUnilmModel(FairseqLanguageModel):
         return x, extra
 
     def forward(self, src_tokens, segment_labels, attention_mask_unilm, mask_qkv=None, **kwargs):
-        print('forward...')
         x, extra = self.decoder(src_tokens, segment_labels, attention_mask_unilm,
-                                                      output_all_encoded_layers=False, mask_qkv=mask_qkv, **kwargs)
+                                output_all_encoded_layers=False, mask_qkv=mask_qkv, **kwargs)
 
         return x, extra
 
@@ -180,18 +181,11 @@ class RobertaLMHead(nn.Module):
         self.weight = weight
         self.bias = nn.Parameter(torch.zeros(output_dim))
 
-    def forward(self, features, masked_tokens=None, **kwargs):
+    def forward(self, features, masked_pos=None, **kwargs):
         # Only project the unmasked tokens while training,
         # saves both memory and computation
-        # from ipdb import set_trace
-        # set_trace()
-        if masked_tokens is not None:
-            new_masked_tokens = masked_tokens.unsqueeze(-1).expand(-1, -1, features.size(-1))
-            _pad_tensor = torch.zeros(features.size(0), features.size(1) - new_masked_tokens.size(1),
-                                      features.size(-1)).bool()
-            new_masked_tokens = torch.cat([new_masked_tokens, _pad_tensor], dim=1)
-            # features = features[masked_tokens, :]
-            features = features * new_masked_tokens.float()
+        if masked_pos is not None:
+            features = torch.gather(features, 1, masked_pos.unsqueeze(2).expand(-1, -1, features.size(-1)))
 
         x = self.dense(features)
         x = self.activation_fn(x)
@@ -281,7 +275,7 @@ class RobertaEncoder(FairseqDecoder):
             activation_dropout=args['model']['activation_dropout'],
             layerdrop=args['model']['encoder_layerdrop'],
             max_seq_len=args['model']['max_positions'],
-            num_segments=0,
+            num_segments=10,  # avoid
             encoder_normalize_before=True,
             apply_bert_init=True,
             activation_fn=args['model']['activation_fn'],
@@ -293,8 +287,8 @@ class RobertaEncoder(FairseqDecoder):
             weight=self.sentence_encoder.embed_tokens.weight,
         )
 
-    def forward(self, src_tokens, segment_labels, attention_mask_unilm, features_only=False, return_all_hiddens=False,
-                masked_tokens=None, **unused):
+    def forward(self, src_tokens, segment_labels, attention_mask,
+                features_only=False, return_all_hiddens=False, **kwargs):
         """
         Args:
             src_tokens (LongTensor): input tokens of shape `(batch, src_len)`
@@ -311,22 +305,22 @@ class RobertaEncoder(FairseqDecoder):
                   is a list of hidden states. Note that the hidden
                   states have shape `(src_len, batch, vocab)`.
         """
-        x, extra = self.extract_features(src_tokens, segment_labels, attention_mask_unilm,
+        x, extra = self.extract_features(src_tokens, segment_labels, attention_mask,
                                          return_all_hiddens=return_all_hiddens)
         if not features_only:
-            x = self.output_layer(x, masked_tokens=masked_tokens)
+            x = self.output_layer(x, masked_pos=kwargs['masked_pos'])
         return x, extra
 
-    def extract_features(self, src_tokens, segment_labels, attention_mask_unilm, return_all_hiddens=False, **unused):
+    def extract_features(self, src_tokens, segment_labels, attention_mask, return_all_hiddens=False, **unused):
         inner_states, _ = self.sentence_encoder(
-            src_tokens, segment_labels, attention_mask_unilm,
+            src_tokens, segment_labels, attention_mask,
             last_state_only=not return_all_hiddens,
         )
-        features = inner_states[-1].transpose(0, 1)  # T x B x C -> B x T x C
+        features = inner_states[-1]
         return features, {'inner_states': inner_states if return_all_hiddens else None}
 
-    def output_layer(self, features, masked_tokens=None, **unused):
-        return self.lm_head(features, masked_tokens)
+    def output_layer(self, features, masked_pos=None, **unused):
+        return self.lm_head(features, masked_pos)
 
     def max_positions(self):
         """Maximum output length supported by the encoder."""

@@ -8,14 +8,11 @@ import os
 from setuptools import setup, find_packages, Extension
 import sys
 
-
 if sys.version_info < (3, 6):
     sys.exit('Sorry, Python >= 3.6 is required for natural code.')
 
-
-with open('README.md') as f:
+with open('README.md', encoding='UTF-8') as f:
     readme = f.read()
-
 
 if sys.platform == 'darwin':
     extra_compile_args = ['-stdlib=libc++', '-O3']
@@ -63,13 +60,12 @@ extensions = [
     ),
 ]
 
-
 cmdclass = {}
-
 
 try:
     # torch is not available when generating docs
     from torch.utils import cpp_extension
+
     extensions.extend([
         cpp_extension.CppExtension(
             'ncc.libnat',
@@ -93,11 +89,11 @@ try:
 except ImportError:
     pass
 
-
 if 'clean' in sys.argv[1:]:
     # Source: https://bit.ly/2NLVsgE
     print("deleting Cython files...")
     import subprocess
+
     subprocess.run(['rm -f ncc/*.so ncc/**/*.so ncc/*.pyd ncc/**/*.pyd'], shell=True)
 
 setup(

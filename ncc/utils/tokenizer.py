@@ -78,7 +78,7 @@ def tokenize_path(line: str, add_cls: bool = False) -> List[str]:
         path = head + [H_SEP] + body + [T_SEP] + tail
         paths.extend(path)
         if idx < len(line) - 1:
-            paths.append(P_SEP)
+            paths.append(S_SEP)
     return paths
 
 

@@ -32,10 +32,4 @@ SP_SPACE = '▁'
 # only for code modality in bert
 INSERTED = '_inserted'
 
-# tobe updated
-# __all__ = [
-#     'MODES',
-#     'PAD', 'EOS', 'UNK', 'BOS',
-#     'H_SEP', 'T_SEP', 'PATH_SEPS',
-#     'S_SEP', 'CLS', 'STATEMENT_SEPS',
-# ]
+INF = 99999999

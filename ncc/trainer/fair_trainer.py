@@ -72,9 +72,9 @@ class Trainer(object):
     def criterion(self):
         if self._wrapped_criterion is None:
             if (
-                utils.has_parameters(self._criterion)
-                and self.args['distributed_training']['distributed_world_size'] > 1
-                and not self.args['optimization']['use_bmuf']
+                    utils.has_parameters(self._criterion)
+                    and self.args['distributed_training']['distributed_world_size'] > 1
+                    and not self.args['optimization']['use_bmuf']
             ):
                 self._wrapped_criterion = models.DistributedFairseqModel(
                     self.args, self._criterion
@@ -86,7 +86,8 @@ class Trainer(object):
     @property
     def model(self):
         if self._wrapped_model is None:
-            if self.args['distributed_training']['distributed_world_size'] > 1 and not self.args['optimization']['use_bmuf']:
+            if self.args['distributed_training']['distributed_world_size'] > 1 and not self.args['optimization'][
+                'use_bmuf']:
                 self._wrapped_model = models.DistributedFairseqModel(
                     self.args, self._model
                 )
@@ -156,12 +157,12 @@ class Trainer(object):
             )
 
     def load_checkpoint(
-        self,
-        filename,
-        reset_optimizer=False,
-        reset_lr_scheduler=False,
-        optimizer_overrides=None,
-        reset_meters=False,
+            self,
+            filename,
+            reset_optimizer=False,
+            reset_lr_scheduler=False,
+            optimizer_overrides=None,
+            reset_meters=False,
     ):
         """Load all training state from a checkpoint file."""
         extra_state, self._optim_history, last_optim_state = None, [], None
@@ -196,10 +197,10 @@ class Trainer(object):
             # only reload optimizer and lr_scheduler if they match
             last_optim = self._optim_history[-1]
             assert (
-                last_optim["criterion_name"] == self.get_criterion().__class__.__name__
+                    last_optim["criterion_name"] == self.get_criterion().__class__.__name__
             ), "Criterion does not match; please reset the optimizer (--reset-optimizer)."
             assert (
-                last_optim["optimizer_name"] == self.optimizer.__class__.__name__
+                    last_optim["optimizer_name"] == self.optimizer.__class__.__name__
             ), "Optimizer does not match; please reset the optimizer (--reset-optimizer)."
 
             if not reset_lr_scheduler:
@@ -231,12 +232,12 @@ class Trainer(object):
         return extra_state
 
     def get_train_iterator(
-        self,
-        epoch,
-        combine=True,
-        load_dataset=True,
-        data_selector=None,
-        shard_batch_itr=True,
+            self,
+            epoch,
+            combine=True,
+            load_dataset=True,
+            data_selector=None,
+            shard_batch_itr=True,
     ):
         """Return an EpochBatchIterator over the training set for a given epoch."""
         if load_dataset:
@@ -255,12 +256,8 @@ class Trainer(object):
         return self.task.get_batch_iterator(
             dataset=self.task.dataset(self.args['dataset']['train_subset']),
             max_tokens=self.args['dataset']['max_tokens'],
-            max_sentences=self.args['dataset']['max_sentences'], #None, #
-            max_positions=utils.resolve_max_positions(
-                self.task.max_positions(),
-                self.model.max_positions(),
-                self.args['dataset']['max_tokens'],
-            ),
+            max_sentences=self.args['dataset']['max_sentences'],  # None, #
+            max_positions=max_positions,
             ignore_invalid_inputs=True,
             required_batch_size_multiple=self.args['dataset']['required_batch_size_multiple'],
             seed=self.args['common']['seed'],
@@ -302,9 +299,9 @@ class Trainer(object):
                 all-reduce in the last backwards pass.
                 """
                 if (
-                    self.args['distributed_training']['distributed_world_size'] > 1
-                    and hasattr(self.model, "no_sync")
-                    and i < len(samples) - 1
+                        self.args['distributed_training']['distributed_world_size'] > 1
+                        and hasattr(self.model, "no_sync")
+                        and i < len(samples) - 1
                 ):
                     return self.model.no_sync()
                 else:
@@ -386,13 +383,13 @@ class Trainer(object):
 
             # clear CUDA cache to reduce memory fragmentation
             if (
-                self.args['common']['empty_cache_freq'] > 0
-                and (
+                    self.args['common']['empty_cache_freq'] > 0
+                    and (
                     (self.get_num_updates() + self.args['common']['empty_cache_freq'] - 1)
                     % self.args['common']['empty_cache_freq']
-                ) == 0
-                and torch.cuda.is_available()
-                and not self.args['common']['cpu']
+            ) == 0
+                    and torch.cuda.is_available()
+                    and not self.args['common']['cpu']
             ):
                 torch.cuda.empty_cache()
         except FloatingPointError:
@@ -462,7 +459,7 @@ class Trainer(object):
 
         # gather logging outputs from all replicas
         if self.args['distributed_training']['distributed_world_size'] > 1:
-            logging_outputs, (sample_size, ) = self._aggregate_logging_outputs(
+            logging_outputs, (sample_size,) = self._aggregate_logging_outputs(
                 logging_outputs, sample_size, ignore=is_dummy_batch,
             )
 
@@ -585,12 +582,12 @@ class Trainer(object):
         # Return True if it's using multiple GPUs and DDP or multiple GPUs with
         # BMUF and it's a bmuf sync with warmup iterations completed before.
         return self.args['distributed_training']['distributed_world_size'] > 1 and (
-            (not self.args['optimization']['use_bmuf'])
-            or (
-                self.args['optimization']['use_bmuf']
-                and (self.get_num_updates() + 1) % self.args['distributed_training']['global_sync_iter'] == 0
-                and (self.get_num_updates() + 1) > self.args['distributed_training']['warmup_iterations']
-            )
+                (not self.args['optimization']['use_bmuf'])
+                or (
+                        self.args['optimization']['use_bmuf']
+                        and (self.get_num_updates() + 1) % self.args['distributed_training']['global_sync_iter'] == 0
+                        and (self.get_num_updates() + 1) > self.args['distributed_training']['warmup_iterations']
+                )
         )
 
     def _log_oom(self, exc):
@@ -602,10 +599,10 @@ class Trainer(object):
         sys.stderr.flush()
 
     def _aggregate_logging_outputs(
-        self,
-        logging_outputs: List[Dict[str, Any]],
-        *extra_stats_to_sum,
-        ignore=False,
+            self,
+            logging_outputs: List[Dict[str, Any]],
+            *extra_stats_to_sum,
+            ignore=False,
     ):
         if self.task.__class__.logging_outputs_can_be_summed(self.get_criterion()):
             return self._fast_stat_sync_sum(
@@ -617,10 +614,10 @@ class Trainer(object):
             )
 
     def _all_gather_list_sync(
-        self,
-        logging_outputs: List[Dict[str, Any]],
-        *extra_stats_to_sum,
-        ignore=False,
+            self,
+            logging_outputs: List[Dict[str, Any]],
+            *extra_stats_to_sum,
+            ignore=False,
     ):
         """
         Sync logging outputs across workers. all_gather_list_sync is
@@ -640,10 +637,10 @@ class Trainer(object):
         return logging_outputs, extra_stats_to_sum
 
     def _fast_stat_sync_sum(
-        self,
-        logging_outputs: List[Dict[str, Any]],
-        *extra_stats_to_sum,
-        ignore=False,
+            self,
+            logging_outputs: List[Dict[str, Any]],
+            *extra_stats_to_sum,
+            ignore=False,
     ):
         """
         Sync logging outputs across workers. fast_stat_sync_sum is

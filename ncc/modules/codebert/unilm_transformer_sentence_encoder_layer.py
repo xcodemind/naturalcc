@@ -19,19 +19,18 @@ class UnilmTransformerSentenceEncoderLayer(nn.Module):
     """
 
     def __init__(
-        self,
-        embedding_dim: int = 768,
-        ffn_embedding_dim: int = 3072,
-        num_attention_heads: int = 8,
-        dropout: float = 0.1,
-        attention_dropout: float = 0.1,
-        activation_dropout: float = 0.1,
-        activation_fn: str = 'relu',
-        add_bias_kv: bool = False,
-        add_zero_attn: bool = False,
-        export: bool = False,
+            self,
+            embedding_dim: int = 768,
+            ffn_embedding_dim: int = 3072,
+            num_attention_heads: int = 8,
+            dropout: float = 0.1,
+            attention_dropout: float = 0.1,
+            activation_dropout: float = 0.1,
+            activation_fn: str = 'relu',
+            add_bias_kv: bool = False,
+            add_zero_attn: bool = False,
+            export: bool = False,
     ) -> None:
-
         super().__init__()
         # Initialize parameters
         self.embedding_dim = embedding_dim
@@ -58,12 +57,10 @@ class UnilmTransformerSentenceEncoderLayer(nn.Module):
         self.final_layer_norm = LayerNorm(self.embedding_dim, export=export)
 
     def forward(
-        self,
-        x: torch.Tensor,
-        self_attn_mask: torch.Tensor = None,
-        self_attn_mask_unilm: torch.Tensor = None,
-        self_attn_padding_mask: torch.Tensor = None,
-        mask_qkv=None, segment_labels=None,
+            self,
+            x: torch.Tensor,
+            attn_mask: torch.Tensor = None,
+            mask_qkv=None, segment_labels=None,
     ):
         """
         LayerNorm is applied either before or after the self-attention/ffn
@@ -74,9 +71,7 @@ class UnilmTransformerSentenceEncoderLayer(nn.Module):
             query=x,
             key=x,
             value=x,
-            key_padding_mask=self_attn_padding_mask,
-            need_weights=False,
-            attn_mask_unilm=self_attn_mask_unilm,
+            attn_mask=attn_mask,
             mask_qkv=mask_qkv, segment_labels=segment_labels
         )
         x = F.dropout(x, p=self.dropout, training=self.training)

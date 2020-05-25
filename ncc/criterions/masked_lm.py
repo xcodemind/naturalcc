@@ -14,6 +14,7 @@ from ncc.utils import utils
 from ncc.criterions import FairseqCriterion, register_criterion
 from ncc.modules.cross_entropy import cross_entropy
 
+
 @register_criterion('masked_lm')
 class MaskedLmLoss(FairseqCriterion):
     """
@@ -45,18 +46,8 @@ class MaskedLmLoss(FairseqCriterion):
                 masked_tokens.new([True]),
             )
 
-        # masked_tokens = sample['target'].ne(self.padding_idx)
-        # masked_tokens = torch.where(
-        #     # (rare case) when all tokens are masked, project all tokens
-        #     masked_tokens.any(),
-        #     masked_tokens,
-        #     masked_tokens.new([True]),
-        # )
-        # inputs = masked_tokens
-
         logits = model(**sample['net_input'], masked_tokens=masked_tokens)[0]
         targets = model.get_targets(sample, [logits])
-        targets = targets[masked_tokens] #TODO
 
         # (masked_lm_loss), prediction_scores, (hidden_states), (attentions)
         # outputs = model(sample['net_input']['src_tokens'], masked_lm_labels=sample['target'])# if args.mlm else model(inputs, labels=labels)

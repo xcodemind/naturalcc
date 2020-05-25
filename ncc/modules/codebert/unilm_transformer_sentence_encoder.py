@@ -14,6 +14,7 @@ import torch.nn.functional as F
 #     PositionalEmbedding,
 #     TransformerSentenceEncoderLayer,
 # )
+from ncc.data.constants import INF
 from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.attention.unilm_multihead_attention import UnilmMultiheadAttention
 from ncc.modules.roberta.positional_embedding import PositionalEmbedding
@@ -75,32 +76,32 @@ class UnilmTransformerSentenceEncoder(nn.Module):
     """
 
     def __init__(
-        self,
-        padding_idx: int,
-        vocab_size: int,
-        num_encoder_layers: int = 6,
-        embedding_dim: int = 768,
-        ffn_embedding_dim: int = 3072,
-        num_attention_heads: int = 8,
-        dropout: float = 0.1,
-        attention_dropout: float = 0.1,
-        activation_dropout: float = 0.1,
-        layerdrop : float = 0.0,
-        max_seq_len: int = 256,
-        num_segments: int = 2,
-        use_position_embeddings: bool = True,
-        offset_positions_by_padding: bool = True,
-        encoder_normalize_before: bool = False,
-        apply_bert_init: bool = False,
-        activation_fn: str = "relu",
-        learned_pos_embedding: bool = True,
-        add_bias_kv: bool = False,
-        add_zero_attn: bool = False,
-        embed_scale: float = None,
-        freeze_embeddings: bool = False,
-        n_trans_layers_to_freeze: int = 0,
-        export: bool = False,
-        traceable: bool = False,
+            self,
+            padding_idx: int,
+            vocab_size: int,
+            num_encoder_layers: int = 6,
+            embedding_dim: int = 768,
+            ffn_embedding_dim: int = 3072,
+            num_attention_heads: int = 8,
+            dropout: float = 0.1,
+            attention_dropout: float = 0.1,
+            activation_dropout: float = 0.1,
+            layerdrop: float = 0.0,
+            max_seq_len: int = 256,
+            num_segments: int = 2,
+            use_position_embeddings: bool = True,
+            offset_positions_by_padding: bool = True,
+            encoder_normalize_before: bool = False,
+            apply_bert_init: bool = False,
+            activation_fn: str = "relu",
+            learned_pos_embedding: bool = True,
+            add_bias_kv: bool = False,
+            add_zero_attn: bool = False,
+            embed_scale: float = None,
+            freeze_embeddings: bool = False,
+            n_trans_layers_to_freeze: int = 0,
+            export: bool = False,
+            traceable: bool = False,
     ) -> None:
 
         super().__init__()
@@ -180,13 +181,15 @@ class UnilmTransformerSentenceEncoder(nn.Module):
             freeze_module_params(self.layers[layer])
 
     def forward(
-        self,
-        tokens: torch.Tensor,
-        segment_labels: torch.Tensor = None,
-        attention_mask_unilm=None,
-        last_state_only: bool = False,
-        positions: Optional[torch.Tensor] = None,
+            self,
+            tokens: torch.Tensor,
+            segment_labels: torch.Tensor = None,
+            attention_mask=None,
+            last_state_only: bool = False,
+            positions: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
+
+        attention_mask = (1 - attention_mask) * (-INF)
 
         # compute padding mask. This is needed for multi-head attention
         padding_mask = tokens.eq(self.padding_idx)
@@ -195,15 +198,12 @@ class UnilmTransformerSentenceEncoder(nn.Module):
 
         # TODO: extend padding mask
 
-        # token embedding
+        # token/position/segment embedding
         x = self.embed_tokens(tokens)
-
         if self.embed_scale is not None:
             x *= self.embed_scale
-
         if self.embed_positions is not None:
             x += self.embed_positions(tokens, positions=positions)
-
         if self.segment_embeddings is not None and segment_labels is not None:
             x += self.segment_embeddings(segment_labels)
 
@@ -216,18 +216,15 @@ class UnilmTransformerSentenceEncoder(nn.Module):
         if padding_mask is not None:
             x *= 1 - padding_mask.unsqueeze(-1).type_as(x)
 
-        # B x T x C -> T x B x C
-        x = x.transpose(0, 1)
-
         inner_states = []
         if not last_state_only:
             inner_states.append(x)
 
         for layer in self.layers:
             # add LayerDrop (see https://arxiv.org/abs/1909.11556 for description)
-            dropout_probability = random.uniform(0, 1)
-            if not self.training or (dropout_probability > self.layerdrop):
-                x, _ = layer(x, self_attn_mask_unilm=attention_mask_unilm, self_attn_padding_mask=padding_mask, mask_qkv=None, segment_labels=None)
+            if not self.training or (random.random() > self.layerdrop):
+                # x, _ = layer(x, attn_mask=attention_mask, mask_qkv=None, segment_labels=None)
+                x, _ = layer(x, attn_mask=attention_mask)
                 if not last_state_only:
                     inner_states.append(x)
 

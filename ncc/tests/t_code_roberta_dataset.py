@@ -7,7 +7,7 @@ import sys
 from collections import namedtuple
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
-from ncc.tasks.masked_code_docstring import load_masked_code_docstring_dataset
+from ncc.tasks.masked_code_docstring_unilm import load_masked_code_docstring_dataset_unilm
 from ncc.tasks import FairseqTask
 from ncc import tasks
 import torch
@@ -17,7 +17,6 @@ from ncc.logging import metrics, progress_bar
 from ncc.utils import checkpoint_utils, distributed_utils
 from ncc.trainer.fair_trainer import Trainer
 from ncc.data import constants
-
 
 if __name__ == '__main__':
     Argues = namedtuple('Argues', 'yaml')
@@ -29,7 +28,7 @@ if __name__ == '__main__':
     print('args: ', type(args_))
     # config = run_init(args.yaml, config=None)
     # yaml_file = os.path.join('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3/run/codebert/code_roberta/', args_.yaml)
-    yaml_file = os.path.join('../../../naturalcodev3/run/codebert/code_roberta/', args_.yaml)
+    yaml_file = os.path.join('../../../naturalcodev3/run/codebert/code_docstring_unilm/', args_.yaml)
     yaml_file = os.path.realpath(yaml_file)
     # yaml_file = os.path.join('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3/run/summarization/seq2seq/', args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
@@ -63,7 +62,7 @@ if __name__ == '__main__':
     assert src_dict.eos() == tgt_dict.eos()
     assert src_dict.unk() == tgt_dict.unk()
 
-    dataset = load_masked_code_docstring_dataset(
+    dataset = load_masked_code_docstring_dataset_unilm(
         data_path, split, args['task']['source_lang'], src_dict, args['task']['target_lang'], tgt_dict,
         combine=combine, dataset_impl=args['dataset']['dataset_impl'],
         upsample_primary=args['task']['upsample_primary'],
@@ -105,9 +104,8 @@ if __name__ == '__main__':
         dataset,
         collate_fn=dataset.collater,
         # batch_sampler=batches[offset:],
-        num_workers=1# args['dataset']['num_workers'],
+        num_workers=1  # args['dataset']['num_workers'],
     )
-
 
     # batch = collate(
     #     samples, pad_idx=src_dict.pad(), eos_idx=dataset.eos,
@@ -139,7 +137,7 @@ if __name__ == '__main__':
         dataset=dataset,
         max_tokens=args['dataset']['max_tokens'],
         max_sentences=args['dataset']['max_sentences'],
-        max_positions=None, #args['task']['max_source_positions'],
+        max_positions=None,  # args['task']['max_source_positions'],
         ignore_invalid_inputs=True,
         required_batch_size_multiple=args['dataset']['required_batch_size_multiple'],
         seed=args['common']['seed'],
@@ -148,7 +146,6 @@ if __name__ == '__main__':
         num_workers=args['dataset']['num_workers'],
         epoch=1,
     )
-
 
     # itr = epoch_itr.next_epoch_itr(
     #     fix_batches_to_gpus=args['distributed_training']['fix_batches_to_gpus'],
@@ -184,4 +181,3 @@ if __name__ == '__main__':
         print('samples: ')
         log_output = trainer.train_step(samples)
         print('log_output: ', log_output)
-

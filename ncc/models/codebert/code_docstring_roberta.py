@@ -64,6 +64,8 @@ class CodeDocstringRobertaModel(FairseqLanguageModel):
         if classification_head_name is not None:
             features_only = True
 
+        # from ipdb import set_trace
+        # set_trace()
         x, extra = self.decoder(src_tokens, features_only, return_all_hiddens, **kwargs)
 
         if classification_head_name is not None:

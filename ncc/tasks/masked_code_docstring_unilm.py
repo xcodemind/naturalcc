@@ -48,8 +48,8 @@ def load_masked_code_docstring_dataset_unilm(
         combine, dataset_impl, upsample_primary,
         left_pad_source, left_pad_target, max_source_positions,
         max_target_positions, prepend_bos=False, load_alignments=False,
+        max_src_len=0, max_tgt_len=0,
         truncate_source=False, append_source_id=False):
-
     src_path = os.path.join(data_path, '{}.code.bpe'.format(split))
     target_path = os.path.join(data_path, '{}.docstring.bpe'.format(split))
 
@@ -187,14 +187,13 @@ class MaskedCodeDocstringUnilmTask(FairseqTask):
             os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['target_lang'])))
 
         src_dict.add_symbol(constants.S_SEP)
-        src_dict.add_symbol(constants.S2S_SEP)
-        src_dict.add_symbol(constants.CLS)
         src_dict.add_symbol(constants.T_MASK)
-        src_dict.add_symbol(constants.SEP)
+        src_dict.add_symbol(constants.CLS)
+        src_dict.add_symbol(constants.S2S_SEP)
 
-        tgt_dict.add_symbol(constants.S2S_BOS)
+        tgt_dict.add_symbol(constants.S_SEP)
         tgt_dict.add_symbol(constants.T_MASK)
-        tgt_dict.add_symbol(constants.SEP)
+        tgt_dict.add_symbol(constants.S2S_BOS)
         print('<T_MASK> id is', src_dict.index('<T_MASK>'))
         print('<T_MASK> id is', tgt_dict.index('<T_MASK>'))
 
@@ -336,7 +335,6 @@ class MaskedCodeDocstringUnilmTask(FairseqTask):
             load_alignments=self.args['task']['load_alignments'],
             truncate_source=self.args['task']['truncate_source'],
         )
-
 
     def build_dataset_for_inference(self, src_tokens, src_lengths, sort=True):
         src_dataset = PadDataset(
