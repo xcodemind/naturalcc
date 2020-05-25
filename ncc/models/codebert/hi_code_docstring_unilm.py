@@ -70,9 +70,17 @@ class HiCodeDocstringUnilmModel(FairseqLanguageModel):
             x = self.classification_heads[classification_head_name](x)
         return x, extra
 
-    def forward(self, src_tokens, segment_labels, attention_mask_unilm, mask_qkv=None, **kwargs):
+    # 'src_tokens': src_tokens,
+    # 'src_sent_ends': src_sent_ends,
+    # 'doc_pad_mask': doc_pad_mask,
+    # 'doc_pos_tok': doc_pos_tok,
+    # 'segment_labels': segment_labels,
+    # 'attention_mask_unilm': attention_mask_unilm,
+    # 'masked_pos': masked_pos,
+    def forward(self, src_tokens, src_sent_ends, doc_pad_mask, doc_pos_tok, segment_labels, attention_mask_unilm,
+                mask_qkv=None, **kwargs):
         print('forward...')
-        x, extra = self.decoder(src_tokens, segment_labels, attention_mask_unilm,
+        x, extra = self.decoder(src_tokens, src_sent_ends, doc_pad_mask, doc_pos_tok, segment_labels, attention_mask_unilm,
                                                       output_all_encoded_layers=False, mask_qkv=mask_qkv, **kwargs)
 
         return x, extra
@@ -264,7 +272,7 @@ class RobertaEncoder(FairseqDecoder):
             weight=self.sentence_encoder.embed_tokens.weight,
         )
 
-    def forward(self, src_tokens, segment_labels, attention_mask_unilm, features_only=False, return_all_hiddens=False,
+    def forward(self, src_tokens, src_sent_ends, doc_pad_mask, doc_pos_tok, segment_labels, attention_mask_unilm, features_only=False, return_all_hiddens=False,
                 masked_tokens=None, **unused):
         """
         Args:
@@ -282,15 +290,15 @@ class RobertaEncoder(FairseqDecoder):
                   is a list of hidden states. Note that the hidden
                   states have shape `(src_len, batch, vocab)`.
         """
-        x, extra = self.extract_features(src_tokens, segment_labels, attention_mask_unilm,
+        x, extra = self.extract_features(src_tokens, src_sent_ends, doc_pad_mask, doc_pos_tok, segment_labels, attention_mask_unilm,
                                          return_all_hiddens=return_all_hiddens)
         if not features_only:
             x = self.output_layer(x, masked_tokens=masked_tokens)
         return x, extra
 
-    def extract_features(self, src_tokens, segment_labels, attention_mask_unilm, return_all_hiddens=False, **unused):
+    def extract_features(self, src_tokens, src_sent_ends, doc_pad_mask, doc_pos_tok, segment_labels, attention_mask_unilm, return_all_hiddens=False, **unused):
         inner_states, _ = self.sentence_encoder(
-            src_tokens, segment_labels, attention_mask_unilm,
+            src_tokens, src_sent_ends, doc_pad_mask, doc_pos_tok, segment_labels, attention_mask_unilm,
             last_state_only=not return_all_hiddens,
         )
         features = inner_states[-1].transpose(0, 1)  # T x B x C -> B x T x C
