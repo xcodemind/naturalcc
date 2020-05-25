@@ -129,21 +129,12 @@ class MaskedCodeRobertaTask(FairseqTask):
             tgt_dict = src_dict
         else:
             src_dict = cls.load_dictionary(
-                os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['source_lang'])))  # args['task']['source_lang']
+                os.path.join(paths[0], '{}.dict.txt'.format(args['task']['source_lang'])))  # args['task']['source_lang']
             tgt_dict = cls.load_dictionary(
-                os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['target_lang'])))
+                os.path.join(paths[0], '{}.dict.txt'.format(args['task']['target_lang'])))
 
-        # src_dict.add_symbol(constants.S_SEP)
-        # src_dict.add_symbol(constants.S2S_SEP)
-        # src_dict.add_symbol(constants.CLS)
         src_dict.add_symbol(constants.MASK)
         src_dict.add_symbol(constants.SEP)
-
-        # tgt_dict.add_symbol(constants.S2S_BOS)
-        # tgt_dict.add_symbol(constants.T_MASK)
-        # tgt_dict.add_symbol(constants.SEP)
-        # print('<T_MASK> id is', src_dict.index('<T_MASK>'))
-        # print('<T_MASK> id is', tgt_dict.index('<T_MASK>'))
 
         assert src_dict.pad() == tgt_dict.pad()
         assert src_dict.eos() == tgt_dict.eos()
