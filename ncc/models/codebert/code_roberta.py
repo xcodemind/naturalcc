@@ -70,13 +70,6 @@ class CodeRobertaModel(FairseqLanguageModel):
             x = self.classification_heads[classification_head_name](x)
         return x, extra
 
-    # def forward(self, src_tokens, segment_labels, attention_mask_unilm, mask_qkv=None, **kwargs):
-    #     print('forward...')
-    #     x, extra = self.decoder(src_tokens, segment_labels, attention_mask_unilm,
-    #                                                   output_all_encoded_layers=False, mask_qkv=mask_qkv, **kwargs)
-    #
-    #     return x, extra
-
     def register_classification_head(self, name, num_classes=None, inner_dim=None, **kwargs):
         """Register a classification head."""
         if name in self.classification_heads:
@@ -183,15 +176,8 @@ class RobertaLMHead(nn.Module):
     def forward(self, features, masked_tokens=None, **kwargs):
         # Only project the unmasked tokens while training,
         # saves both memory and computation
-        # from ipdb import set_trace
-        # set_trace()
         if masked_tokens is not None:
-            new_masked_tokens = masked_tokens.unsqueeze(-1).expand(-1, -1, features.size(-1))
-            _pad_tensor = torch.zeros(features.size(0), features.size(1) - new_masked_tokens.size(1),
-                                      features.size(-1)).bool()
-            new_masked_tokens = torch.cat([new_masked_tokens, _pad_tensor], dim=1)
-            # features = features[masked_tokens, :]
-            features = features * new_masked_tokens.float()
+            features = features[masked_tokens, :]
 
         x = self.dense(features)
         x = self.activation_fn(x)
@@ -240,35 +226,6 @@ class RobertaEncoder(FairseqDecoder):
             args['model']['decoder_layers_to_keep'] = args['model']['encoder_layers_to_keep']
             args['model']['encoder_layers_to_keep'] = None
 
-        # def __init__(
-        #         self,
-        #         padding_idx: int,
-        #         vocab_size: int,
-        #         num_encoder_layers: int = 6,
-        #         embedding_dim: int = 768,
-        #         ffn_embedding_dim: int = 3072,
-        #         num_attention_heads: int = 8,
-        #         dropout: float = 0.1,
-        #         attention_dropout: float = 0.1,
-        #         activation_dropout: float = 0.1,
-        #         layerdrop: float = 0.0,
-        #         max_seq_len: int = 256,
-        #         num_segments: int = 2,
-        #         use_position_embeddings: bool = True,
-        #         offset_positions_by_padding: bool = True,
-        #         encoder_normalize_before: bool = False,
-        #         apply_bert_init: bool = False,
-        #         activation_fn: str = "relu",
-        #         learned_pos_embedding: bool = True,
-        #         add_bias_kv: bool = False,
-        #         add_zero_attn: bool = False,
-        #         embed_scale: float = None,
-        #         freeze_embeddings: bool = False,
-        #         n_trans_layers_to_freeze: int = 0,
-        #         export: bool = False,
-        #         traceable: bool = False,
-        # ) -> None:
-        #
         self.sentence_encoder = TransformerSentenceEncoder(
             padding_idx=dictionary.pad(),
             vocab_size=len(dictionary),

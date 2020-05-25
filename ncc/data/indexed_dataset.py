@@ -55,7 +55,6 @@ def make_builder(out_file, impl, vocab_size=None):
 def make_dataset(path, impl, modality='text', fix_lua_indexing=False, dictionary=None, tokenizer=None):
     if impl == 'raw' and IndexedRawTextDataset.exists(path):
         assert dictionary is not None
-        print('modality: ', modality)
         if modality == 'path':
             print('dictionary: ', dictionary)
             return IndexedRawPathDataset(path, dictionary)
