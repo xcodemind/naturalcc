@@ -13,11 +13,13 @@ from torch import Tensor, nn
 from torch.nn import Parameter
 from ncc.utils.incremental_decoding_utils import with_incremental_state
 
+
 class MultiheadAttention_old(nn.Module):
     """Multi-headed attention.
 
     See "Attention Is All You Need" for more details.
     """
+
     def __init__(self, embed_dim, num_heads, dropout=0., bias=True):
         super().__init__()
         self.embed_dim = embed_dim
@@ -25,12 +27,12 @@ class MultiheadAttention_old(nn.Module):
         self.dropout = dropout
         self.head_dim = embed_dim // num_heads
         assert self.head_dim * num_heads == self.embed_dim, "embed_dim must be divisible by num_heads"
-        self.scaling = self.head_dim**-0.5
+        self.scaling = self.head_dim ** -0.5
         self._mask = None
 
-        self.in_proj_weight = Parameter(torch.Tensor(3*embed_dim, embed_dim))
+        self.in_proj_weight = Parameter(torch.Tensor(3 * embed_dim, embed_dim))
         if bias:
-            self.in_proj_bias = Parameter(torch.Tensor(3*embed_dim))
+            self.in_proj_bias = Parameter(torch.Tensor(3 * embed_dim))
         else:
             self.register_parameter('in_proj_bias', None)
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
@@ -109,9 +111,9 @@ class MultiheadAttention_old(nn.Module):
             assert key_padding_mask.size(0) == bsz
             assert key_padding_mask.size(1) == src_len
 
-        q = q.contiguous().view(tgt_len, bsz*self.num_heads, self.head_dim).transpose(0, 1)
-        k = k.contiguous().view(src_len, bsz*self.num_heads, self.head_dim).transpose(0, 1)
-        v = v.contiguous().view(src_len, bsz*self.num_heads, self.head_dim).transpose(0, 1)
+        q = q.contiguous().view(tgt_len, bsz * self.num_heads, self.head_dim).transpose(0, 1)
+        k = k.contiguous().view(src_len, bsz * self.num_heads, self.head_dim).transpose(0, 1)
+        v = v.contiguous().view(src_len, bsz * self.num_heads, self.head_dim).transpose(0, 1)
 
         attn_weights = torch.bmm(q, k.transpose(1, 2))
         assert list(attn_weights.size()) == [bsz * self.num_heads, tgt_len, src_len]
@@ -156,10 +158,10 @@ class MultiheadAttention_old(nn.Module):
         return self._in_proj(query, end=self.embed_dim)
 
     def in_proj_k(self, key):
-        return self._in_proj(key, start=self.embed_dim, end=2*self.embed_dim)
+        return self._in_proj(key, start=self.embed_dim, end=2 * self.embed_dim)
 
     def in_proj_v(self, value):
-        return self._in_proj(value, start=2*self.embed_dim)
+        return self._in_proj(value, start=2 * self.embed_dim)
 
     def _in_proj(self, input, start=None, end=None):
         weight = self.in_proj_weight
@@ -205,6 +207,7 @@ class MultiheadAttention_old(nn.Module):
             buffer,
         )
 
+
 @with_incremental_state
 class MultiheadAttention(nn.Module):
     """Multi-headed attention.
@@ -213,17 +216,17 @@ class MultiheadAttention(nn.Module):
     """
 
     def __init__(
-        self,
-        embed_dim,
-        num_heads,
-        kdim=None,
-        vdim=None,
-        dropout=0.0,
-        bias=True,
-        add_bias_kv=False,
-        add_zero_attn=False,
-        self_attention=False,
-        encoder_decoder_attention=False,
+            self,
+            embed_dim,
+            num_heads,
+            kdim=None,
+            vdim=None,
+            dropout=0.0,
+            bias=True,
+            add_bias_kv=False,
+            add_zero_attn=False,
+            self_attention=False,
+            encoder_decoder_attention=False,
     ):
         super().__init__()
         self.embed_dim = embed_dim
@@ -235,7 +238,7 @@ class MultiheadAttention(nn.Module):
         self.dropout = dropout
         self.head_dim = embed_dim // num_heads
         assert (
-            self.head_dim * num_heads == self.embed_dim
+                self.head_dim * num_heads == self.embed_dim
         ), "embed_dim must be divisible by num_heads"
         self.scaling = self.head_dim ** -0.5
 
@@ -264,11 +267,12 @@ class MultiheadAttention(nn.Module):
 
         self.onnx_trace = False
 
-        self.enable_torch_version = False
         if hasattr(F, "multi_head_attention_forward"):
             self.enable_torch_version = True
         else:
             self.enable_torch_version = False
+        # use our defined multi-head-attention
+        self.enable_torch_version = False
 
     def prepare_for_onnx_export_(self):
         self.onnx_trace = True
@@ -294,17 +298,17 @@ class MultiheadAttention(nn.Module):
             nn.init.xavier_normal_(self.bias_v)
 
     def forward(
-        self,
-        query,
-        key: Optional[Tensor],
-        value: Optional[Tensor],
-        key_padding_mask: Optional[Tensor] = None,
-        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
-        need_weights: bool = True,
-        static_kv: bool = False,
-        attn_mask: Optional[Tensor] = None,
-        before_softmax: bool = False,
-        need_head_weights: bool = False,
+            self,
+            query,
+            key: Optional[Tensor],
+            value: Optional[Tensor],
+            key_padding_mask: Optional[Tensor] = None,
+            incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
+            need_weights: bool = True,
+            static_kv: bool = False,
+            attn_mask: Optional[Tensor] = None,
+            before_softmax: bool = False,
+            need_head_weights: bool = False,
     ) -> Tuple[Tensor, Optional[Tensor]]:
         """Input shape: Time x Batch x Channel
 
@@ -331,10 +335,10 @@ class MultiheadAttention(nn.Module):
         assert list(query.size()) == [tgt_len, bsz, embed_dim]
 
         if (
-            self.enable_torch_version
-            and not self.onnx_trace
-            and incremental_state is None
-            and not static_kv
+                self.enable_torch_version
+                and not self.onnx_trace
+                and incremental_state is None
+                and not static_kv
         ):
             assert key is not None and value is not None
             return F.multi_head_attention_forward(
@@ -412,20 +416,20 @@ class MultiheadAttention(nn.Module):
 
         q = (
             q.contiguous()
-            .view(tgt_len, bsz * self.num_heads, self.head_dim)
-            .transpose(0, 1)
+                .view(tgt_len, bsz * self.num_heads, self.head_dim)
+                .transpose(0, 1)
         )
         if k is not None:
             k = (
                 k.contiguous()
-                .view(-1, bsz * self.num_heads, self.head_dim)
-                .transpose(0, 1)
+                    .view(-1, bsz * self.num_heads, self.head_dim)
+                    .transpose(0, 1)
             )
         if v is not None:
             v = (
                 v.contiguous()
-                .view(-1, bsz * self.num_heads, self.head_dim)
-                .transpose(0, 1)
+                    .view(-1, bsz * self.num_heads, self.head_dim)
+                    .transpose(0, 1)
             )
 
         if saved_state is not None:
@@ -499,7 +503,8 @@ class MultiheadAttention(nn.Module):
                 )
 
         attn_weights = torch.bmm(q, k.transpose(1, 2))
-        attn_weights = MultiheadAttention.apply_sparse_mask(attn_weights, tgt_len, src_len, bsz)
+        # TODO: sparse operation, need to be implemented later
+        # attn_weights = MultiheadAttention.apply_sparse_mask(attn_weights, tgt_len, src_len, bsz)
 
         assert list(attn_weights.size()) == [bsz * self.num_heads, tgt_len, src_len]
 
@@ -523,7 +528,7 @@ class MultiheadAttention(nn.Module):
         attn_weights_float = utils.softmax(
             attn_weights, dim=-1, onnx_trace=self.onnx_trace
         )
-        attn_weights = attn_weights_float.type_as(attn_weights)
+        # attn_weights = attn_weights_float.type_as(attn_weights) # useless
         attn_probs = F.dropout(
             attn_weights_float.type_as(attn_weights),
             p=self.dropout,
@@ -552,11 +557,11 @@ class MultiheadAttention(nn.Module):
 
     @staticmethod
     def _append_prev_key_padding_mask(
-        key_padding_mask: Optional[Tensor],
-        prev_key_padding_mask: Optional[Tensor],
-        batch_size: int,
-        src_len: int,
-        static_kv: bool,
+            key_padding_mask: Optional[Tensor],
+            prev_key_padding_mask: Optional[Tensor],
+            batch_size: int,
+            src_len: int,
+            static_kv: bool,
     ) -> Optional[Tensor]:
         # saved key padding masks have shape (bsz, seq_len)
         if prev_key_padding_mask is not None and static_kv:
@@ -589,7 +594,7 @@ class MultiheadAttention(nn.Module):
 
     @torch.jit.export
     def reorder_incremental_state(
-        self, incremental_state: Dict[str, Dict[str, Optional[Tensor]]], new_order: Tensor
+            self, incremental_state: Dict[str, Dict[str, Optional[Tensor]]], new_order: Tensor
     ):
         """Reorder buffered internal state (for incremental generation)."""
         input_buffer = self._get_input_buffer(incremental_state)
@@ -602,7 +607,7 @@ class MultiheadAttention(nn.Module):
         return incremental_state
 
     def _get_input_buffer(
-        self, incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]]
+            self, incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]]
     ) -> Dict[str, Optional[Tensor]]:
         result = self.get_incremental_state(incremental_state, "attn_state")
         if result is not None:
@@ -612,9 +617,9 @@ class MultiheadAttention(nn.Module):
             return empty_result
 
     def _set_input_buffer(
-        self,
-        incremental_state: Dict[str, Dict[str, Optional[Tensor]]],
-        buffer: Dict[str, Optional[Tensor]],
+            self,
+            incremental_state: Dict[str, Dict[str, Optional[Tensor]]],
+            buffer: Dict[str, Optional[Tensor]],
     ):
         return self.set_incremental_state(incremental_state, "attn_state", buffer)
 
@@ -630,8 +635,8 @@ class MultiheadAttention(nn.Module):
                 # in_proj_weight used to be q + k + v with same dimensions
                 dim = int(state_dict[k].shape[0] / 3)
                 items_to_add[prefix + "q_proj.weight"] = state_dict[k][:dim]
-                items_to_add[prefix + "k_proj.weight"] = state_dict[k][dim : 2 * dim]
-                items_to_add[prefix + "v_proj.weight"] = state_dict[k][2 * dim :]
+                items_to_add[prefix + "k_proj.weight"] = state_dict[k][dim: 2 * dim]
+                items_to_add[prefix + "v_proj.weight"] = state_dict[k][2 * dim:]
 
                 keys_to_remove.append(k)
 
@@ -640,9 +645,9 @@ class MultiheadAttention(nn.Module):
                     dim = int(state_dict[k].shape[0] / 3)
                     items_to_add[prefix + "q_proj.bias"] = state_dict[k_bias][:dim]
                     items_to_add[prefix + "k_proj.bias"] = state_dict[k_bias][
-                        dim : 2 * dim
-                    ]
-                    items_to_add[prefix + "v_proj.bias"] = state_dict[k_bias][2 * dim :]
+                                                           dim: 2 * dim
+                                                           ]
+                    items_to_add[prefix + "v_proj.bias"] = state_dict[k_bias][2 * dim:]
 
                     keys_to_remove.append(prefix + "in_proj_bias")
 
