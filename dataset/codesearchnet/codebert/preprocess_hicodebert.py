@@ -48,7 +48,7 @@ def build_vocab_dict(args: Dict, overwrite: bool = False):
     assert args['preprocess']['joined_dictionary']
 
     joined_dictionary_filename = os.path.join(args['preprocess']['destdir'],
-                                              '_'.join(args['preprocess']['source_lang']))
+                                              '{}.dict.txt'.format('_'.join(args['preprocess']['source_lang'])))
     if os.path.exists(joined_dictionary_filename):
         joined_dictionary = Dictionary.load(joined_dictionary_filename)
     else:
