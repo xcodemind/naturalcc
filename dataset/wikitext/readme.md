@@ -5,9 +5,19 @@
 cd ~/.ncc
 wget https://s3.amazonaws.com/research.metamind.io/wikitext/wikitext-103-raw-v1.zip
 unzip wikitext-103-raw-v1.zip
+cd ~/.ncc/wikitext-103-raw
+mkdir raw
+mv *.raw raw/
 ```
 
 ### Step 1. BPE tokenization
+
+```
+cd ~/.ncc/wikitext-103-raw
+mkdir gpt2_bpe
+wget https://dl.fbaipublicfiles.com/fairseq/gpt2_bpe/encoder.json
+wget https://dl.fbaipublicfiles.com/fairseq/gpt2_bpe/vocab.bpe
+```
 
 .raw => .bpe
 
