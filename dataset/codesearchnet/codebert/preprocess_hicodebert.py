@@ -42,13 +42,13 @@ from dataset.codesearchnet.utils.codebert_utils import (
 def build_vocab_dict(args: Dict, overwrite: bool = False):
     """Build vocabulary (dictionary) for source and target domain"""
     LOGGER.info('Build vocabularies...')
-    task = tasks.get_task(args['preprocess']['task'])
+    # task = tasks.get_task(args['preprocess']['task'])
     src_dicts = OrderedDict()
 
     assert args['preprocess']['joined_dictionary']
 
     joined_dictionary_filename = os.path.join(args['preprocess']['destdir'],
-                                              os.path.split(args['preprocess']['srcdict'])[-1])
+                                              '_'.join(args['preprocess']['source_lang']))
     if os.path.exists(joined_dictionary_filename):
         joined_dictionary = Dictionary.load(joined_dictionary_filename)
     else:
