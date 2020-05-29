@@ -12,8 +12,8 @@ from multiprocessing import Pool
 import itertools
 
 import torch
-from ncc.data.binarizer import safe_readline
-from ncc.data import data_utils
+from ncc.data.tools.binarizer import safe_readline
+from ncc.data.tools import data_utils
 from ncc.data import constants
 from ncc.utils.file_io import PathManager
 from ncc.utils import tokenizer  # import tokenize_line

@@ -47,14 +47,14 @@ extensions = [
         extra_compile_args=extra_compile_args,
     ),
     NumpyExtension(
-        'ncc.data.data_utils_fast',
-        sources=['ncc/data/data_utils_fast.pyx'],
+        'ncc.data.tools.data_utils_fast',
+        sources=['ncc/data/tools/data_utils_fast.pyx'],
         language='c++',
         extra_compile_args=extra_compile_args,
     ),
     NumpyExtension(
-        'ncc.data.token_block_utils_fast',
-        sources=['ncc/data/token_block_utils_fast.pyx'],
+        'ncc.data.tools.token_block_utils_fast',
+        sources=['ncc/data/tools/token_block_utils_fast.pyx'],
         language='c++',
         extra_compile_args=extra_compile_args,
     ),

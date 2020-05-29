@@ -6,25 +6,8 @@
 from argparse import Namespace
 import json
 import itertools
-import logging
 import os
 import numpy as np
-
-# from fairseq import metrics, options, utils
-# from fairseq.data import (
-#     AppendTokenDataset,
-#     ConcatDataset,
-#     data_utils,
-#     encoders,
-#     indexed_dataset,
-#     LanguagePairDataset,
-#     PrependTokenDataset,
-#     StripTokenDataset,
-#     TruncateDataset,
-# )
-#
-# from .fairseq_task import FairseqTask
-# from . import register_task
 from ncc.logging import metrics
 from ncc import LOGGER
 from ncc.tasks.fairseq_task import FairseqTask
@@ -32,13 +15,13 @@ from ncc.tasks import register_task
 from ncc.utils import utils
 from ncc.data import encoders
 from ncc.data import indexed_dataset
-from ncc.data import data_utils
-from ncc.data.append_token_dataset import AppendTokenDataset
-from ncc.data.truncate_dataset import TruncateDataset
-from ncc.data.strip_token_dataset import StripTokenDataset
+from ncc.data.tools import data_utils
+from ncc.data.wrappers.append_token_dataset import AppendTokenDataset
+from ncc.data.wrappers.truncate_dataset import TruncateDataset
+from ncc.data.wrappers.strip_token_dataset import StripTokenDataset
 from ncc.data.concat_dataset import ConcatDataset
-from ncc.data.prepend_token_dataset import PrependTokenDataset
-from ncc.data.language_pair_dataset import LanguagePairDataset
+from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
+from ncc.data.summarization.language_pair_dataset import LanguagePairDataset
 
 EVAL_BLEU_ORDER = 4
 

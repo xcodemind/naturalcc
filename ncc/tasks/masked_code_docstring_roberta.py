@@ -5,21 +5,21 @@
 
 import os
 import numpy as np
-from ncc.data import data_utils
+from ncc.data.tools import data_utils
 from ncc.data.id_dataset import IdDataset
-from ncc.data.mask_tokens_dataset import MaskTokensDataset
+from ncc.data.codebert.mask_tokens_dataset import MaskTokensDataset
 from ncc.data.nested_dictionary_dataset import NestedDictionaryDataset
-from ncc.data.numel_dataset import NumelDataset
+from ncc.data.wrappers.numel_dataset import NumelDataset
 from ncc.data.num_samples_dataset import NumSamplesDataset
-from ncc.data.pad_dataset import PadDataset
-from ncc.data.sort_dataset import SortDataset
-from ncc.data.token_block_dataset import TokenBlockDataset
+from ncc.data.wrappers.pad_dataset import PadDataset
+from ncc.data.wrappers.sort_dataset import SortDataset
+from ncc.data.tools.token_block_dataset import TokenBlockDataset
 from ncc.tasks.fairseq_task import FairseqTask
 from ncc.tasks import register_task
 from ncc.data.encoders.utils import get_whole_word_mask
 from ncc.utils import utils
 from ncc.data.concat_column_dataset import ConcatColumnDataset
-from ncc.data.prepend_token_dataset import PrependTokenDataset
+from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
 from ncc.data import constants
 
 

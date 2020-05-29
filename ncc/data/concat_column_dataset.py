@@ -10,7 +10,6 @@ from random import randint, shuffle, choice
 # from random import random as rand
 import random
 import torch
-from ncc.data import data_utils
 from ncc.data.fairseq_dataset import FairseqDataset
 from ncc.data import constants
 from ncc import LOGGER

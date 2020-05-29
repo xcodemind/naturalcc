@@ -14,7 +14,7 @@ import itertools
 
 import multiprocessing as mp
 
-from ncc.data.dict import Dict as _Dict
+# from ncc.data.dict import Dict as _Dict
 from ncc.utils.constants import *
 
 
@@ -199,20 +199,20 @@ def clean_up_sentence(sentence: torch.Tensor, remove_UNK=False, remove_EOS=False
     return sentence
 
 
-def indices_to_words(src_list: List, vocab: _Dict, oov_vocab: List) -> List:
-    pred_list = [None] * len(src_list)  # src_list.size(0)
-    for ind, src_index in enumerate(src_list):
-        p = vocab.lookup_label(src_index)
-        if p is None and oov_vocab:
-            oov_index = src_index - vocab.size
-            try:
-                pred_list[ind] = oov_vocab[oov_index]
-            except:
-                print(oov_index)
-                assert False
-        else:
-            pred_list[ind] = p
-    return pred_list
+# def indices_to_words(src_list: List, vocab: _Dict, oov_vocab: List) -> List:
+#     pred_list = [None] * len(src_list)  # src_list.size(0)
+#     for ind, src_index in enumerate(src_list):
+#         p = vocab.lookup_label(src_index)
+#         if p is None and oov_vocab:
+#             oov_index = src_index - vocab.size
+#             try:
+#                 pred_list[ind] = oov_vocab[oov_index]
+#             except:
+#                 print(oov_index)
+#                 assert False
+#         else:
+#             pred_list[ind] = p
+#     return pred_list
 
 
 def masked_softmax(vector: torch.Tensor,

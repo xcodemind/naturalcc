@@ -10,7 +10,7 @@ import torch
 from ncc.utils import tokenizer # , utils # metrics, search,
 from ncc.utils import utils
 from ncc.logging import metrics
-from ncc.data import data_utils
+from ncc.data.tools import data_utils
 from ncc.data import iterators
 from ncc.data.dictionary import Dictionary
 # from ncc.dataset.fairseq_dataset import FairseqDataset
