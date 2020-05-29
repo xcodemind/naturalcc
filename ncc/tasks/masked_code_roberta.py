@@ -37,7 +37,7 @@ def load_masked_code_dataset_roberta(args, epoch,
     # 'text' represent the modality, will be changed
     dataset = data_utils.load_indexed_dataset(source_path, 'text', src_dict, tokenizer=None, dataset_impl=dataset_impl)
     if dataset is None:
-        raise FileNotFoundError('Dataset not found: {} ({})'.format(split, split_path))
+        raise FileNotFoundError('Dataset not found: {} ({})'.format(split, source_path))
 
     # create continuous blocks of tokens
     dataset = TokenBlockDataset(
