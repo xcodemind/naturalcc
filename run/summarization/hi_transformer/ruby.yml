@@ -28,8 +28,8 @@ common:
   task: hi_transformer_summarization # task
 
   seed: 42 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
-  cpu: 0 # action='store_true', help='use CPU instead of CUDA'
-  fp16: 1 # action='store_true', help='use FP16'
+  cpu: 1 # action='store_true', help='use CPU instead of CUDA'
+  fp16: 0 # action='store_true', help='use FP16'
   fp16_opt_level: '01' # type=str, default="O1", help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']. See details at https://nvidia.github.io/apex/amp.html",
   server_ip: '' # type=str, default="", help="For distant debugging."
   server_port: '' # type=str, default="", help="For distant debugging."
@@ -40,7 +40,7 @@ dataset:
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
   max_sentences: 16 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
-  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
+  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
   train_subset: train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
   valid_subset: valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
   validate_interval: 1 # type=int, default=1, metavar='N', help='validate every N epochs'
@@ -59,6 +59,8 @@ dataset:
 #  block_size: -1 # default=-1, type=int, help="Optional input sequence length after tokenization. The training dataset will be truncated in block of this size for training. Default to the model max input length for single sentence inputs (take into account special tokens).",
 #  per_gpu_train_batch_size: 16 # default=16, type=int, help="Batch size per GPU/CPU for training."
 #  per_gpu_eval_batch_size: 4 # default=4, type=int, help="Batch size per GPU/CPU for evaluation."
+
+  joined_dictionary: 1
 
 distributed_training:
   distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
@@ -80,7 +82,7 @@ distributed_training:
   local_rank: -1 # type=int, default=-1, help="For distributed training: local_rank"
 
 task:
-  data: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/data-bin # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/CodeSearchNet/codebert/data-mmap/ruby/code_docstring # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 #  sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
 #  tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
 #  mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
@@ -195,7 +197,7 @@ optimization:
     adam_betas: '(0.9, 0.999)' # default='(0.9, 0.999)', metavar='B', help='betas for Adam optimizer'
     adam_eps: 1e-8 # type=float, default=1e-8, metavar='D', help='epsilon for Adam optimizer'
     weight_decay: 0.0 # '--wd', default=0.0, type=float, metavar='WD', help='weight decay'
-    use_old_adam: 0 # action='store_true', default=False, help="Use fairseq.optim.adam.Adam"
+    use_old_adam: 1 # action='store_true', default=False, help="Use fairseq.optim.adam.Adam"
 
 #  binary_cross_entropy:
 #    infonce: 0 # action='store_true', help='if set, uses cross entropy instead of binary cross entropy (i.e. InfoNCE loss)'
@@ -232,7 +234,7 @@ checkpoint:
   best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
 #  patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
-  save_dir: /data/wanyao/ghproj_d/naturalcodev3/codesearchnet/summarization/result # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
+  save_dir: ~/.ncc/CodeSearchNet/summarization/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
   model_name_or_path: ~ # default=None, type=str, help="The model checkpoint for weights initialization. Leave None if you want to train a model from scratch.",
   cache_dir: ~ # default=None, type=str, help="Optional directory to store the pre-trained models downloaded from s3 (instead of the default one)",

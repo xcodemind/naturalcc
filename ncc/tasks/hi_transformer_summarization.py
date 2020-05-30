@@ -33,63 +33,70 @@ def load_codepair_dataset(
     truncate_source=False, append_source_id=False
 ):
 
-    def split_exists(split, src, tgt, lang, data_path):
-        filename = os.path.join(data_path, '{}.{}'.format(split, src)) #-{}.{} , tgt, lang
-        return indexed_dataset.dataset_exists(filename, impl=dataset_impl)
+    # def split_exists(split, src, tgt, lang, data_path):
+    #     filename = os.path.join(data_path, '{}.{}'.format(split, src)) #-{}.{} , tgt, lang
+    #     return indexed_dataset.dataset_exists(filename, impl=dataset_impl)
+    #
+    # src_datasets = []
+    # tgt_datasets = []
+    #
+    # for k in itertools.count():
+    #     split_k = split + (str(k) if k > 0 else '')
+    #
+    #     # infer langcode
+    #     if split_exists(split_k, src, tgt, src, data_path):
+    #         prefix = os.path.join(data_path, '{}.'.format(split_k)) # {}-{}. , src, tgt
+    #     elif split_exists(split_k, tgt, src, src, data_path):
+    #         prefix = os.path.join(data_path, '{}.'.format(split_k)) # {}-{}. , tgt, src
+    #
+    #     else:
+    #         if k > 0:
+    #             break
+    #         else:
+    #             raise FileNotFoundError('Dataset not found: {} ({})'.format(split, data_path))
+    #     print('Data set file : prefix + src: ', prefix + src)
+    #     src_dataset = data_utils.load_indexed_dataset(prefix + src, 'text', src_dict, dataset_impl)
+    #
+    #     if truncate_source:
+    #         src_dataset = AppendTokenDataset(
+    #             TruncateDataset(
+    #                 StripTokenDataset(src_dataset, src_dict.eos()),
+    #                 max_source_positions - 1,
+    #             ),
+    #             src_dict.eos(),
+    #         )
+    #     src_datasets.append(src_dataset)
+    #
+    #     tgt_dataset = data_utils.load_indexed_dataset(prefix + tgt, 'text', tgt_dict, dataset_impl)
+    #     if tgt_dataset is not None:
+    #         tgt_datasets.append(tgt_dataset)
+    #
+    #     LOGGER.info('data_path: {} split:{} source : {}- target : {} dataset len: {} examples'.format(
+    #         data_path, split_k, src, tgt, len(src_datasets[-1])
+    #     ))
+    #
+    #     if not combine:
+    #         break
+    #
+    # assert len(src_datasets) == len(tgt_datasets) or len(tgt_datasets) == 0
+    #
+    # if len(src_datasets) == 1:
+    #     src_dataset = src_datasets[0]
+    #     tgt_dataset = tgt_datasets[0] if len(tgt_datasets) > 0 else None
+    # else:
+    #     sample_ratios = [1] * len(src_datasets)
+    #     sample_ratios[0] = upsample_primary
+    #     src_dataset = ConcatDataset(src_datasets, sample_ratios)
+    #     if len(tgt_datasets) > 0:
+    #         tgt_dataset = ConcatDataset(tgt_datasets, sample_ratios)
+    #     else:
+    #         tgt_dataset = None
 
-    src_datasets = []
-    tgt_datasets = []
+    source_path = os.path.join(data_path, '{}.code'.format(split))
+    src_dataset = data_utils.load_indexed_dataset(source_path, 'text', src_dict, dataset_impl)
 
-    for k in itertools.count():
-        split_k = split + (str(k) if k > 0 else '')
-
-        # infer langcode
-        if split_exists(split_k, src, tgt, src, data_path):
-            prefix = os.path.join(data_path, '{}.'.format(split_k)) # {}-{}. , src, tgt
-        elif split_exists(split_k, tgt, src, src, data_path):
-            prefix = os.path.join(data_path, '{}.'.format(split_k)) # {}-{}. , tgt, src
-
-        else:
-            if k > 0:
-                break
-            else:
-                raise FileNotFoundError('Dataset not found: {} ({})'.format(split, data_path))
-        print('Data set file : prefix + src: ', prefix + src)
-        src_dataset = data_utils.load_indexed_dataset(prefix + src, 'text', src_dict, dataset_impl)
-        if truncate_source:
-            src_dataset = AppendTokenDataset(
-                TruncateDataset(
-                    StripTokenDataset(src_dataset, src_dict.eos()),
-                    max_source_positions - 1,
-                ),
-                src_dict.eos(),
-            )
-        src_datasets.append(src_dataset)
-
-        tgt_dataset = data_utils.load_indexed_dataset(prefix + tgt, 'text', tgt_dict, dataset_impl)
-        if tgt_dataset is not None:
-            tgt_datasets.append(tgt_dataset)
-
-        LOGGER.info('data_path: {} split:{} source : {}- target : {} dataset len: {} examples'.format(
-            data_path, split_k, src, tgt, len(src_datasets[-1])
-        ))
-
-        if not combine:
-            break
-
-    assert len(src_datasets) == len(tgt_datasets) or len(tgt_datasets) == 0
-
-    if len(src_datasets) == 1:
-        src_dataset = src_datasets[0]
-        tgt_dataset = tgt_datasets[0] if len(tgt_datasets) > 0 else None
-    else:
-        sample_ratios = [1] * len(src_datasets)
-        sample_ratios[0] = upsample_primary
-        src_dataset = ConcatDataset(src_datasets, sample_ratios)
-        if len(tgt_datasets) > 0:
-            tgt_dataset = ConcatDataset(tgt_datasets, sample_ratios)
-        else:
-            tgt_dataset = None
+    target_path = os.path.join(data_path, '{}.docstring'.format(split))
+    tgt_dataset = data_utils.load_indexed_dataset(target_path, 'text', tgt_dict, dataset_impl)
 
     if prepend_bos:
         assert hasattr(src_dict, "bos_index") and hasattr(tgt_dict, "bos_index")
@@ -151,15 +158,25 @@ class HiTransformerSummarizationTask(FairseqTask):
 
         paths = utils.split_paths(args['task']['data'])
         assert len(paths) > 0
-        # find language pair automatically
-        if args['task']['source_lang'] is None or args['task']['target_lang'] is None:
-            args['task']['source_lang'], args['task']['target_lang'] = data_utils.infer_language_pair(paths[0])
-        if args['task']['source_lang'] is None or args['task']['target_lang'] is None:
-            raise Exception('Could not infer language pair, please provide it explicitly')
+        # # find language pair automatically
+        # if args['task']['source_lang'] is None or args['task']['target_lang'] is None:
+        #     args['task']['source_lang'], args['task']['target_lang'] = data_utils.infer_language_pair(paths[0])
+        # if args['task']['source_lang'] is None or args['task']['target_lang'] is None:
+        #     raise Exception('Could not infer language pair, please provide it explicitly')
 
         # load dictionaries
-        src_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['source_lang'])))
-        tgt_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['target_lang'])))
+        if args['dataset']['joined_dictionary']:
+            src_dict = cls.load_dictionary(
+                os.path.join(paths[0],
+                             '{}.dict.txt'.format(args['task']['source_lang'])))  # args['task']['source_lang']
+            tgt_dict = src_dict
+        else:
+            src_dict = cls.load_dictionary(
+                os.path.join(paths[0],
+                             '{}.dict.txt'.format(args['task']['source_lang'])))  # args['task']['source_lang']
+            tgt_dict = cls.load_dictionary(
+                os.path.join(paths[0], '{}.dict.txt'.format(args['task']['target_lang'])))
+
         assert src_dict.pad() == tgt_dict.pad()
         assert src_dict.eos() == tgt_dict.eos()
         assert src_dict.unk() == tgt_dict.unk()
