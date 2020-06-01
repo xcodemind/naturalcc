@@ -105,7 +105,7 @@ def collate(samples, src_dict, tgt_dict, left_pad_source=True, left_pad_target=F
     return example
 
 
-class HiMaskCodeDocstringPairDataset(FairseqDataset):
+class HiUnilmMaskCodeDocstringPairDataset(FairseqDataset):
     """
     A pair of torch.utils.data.Datasets.
 

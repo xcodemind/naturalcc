@@ -149,7 +149,7 @@ optimization:
     adam_betas: '(0.9, 0.999)' # default='(0.9, 0.999)', metavar='B', help='betas for Adam optimizer'
     adam_eps: 1e-8 # type=float, default=1e-8, metavar='D', help='epsilon for Adam optimizer'
     weight_decay: 0.0 # '--wd', default=0.0, type=float, metavar='WD', help='weight decay'
-    use_old_adam: 0 # action='store_true', default=False, help="Use fairseq.optim.adam.Adam"
+    use_old_adam: 1 # action='store_true', default=False, help="Use fairseq.optim.adam.Adam"
 
   binary_cross_entropy:
     infonce: 0 # action='store_true', help='if set, uses cross entropy instead of binary cross entropy (i.e. InfoNCE loss)'

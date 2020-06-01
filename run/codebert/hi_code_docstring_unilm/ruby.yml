@@ -33,7 +33,7 @@ dataset:
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
   max_sentences: 16 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
-  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
+  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
   train_subset: test # train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
   valid_subset: test # valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
   validate_interval: 1 # type=int, default=1, metavar='N', help='validate every N epochs'
@@ -158,7 +158,7 @@ optimization:
     log-keys: '' # type=str, default=None, help='output keys to log'
 
 checkpoint:
-  save_dir: /home/wanyao/.ncc/CodeSearchNet/codebert/checkpoints # default='checkpoints', help='path to save checkpoints'
+  save_dir: ~/.ncc/CodeSearchNet/codebert/checkpoints # default='checkpoints', help='path to save checkpoints'
   restore_file: checkpoint_last.pt # default='checkpoint_last.pt', help='filename from which to load checkpoint (default: <save-dir>/checkpoint_last.pt'
   reset_dataloader: ~ # action='store_true', help='if set, does not reload dataloader state from the checkpoint'
   reset_lr_scheduler: ~ # action='store_true', help='if set, does not load lr scheduler state from the checkpoint'

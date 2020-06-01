@@ -4,40 +4,46 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import numpy as np
 from ncc.data.tools import data_utils
 from ncc.data.id_dataset import IdDataset
+from ncc.data.codebert.mask_tokens_dataset import MaskTokensDataset
 from ncc.data.nested_dictionary_dataset import NestedDictionaryDataset
 from ncc.data.wrappers.numel_dataset import NumelDataset
+from ncc.data.num_samples_dataset import NumSamplesDataset
 from ncc.data.wrappers.pad_dataset import PadDataset
 from ncc.data.wrappers.sort_dataset import SortDataset
 from ncc.data.tools.token_block_dataset import TokenBlockDataset
 from ncc.tasks.fairseq_task import FairseqTask
 from ncc.tasks import register_task
+from ncc.data.encoders.utils import get_whole_word_mask
 from ncc.utils import utils
+from ncc.data.codebert.hi_roberta_mask_code_docstring_pair_dataset import HiRobertaMaskCodeDocstringPairDataset
+from ncc.data.concat_column_dataset import ConcatColumnDataset
 from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
-from ncc.data.codebert.hi_unilm_mask_code_docstring_pair_dataset import HiUnilmMaskCodeDocstringPairDataset
 from ncc.data import constants
 
 
-def load_masked_code_docstring_dataset_unilm(
+def load_masked_code_docstring_dataset_roberta(
+        args, epoch,
         data_path, split,
         src, src_dict,
         tgt, tgt_dict,
         combine, dataset_impl, upsample_primary,
         left_pad_source, left_pad_target, max_source_positions,
         max_target_positions, prepend_bos=False, load_alignments=False,
-        max_src_len=0, max_tgt_len=0,
         truncate_source=False, append_source_id=False):
     source_path = os.path.join(data_path, '{}.code'.format(split))
     target_path = os.path.join(data_path, '{}.docstring'.format(split))
 
     # source_dataset
-    source_dataset = data_utils.load_indexed_dataset(source_path, 'text', src_dict, dataset_impl)
+    source_dataset = data_utils.load_indexed_dataset(source_path, 'text', src_dict, tokenizer=None,
+                                                     dataset_impl=dataset_impl)
     if source_dataset is None:
         raise FileNotFoundError('Dataset not found: {} ({})'.format(split, source_path))
-
     # target_dataset
-    target_dataset = data_utils.load_indexed_dataset(target_path, 'text', tgt_dict, dataset_impl)
+    target_dataset = data_utils.load_indexed_dataset(target_path, 'text', tgt_dict, tokenizer=None,
+                                                     dataset_impl=dataset_impl)
     if target_dataset is None:
         raise FileNotFoundError('Dataset not found: {} ({})'.format(split, target_path))
 
@@ -45,7 +51,7 @@ def load_masked_code_docstring_dataset_unilm(
     align_dataset = None
     target_dataset_sizes = target_dataset.sizes if target_dataset is not None else None
 
-    return HiUnilmMaskCodeDocstringPairDataset(
+    return HiRobertaMaskCodeDocstringPairDataset(
         source_dataset, source_dataset.sizes, src_dict,
         target_dataset, target_dataset_sizes, tgt_dict,
         left_pad_source=left_pad_source,
@@ -58,8 +64,8 @@ def load_masked_code_docstring_dataset_unilm(
     )
 
 
-@register_task('hi_masked_code_docstring_unilm')
-class HiMaskedCodeDocstringUnilmTask(FairseqTask):
+@register_task('hi_masked_code_docstring_roberta')
+class HiMaskedCodeDocstringRobertaTask(FairseqTask):
     """Task for training masked language models (e.g., BERT, RoBERTa)."""
 
     def __init__(self, args, src_dict, tgt_dict):
@@ -117,7 +123,7 @@ class HiMaskedCodeDocstringUnilmTask(FairseqTask):
         # infer langcode
         src, tgt = self.args['task']['source_lang'], self.args['task']['target_lang']
 
-        self.datasets[split] = load_masked_code_docstring_dataset_unilm(
+        self.datasets[split] = load_masked_code_docstring_dataset_roberta(self.args, epoch,
             data_path, split, src, self.src_dict, tgt, self.tgt_dict,
             combine=combine, dataset_impl=self.args['dataset']['dataset_impl'],
             upsample_primary=self.args['task']['upsample_primary'],
