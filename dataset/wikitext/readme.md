@@ -15,8 +15,10 @@ mv *.raw raw/
 ```
 cd ~/.ncc/wikitext-103-raw
 mkdir gpt2_bpe
+cd gpt2_bpe
 wget https://dl.fbaipublicfiles.com/fairseq/gpt2_bpe/encoder.json
 wget https://dl.fbaipublicfiles.com/fairseq/gpt2_bpe/vocab.bpe
+wget https://dl.fbaipublicfiles.com/fairseq/gpt2_bpe/dict.tdxt
 ```
 
 .raw => .bpe

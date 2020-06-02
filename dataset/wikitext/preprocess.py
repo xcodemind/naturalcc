@@ -18,7 +18,7 @@ import sys
 from ncc import tasks #, utils #  options,
 # from fairseq.data import indexed_dataset
 from ncc.data import indexed_dataset
-from ncc.data.binarizer import Binarizer
+from ncc.data.tools.binarizer import Binarizer
 import argparse
 from ncc.data.indexed_dataset import get_available_dataset_impl
 import torch
