@@ -46,7 +46,7 @@ dataset:
   num_shards: 1 # default=1, type=int, metavar='N', help='shard generation over N shards'
   shard_id: 0 # default=0, type=int, metavar='ID', help='id of the shard to generate (id < num_shards)'
 
-
+  joined_dictionary: 1
 
 distributed_training:
   distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
