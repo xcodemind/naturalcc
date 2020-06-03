@@ -19,7 +19,7 @@ from ncc.data import (
     constants,
     indexed_dataset,
 )
-from ncc.data.binarizer import Binarizer
+from ncc.data.tools.binarizer import Binarizer
 from ncc.data.constants import (PAD, EOS, UNK, BOS)
 import ncc.utils.mp_mreader as mreader
 
