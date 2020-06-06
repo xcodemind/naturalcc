@@ -10,7 +10,7 @@ import json
 import logging
 import os
 
-from utils import file_tqdm, separate_dps
+from dataset.py150.utils import file_tqdm, separate_dps
 
 
 logging.basicConfig(level=logging.INFO)
@@ -84,13 +84,17 @@ def main():
         "--n_ctx", "-c", type=int, default=1000, help="Number of contexts for each dp"
     )
     parser.add_argument(
-        "id_type",
+        "--id_type",
         choices=["leaf", "value", "type", "all"],
         default="leaf",
         help="Which ids to generate. Default = leaf",
     )
 
     args = parser.parse_args()
+    args.ast_fp = os.path.expanduser('~/.ncc/py150/new_python1k_train.json')
+    args.out_fp = os.path.expanduser('~/.ncc/py150/data-bin/generated_ids.txt')
+    args.id_type = 'all'
+
     if os.path.exists(args.out_fp):
         os.remove(args.out_fp)
     logging.info("Type of id to get: {}".format(args.id_type))

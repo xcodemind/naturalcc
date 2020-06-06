@@ -25,6 +25,25 @@ from ncc.data.dictionary import Dictionary
 # from ncc.data.constants import *
 from ncc.utils import tokenizer  # , utils # metrics, search,
 
+from ncc.data.completion.trav_trans_plus_dataset import Setup
+
+
+def load_path_dataset(data_path, dictionary, dataset_impl):
+    fp = os.path.join(data_path, 'new_new_python1k_train.txt')
+    ids_fp = os.path.join(data_path, 'generated_ids.txt')
+    datasetup = Setup(data_path, fp, ids_fp, max_vocab = 100000, mode = "train")
+    dataset = datasetup._create_dataset()
+
+    return dataset
+    # return LanguagePairDataset(
+    #     src_dataset, src_dataset.sizes, src_dict,
+    #     tgt_dataset, tgt_dataset_sizes, tgt_dict,
+    #     left_pad_source=left_pad_source,
+    #     left_pad_target=left_pad_target,
+    #     max_source_positions=max_source_positions,
+    #     max_target_positions=max_target_positions,
+    #     align_dataset=align_dataset, eos=eos
+    # )
 
 def load_langpair_dataset(
         data_path, split,
@@ -128,7 +147,7 @@ def load_langpair_dataset(
 class CompletionTask(FairseqTask):
     """Task for training masked language models (e.g., BERT, RoBERTa)."""
 
-    def __init__(self, args, src_dict, tgt_dict):
+    def __init__(self, args, dictionary):
         super().__init__(args)
         # self.dictionary = dictionary
         # self.seed = args['common']['seed']
@@ -137,8 +156,8 @@ class CompletionTask(FairseqTask):
         # self.mask_idx = dictionary.add_symbol('<mask>')、
         # self.tokenizer = tokenizer
         # self.mask_idx = self.tokenizer.mask_token_id
-        self.src_dict = src_dict
-        self.tgt_dict = tgt_dict
+        self.dictionary = dictionary
+        # self.tgt_dict = tgt_dict
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -147,28 +166,19 @@ class CompletionTask(FairseqTask):
         Args:
             args (argparse.Namespace): parsed command-line arguments
         """
-        # options.eval_bool
-        args['task']['left_pad_source'] = bool(args['task']['left_pad_source'])
-        args['task']['left_pad_target'] = bool(args['task']['left_pad_target'])
 
         paths = utils.split_paths(args['task']['data'])
         assert len(paths) > 0
-        # find language pair automatically
-        if args['task']['source_lang'] is None or args['task']['target_lang'] is None:
-            args['task']['source_lang'], args['task']['target_lang'] = data_utils.infer_language_pair(paths[0])
-        if args['task']['source_lang'] is None or args['task']['target_lang'] is None:
-            raise Exception('Could not infer language pair, please provide it explicitly')
-
         # load dictionaries
-        src_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['source_lang'])))
-        tgt_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['target_lang'])))
-        assert src_dict.pad() == tgt_dict.pad()
-        assert src_dict.eos() == tgt_dict.eos()
-        assert src_dict.unk() == tgt_dict.unk()
-        LOGGER.info('[{}] dictionary: {} types'.format(args['task']['source_lang'], len(src_dict)))
-        LOGGER.info('[{}] dictionary: {} types'.format(args['task']['target_lang'], len(tgt_dict)))
+        dictionary = cls.load_dictionary(os.path.join(paths[0], 'dict.txt'))
+        # tgt_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['target_lang'])))
+        # assert src_dict.pad() == tgt_dict.pad()
+        # assert src_dict.eos() == tgt_dict.eos()
+        # assert src_dict.unk() == tgt_dict.unk()
+        # LOGGER.info('[{}] dictionary: {} types'.format(args['task']['source_lang'], len(dictionary)))
+        # LOGGER.info('[{}] dictionary: {} types'.format(args['task']['target_lang'], len(tgt_dict)))
 
-        return cls(args, src_dict, tgt_dict)
+        return cls(args, dictionary)
 
     def load_dataset(self, split, epoch=1, combine=False, **kwargs):
         """Load a given dataset split.
@@ -181,74 +191,32 @@ class CompletionTask(FairseqTask):
         data_path = paths[(epoch - 1) % len(paths)]
 
         # infer langcode
-        src, tgt = self.args['task']['source_lang'], self.args['task']['target_lang']
+        # src, tgt = self.args['task']['source_lang'], self.args['task']['target_lang']
 
-        self.datasets[split] = load_langpair_dataset(
-            data_path, split, src, self.src_dict, tgt, self.tgt_dict,
-            combine=combine, dataset_impl=self.args['dataset']['dataset_impl'],
-            upsample_primary=self.args['task']['upsample_primary'],
-            left_pad_source=self.args['task']['left_pad_source'],
-            left_pad_target=self.args['task']['left_pad_target'],
-            max_source_positions=self.args['task']['max_source_positions'],
-            max_target_positions=self.args['task']['max_target_positions'],
-            load_alignments=self.args['task']['load_alignments'],
-            truncate_source=self.args['task']['truncate_source'],
-        )
+        # self.datasets[split] = load_langpair_dataset(
+        #     data_path, split, src, self.src_dict, tgt, self.tgt_dict,
+        #     combine=combine, dataset_impl=self.args['dataset']['dataset_impl'],
+        #     upsample_primary=self.args['task']['upsample_primary'],
+        #     left_pad_source=self.args['task']['left_pad_source'],
+        #     left_pad_target=self.args['task']['left_pad_target'],
+        #     max_source_positions=self.args['task']['max_source_positions'],
+        #     max_target_positions=self.args['task']['max_target_positions'],
+        #     load_alignments=self.args['task']['load_alignments'],
+        #     truncate_source=self.args['task']['truncate_source'],
+        # )
+        self.datasets[split] = load_path_dataset(data_path, self.source_dictionary, dataset_impl=self.args['dataset']['dataset_impl'])
+
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
         return LanguagePairDataset(src_tokens, src_lengths, self.source_dictionary)
 
-    def build_model(self, args):
-        model = super().build_model(args)
-        if getattr(args, 'eval_bleu', False):
-            assert getattr(args, 'eval_bleu_detok', None) is not None, (
-                '--eval-bleu-detok is required if using --eval-bleu; '
-                'try --eval-bleu-detok=moses (or --eval-bleu-detok=space '
-                'to disable detokenization, e.g., when using sentencepiece)'
-            )
-            detok_args = json.loads(getattr(args, 'eval_bleu_detok_args', '{}') or '{}')
-            self.tokenizer = encoders.build_tokenizer(Namespace(
-                tokenizer=getattr(args, 'eval_bleu_detok', None),
-                **detok_args
-            ))
-
-            gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
-            self.sequence_generator = self.build_generator([model], Namespace(**gen_args))
-        return model
-
-    @classmethod
-    def build_dictionary(
-            cls, filenames: List, tokenize_func: Any,
-            eos_word: Optional[str] = None, workers: int = 1, threshold: int = -1, nwords: int = -1,
-            padding_factor: int = 8,
-    ) -> Dictionary: #, modality: str,
-        """
-        Build the dictionary
-
-        Args:
-            filenames (list): list of filenames
-            workers (int): number of concurrent workers
-            threshold (int): defines the minimum word count
-            nwords (int): defines the total number of words in the final dictionary,
-                including special symbols
-            padding_factor (int): can be used to pad the dictionary size to be a
-                multiple of 8, which is important on some hardware (e.g., Nvidia
-                Tensor Cores).
-        """
-        dict = Dictionary()
-        for filename in filenames:
-            Dictionary.add_file_to_dictionary(
-                filename, dict, tokenize_func, eos_word, workers
-            )
-        dict.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
-        return dict
 
     @property
     def source_dictionary(self):
         """Return the source :class:`~fairseq.data.Dictionary`."""
-        return self.src_dict
+        return self.dictionary
 
     @property
     def target_dictionary(self):
         """Return the target :class:`~fairseq.data.Dictionary`."""
-        return self.tgt_dict
+        return self.dictionary

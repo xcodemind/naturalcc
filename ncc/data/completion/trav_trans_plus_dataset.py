@@ -10,9 +10,8 @@ import os
 import pickle
 import torch
 import sys
-sys.path.append('..')
 
-from dataset import BaseDataset, BaseSetup
+from ncc.data.completion.py150_dataset import BaseDataset, BaseSetup
 
 
 logging.basicConfig(level=logging.INFO)

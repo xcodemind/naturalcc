@@ -35,7 +35,9 @@ import math
 
 import torch
 import torch.nn as nn
-
+from ncc.models import register_model
+from ncc.models.fairseq_model import FairseqLanguageModel
+from ncc.modules.summarization.fairseq_decoder import FairseqDecoder
 
 def gelu(x):
     return (
@@ -179,7 +181,7 @@ class Block(nn.Module):
         return x
 
 
-class GPT2Model(nn.Module):
+class GPT2Model(FairseqDecoder):
     def __init__(
         self,
         vocab_size,
@@ -190,8 +192,10 @@ class GPT2Model(nn.Module):
         layer_norm_epsilon,
         root_paths,
         rel_vocab_size,
+            dictionary,
     ):
-        super(GPT2Model, self).__init__()
+        # super(GPT2Model, self).__init__()
+        super().__init__(dictionary)
         self.n_layer = n_layer
         self.n_embd = n_embd
         self.n_vocab = vocab_size
@@ -208,6 +212,9 @@ class GPT2Model(nn.Module):
         )
         self.h = nn.ModuleList([copy.deepcopy(block) for _ in range(n_layer)])
         self.ln_f = LayerNorm(n_embd, std_eps=layer_norm_epsilon)
+
+        self.lm_head = GPT2LMHead(self.wte.weight, n_embd)
+
 
     def forward(self, input_ids, rel=None, paths=None):
         input_shape = input_ids.size()
@@ -239,21 +246,60 @@ class GPT2LMHead(nn.Module):
         return lm_logits
 
 
-class TransformerModel(nn.Module):
+@register_model('traverse_transformer')
+class TraverseTransformerModel(FairseqLanguageModel):
     def __init__(
         self,
-        vocab_size,
-        loss_fn,
-        n_layer,
-        n_embd,
-        n_ctx,
-        n_head,
-        layer_norm_epsilon,
-        root_paths=False,
-        rel_vocab_size=None,
+        args,
+        decoder,
+        # vocab_size,
+        # loss_fn,
+        # n_layer,
+        # n_embd,
+        # n_ctx,
+        # n_head,
+        # layer_norm_epsilon,
+        # root_paths=False,
+        # rel_vocab_size=None,
     ):
-        super(TransformerModel, self).__init__()
-        self.transformer = GPT2Model(
+        # super(TraverseTransformerModel, self).__init__()
+        super().__init__(decoder)
+        self.args = args
+        # self.transformer = GPT2Model(
+        #     vocab_size,
+        #     n_layer,
+        #     n_embd,
+        #     n_ctx,
+        #     n_head,
+        #     layer_norm_epsilon,
+        #     root_paths,
+        #     rel_vocab_size,
+        # )
+        # self.lm_head = GPT2LMHead(self.transformer.wte.weight, n_embd)
+        # self.loss_fn = loss_fn
+
+    @classmethod
+    def build_model(cls, args, config, task):
+        """Build a new model instance."""
+
+        # make sure all arguments are present
+        # base_architecture(args)
+
+        # if not hasattr(args, 'max_positions'):
+        # if 'max_positions' not in args['model']:
+        #     args['model']['max_positions'] = args['task']['tokens_per_sample']
+
+        # encoder = RobertaEncoder(args, task.source_dictionary)
+        vocab_size = 10000
+        n_layer = 6
+        n_embd = 768
+        n_ctx = 6  # TODO
+        n_head = 6
+        layer_norm_epsilon = 0.01
+        root_paths = None
+        rel_vocab_size = None
+
+        decoder = GPT2Model(
             vocab_size,
             n_layer,
             n_embd,
@@ -262,9 +308,9 @@ class TransformerModel(nn.Module):
             layer_norm_epsilon,
             root_paths,
             rel_vocab_size,
+            task.dictionary,
         )
-        self.lm_head = GPT2LMHead(self.transformer.wte.weight, n_embd)
-        self.loss_fn = loss_fn
+        return cls(args, decoder)
 
     def reset_parameters(self):
         for p in self.parameters():

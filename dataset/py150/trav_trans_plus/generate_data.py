@@ -10,7 +10,7 @@ import json
 import logging
 import os
 
-from utils import get_dfs, parallelize, separate_dps
+from dataset.py150.utils import get_dfs, parallelize, separate_dps
 
 
 logging.basicConfig(level=logging.INFO)
@@ -140,6 +140,9 @@ def main():
         help="Use flag to incorporate child (0,1,2) info",
     )
     args = parser.parse_args()
+    args.ast_fp = os.path.expanduser('~/.ncc/py150/new_python1k_train.json')
+    args.out_fp = os.path.expanduser('~/.ncc/py150/new_new_python1k_train.txt')
+
     if os.path.exists(args.out_fp):
         os.remove(args.out_fp)
     logging.info("Number of context: {}".format(args.n_ctx))
@@ -148,7 +151,7 @@ def main():
     num_dps = 0
     i = 0
     with open(args.ast_fp, "r") as f, open(args.out_fp, "w") as fout:
-        for _ in range(5):  # divide up into subparts
+        for _ in range(1):  # divide up into subparts, 5: what does this for?
             i += 1
             print("Starting {}".format(i))
             for _ in range(1000):
@@ -157,7 +160,7 @@ def main():
                     continue
                 data.append(dp)
             print("  > Finished reading: {}".format(len(data)))
-            dps = parallelize(data, get_dp, (args.n_ctx, args.child), n_cores=60)
+            dps = parallelize(data, get_dp, (args.n_ctx, args.child), n_cores=20)
             print("  > Finished getting the datasets")
             for dp in dps:
                 for seq, extended, mask in dp:
@@ -167,6 +170,7 @@ def main():
                         num_dps += 1
             data = []
             print("  > Finished writing to file")
+
     logging.info("Wrote {} datapoints to {}".format(num_dps, args.out_fp))
 
 

@@ -128,7 +128,6 @@ class BaseFairseqModel(nn.Module):
                 m.set_num_updates(num_updates)
         self.apply(_apply)
 
-
     def make_generation_fast_(self, **kwargs):
         """Optimize model for faster generation."""
         if self._is_generation_fast:
