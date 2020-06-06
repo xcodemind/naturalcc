@@ -17,6 +17,8 @@ from ncc.data.tools import data_utils
 from ncc.data import constants
 from ncc.utils.file_io import PathManager
 from ncc.utils import tokenizer  # import tokenize_line
+import json
+from ncc.utils import py150_utils
 
 
 class Dictionary(object):
@@ -341,6 +343,14 @@ class Dictionary(object):
             ids[nwords] = self.eos_index
         return ids
 
+    # TODO: I think we should not change the encode_line function. Instead we can define different functions for different
+    # modalities with different file format, in order to provide more flexibilities.
+    def encode_path(self):
+        pass
+
+    def encode_ast(self):
+        pass
+
     @staticmethod
     def _add_file_to_dictionary_single_worker(
             filename: str, tokenize: Any,
@@ -390,6 +400,61 @@ class Dictionary(object):
             merge_result(
                 Dictionary._add_file_to_dictionary_single_worker(
                     filename, tokenize, eos_word
+                )
+            )
+
+
+    # TODO: I think we should not change the _add_ast_to_dictionary_single_worker function. Instead we can define different functions for different
+    # modalities with different file format, in order to provide more flexibilities.
+    @staticmethod
+    def _add_ast_to_dictionary_single_worker(
+            filename, tokenize, eos_word, worker_id=0, num_workers=1
+    ):
+        counter = Counter()
+        with open(PathManager.get_local_path(filename), "r", encoding="utf-8") as f:
+            size = os.fstat(f.fileno()).st_size
+            chunk_size = size // num_workers
+            offset = worker_id * chunk_size
+            end = offset + chunk_size
+            f.seek(offset)
+            if offset > 0:
+                safe_readline(f)  # drop first incomplete line
+            line = f.readline()
+            # line = json.loads(line.strip())
+            while line:
+                # for word in tokenize(line):
+                #     counter.update([word])
+                counter.update(py150_utils.get_value(json.loads(line.strip()), input_type='ast'))
+                counter.update([eos_word])
+                if f.tell() > end:
+                    break
+                line = f.readline()
+        return counter
+
+    @staticmethod
+    def add_ast_to_dictionary(filename, dict, tokenize, num_workers):
+        def merge_result(counter):
+            for w, c in sorted(counter.items()):
+                dict.add_symbol(w, c)
+
+        if num_workers > 1:
+            pool = Pool(processes=num_workers)
+            results = []
+            for worker_id in range(num_workers):
+                results.append(
+                    pool.apply_async(
+                        Dictionary._add_ast_to_dictionary_single_worker,
+                        (filename, tokenize, dict.eos_word, worker_id, num_workers),
+                    )
+                )
+            pool.close()
+            pool.join()
+            for r in results:
+                merge_result(r.get())
+        else:
+            merge_result(
+                Dictionary._add_ast_to_dictionary_single_worker(
+                    filename, tokenize, dict.eos_word
                 )
             )
 

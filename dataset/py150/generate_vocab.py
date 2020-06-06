@@ -42,7 +42,7 @@ def main():
         help="Where to get the input from (all AST nodes, leaf nodes, or source code",
     )
     args = parser.parse_args()
-    args.input_fp = os.path.expanduser('~/.ncc/py150/new_python1k_train.json')
+    args.input_fp = os.path.expanduser('~/.ncc/py150/trav_trans/new_python1k_train.json')
     args.out_fp = os.path.expanduser('~/.ncc/py150/trav_trans/data-bin/dict.txt')
     args.input_type = 'ast'
 
