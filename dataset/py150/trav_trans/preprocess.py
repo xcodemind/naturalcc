@@ -194,6 +194,30 @@ def main(args):
     # build_dataset(args, src_dicts, tgt_dict)
     make_all(args['preprocess']['source_lang'], src_dict)
 
+    # 3. ***************generate ids********************
+    def generate_ids(input_prefix, output_prefix, lang):
+        with open(file_name(input_prefix, lang), "r", encoding="utf-8") as f, \
+                open(dest_path(output_prefix, lang), "w") as fout:
+            for line in f.readlines():
+                dp = json.loads(line.strip())
+                # asts = separate_dps(dp, args.n_ctx)
+                asts = py150_utils.separate_dps(dp, args['preprocess']['n_ctx'])
+
+                for ast, _ in asts:
+                    ids = {}
+                    if len(ast) > 1:
+                        if args['preprocess']['id_type'] in {"leaf", "all"}:
+                            ids.update(py150_utils.get_leaf_ids(ast))
+                        if args['preprocess']['id_type'] in {"value", "all"}:
+                            ids.update(py150_utils.get_value_ids(ast))
+                        if args['preprocess']['id_type'] in {"type", "all"}:
+                            ids.update(py150_utils.get_type_ids(ast))
+
+                        json.dump(ids, fp=fout)
+                        fout.write("\n")
+
+    generate_ids(args['preprocess']['trainpref'], "train.generate_id", args['preprocess']['source_lang'])
+
 
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')
