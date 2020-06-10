@@ -1,6 +1,6 @@
 import os
 
-from ncc.data.summarization import LanguagePairDataset
+from ncc.data.summarization.language_pair_dataset import LanguagePairDataset
 from ncc.tasks.fairseq_task import FairseqTask
 from ncc.tasks import register_task
 
