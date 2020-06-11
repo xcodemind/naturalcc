@@ -49,6 +49,7 @@ def collate_tokens(values, pad_idx, eos_idx=None, left_pad=False, move_eos_to_be
         copy_tensor(v, res[i][size - len(v):] if left_pad else res[i][:len(v)])
     return res
 
+
 def collate_paths(values, pad_idx, eos_idx=None, left_pad=False, move_eos_to_beginning=False):
     """Convert a list of list of 1d tensors into a padded 3d tensor."""
     s = []

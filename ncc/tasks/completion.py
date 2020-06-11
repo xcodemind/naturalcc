@@ -3,143 +3,49 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import *
 import os
-import json
-import itertools
-from argparse import Namespace
 from ncc import LOGGER
 from ncc.tasks.fairseq_task import FairseqTask
 from ncc.tasks import register_task
 from ncc.utils import utils
-from ncc.data import encoders
-from ncc.data import indexed_dataset
 from ncc.data.tools import data_utils
-from ncc.data.wrappers.append_token_dataset import AppendTokenDataset
-from ncc.data.wrappers.truncate_dataset import TruncateDataset
-from ncc.data.wrappers.strip_token_dataset import StripTokenDataset
-from ncc.data.concat_dataset import ConcatDataset
-from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
-from ncc.data.summarization.language_pair_dataset import LanguagePairDataset
+from ncc.data.completion.trav_transformer_dataset import TravTransformerDataset
 from ncc.data.dictionary import Dictionary
-# from ncc.data.constants import *
 from ncc.utils import tokenizer  # , utils # metrics, search,
+import json
 
-from ncc.data.completion.trav_trans_plus_dataset import Setup
 
+def load_path_dataset(data_path, split, src, src_dict, dataset_impl):
+    # def split_exists(split, src, tgt, lang, data_path):
+    #     filename = os.path.join(data_path, '{}.{}'.format(split, src))  # -{}.{} , tgt, lang
+    #     return indexed_dataset.dataset_exists(filename, impl=dataset_impl)
+    #
+    # # infer langcode
+    # if split_exists(split, src, tgt, src, data_path):
+    #     prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , src, tgt
+    # elif split_exists(split, tgt, src, src, data_path):
+    #     prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , tgt, src
 
-def load_path_dataset(data_path, dictionary, dataset_impl):
-    fp = os.path.join(data_path, 'new_new_python1k_train.txt')
-    ids_fp = os.path.join(data_path, 'generated_ids.txt')
-    datasetup = Setup(data_path, fp, ids_fp, max_vocab = 100000, mode = "train")
-    dataset = datasetup._create_dataset()
+    # prefix = os.path.join(data_path, '{}.'.format(split))
 
-    return dataset
-    # return LanguagePairDataset(
-    #     src_dataset, src_dataset.sizes, src_dict,
-    #     tgt_dataset, tgt_dataset_sizes, tgt_dict,
-    #     left_pad_source=left_pad_source,
-    #     left_pad_target=left_pad_target,
-    #     max_source_positions=max_source_positions,
-    #     max_target_positions=max_target_positions,
-    #     align_dataset=align_dataset, eos=eos
-    # )
+    # fp = os.path.join(prefix, 'train.ast_trav_df')
+    # ids_fp = os.path.join(data_path, 'generated_ids.txt')
+    # datasetup = Setup(data_path, fp=prefix+'ast_trav_df', ids_fp=prefix+'generated_ids.ast_trav_df', max_vocab=100000,
+    #                   mode="train")
+    # dataset = datasetup._create_dataset()
 
-def load_langpair_dataset(
-        data_path, split,
-        src, src_dict,
-        tgt, tgt_dict,
-        combine, dataset_impl, upsample_primary,
-        left_pad_source, left_pad_target, max_source_positions,
-        max_target_positions, prepend_bos=False, load_alignments=False,
-        truncate_source=False, append_source_id=False
-):
-    def split_exists(split, src, tgt, lang, data_path):
-        filename = os.path.join(data_path, '{}.{}'.format(split, src))  # -{}.{} , tgt, lang
-        return indexed_dataset.dataset_exists(filename, impl=dataset_impl)
+    source_path = os.path.join(data_path, '{}.ast_trav_df'.format(split))
+    src_dataset = data_utils.load_indexed_dataset(source_path, 'ast', src_dict, dataset_impl)
 
-    src_datasets = []
-    tgt_datasets = []
+    node_id_path = os.path.join(data_path, '{}.generate_id.ast_trav_df'.format(split))
+    # node_ids = data_utils.load_indexed_dataset(node_id_path, 'node_id', src_dict, dataset_impl)
+    node_ids = []
+    with open(node_id_path, 'r', encoding='utf-8') as f:
+        for ids_line in f:
+            node_ids.append(json.loads(ids_line))
 
-    for k in itertools.count():
-        split_k = split + (str(k) if k > 0 else '')
-
-        # infer langcode
-        if split_exists(split_k, src, tgt, src, data_path):
-            prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , src, tgt
-        elif split_exists(split_k, tgt, src, src, data_path):
-            prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , tgt, src
-
-        else:
-            if k > 0:
-                break
-            else:
-                raise FileNotFoundError('Dataset not found: {} ({})'.format(split, data_path))
-        print('prefix + src: ', prefix + src)
-        src_dataset = data_utils.load_indexed_dataset(prefix + src, 'text', src_dict, dataset_impl)
-        if truncate_source:
-            src_dataset = AppendTokenDataset(
-                TruncateDataset(
-                    StripTokenDataset(src_dataset, src_dict.eos()),
-                    max_source_positions - 1,
-                ),
-                src_dict.eos(),
-            )
-        src_datasets.append(src_dataset)
-
-        tgt_dataset = data_utils.load_indexed_dataset(prefix + tgt, 'text', tgt_dict, dataset_impl)
-        if tgt_dataset is not None:
-            tgt_datasets.append(tgt_dataset)
-
-        LOGGER.info('{} {} {}-{} {} examples'.format(
-            data_path, split_k, src, tgt, len(src_datasets[-1])
-        ))
-
-        if not combine:
-            break
-
-    assert len(src_datasets) == len(tgt_datasets) or len(tgt_datasets) == 0
-
-    if len(src_datasets) == 1:
-        src_dataset = src_datasets[0]
-        tgt_dataset = tgt_datasets[0] if len(tgt_datasets) > 0 else None
-    else:
-        sample_ratios = [1] * len(src_datasets)
-        sample_ratios[0] = upsample_primary
-        src_dataset = ConcatDataset(src_datasets, sample_ratios)
-        if len(tgt_datasets) > 0:
-            tgt_dataset = ConcatDataset(tgt_datasets, sample_ratios)
-        else:
-            tgt_dataset = None
-
-    if prepend_bos:
-        assert hasattr(src_dict, "bos_index") and hasattr(tgt_dict, "bos_index")
-        src_dataset = PrependTokenDataset(src_dataset, src_dict.bos())
-        if tgt_dataset is not None:
-            tgt_dataset = PrependTokenDataset(tgt_dataset, tgt_dict.bos())
-
-    eos = None
-    if append_source_id:
-        src_dataset = AppendTokenDataset(src_dataset, src_dict.index('[{}]'.format(src)))
-        if tgt_dataset is not None:
-            tgt_dataset = AppendTokenDataset(tgt_dataset, tgt_dict.index('[{}]'.format(tgt)))
-        eos = tgt_dict.index('[{}]'.format(tgt))
-
-    align_dataset = None
-    if load_alignments:
-        align_path = os.path.join(data_path, '{}.align.{}-{}'.format(split, src, tgt))
-        if indexed_dataset.dataset_exists(align_path, impl=dataset_impl):
-            align_dataset = data_utils.load_indexed_dataset(align_path, None, dataset_impl)
-
-    tgt_dataset_sizes = tgt_dataset.sizes if tgt_dataset is not None else None
-    return LanguagePairDataset(
-        src_dataset, src_dataset.sizes, src_dict,
-        tgt_dataset, tgt_dataset_sizes, tgt_dict,
-        left_pad_source=left_pad_source,
-        left_pad_target=left_pad_target,
-        max_source_positions=max_source_positions,
-        max_target_positions=max_target_positions,
-        align_dataset=align_dataset, eos=eos
+    return TravTransformerDataset(
+        src_dataset, src_dataset.sizes, src_dict, node_ids,
     )
 
 
@@ -170,7 +76,7 @@ class CompletionTask(FairseqTask):
         paths = utils.split_paths(args['task']['data'])
         assert len(paths) > 0
         # load dictionaries
-        dictionary = cls.load_dictionary(os.path.join(paths[0], 'dict.txt'))
+        dictionary = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['source_lang'])))
         # tgt_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['target_lang'])))
         # assert src_dict.pad() == tgt_dict.pad()
         # assert src_dict.eos() == tgt_dict.eos()
@@ -216,7 +122,7 @@ class CompletionTask(FairseqTask):
         data_path = paths[(epoch - 1) % len(paths)]
 
         # infer langcode
-        # src, tgt = self.args['task']['source_lang'], self.args['task']['target_lang']
+        src = self.args['task']['source_lang']
 
         # self.datasets[split] = load_langpair_dataset(
         #     data_path, split, src, self.src_dict, tgt, self.tgt_dict,
@@ -229,11 +135,14 @@ class CompletionTask(FairseqTask):
         #     load_alignments=self.args['task']['load_alignments'],
         #     truncate_source=self.args['task']['truncate_source'],
         # )
-        self.datasets[split] = load_path_dataset(data_path, self.source_dictionary, dataset_impl=self.args['dataset']['dataset_impl'])
+        # def load_path_dataset(data_path, split, src, src_dict, dataset_impl):
+
+        self.datasets[split] = load_path_dataset(data_path, split, src, self.source_dictionary,
+                                                 dataset_impl=self.args['dataset']['dataset_impl'])
 
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
-        return LanguagePairDataset(src_tokens, src_lengths, self.source_dictionary)
+        return TravTransformerDataset(src_tokens, src_lengths, self.source_dictionary)  # TODO: bug
 
 
     @property

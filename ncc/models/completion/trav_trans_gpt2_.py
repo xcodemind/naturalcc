@@ -215,6 +215,9 @@ class GPT2Model(FairseqDecoder):
 
         self.lm_head = GPT2LMHead(self.wte.weight, n_embd)
 
+    def max_positions(self):
+        """Maximum input length supported by the decoder."""
+        return None  # an arbitrary large number TODO
 
     def forward(self, input_ids, rel=None, paths=None):
         input_shape = input_ids.size()
@@ -246,7 +249,7 @@ class GPT2LMHead(nn.Module):
         return lm_logits
 
 
-@register_model('traverse_transformer')
+@register_model('traverse_transformer_bak')
 class TraverseTransformerModel(FairseqLanguageModel):
     def __init__(
         self,
