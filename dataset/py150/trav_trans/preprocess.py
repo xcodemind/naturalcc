@@ -24,7 +24,7 @@ from ncc.utils import py150_utils
 import json
 
 
-# TODO: Don't abstract it. Try to be consistent with Frirseq.
+# TODO: Don't abstract it. Try to be consistent with Fairseq.
 def main(args):
     LOGGER.info('mkdir for {} task'.format(args['preprocess']['task']))
     os.makedirs(args['preprocess']['destdir'], exist_ok=True)
