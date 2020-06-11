@@ -1,7 +1,8 @@
 import os
 
-from fairseq.data import LanguagePairDataset
-from fairseq.tasks import FairseqTask, register_task
+from ncc.data.summarization.language_pair_dataset import LanguagePairDataset
+from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks import register_task
 
 
 @register_task('context_code')
