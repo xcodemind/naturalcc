@@ -2,9 +2,14 @@
 
 from typing import *
 
+import os
 import multiprocessing as mp
+from deprecated import deprecated
 
 
+@deprecated('Deprecated! Used {} instead.'.format(
+    os.path.join(os.path.dirname(__file__), 'mp_ppool.py')
+))
 class MPool:
     """
     design for NCC dataset generation
