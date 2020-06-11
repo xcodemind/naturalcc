@@ -11,19 +11,8 @@ from typing import (
     Union,
     Iterator, Iterable
 )
-from torch import (
-    Tensor,
-    LongTensor,
-    FloatTensor,
-    BoolTensor,
-)
-from torch.optim.optimizer import Optimizer
-from torch.utils.data import Dataset, DataLoader
-from torch.nn import Module
-
 from collections import (
     OrderedDict, defaultdict,
-    Counter,
 )
 from abc import ABC
 from numba import (
@@ -32,10 +21,6 @@ from numba import (
     float32, float64,
 )
 
-'''
-Type aliases for NCC libraries:
-'''
-# define function
 Any_t = Any
 Const_t = Any
 Void_t = Optional[NoReturn]
@@ -58,27 +43,8 @@ Dict_t = Union[Mapping, Dict, OrderedDict, defaultdict]
 Set_t = Union[Set, frozenset]
 Iterator_t = Union[Iterator, Iterable]
 
-# torch Tensor
-Tensor_t = Optional[Tensor]
-LTensor_t = LongTensor
-FTensor_t = FloatTensor
-BTensor_t = Optional[BoolTensor, FloatTensor]  # for mask
-ThOptimizer_t = Optimizer
-ThDataset_t = Dataset
-ThDataLoader_t = DataLoader
-ThNetwork_t = Module
-
-# other tools
-Counter_t = Counter
-
 __all__ = (
     'String_t', 'Int_t', 'Float_t', 'Number_t', 'Bool_t', 'Byte_t',
     'Any_t', 'Const_t', 'Void_t', 'Func_t', 'Class_t', 'Exception_t',
     'Sequence_t', 'Dict_t', 'Set_t', 'Iterator_t',
-
-    'Tensor_t', 'LTensor_t', 'FTensor_t', 'BTensor_t',
-    'ThDataset_t', 'ThDataLoader_t',
-    'ThNetwork_t', 'ThOptimizer_t',
-
-    'Counter_t',
 )
