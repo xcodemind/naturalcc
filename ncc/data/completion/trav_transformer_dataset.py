@@ -3,42 +3,16 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import logging
-from collections import OrderedDict
 import numpy as np
-from random import randint, shuffle, choice
-# from random import random as rand
-import random
 import torch
 from ncc.data.tools import data_utils
 from ncc.data.fairseq_dataset import FairseqDataset
-from ncc.data import constants
-from ncc.data.tools.truncate import truncate_seq
-from ncc import LOGGER
-import sys
 
 
 def collate(samples, pad_idx, eos_idx, left_pad_source=True, left_pad_target=False):
     if len(samples) == 0:
         return {}
 
-    # # src_tokens = torch.LongTensor([s['src_tokens'] for s in samples])
-    # src_tokens, doc_pad_mask, src_sent_ends = create_src_tok_batch(samples, src_dict.index(constants.S_SEP), src_dict.eos(), src_dict.pad())
-    # doc_pos_tok = torch.LongTensor(doc_pad_mask.size()).fill_(src_dict.index(constants.S_SEP))
-    # doc_pos_tok[doc_pad_mask] = src_dict.pad()
-    #
-    # segment_labels = torch.LongTensor([s['segment_labels'] for s in samples])
-    # # attention_mask_unilm = torch.stack([s['attention_mask_unilm'] for s in samples])
-    # # mask_qkv = []
-    # # for s in samples:
-    # #     if s['mask_qkv']:
-    # #         mask_qkv.append(s['mask_qkv'])
-    # #     else:
-    # #         mask_qkv.append(None)
-    # # mask_qkv = torch.LongTensor([s['mask_qkv'] for s in samples])
-    # masked_ids = torch.LongTensor([s['masked_ids'] for s in samples])
-    # # masked_pos = torch.LongTensor([s['masked_pos'] for s in samples])
-    # masked_weights = torch.LongTensor([s['masked_weights'] for s in samples])
     def merge(key, left_pad, move_eos_to_beginning=False):
         return data_utils.collate_tokens(
             [s[key] for s in samples],
@@ -104,14 +78,14 @@ class TravTransformerDataset(FairseqDataset):
     """
 
     def __init__(
-            self, src, src_sizes, src_dict, node_ids,
-            tgt=None, tgt_sizes=None, tgt_dict=None,
-            left_pad_source=True, left_pad_target=False,
-            max_source_positions=1024, max_target_positions=1024,
-            shuffle=True, input_feeding=True,
-            remove_eos_from_source=False, append_eos_to_target=False,
-            align_dataset=None,
-            append_bos=False, eos=None,
+        self, src, src_sizes, src_dict, node_ids,
+        tgt=None, tgt_sizes=None, tgt_dict=None,
+        left_pad_source=True, left_pad_target=False,
+        max_source_positions=1024, max_target_positions=1024,
+        shuffle=True, input_feeding=True,
+        remove_eos_from_source=False, append_eos_to_target=False,
+        align_dataset=None,
+        append_bos=False, eos=None,
     ):
         if tgt_dict is not None:
             assert src_dict.pad() == tgt_dict.pad()
@@ -143,6 +117,9 @@ class TravTransformerDataset(FairseqDataset):
         # and remove EOS from end of src sentence if it exists.
         # This is useful when we use existing datasets for opposite directions
         #   i.e., when we want to use tgt_dataset as src_dataset and vice versa
+        src_item = self.src[index]
+        tgt_item = src_item[1:]  # TODO: to be checked
+
         if self.append_eos_to_target:
             eos = self.tgt_dict.eos() if self.tgt_dict else self.src_dict.eos()
             if self.tgt and self.tgt[index][-1] != eos:
@@ -165,8 +142,6 @@ class TravTransformerDataset(FairseqDataset):
         # if self.pos_shift:
         #     tgt_item = torch.cat([torch.LongTensor(self.tgt_dict.index(constants.S2S_BOS)), tgt_item])
 
-        src_item = self.src[index]
-        tgt_item = src_item[1:]  # TODO: to be checked
         node_id = self.node_ids[index]
         example = {
             'id': index,
@@ -227,7 +202,7 @@ class TravTransformerDataset(FairseqDataset):
         """Return an example's size as a float or tuple. This value is used when
         filtering a dataset with ``--max-positions``."""
         # return (self.src_sizes[index], self.tgt_sizes[index] if self.tgt_sizes is not None else 0)
-        return self.src_sizes[index] + self.tgt_sizes[index]
+        return self.src_sizes[index]  # + self.tgt_sizes[index]
 
     def ordered_indices(self):
         """Return an ordered list of indices. Batches will be constructed based

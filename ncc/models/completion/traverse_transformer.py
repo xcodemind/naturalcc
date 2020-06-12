@@ -1,103 +1,30 @@
-#!/usr/bin/env python3
-# Copyright (c) 2019 OpenAI, HugginFace Inc. team. and TaeHwan Jung
 # Copyright (c) Facebook, Inc. and its affiliates.
-# ----------------------------------------------------------------------------
-# MIT LICENSE
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-# ----------------------------------------------------------------------------
-"""
-    Transformer model is adapted from: https://github.com/graykode/gpt-2-Pytorch
-        (Commit: 46ae886391a94c6683be438269252c4afd5ba762)
-    Original Paper and repository here: https://github.com/openai/gpt-2
-
-    RNN implementation is adapted from: https://github.com/pytorch/examples/tree/master/word_language_model
-"""
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+import logging
+import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from ncc.models import register_model
 from ncc.models.fairseq_model import FairseqLanguageModel
 from ncc.modules.completion.transformer_encoder import TransformerEncoder
+from ncc.utils import utils
+from ncc.modules.completion.layer_norm import LayerNorm
+from ncc.modules.summarization.fairseq_decoder import FairseqDecoder
+from ncc.models.hub_interface import RobertaHubInterface
+logger = logging.getLogger(__name__)
 
 
 @register_model('traverse_transformer')
 class TraverseTransformerModel(FairseqLanguageModel):
-    def __init__(
-        self,
-        args,
-        decoder,
-        # vocab_size,
-        # loss_fn,
-        # n_layer,
-        # n_embd,
-        # n_ctx,
-        # n_head,
-        # layer_norm_epsilon,
-        # root_paths=False,
-        # rel_vocab_size=None,
-    ):
-        # super(TraverseTransformerModel, self).__init__()
+    def __init__(self, args, decoder):
         super().__init__(decoder)
         self.args = args
-        # self.transformer = GPT2Model(
-        #     vocab_size,
-        #     n_layer,
-        #     n_embd,
-        #     n_ctx,
-        #     n_head,
-        #     layer_norm_epsilon,
-        #     root_paths,
-        #     rel_vocab_size,
-        # )
-        # self.lm_head = GPT2LMHead(self.transformer.wte.weight, n_embd)
-        # self.loss_fn = loss_fn
 
     @classmethod
     def build_model(cls, args, config, task):
-        """Build a new model instance."""
-        # make sure all arguments are present
-        # base_architecture(args)
-
-        # if not hasattr(args, 'max_positions'):
-        # if 'max_positions' not in args['model']:
-        #     args['model']['max_positions'] = args['task']['tokens_per_sample']
-
-        # encoder = RobertaEncoder(args, task.source_dictionary)
-        vocab_size = 10000
-        n_layer = 6
-        n_embd = 768
-        n_ctx = 6  # TODO
-        n_head = 6
-        layer_norm_epsilon = 0.01
-        root_paths = None
-        rel_vocab_size = None
-
-        decoder = TransformerEncoder(
-            vocab_size,
-            n_layer,
-            n_embd,
-            n_ctx,
-            n_head,
-            layer_norm_epsilon,
-            root_paths,
-            rel_vocab_size,
-            task.dictionary,
-        )
+        decoder = GPT2Encoder(args, task.source_dictionary)
         return cls(args, decoder)
 
     def reset_parameters(self):
@@ -105,35 +32,150 @@ class TraverseTransformerModel(FairseqLanguageModel):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-    def forward(
-        self, src_tokens, ext=None, rel=None, paths=None, return_loss=False
-    ):
-        hidden_states = self.decoder(src_tokens, rel, paths)
-        # y_pred = self.lm_head(hidden_states)
-        # if not return_loss:
-        return hidden_states
+    def forward(self, src_tokens, ext=None, rel=None, paths=None, features_only=False, return_all_hiddens=False,
+                classification_head_name=None, **kwargs):
+        if classification_head_name is not None:
+            features_only = True
 
-        # ext contains a list of idx of where to take the loss from
-        # we linearize it first
-        # ids = []
-        # max_len = y.size(-1)
-        # for i, ext_i in enumerate(ext):
-        #     ids += [i * max_len + j for j in range(ext_i, max_len)]
-        # loss = self.loss_fn(y_pred.view(-1, y_pred.size(-1))[ids], y.view(-1)[ids])
-        # return loss
+        x, extra = self.decoder(src_tokens, rel, paths, features_only, return_all_hiddens, **kwargs)
+
+        if classification_head_name is not None:
+            x = self.classification_heads[classification_head_name](x)
+        return x, extra
+
+    def register_classification_head(self, name, num_classes=None, inner_dim=None, **kwargs):
+        pass
+
+    @property
+    def supported_targets(self):
+        return {'self'}
+
+    @classmethod
+    def from_pretrained(cls, model_name_or_path, checkpoint_file='model.pt', data_name_or_path='.', bpe='gpt2',
+                        **kwargs):
+        from ncc.utils import hub_utils
+        x = hub_utils.from_pretrained(
+            model_name_or_path,
+            checkpoint_file,
+            data_name_or_path,
+            archive_map=cls.hub_models(),
+            bpe=bpe,
+            load_checkpoint_heads=True,
+            **kwargs,
+        )
+        return RobertaHubInterface(x['args'], x['task'], x['models'][0])
+
+    def upgrade_state_dict_named(self, state_dict, name):
+        super().upgrade_state_dict_named(state_dict, name)
+
+        prefix = name + '.' if name != '' else ''
+        current_head_names = [] if not hasattr(self, 'classification_heads') else \
+            self.classification_heads.keys()
+
+        # Handle new classification heads present in the state dict.
+        keys_to_delete = []
+        for k in state_dict.keys():
+            if not k.startswith(prefix + 'classification_heads.'):
+                continue
+
+            head_name = k[len(prefix + 'classification_heads.'):].split('.')[0]
+            num_classes = state_dict[prefix + 'classification_heads.' + head_name + '.out_proj.weight'].size(0)
+            inner_dim = state_dict[prefix + 'classification_heads.' + head_name + '.dense.weight'].size(0)
+
+            # if getattr(self.args, 'load_checkpoint_heads', False):
+            if 'load_checkpoint_heads' in self.args['model']:
+                if head_name not in current_head_names:
+                    self.register_classification_head(head_name, num_classes, inner_dim)
+            else:
+                if head_name not in current_head_names:
+                    logger.warning(
+                        'deleting classification head ({}) from checkpoint '
+                        'not present in current model: {}'.format(head_name, k)
+                    )
+                    keys_to_delete.append(k)
+                elif (
+                        num_classes != self.classification_heads[head_name].out_proj.out_features
+                        or inner_dim != self.classification_heads[head_name].dense.out_features
+                ):
+                    logger.warning(
+                        'deleting classification head ({}) from checkpoint '
+                        'with different dimensions than current model: {}'.format(head_name, k)
+                    )
+                    keys_to_delete.append(k)
+        for k in keys_to_delete:
+            del state_dict[k]
+
+        # Copy any newly-added classification heads into the state dict
+        # with their current weights.
+        if hasattr(self, 'classification_heads'):
+            cur_state = self.classification_heads.state_dict()
+            for k, v in cur_state.items():
+                if prefix + 'classification_heads.' + k not in state_dict:
+                    logger.info('Overwriting ' + prefix + 'classification_heads.' + k)
+                    state_dict[prefix + 'classification_heads.' + k] = v
 
 
 class GPT2LMHead(nn.Module):
-    def __init__(self, model_embeddings_weights, n_embd):
-        super(GPT2LMHead, self).__init__()
-        self.n_embd = n_embd
-        self.set_embeddings_weights(model_embeddings_weights)
+    def __init__(self, embed_dim, output_dim, activation_fn, weight=None):
+        super().__init__()
+        self.dense = nn.Linear(embed_dim, embed_dim)
+        self.activation_fn = utils.get_activation_fn(activation_fn)
+        self.layer_norm = LayerNorm(embed_dim)
 
-    def set_embeddings_weights(self, model_embeddings_weights):
-        embed_shape = model_embeddings_weights.shape
-        self.decoder = nn.Linear(embed_shape[1], embed_shape[0], bias=False)
-        self.decoder.weight = model_embeddings_weights  # Tied weights
+        if weight is None:
+            weight = nn.Linear(embed_dim, output_dim, bias=False).weight
+        self.weight = weight
+        self.bias = nn.Parameter(torch.zeros(output_dim))
 
-    def forward(self, hidden_state):
-        lm_logits = self.decoder(hidden_state)
-        return lm_logits
+    def forward(self, features, masked_tokens=None, **kwargs):
+        # Only project the unmasked tokens while training,
+        # saves both memory and computation
+        if masked_tokens is not None:
+            features = features[masked_tokens, :]
+
+        x = self.dense(features)
+        x = self.activation_fn(x)
+        x = self.layer_norm(x)
+        # project back to size of vocabulary with bias
+        x = F.linear(x, self.weight) + self.bias
+        return x
+
+
+class GPT2Encoder(FairseqDecoder):
+    def __init__(self, args, dictionary):
+        super().__init__(dictionary)
+        self.args = args
+        self.encoder = TransformerEncoder(
+            padding_idx=dictionary.pad(),
+            vocab_size=len(dictionary),
+            num_encoder_layers=args['model']['encoder_layers'],
+            embedding_dim=args['model']['encoder_embed_dim'],
+            context_size=1000,
+            num_attention_heads=args['model']['encoder_attention_heads'],
+            dropout=args['model']['dropout'],
+        )
+        self.lm_head = GPT2LMHead(embed_dim=args['model']['encoder_embed_dim'],
+                                  output_dim=len(dictionary),
+                                  activation_fn=args['model']['activation_fn'],
+                                  weight=self.encoder.embed_tokens.weight, )
+
+    def forward(self, src_tokens, rel=None, paths=None, features_only=False, return_all_hiddens=False, masked_tokens=None, **unused):
+        x, extra = self.extract_features(src_tokens, rel, paths, return_all_hiddens=return_all_hiddens)
+        if not features_only:
+            x = self.output_layer(x, masked_tokens=masked_tokens)
+        return x, extra
+
+    def extract_features(self, src_tokens, rel=None, paths=None, return_all_hiddens=False, **unused):
+        inner_states, _ = self.encoder(
+            src_tokens, rel, paths,
+            last_state_only=not return_all_hiddens,
+        )
+        features = inner_states[-1].transpose(0, 1)  # T x B x C -> B x T x C
+        return features, {'inner_states': inner_states if return_all_hiddens else None}
+
+    def output_layer(self, features, masked_tokens=None, **unused):
+        return self.lm_head(features, masked_tokens)
+
+    def max_positions(self):
+        """Maximum output length supported by the encoder."""
+        return self.args['model']['max_positions']

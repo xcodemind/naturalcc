@@ -5,29 +5,33 @@ import torch.nn as nn
 
 class PathMultiheadAttention(nn.Module):
     def __init__(
-        self, nx, n_ctx, n_head, scale=False, rel_vocab_size=None
+        self,
+        embed_dim,
+        context_size,
+        num_heads,
+        rel_vocab_size=None,
+        dropout=0.0,
+        add_bias_kv=False,
+        add_zero_attn=False,
+        self_attention=False
     ):
         super(PathMultiheadAttention, self).__init__()
-        n_state = nx
-        # [switch nx => n_state from Block to Attention to keep identical to TF implem]
-        assert n_state % n_head == 0
         self.register_buffer(
-            "bias", torch.tril(torch.ones(n_ctx, n_ctx)).view(1, 1, n_ctx, n_ctx)
+            "bias", torch.tril(torch.ones(context_size, context_size)).view(1, 1, context_size, context_size)
         )
-        self.n_head = n_head
-        self.split_size = n_state
-        self.scale = scale
-        self.c_attn = nn.Linear(nx, n_state * 3)
-        self.c_proj = nn.Linear(nx, n_state)
+        self.num_heads = num_heads
+        self.split_size = embed_dim
+        self.c_attn = nn.Linear(embed_dim, embed_dim * 3)
+        self.c_proj = nn.Linear(embed_dim, embed_dim)
 
         # if rel exists
         if rel_vocab_size is not None:
-            self.rel_weights = nn.Embedding(rel_vocab_size, n_head)
+            self.rel_weights = nn.Embedding(rel_vocab_size, num_heads)
 
     def _attn(self, q, k, v, rel=None):
         w = torch.matmul(q, k)
-        if self.scale:
-            w = w / math.sqrt(v.size(-1))
+        # if self.scale:
+        #     w = w / math.sqrt(v.size(-1))
         nd, ns = w.size(-2), w.size(-1)
         # b = self.bias[:, :, ns - nd : ns, :ns] # TODO
         # w = w * b - 1e10 * (1 - b)

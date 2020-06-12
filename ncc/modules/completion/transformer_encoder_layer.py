@@ -2,50 +2,82 @@ import torch
 import torch.nn as nn
 from ncc.modules.completion.layer_norm import LayerNorm
 from ncc.modules.attention.path_multihead_attention import PathMultiheadAttention
-import math
-
-
-def gelu(x):
-    return (
-        0.5
-        * x
-        * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
-    )
-
-class MLP(nn.Module):
-    def __init__(self, n_state, n_embd):
-        super(MLP, self).__init__()
-        self.c_fc = nn.Linear(n_embd, n_state)
-        self.c_proj = nn.Linear(n_state, n_embd)
-        self.act = gelu
-
-    def forward(self, x):
-        h = self.act(self.c_fc(x))
-        h2 = self.c_proj(h)
-        return h2
+import torch.nn.functional as F
+from ncc.utils import utils
 
 
 class TransformerEncoderLayer(nn.Module):
     def __init__(
         self,
-        n_ctx,
-        n_head,
-        n_embd,
-        layer_norm_epsilon,
-        scale=False,
-        rel_vocab_size=None,
-    ):
-        super(TransformerEncoderLayer, self).__init__()
-        self.ln_1 = LayerNorm(n_embd, std_eps=layer_norm_epsilon)
-        self.attn = PathMultiheadAttention(
-            n_embd, n_ctx, n_head, scale, rel_vocab_size
+        embedding_dim: int = 768,
+        context_size: int = 1000,
+        ffn_embedding_dim: int = 3072,
+        num_attention_heads: int = 8,
+        rel_vocab_size: int = None,
+        dropout: float = 0.1,
+        attention_dropout: float = 0.1,
+        activation_dropout: float = 0.1,
+        activation_fn: str = 'relu',
+        add_bias_kv: bool = False,
+        add_zero_attn: bool = False,
+        export: bool = False,
+    ) -> None:
+        super().__init__()
+        # Initialize parameters
+        self.embedding_dim = embedding_dim
+        self.dropout = dropout
+        self.activation_dropout = activation_dropout
+        self.context_size = context_size
+        # Initialize blocks
+        self.activation_fn = utils.get_activation_fn(activation_fn)
+        self.self_attn = PathMultiheadAttention(
+            self.embedding_dim,
+            self.context_size,
+            num_attention_heads,
+            rel_vocab_size,
+            dropout=attention_dropout,
+            add_bias_kv=add_bias_kv,
+            add_zero_attn=add_zero_attn,
+            self_attention=True,
         )
-        self.ln_2 = LayerNorm(n_embd, std_eps=layer_norm_epsilon)
-        self.mlp = MLP(4 * n_embd, n_embd)
 
-    def forward(self, x, rel):
-        a = self.attn(self.ln_1(x), rel)
-        x = x + a
-        m = self.mlp(self.ln_2(x))
-        x = x + m
-        return x
+        # layer norm associated with the self attention layer
+        self.self_attn_layer_norm = LayerNorm(self.embedding_dim, export=export)
+        self.fc1 = nn.Linear(self.embedding_dim, ffn_embedding_dim)
+        self.fc2 = nn.Linear(ffn_embedding_dim, self.embedding_dim)
+
+        # layer norm associated with the position wise feed-forward NN
+        self.final_layer_norm = LayerNorm(self.embedding_dim, export=export)
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        rel: torch.Tensor = None,
+        self_attn_mask: torch.Tensor = None,
+        self_attn_padding_mask: torch.Tensor = None,
+    ):
+        """
+                LayerNorm is applied either before or after the self-attention/ffn
+                modules similar to the original Transformer imlementation.
+                """
+        residual = x
+        x, attn = self.self_attn(
+            query=x,
+            key=x,
+            value=x,
+            key_padding_mask=self_attn_padding_mask,
+            need_weights=False,
+            attn_mask=self_attn_mask,
+        )
+        x = F.dropout(x, p=self.dropout, training=self.training)
+        x = residual + x
+        x = self.self_attn_layer_norm(x)
+
+        residual = x
+        x = self.activation_fn(self.fc1(x))
+        x = F.dropout(x, p=self.activation_dropout, training=self.training)
+        x = self.fc2(x)
+        x = F.dropout(x, p=self.dropout, training=self.training)
+        x = residual + x
+        x = self.final_layer_norm(x)
+        return x, attn
