@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from typing import Optional
+from typing import (
+    Optional, Union
+)
 from torch import (
     Tensor,
     LongTensor,
@@ -15,7 +17,7 @@ from torch.nn import Module
 Tensor_t = Optional[Tensor]
 LTensor_t = LongTensor
 FTensor_t = FloatTensor
-BTensor_t = Optional[BoolTensor, FloatTensor]  # for mask
+BTensor_t = Union[BoolTensor, FloatTensor, None]  # for mask
 ThOptimizer_t = Optimizer
 ThDataset_t = Dataset
 ThDataLoader_t = DataLoader
