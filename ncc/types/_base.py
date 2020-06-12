@@ -3,6 +3,7 @@
 from typing import (
     Optional, Union,
     Sequence, List, Tuple,
+    TypeVar,
     NoReturn,
     Any,
     Mapping, Dict,
@@ -37,14 +38,18 @@ Number_t = Union[Int_t, Float_t]
 Bool_t = bool
 Byte_t = bytes
 Exception_t = Exception
-Sequence_t = Union[Sequence, List, Tuple]  # for list & tuple
-Dict_t = Union[Mapping, Dict, OrderedDict, defaultdict]
-Set_t = Union[Set, frozenset]
-Iterator_t = Union[Iterator, Iterable]
+# Sequence_t = Union[Sequence, List, Tuple]  # for list & tuple
+Sequence_t = TypeVar('Sequence_t', Sequence, List, Tuple)
+# Dict_t = Union[Mapping, Dict, OrderedDict, defaultdict]
+Dict_t = TypeVar('Dict_t', Mapping, Dict, OrderedDict, defaultdict)
+# Set_t = Union[Set, frozenset]
+Set_t = TypeVar('Set_t', Set, frozenset)
+# Iterator_t = Union[Iterator, Iterable]
+Iterator_t = TypeVar('Iterator_t', Iterator, Iterable)
 
 __all__ = (
     'String_t', 'Int_t', 'Float_t', 'Number_t', 'Bool_t', 'Byte_t',
     'Any_t', 'Const_t', 'Void_t', 'Func_t', 'Class_t', 'Exception_t',
     'Sequence_t', 'Dict_t', 'Set_t', 'Iterator_t',
-    'Optional', 'Union',
+    'Optional', 'Union', 'Tuple',
 )
