@@ -26,8 +26,7 @@ from botocore.exceptions import ClientError
 from filelock import FileLock
 from tqdm.auto import tqdm
 
-from ncc.__init__ import __version__
-
+from ncc import __VERSION__
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -90,7 +89,6 @@ TF2_WEIGHTS_NAME = "tf_model.h5"
 TF_WEIGHTS_NAME = "model.ckpt"
 CONFIG_NAME = "config.json"
 MODEL_CARD_NAME = "modelcard.json"
-
 
 MULTIPLE_CHOICE_DUMMY_INPUTS = [[[0], [1]], [[0], [1]]]
 DUMMY_INPUTS = [[7, 6, 0, 0, 1], [1, 2, 3, 0, 0], [0, 0, 0, 4, 5]]
@@ -206,15 +204,15 @@ def filename_to_url(filename, cache_dir=None):
 
 
 def cached_path(
-    url_or_filename,
-    cache_dir=None,
-    force_download=False,
-    proxies=None,
-    resume_download=False,
-    user_agent=None,
-    extract_compressed_file=False,
-    force_extract=False,
-    local_files_only=False,
+        url_or_filename,
+        cache_dir=None,
+        force_download=False,
+        proxies=None,
+        resume_download=False,
+        user_agent=None,
+        extract_compressed_file=False,
+        force_extract=False,
+        local_files_only=False,
 ) -> Optional[str]:
     """
     Given something that might be a URL (or might be a local path),
@@ -347,7 +345,7 @@ def s3_get(url, temp_file, proxies=None):
 
 
 def http_get(url, temp_file, proxies=None, resume_size=0, user_agent=None):
-    ua = "transformers/{}; python/{}".format(__version__, sys.version.split()[0])
+    ua = "transformers/{}; python/{}".format(__VERSION__, sys.version.split()[0])
     if is_torch_available():
         ua += "; torch/{}".format(torch.__version__)
     if is_tf_available():
@@ -380,14 +378,14 @@ def http_get(url, temp_file, proxies=None, resume_size=0, user_agent=None):
 
 
 def get_from_cache(
-    url,
-    cache_dir=None,
-    force_download=False,
-    proxies=None,
-    etag_timeout=10,
-    resume_download=False,
-    user_agent=None,
-    local_files_only=False,
+        url,
+        cache_dir=None,
+        force_download=False,
+        proxies=None,
+        etag_timeout=10,
+        resume_download=False,
+        user_agent=None,
+        local_files_only=False,
 ) -> Optional[str]:
     """
     Given a URL, look for the corresponding file in the local cache.
@@ -498,11 +496,9 @@ def get_from_cache(
     return cache_path
 
 
-def remove_files(path,ext_name):
-    for f in Path(path).glob('{}.{}'.format('*',ext_name)):
+def remove_files(path, ext_name):
+    for f in Path(path).glob('{}.{}'.format('*', ext_name)):
         try:
             os.remove(f)
         except OSError as e:
             print("Error: %s : %s" % (f, e.strerror))
-
-
