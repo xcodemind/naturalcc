@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from typing import (
-    Optional,
+    Optional, Union,
     Sequence, List, Tuple,
     NoReturn,
     Any,
     Mapping, Dict,
     Set,
     Callable,
-    Union,
     Iterator, Iterable
 )
 from collections import (
@@ -47,4 +46,5 @@ __all__ = (
     'String_t', 'Int_t', 'Float_t', 'Number_t', 'Bool_t', 'Byte_t',
     'Any_t', 'Const_t', 'Void_t', 'Func_t', 'Class_t', 'Exception_t',
     'Sequence_t', 'Dict_t', 'Set_t', 'Iterator_t',
+    'Optional', 'Union',
 )

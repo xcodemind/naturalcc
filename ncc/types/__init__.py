@@ -13,6 +13,8 @@ __all__ = (
     'Any_t', 'Const_t', 'Void_t', 'Func_t', 'Class_t', 'Exception_t',
     'Sequence_t', 'Dict_t', 'Set_t', 'Iterator_t',
 
+    'Optional', 'Union',
+
     'Tensor_t', 'LTensor_t', 'FTensor_t', 'BTensor_t',
     'ThDataset_t', 'ThDataLoader_t',
     'ThNetwork_t', 'ThOptimizer_t',
