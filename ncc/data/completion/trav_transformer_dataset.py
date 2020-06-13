@@ -30,6 +30,9 @@ def collate(samples, pad_idx, eos_idx, left_pad_source=True, left_pad_target=Fal
     for i, sample in enumerate(samples):
         for name, lst in sample['node_id'].items():
             node_ids[name] += [j - 1 + (max_len - 1) * i for j in lst]
+
+    ntokens = sum(len(s['target']) for s in samples)
+
     batch = {
         'net_input': {
             'src_tokens': src_tokens,
@@ -37,7 +40,7 @@ def collate(samples, pad_idx, eos_idx, left_pad_source=True, left_pad_target=Fal
         },
         'target': target,
         'node_ids': node_ids,
-        # 'ntokens': masked_weights.sum().item(),
+        'ntokens': ntokens,
         # 'nsentences': 2,
         # 'sample_size': masked_ids.size(0),
     }
@@ -118,7 +121,7 @@ class TravTransformerDataset(FairseqDataset):
         # This is useful when we use existing datasets for opposite directions
         #   i.e., when we want to use tgt_dataset as src_dataset and vice versa
         src_item = self.src[index]
-        tgt_item = src_item[1:]  # TODO: to be checked
+        tgt_item = src_item # [1:]  # TODO: to be checked
 
         if self.append_eos_to_target:
             eos = self.tgt_dict.eos() if self.tgt_dict else self.src_dict.eos()
