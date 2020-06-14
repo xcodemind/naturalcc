@@ -227,6 +227,7 @@ class MultiheadAttention(nn.Module):
             add_zero_attn=False,
             self_attention=False,
             encoder_decoder_attention=False,
+            maximum_relative_position=None,
     ):
         super().__init__()
         self.embed_dim = embed_dim
@@ -263,6 +264,15 @@ class MultiheadAttention(nn.Module):
 
         self.add_zero_attn = add_zero_attn
 
+        # relative position
+        # reference:
+        # https://github.com/OpenNMT/OpenNMT-tf/blob/7ef62c8781e7f582af33ea278cb9f03223f2a455/opennmt/layers/transformer.py
+        self.maximum_relative_position = maximum_relative_position
+        # self.maximum_relative_position = 5 # for debug
+        if self.maximum_relative_position is not None:
+            self.relative_position_keys = nn.Embedding(2 * self.maximum_relative_position + 1, self.head_dim)
+            self.relative_position_values = nn.Embedding(2 * self.maximum_relative_position + 1, self.head_dim)
+
         self.reset_parameters()
 
         self.onnx_trace = False
@@ -273,6 +283,50 @@ class MultiheadAttention(nn.Module):
             self.enable_torch_version = False
         # use our defined multi-head-attention
         self.enable_torch_version = False
+
+    def relative_positions(self, length: int, max_position: int) -> torch.Tensor:
+        '''
+        References:
+            Self-Attention with Relative Position Representations
+            https://medium.com/@_init_/how-self-attention-with-relative-position-representations-works-28173b8c245a
+
+        build a position list, as follow
+        [...(all are 0), 0, 1, ..., 2k, ...(all are 2k)]
+        move a window on this list from right to left
+
+        Examples:
+            length=3, max_len=10
+        Returns:
+            tensor([[3, 4, 5, 6, 6, 6, 6, 6, 6, 6],
+                    [2, 3, 4, 5, 6, 6, 6, 6, 6, 6],
+                    [1, 2, 3, 4, 5, 6, 6, 6, 6, 6],
+                    [0, 1, 2, 3, 4, 5, 6, 6, 6, 6],
+                    [0, 0, 1, 2, 3, 4, 5, 6, 6, 6],
+                    [0, 0, 0, 1, 2, 3, 4, 5, 6, 6],
+                    [0, 0, 0, 0, 1, 2, 3, 4, 5, 6],
+                    [0, 0, 0, 0, 0, 1, 2, 3, 4, 5],
+                    [0, 0, 0, 0, 0, 0, 1, 2, 3, 4],
+                    [0, 0, 0, 0, 0, 0, 0, 1, 2, 3]])
+        '''
+        arange = torch.arange(length)
+        distance = torch.unsqueeze(arange, dim=0) - torch.unsqueeze(arange, dim=1)
+        distance = torch.clamp(distance, -max_position, max_position)
+        distance += max_position
+        return distance
+
+    def matmul_with_relative_representations(self, query: torch.Tensor, relative_pos: torch.Tensor):
+        """
+
+        Args:
+            query: [tgt_len, bsz * head, head_dim]
+            relative_pos: [tgt_len, tgt_len, head_dim]
+
+        Returns:
+            [bsz * head, tgt_len, tgt_len]
+        """
+        Q_RP = torch.matmul(query.transpose(0, 1), relative_pos.transpose(1, 2))
+        Q_RP = Q_RP.transpose(0, 1)
+        return Q_RP
 
     def prepare_for_onnx_export_(self):
         self.onnx_trace = True
@@ -331,6 +385,7 @@ class MultiheadAttention(nn.Module):
             need_weights = True
 
         tgt_len, bsz, embed_dim = query.size()
+        src_len = value.size(0)
         assert embed_dim == self.embed_dim
         assert list(query.size()) == [tgt_len, bsz, embed_dim]
 
@@ -471,7 +526,6 @@ class MultiheadAttention(nn.Module):
             assert incremental_state is not None
             incremental_state = self._set_input_buffer(incremental_state, saved_state)
 
-
         # This is part of a workaround to get around fork/join parallelism
         # not supporting Optional types.
         if key_padding_mask is not None and key_padding_mask.dim() == 0:
@@ -501,7 +555,18 @@ class MultiheadAttention(nn.Module):
                     dim=1,
                 )
 
-        attn_weights = torch.bmm(q, k.transpose(1, 2))
+        attn_weights = torch.bmm(q, k.transpose(1, 2))  # [bsz * head, tgt_len, tgt_len]
+
+        # relative position
+        if self.maximum_relative_position is None:
+            relative_repr_keys = relative_repr_values = None
+        else:
+            keys_length = k.size(1)
+            relative_pos = self.relative_positions(keys_length, self.maximum_relative_position)
+            relative_repr_keys = self.relative_position_keys(relative_pos)
+            relative_repr_values = self.relative_position_values(relative_pos)
+            attn_weights += self.matmul_with_relative_representations(q, relative_repr_keys)
+
         # TODO: sparse operation, need to be implemented later
         # attn_weights = MultiheadAttention.apply_sparse_mask(attn_weights, tgt_len, src_len, bsz)
 
@@ -535,6 +600,11 @@ class MultiheadAttention(nn.Module):
         )
         assert v is not None
         attn = torch.bmm(attn_probs, v)
+
+        # relative position
+        if relative_repr_values is not None:
+            attn += self.matmul_with_relative_representations(attn, relative_repr_values)
+
         assert list(attn.size()) == [bsz * self.num_heads, tgt_len, self.head_dim]
         if self.onnx_trace and attn.size(1) == 1:
             # when ONNX tracing a single decoder step (sequence length == 1)
