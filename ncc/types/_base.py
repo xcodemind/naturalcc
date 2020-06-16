@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from typing import (
-    Optional, Union,
+    Optional, Union, Generic,
     Sequence, List, Tuple,
     TypeVar,
     NoReturn,
@@ -10,9 +10,6 @@ from typing import (
     Set,
     Callable,
     Iterator, Iterable
-)
-from collections import (
-    OrderedDict, defaultdict,
 )
 from abc import ABC
 from numba import (
@@ -38,14 +35,14 @@ Number_t = Union[Int_t, Float_t]
 Bool_t = bool
 Byte_t = bytes
 Exception_t = Exception
-# Sequence_t = Union[Sequence, List, Tuple]  # for list & tuple
-Sequence_t = TypeVar('Sequence_t', Sequence, List, Tuple)
-# Dict_t = Union[Mapping, Dict, OrderedDict, defaultdict]
-Dict_t = TypeVar('Dict_t', Mapping, Dict, OrderedDict, defaultdict)
-# Set_t = Union[Set, frozenset]
-Set_t = TypeVar('Set_t', Set, frozenset)
-# Iterator_t = Union[Iterator, Iterable]
-Iterator_t = TypeVar('Iterator_t', Iterator, Iterable)
+
+# generic type
+T = TypeVar('T')
+S = TypeVar('S')
+Sequence_t = Union[Sequence[T], List[T], Tuple[T]]  # for list & tuple
+Dict_t = Union[Mapping[T, S], Dict[T, S]]
+Set_t = Set
+Iterator_t = Union[Iterator[T], Iterable[T]]
 
 __all__ = (
     'String_t', 'Int_t', 'Float_t', 'Number_t', 'Bool_t', 'Byte_t',
