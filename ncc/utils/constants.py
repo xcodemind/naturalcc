@@ -5,7 +5,7 @@ import sys
 
 sys.path.append(os.path.abspath('.'))
 
-LANUAGES = ['python', 'java', 'go', 'php', 'ruby', 'javascript']
+LANGUAGES = ['python', 'java', 'go', 'php', 'ruby', 'javascript']
 MODES = ['train', 'valid', 'test']
 
 POS_INF = 999999999999999999
@@ -28,7 +28,6 @@ DGLGraph_PAD_WORD = -1
 CODE_MODALITIES = ['seq', 'sbt', 'tree', 'cfg']
 
 METRICS = ['bleu', 'meteor', 'rouge', 'cider']
-
 
 # POP_KEYS = ['repo', 'path', 'language', 'original_string', 'partition', 'sha', 'url']
 
