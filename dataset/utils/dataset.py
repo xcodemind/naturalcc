@@ -2,12 +2,15 @@
 
 import os
 
+from abc import abstractmethod
+from collections import namedtuple
+
 import ncc
 from ncc import LOGGER
 from ncc.types import *
 from ncc.utils.mp_ppool import PPool
-
-from . import *
+from ncc.types import *
+from ncc.utils import path
 
 '''
 This script is for downloading dataset or files.
@@ -36,17 +39,73 @@ This script is for downloading dataset or files.
 '''
 
 
+class Resource(object):
+    __slots__ = (
+        'url',
+        'size',  # raw file size (bit)
+        'local'  # file name under local directory
+    )
+
+    def __init__(self, url: String_t, size: Number_t, local: String_t):
+        self.url = url
+        self.size = size
+        self.local = path.join(local, path.basename(url))
+
+
 class Dataset(object):
-    __slots__ = ('_root', '_cache', '_thread_pool')
+    """
+    Args:
+        _root: dataset files directory
+        _thread_pool: multi-processing (Pathos) pool
+        _resource: raw data files, composed of Resource namedtuple (attr: url, size)
+    """
+
+    __slots__ = (
+        '_root',  # NCC root directory, download and pre-processing your data in the directory (default ~/.ncc/)
+        '_cache',  # cache directory
+        '_thread_pool',  # multi-processing pool build with thread_num
+        '_resources'  # raw data file info
+
+        '_RAW_DIR',  # download raw data files in this directory
+        '_DATA_DIR',  # pre-processed data
+    )
 
     def __init__(self, root: String_t = None, thread_num: Int_t = None):
         if root is None:
-            root = path_join_func(ncc.__ROOT_DIR__, self.__class__.__name__)
-        self._root = expanduser_func(root)
-        makedirs_func(self._root)
-        self._cache = expanduser_func(ncc.__CACHE_DIR__)
-        makedirs_func(self._cache)
+            root = path.join(ncc.__ROOT_DIR__, self.__class__.__name__)
+        self._root = path.expanduser(root)
+        path.makedirs(self._root)
+        self._cache = path.expanduser(ncc.__CACHE_DIR__)
+        path.makedirs(self._cache)
         self._thread_pool = PPool(thread_num)
+        self._resources: Optional[Dict_t[Any_t, Resource]] = None  # register dataset online resource
+
+    def _register_dir(self, root: String_t, *dir: Sequence_t[String_t]) -> String_t:
+        """concate paths, makedir and return"""
+        directory = path.safe_join(root, *dir)
+        path.makedirs(directory)
+        return directory
+
+    @abstractmethod
+    def _register_attrs(self):
+        """write user-defined attributes of dataset"""
+        self._RAW_DIR = self._register_dir(self._root, 'raw')
+        self._DATA_DIR = self._register_dir(self._root, 'data')
+
+    @abstractmethod
+    def download(self):
+        """download data file and others"""
+        ...
+
+    @abstractmethod
+    def decompress(self):
+        """decompress data file and others"""
+        ...
+
+    @abstractmethod
+    def build(self):
+        """default data generation method"""
+        ...
 
     def close(self):
         self._thread_pool.close()
@@ -54,19 +113,8 @@ class Dataset(object):
     def __exit__(self):
         self.close()
 
-    # @staticmethod
-    # def codesearchnet(self):
-    #     resources = [
-    #         ("http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz", "f68b3c2dcbeaaa9fbdd348bbdeb94873"),
-    #         ("http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz", "d53e105ee54ea40749a09fcbcd1e9432"),
-    #         ("http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz", "9fb629c4189551a2d022fa330f9573f3"),
-    #         ("http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz", "ec29112dd5afa0611ce80d1b7f02629c")
-    #     ]
-    #     raw_file_sizes = {
-    #         'go': 487525935,
-    #         'java': 1060569153,
-    #         'javascript': 1664713350,
-    #         'php': 851894048,
-    #         'python': 940909997,
-    #         'ruby': 111758028,
-    #     }
+
+__all__ = (
+    Resource,
+    Dataset,
+)
