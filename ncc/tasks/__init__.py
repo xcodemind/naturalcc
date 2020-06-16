@@ -63,11 +63,12 @@ tasks_dir = os.path.dirname(__file__)
 for file in os.listdir(tasks_dir):
     path = os.path.join(tasks_dir, file)
     if (
-        not file.startswith('_')
-        and not file.startswith('.')
-        and (file.endswith('.py') or os.path.isdir(path))
+            not file.startswith('_')
+            and not file.startswith('.')
+            and (file.endswith('.py') or os.path.isdir(path))
     ):
-        task_name = file[:file.find('.py')] if file.endswith('.py') else file
+        # task_name = file[:file.find('.py')] if file.endswith('.py') else file
+        task_name = file[:-3] if file.endswith('.py') else file  # -3 for '.py'
         # print('task_name: ', task_name)
         importlib.import_module('ncc.tasks.' + task_name)
         # print('TASK_REGISTRY: ', TASK_REGISTRY)
