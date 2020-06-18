@@ -184,6 +184,8 @@ class RobertaLMHead(nn.Module):
     def forward(self, features, masked_pos=None, **kwargs):
         # Only project the unmasked tokens while training,
         # saves both memory and computation
+        # [[12,30, 1,1,1], ...]
+        # features=[b, len, C] -> [b, max_b, C]
         if masked_pos is not None:
             features = torch.gather(features, 1, masked_pos.unsqueeze(2).expand(-1, -1, features.size(-1)))
 

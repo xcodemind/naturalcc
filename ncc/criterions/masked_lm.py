@@ -48,23 +48,8 @@ class MaskedLmLoss(FairseqCriterion):
 
         logits = model(**sample['net_input'], masked_tokens=masked_tokens)[0]
         targets = model.get_targets(sample, [logits])
-        targets = targets[masked_tokens]
-        # (masked_lm_loss), prediction_scores, (hidden_states), (attentions)
-        # outputs = model(sample['net_input']['src_tokens'], masked_lm_labels=sample['target'])# if args.mlm else model(inputs, labels=labels)
-        # logits = outputs[1]
-        # targets = model.get_targets(sample, [logits])
-        # targets = targets[masked_tokens]
+        # targets = targets[masked_tokens] #TODO: unilm doesnt require this line, if other needs, pls annotate here
 
-        # loss = F.nll_loss(
-        #     F.log_softmax(
-        #         logits.view(-1, logits.size(-1)),
-        #         dim=-1,
-        #         dtype=torch.float32,
-        #     ),
-        #     sample['target'].view(-1),
-        #     reduction='sum',
-        #     ignore_index=self.padding_idx,
-        # )
         loss = cross_entropy(
             logits.view(-1, logits.size(-1)),
             targets.view(-1),
