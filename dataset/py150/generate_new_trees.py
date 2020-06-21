@@ -59,8 +59,8 @@ def main():
     )
 
     args = parser.parse_args()
-    args.input_fp = os.path.expanduser('~/.ncc/py150/python1k_train.json')
-    args.out_fp = os.path.expanduser('~/.ncc/py150/new_python1k_train.json')
+    args.input_fp = os.path.expanduser('~/.ncc/py150/raw/python1k_train.json')
+    args.out_fp = os.path.expanduser('~/.ncc/py150/trav_trans/raw/train.ast_trav_df')
 
     if os.path.exists(args.out_fp):
         os.remove(args.out_fp)

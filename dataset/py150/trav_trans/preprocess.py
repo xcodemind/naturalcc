@@ -107,7 +107,7 @@ def main(args):
         src_dict = build_dictionary([train_path(args['preprocess']['source_lang'])], src=True)
 
     #  save dictionary
-    # src_dict.save(dict_path(args['preprocess']['source_lang']))
+    src_dict.save(dict_path(args['preprocess']['source_lang']))
 
     # 2. ***************build dataset********************
     def make_binary_dataset(vocab, input_prefix, output_prefix, lang, num_workers):
