@@ -19,8 +19,19 @@ print('build_criterion: ', build_criterion)
 print('criterions.py')
 print('CRITERION_REGISTRY: ', CRITERION_REGISTRY)
 
-# automatically import any Python files in the criterions/ directory
-for file in os.listdir(os.path.dirname(__file__)):
-    if file.endswith('.py') and not file.startswith('_'):
-        module = file[:file.find('.py')]
-        importlib.import_module('ncc.criterions.' + module)
+# # automatically import any Python files in the criterions/ directory
+# for file in os.listdir(os.path.dirname(__file__)):
+#     if file.endswith('.py') and not file.startswith('_'):
+#         module = file[:file.find('.py')]
+#         importlib.import_module('ncc.criterions.' + module)
+
+criterions_dir = os.path.dirname(__file__)
+for file in os.listdir(criterions_dir):
+    path = os.path.join(criterions_dir, file)
+    if (
+        not file.startswith('_')
+        and not file.startswith('.')
+        and (file.endswith('.py') or os.path.isdir(path))
+    ):
+        criterion_name = file[:file.find('.py')] if file.endswith('.py') else file
+        module = importlib.import_module('ncc.criterions.' + criterion_name)

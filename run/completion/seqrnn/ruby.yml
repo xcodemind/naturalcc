@@ -1,5 +1,5 @@
 #registry
-criterion: cross_entropy
+criterion: completion_cross_entropy
 optimizer: 'adam'
 lr_scheduler: 'polynomial_decay'
 tokenizer: ~ # default=None
