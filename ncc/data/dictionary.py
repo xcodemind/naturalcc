@@ -482,6 +482,59 @@ class Dictionary(object):
                 )
             )
 
+    @staticmethod
+    def _add_tok_to_dictionary_single_worker(
+            filename: str, tokenize: Any,
+            eos_word: Optional[str], worker_id: int = 0, num_workers: int = 1
+    ) -> Counter:
+        counter = Counter()
+        with open(PathManager.get_local_path(filename), "r", encoding="utf-8") as f:
+            size = os.fstat(f.fileno()).st_size
+            chunk_size = size // num_workers
+            offset = worker_id * chunk_size
+            end = offset + chunk_size
+            f.seek(offset)
+            if offset > 0:
+                safe_readline(f)  # drop first incomplete line
+            line = f.readline()
+            while line:
+                # tokens = tokenize(line)
+                tokens = json.loads(line)
+                counter.update(tokens)
+                if eos_word is not None:
+                    counter.update([eos_word])
+                if f.tell() > end:
+                    break
+                line = f.readline()
+        return counter
+
+    @staticmethod
+    def add_token_to_dictionary(filename, dict, tokenize, num_workers):
+        def merge_result(counter):
+            for w, c in sorted(counter.items()):
+                dict.add_symbol(w, c)
+
+        if num_workers > 1:
+            pool = Pool(processes=num_workers)
+            results = []
+            for worker_id in range(num_workers):
+                results.append(
+                    pool.apply_async(
+                        Dictionary._add_tok_to_dictionary_single_worker,
+                        (filename, tokenize, dict.eos_word, worker_id, num_workers),
+                    )
+                )
+            pool.close()
+            pool.join()
+            for r in results:
+                merge_result(r.get())
+        else:
+            merge_result(
+                Dictionary._add_tok_to_dictionary_single_worker(
+                    filename, tokenize, dict.eos_word
+                )
+            )
+
 
 class TruncatedDictionary(object):
     def __init__(self, wrapped_dict, length):

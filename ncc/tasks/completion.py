@@ -10,6 +10,7 @@ from ncc.tasks import register_task
 from ncc.utils import utils
 from ncc.data.tools import data_utils
 from ncc.data.completion.trav_transformer_dataset import TravTransformerDataset
+from ncc.data.completion.seqrnn_dataset import SeqRNNDataset
 from ncc.data.dictionary import Dictionary
 from ncc.utils import tokenizer  # , utils # metrics, search,
 import json
@@ -48,6 +49,21 @@ def load_path_dataset(data_path, split, src, src_dict, dataset_impl):
         src_dataset, src_dataset.sizes, src_dict, node_ids,
     )
 
+def load_tok_dataset(data_path, split, src, src_dict, dataset_impl):
+    source_path = os.path.join(data_path, '{}.tok'.format(split))
+    src_dataset = data_utils.load_indexed_dataset(source_path, 'text', src_dict, dataset_impl)
+
+    node_id_path = os.path.join(data_path, '{}.generate_id.leaf'.format(split))
+    # node_ids = data_utils.load_indexed_dataset(node_id_path, 'node_id', src_dict, dataset_impl)
+    node_ids = []
+    with open(node_id_path, 'r', encoding='utf-8') as f:
+        for ids_line in f:
+            node_ids.append(json.loads(ids_line))
+
+    return SeqRNNDataset(
+        src_dataset, src_dataset.sizes, src_dict, node_ids,
+    )
+
 
 @register_task('completion')
 class CompletionTask(FairseqTask):
@@ -57,7 +73,7 @@ class CompletionTask(FairseqTask):
         super().__init__(args)
         # self.dictionary = dictionary
         # self.seed = args['common']['seed']
-
+        self.args = args
         # # add mask token
         # self.mask_idx = dictionary.add_symbol('<mask>')、
         # self.tokenizer = tokenizer
@@ -104,10 +120,18 @@ class CompletionTask(FairseqTask):
                 Tensor Cores).
         """
         d = Dictionary()
+
+        # if cls.args['source_lang'] == 'ast_trav_df':
+        #     for filename in filenames:
+        #         Dictionary.add_ast_to_dictionary(
+        #             filename, d, tokenizer.tokenize_line, workers
+        #         )
+        # elif cls.args['source_lang'] == 'token':
         for filename in filenames:
-            Dictionary.add_ast_to_dictionary(
+            Dictionary.add_token_to_dictionary(
                 filename, d, tokenizer.tokenize_line, workers
             )
+
         d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
         return d
 
@@ -124,22 +148,12 @@ class CompletionTask(FairseqTask):
         # infer langcode
         src = self.args['task']['source_lang']
 
-        # self.datasets[split] = load_langpair_dataset(
-        #     data_path, split, src, self.src_dict, tgt, self.tgt_dict,
-        #     combine=combine, dataset_impl=self.args['dataset']['dataset_impl'],
-        #     upsample_primary=self.args['task']['upsample_primary'],
-        #     left_pad_source=self.args['task']['left_pad_source'],
-        #     left_pad_target=self.args['task']['left_pad_target'],
-        #     max_source_positions=self.args['task']['max_source_positions'],
-        #     max_target_positions=self.args['task']['max_target_positions'],
-        #     load_alignments=self.args['task']['load_alignments'],
-        #     truncate_source=self.args['task']['truncate_source'],
-        # )
-        # def load_path_dataset(data_path, split, src, src_dict, dataset_impl):
-
-        self.datasets[split] = load_path_dataset(data_path, split, src, self.source_dictionary,
-                                                 dataset_impl=self.args['dataset']['dataset_impl'])
-
+        if self.args['model']['arch'] == 'trav_trans':
+            self.datasets[split] = load_path_dataset(data_path, split, src, self.source_dictionary,
+                                                     dataset_impl=self.args['dataset']['dataset_impl'])
+        elif self.args['model']['arch'] == 'seqrnn':
+            self.datasets[split] = load_tok_dataset(data_path, split, src, self.source_dictionary,
+                                                     dataset_impl=self.args['dataset']['dataset_impl'])
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
         return TravTransformerDataset(src_tokens, src_lengths, self.source_dictionary)  # TODO: bug
