@@ -141,7 +141,6 @@ def get_value(line, input_type):
         return line[0]
 
 
-
 def get_leaf_ids(ast):
     ids = {"leaf_ids": [], "internal_ids": []}
     for i, node in enumerate(ast):
