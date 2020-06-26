@@ -4,9 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 import math
-
+import torch
 import torch.nn.functional as F
-
+import numpy as np
 # from fairseq import metrics, utils
 from ncc.logging import metrics
 from ncc.utils import utils
@@ -29,14 +29,18 @@ class CompletionCrossEntropyCriterion(FairseqCriterion):
         3) logging outputs to display while training
         """
         net_output = model(**sample['net_input'])
-        loss, _ = self.compute_loss(model, net_output, sample, reduce=reduce)
+        loss, ncorrect, mrr = self.compute_loss(model, net_output, sample, reduce=reduce)
+
         sample_size = sample['target'].size(0) if self.sentence_avg else sample['ntokens']
         logging_output = {
             'loss': loss.data,
             'ntokens': sample['ntokens'],
             'nsentences': sample['target'].size(0),
             'sample_size': sample_size,
+            'ncorrect': ncorrect,
+            'mrr': mrr,
         }
+
         return loss, sample_size, logging_output
 
     def compute_loss(self, model, net_output, sample, reduce=True):
@@ -49,7 +53,11 @@ class CompletionCrossEntropyCriterion(FairseqCriterion):
             ignore_index=self.padding_idx,
             reduction='sum' if reduce else 'none',
         )
-        return loss, loss
+        rank = torch.argmax(lprobs, 1)
+        mrr = np.mean([1. / (r.item() + 1) for r in rank.view(-1)])
+
+        ncorrect = torch.sum(torch.argmax(lprobs, 1) == target)
+        return loss, ncorrect, mrr
 
     @staticmethod
     def reduce_metrics(logging_outputs) -> None:
@@ -57,8 +65,13 @@ class CompletionCrossEntropyCriterion(FairseqCriterion):
         loss_sum = sum(log.get('loss', 0) for log in logging_outputs)
         ntokens = sum(log.get('ntokens', 0) for log in logging_outputs)
         sample_size = sum(log.get('sample_size', 0) for log in logging_outputs)
+        ncorrect = sum(log.get('ncorrect', 0) for log in logging_outputs)
+        mrr = sum(log.get('mrr', 0) for log in logging_outputs)
 
         metrics.log_scalar('loss', loss_sum / sample_size / math.log(2), sample_size, round=3)
+        metrics.log_scalar('accuracy', ncorrect / ntokens / math.log(2), sample_size, round=3) # why log2
+        metrics.log_scalar('mrr', mrr / sample_size / math.log(2), sample_size, round=3)
+
         if sample_size != ntokens:
             metrics.log_scalar('nll_loss', loss_sum / ntokens / math.log(2), ntokens, round=3)
             metrics.log_derived('ppl', lambda meters: utils.get_perplexity(meters['nll_loss'].avg))
