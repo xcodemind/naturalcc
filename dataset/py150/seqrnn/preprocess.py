@@ -8,6 +8,7 @@ Data pre-processing: build vocabularies and binarize training data.
 """
 import math
 import os
+import ujson
 import itertools
 from collections import namedtuple
 # from ncc.utils.mp_ppool import PPool, cpu_count
@@ -26,6 +27,28 @@ from ncc.utils.util_file import load_yaml
 from ncc import LOGGER
 from ncc.utils import py150_utils
 import json
+
+
+def get_leaf_ids(types_):
+    ids = {"leaf_ids": []}
+    for i, v in enumerate(types_):
+        if v is not None:
+            ids["leaf_ids"].append(i)
+    return ids
+
+
+def get_value_ids(types_):
+    ids = {"attr_ids": [], "num_ids": [], "name_ids": [], "param_ids": []}
+    for i, v in enumerate(types_):
+        if v == "attr":
+            ids["attr_ids"].append(i)
+        elif v == "Num":
+            ids["num_ids"].append(i)
+        elif v in {"NameStore", "NameLoad"}:
+            ids["name_ids"].append(i)
+        elif v == "NameParam":
+            ids["param_ids"].append(i)
+    return ids
 
 
 def dataset_dest_prefix(args, output_prefix, lang):
@@ -104,10 +127,13 @@ def main(args):
         src_dict = task.load_dictionary(args['preprocess']['srcdict'])
     else:
         assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
-        src_dict = build_dictionary([train_path(args['preprocess']['source_lang'])], src=True)
-
-    #  save dictionary
-    src_dict.save(dict_path(args['preprocess']['source_lang']))
+        dict_filename = dict_path(args['preprocess']['source_lang'])
+        if os.path.exists(dict_filename):
+            src_dict = task.load_dictionary(dict_filename)
+        else:
+            src_dict = build_dictionary([train_path(args['preprocess']['source_lang'])], src=True)
+            #  save dictionary
+            src_dict.save(dict_path(args['preprocess']['source_lang']))
 
     # 2. ***************build dataset********************
     def make_binary_dataset(vocab, input_prefix, output_prefix, lang, num_workers):
@@ -179,24 +205,60 @@ def main(args):
 
     def make_dataset(vocab, input_prefix, output_prefix, lang, num_workers=1):
         if args['preprocess']['dataset_impl'] == "raw":
-            # Copy original text file to destination folder
-            # output_text_file = dest_path(
-            #     output_prefix, # '.bpe' #".{}-{}".format(args.source_lang, args.target_lang),
-            #     lang,
-            # ))
-            # shutil.copyfile(file_name(input_prefix, lang), output_text_file)
-            #     TODO: parse json to txt file, one line one traversal, please help me parallize it.
-            with open(file_name(input_prefix, lang), 'r', encoding="utf-8") as f, \
-                    open(dest_path(output_prefix, lang), 'w') as fout:
-                for line in f.readlines():
-                    line = json.loads(line)
+            thread_pool = PPool()
+            _func = lambda line: py150_utils.separate_dps(json.loads(line), args['preprocess']['n_ctx'])
+            MAX_SCRIPT_NUM = 50000  # avoid out of memory
 
-                    # asts = py150_utils.separate_dps(line, args['preprocess']['n_ctx'])
-                    # for ast, extended in asts:
-                    #     if len(ast) > 1:
-                    #         json.dump(py150_utils.get_dfs(ast), fp=fout)
-                    fout.write(' '.join(line))
-                    fout.write('\n')
+            # load tok/type files
+            with open(file_name(input_prefix, lang), 'r', encoding="utf-8") as tok_reader, \
+                    open(file_name(input_prefix, 'type'), 'r', encoding="utf-8") as type_reader, \
+                    open(dest_path(output_prefix, lang), 'w') as fout:
+                def write_seqrnn_info(tokens, types):
+                    for (tokens, ext), (types_, _) in zip(tokens, types):
+                        if len(tokens) > 1:
+                            if args['preprocess']['id_type'] == "leaf":
+                                json.dump(get_leaf_ids(types_), fp=fout)
+                            elif args['preprocess']['id_type'] == "value":
+                                json.dump(get_value_ids(types_), fp=fout)
+                            elif args['preprocess']['id_type'] == "all":
+                                ids = get_leaf_ids(types_)
+                                ids.update(get_value_ids(types_))
+                                json.dump(ids, fp=fout)
+                            else:
+                                json.dump([tokens, ext], fp=fout)
+                            fout.write("\n")
+
+                params = []
+                for tokens, types in zip(tok_reader, type_reader):
+                    params.append((tokens, types,))
+                    if len(params) >= MAX_SCRIPT_NUM:
+                        params = thread_pool.feed(lambda *args: list(map(_func, args)), params)
+                        for tokens, types in params:
+                            write_seqrnn_info(tokens, types)
+                        del params
+                        params = []
+                if len(params) > 0:
+                    params = thread_pool.feed(lambda *args: list(map(_func, args)), params)
+                    for tokens, types in params:
+                        write_seqrnn_info(tokens, types)
+                    del params
+
+                # token_list, type_list, count = [None] * MAX_SCRIPT_NUM, [None] * MAX_SCRIPT_NUM, 0
+                # for tokens, types in zip(tok_reader, type_reader):
+                #     token_list[count], type_list[count], count = tokens, types, count + 1
+                #     if count >= MAX_SCRIPT_NUM:
+                #         token_list = thread_pool.feed(_func, token_list, one_params=True)
+                #         type_list = thread_pool.feed(_func, type_list, one_params=True)
+                #         exit()
+                #         for tokens, types in zip(token_list, type_list):
+                #             write_seqrnn_info(tokens, types)
+                #         token_list, type_list, count = [None] * MAX_SCRIPT_NUM, [None] * MAX_SCRIPT_NUM, 0
+                # if count > 0:
+                #     token_list = thread_pool.feed(_func, token_list, one_params=True)
+                #     type_list = thread_pool.feed(_func, type_list, one_params=True)
+                #     for tokens, types in zip(token_list, type_list):
+                #         write_seqrnn_info(tokens, types)
+
         else:
             # TODO: please help me binarize it.
             make_binary_dataset(vocab, input_prefix, output_prefix, lang, num_workers)
@@ -243,6 +305,22 @@ def main(args):
 
 
 def cli_main():
+    """
+    seq rnn data generation:
+
+    Examples:
+        def add(a, b):\n  return a + b
+
+    1） parse code into ast with DFS
+    2) collect code/type token from ast with DFS for dictionary generation,
+        and parse a ast into smaller sub-asts, because some ast are too big
+    3) extract info from raw ast:
+        --token: ['def', 'add', '(', 'a', ',', 'b', ')', ':', 'return', '(', 'a', '+', 'b', ')'], 0 (start index of raw ast,
+                    for calculating loss)
+        --leaf: {'leaf_ids': [1, 3, 5, 10, 12]}
+        --value: {'attr_ids': [], 'num_ids': [], 'name_ids': [10, 12], 'param_ids': []}
+        --all: {'leaf_ids': [1, 3, 5, 10, 12], 'attr_ids': [], 'num_ids': [], 'name_ids': [10, 12], 'param_ids': []}
+    """
     Argues = namedtuple('Argues', 'yaml')
     args_ = Argues('preprocess.yml')  # train_sl
     LOGGER.info(args_)

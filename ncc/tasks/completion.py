@@ -49,6 +49,7 @@ def load_path_dataset(data_path, split, src, src_dict, dataset_impl):
         src_dataset, src_dataset.sizes, src_dict, node_ids,
     )
 
+
 def load_tok_dataset(data_path, split, src, src_dict, dataset_impl):
     source_path = os.path.join(data_path, '{}.tok'.format(split))
     src_dataset = data_utils.load_indexed_dataset(source_path, 'text', src_dict, dataset_impl)
@@ -129,7 +130,7 @@ class CompletionTask(FairseqTask):
         # elif cls.args['source_lang'] == 'token':
         for filename in filenames:
             Dictionary.add_token_to_dictionary(
-                filename, d, tokenizer.tokenize_line, workers
+                filename, d, tokenizer.tokenize_list, workers
             )
 
         d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
@@ -153,11 +154,10 @@ class CompletionTask(FairseqTask):
                                                      dataset_impl=self.args['dataset']['dataset_impl'])
         elif self.args['model']['arch'] == 'seqrnn':
             self.datasets[split] = load_tok_dataset(data_path, split, src, self.source_dictionary,
-                                                     dataset_impl=self.args['dataset']['dataset_impl'])
+                                                    dataset_impl=self.args['dataset']['dataset_impl'])
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
         return TravTransformerDataset(src_tokens, src_lengths, self.source_dictionary)  # TODO: bug
-
 
     @property
     def source_dictionary(self):

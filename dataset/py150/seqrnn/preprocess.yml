@@ -19,37 +19,33 @@ preprocess:
 
   task: completion # task', metavar='TASK', default="translation", choices=TASK_REGISTRY.keys(), help='task'
   source_lang: tok
-#    - tok
-#    - ast_trav_df
-#    - ast_path_alon
-#    - ast_path_kim
-#  target_lang: docstring #", default=None, metavar="TARGET", help="target language"
+  #  target_lang: docstring #", default=None, metavar="TARGET", help="target language"
   # ~ path for dataset default. e.g.  for CodeSearchNet, ~/flatten = ~/.ncc/CodeSearchNet/flatten
   trainpref: ~/.ncc/py150/seqrnn/raw/train #", metavar="FP", default=None, help="train file prefix"
-  validpref: ~/.ncc/py150/seqrnn/raw/train #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-  testpref:  ~/.ncc/py150/seqrnn/raw/train #", metavar="FP", default=None, help="comma separated, test file prefixes"
-#  trainpref: ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path #", metavar="FP", default=None, help="train file prefix"
-#  validpref: ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-#  testpref:  ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  validpref: ~ #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+  testpref:  ~/.ncc/py150/seqrnn/raw/test #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  #  trainpref: ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path #", metavar="FP", default=None, help="train file prefix"
+  #  validpref: ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+  #  testpref:  ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
   align_suffix: ~ # ", metavar="FP", default=None, help="alignment file suffix"
-#  destdir: ~/.ncc/CodeSearchNet/codebert/data-mmap/ruby/docstring_path/ #", metavar="DIR", default="data-bin", help="destination dir"
+  #  destdir: ~/.ncc/CodeSearchNet/codebert/data-mmap/ruby/docstring_path/ #", metavar="DIR", default="data-bin", help="destination dir"
   destdir: ~/.ncc/py150/seqrnn/data-raw #", metavar="DIR", default="data-bin", help="destination dir"
-#  destdir: ~/.ncc/py150/trav_trans/data-mmap
+  #  destdir: ~/.ncc/py150/trav_trans/data-mmap
   thresholdtgt: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
   thresholdsrc: 20 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
-#  srcdict: ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path/codesearchnet.dict
+  #  srcdict: ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path/codesearchnet.dict
   srcdict: ~ # ~/.ncc/py150/trav_trans/dict.txt
   nwordstgt: -1 #", metavar="N", default=-1, type=int, help="number of target words to retain"
   nwordssrc: -1 #", metavar="N", default=-1, type=int, help="number of source words to retain"
   alignfile: ~ #", metavar="ALIGN", default=None, help="an alignment file (optional)"
   dataset_impl: raw #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
-#  dataset_impl: mmap
+  #  dataset_impl: mmap
   joined_dictionary: 1 # ", action="store_true", help="Generate joined dictionary"
   only_source: 1 # ", action="store_true", help="Only process the source language"
   padding_factor: 8 #", metavar="N", default=8, type=int, help="Pad dictionary size to be multiple of N"
-  workers: 1 # ", metavar="N", default=1, type=int, help="number of parallel workers"
+  workers: 10 # ", metavar="N", default=1, type=int, help="number of parallel workers"
   inserted: 0
 
   n_ctx: 1000 # type=int, default=1000, help="Number of contexts for each dp"
-  id_type: all
+  id_type: token
