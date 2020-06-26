@@ -11,6 +11,7 @@ import multiprocessing as mp
 from tqdm import tqdm
 import re
 
+
 def line_positions(file_path):
     with open(file_path) as f:
         while True:
@@ -41,7 +42,7 @@ def parallelize(iterable, f, f_args=(), worker_init=None, n_cores=None):
     with mp.Pool(processes=n_cores, initializer=worker_init) as pool:
         jobs = [
             pool.apply_async(
-                _mp_iterate_over, (f, lst[i * chunksize : (i + 1) * chunksize], f_args)
+                _mp_iterate_over, (f, lst[i * chunksize: (i + 1) * chunksize], f_args)
             )
             for i in range(n_cores)
         ]
@@ -99,7 +100,7 @@ def separate_dps(ast, max_len):
     aug_asts = [[ast[:max_len], 0]]
     i = half_len
     while i < len(ast) - max_len:
-        aug_asts.append([ast[i : i + max_len], half_len])
+        aug_asts.append([ast[i: i + max_len], half_len])
         i += half_len
     idx = max_len - (len(ast) - (i + half_len))
     aug_asts.append([ast[-max_len:], idx])
@@ -121,11 +122,8 @@ def get_terminal_nodes(ast):
     terminal_nodes = [i for i, node in enumerate(ast) if "children" not in node]
     return terminal_nodes
 
-    
+
 def tokenize(s):
     pattern = re.compile(r"(?<!^)(?=[A-Z])")
     tokenized = pattern.sub("_", s).lower().split("_")
     return list(filter(None, tokenized))[:5]
-
-
-
