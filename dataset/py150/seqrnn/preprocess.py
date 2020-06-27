@@ -116,21 +116,22 @@ def main(args):
             # load tok/type files
             with open(file_name(input_prefix, lang), 'r', encoding="utf-8") as tok_reader, \
                     open(file_name(input_prefix, 'type'), 'r', encoding="utf-8") as type_reader, \
-                    open(dest_path(output_prefix, lang), 'w') as fout:
+                    open(dest_path(output_prefix, lang), 'w') as f_data, \
+                    open(dest_path(output_prefix, 'ids'), 'w') as f_ids:
                 def write_seqrnn_info(tokens, types):
                     for (tokens, ext), (types_, _) in zip(tokens, types):
                         if len(tokens) > 1:
                             if args['preprocess']['id_type'] == "leaf":
-                                json.dump(get_leaf_ids(types_), fp=fout)
+                                json.dump(get_leaf_ids(types_), fp=f_ids)
                             elif args['preprocess']['id_type'] == "value":
-                                json.dump(get_value_ids(types_), fp=fout)
+                                json.dump(get_value_ids(types_), fp=f_ids)
                             elif args['preprocess']['id_type'] == "all":
                                 ids = get_leaf_ids(types_)
                                 ids.update(get_value_ids(types_))
-                                json.dump(ids, fp=fout)
-                            else:
-                                json.dump([tokens, ext], fp=fout)
-                            fout.write("\n")
+                                json.dump(ids, fp=f_ids)
+                            f_ids.write("\n")
+                            json.dump(tokens + [ext], fp=f_data)  # [tokens, ext]
+                            f_data.write("\n")
 
                 params = []
                 for tokens, types in zip(tok_reader, type_reader):

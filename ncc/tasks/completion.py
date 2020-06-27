@@ -52,10 +52,9 @@ def load_path_dataset(data_path, split, src, src_dict, dataset_impl):
 
 def load_tok_dataset(data_path, split, src, src_dict, dataset_impl):
     source_path = os.path.join(data_path, '{}.tok'.format(split))
-    src_dataset = data_utils.load_indexed_dataset(source_path, 'text', src_dict, dataset_impl)
+    src_dataset = data_utils.load_indexed_dataset(source_path, 'dfs', src_dict, dataset_impl)
 
-    node_id_path = os.path.join(data_path, '{}.generate_id.leaf'.format(split))
-    # node_ids = data_utils.load_indexed_dataset(node_id_path, 'node_id', src_dict, dataset_impl)
+    node_id_path = os.path.join(data_path, '{}.ids'.format(split))
     node_ids = []
     with open(node_id_path, 'r', encoding='utf-8') as f:
         for ids_line in f:
@@ -122,12 +121,6 @@ class CompletionTask(FairseqTask):
         """
         d = Dictionary()
 
-        # if cls.args['source_lang'] == 'ast_trav_df':
-        #     for filename in filenames:
-        #         Dictionary.add_ast_to_dictionary(
-        #             filename, d, tokenizer.tokenize_line, workers
-        #         )
-        # elif cls.args['source_lang'] == 'token':
         for filename in filenames:
             Dictionary.add_token_to_dictionary(
                 filename, d, tokenizer.tokenize_list, workers

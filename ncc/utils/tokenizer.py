@@ -116,3 +116,19 @@ def CSN_tokenizer(modal: str):
     # else:
     #     raise NotImplementedError
     return tokenize_string
+
+
+# ======================== py150 dataset ======================== #
+
+def tokenize_type_value(line: str) -> List[str]:
+    """return non-leaf node type and leaf node value of py150 dfs ast"""
+    line = ujson.loads(line)
+    type_and_values = []
+    for node in line:
+        if 'type' in node:
+            type_and_values.append(node['type'])
+        elif 'value' in node:
+            type_and_values.append(node['value'])
+        else:
+            pass
+    return type_and_values

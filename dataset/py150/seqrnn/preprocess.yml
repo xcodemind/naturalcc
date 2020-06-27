@@ -48,4 +48,4 @@ preprocess:
   inserted: 0
 
   n_ctx: 1000 # type=int, default=1000, help="Number of contexts for each dp"
-  id_type: token
+  id_type: all # value, type, all. all=value+type

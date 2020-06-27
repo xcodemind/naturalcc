@@ -32,6 +32,8 @@ class CompletionCrossEntropyCriterion(FairseqCriterion):
         loss, ncorrect, mrr = self.compute_loss(model, net_output, sample, reduce=reduce)
 
         sample_size = sample['target'].size(0) if self.sentence_avg else sample['ntokens']
+        loss /= sample_size  # TODO: check
+
         logging_output = {
             'loss': loss.data,
             'ntokens': sample['ntokens'],
@@ -45,18 +47,21 @@ class CompletionCrossEntropyCriterion(FairseqCriterion):
 
     def compute_loss(self, model, net_output, sample, reduce=True):
         lprobs = model.get_normalized_probs(net_output, log_probs=True)
+        loss_mask = sample['loss_mask']
         lprobs = lprobs.view(-1, lprobs.size(-1))
+        lprobs = lprobs[loss_mask].contiguous()
         target = model.get_targets(sample, net_output).view(-1)
+        target = target[loss_mask].contiguous()
         loss = F.nll_loss(
             lprobs,
             target,
-            ignore_index=self.padding_idx,
+            # ignore_index=self.padding_idx,  # skip this line, because loss_mask has skipped those padding idx
             reduction='sum' if reduce else 'none',
         )
         rank = torch.argmax(lprobs, 1)
         mrr = np.mean([1. / (r.item() + 1) for r in rank.view(-1)])
 
-        ncorrect = torch.sum(torch.argmax(lprobs, 1) == target)
+        ncorrect = torch.sum(rank == target)
         return loss, ncorrect, mrr
 
     @staticmethod
@@ -69,7 +74,7 @@ class CompletionCrossEntropyCriterion(FairseqCriterion):
         mrr = sum(log.get('mrr', 0) for log in logging_outputs)
 
         metrics.log_scalar('loss', loss_sum / sample_size / math.log(2), sample_size, round=3)
-        metrics.log_scalar('accuracy', ncorrect / ntokens / math.log(2), sample_size, round=3) # why log2
+        metrics.log_scalar('accuracy', ncorrect / ntokens / math.log(2), sample_size, round=3)  # why log2
         metrics.log_scalar('mrr', mrr / sample_size / math.log(2), sample_size, round=3)
 
         if sample_size != ntokens:

@@ -62,6 +62,8 @@ def make_dataset(path, impl, modality='text', fix_lua_indexing=False, dictionary
             return IndexedRawASTDataset(path, dictionary)
         elif modality == 'node_id':
             return IndexedRawNodeIdDataset(path, dictionary)
+        elif modality == 'dfs':
+            return IndexedDFSASTDataset(path, dictionary, append_eos=False)
         else:
             assert dictionary is not None
             return IndexedRawTextDataset(path, dictionary)
@@ -367,13 +369,72 @@ class IndexedRawNodeIdDataset(FairseqDataset):
         self.read_data(path)
         self.size = len(self.tokens_list)
 
-    def read_data(self, path):
+    def read_data(self, path, dictionary):
         with open(path, 'r', encoding='utf-8') as f:
             for line in f:
                 line = json.loads(line.strip('\n'))
                 self.lines.append(line)
                 tokens = dictionary.encode_ast(
                     line, add_if_not_exist=False,
+                    append_eos=self.append_eos, reverse_order=self.reverse_order,
+                ).long()
+                self.tokens_list.append(tokens)
+                self.sizes.append(len(tokens))
+        self.sizes = np.array(self.sizes)
+
+    def check_index(self, i):
+        if i < 0 or i >= self.size:
+            raise IndexError('index out of range')
+
+    @lru_cache(maxsize=8)
+    def __getitem__(self, i):
+        self.check_index(i)
+        return self.tokens_list[i]
+
+    def get_original_text(self, i):
+        self.check_index(i)
+        return self.lines[i]
+
+    def __del__(self):
+        pass
+
+    def __len__(self):
+        return self.size
+
+    def num_tokens(self, index):
+        return self.sizes[index]
+
+    def size(self, index):
+        return self.sizes[index]
+
+    @staticmethod
+    def exists(path):
+        return os.path.exists(path)
+
+
+class IndexedDFSASTDataset(FairseqDataset):
+    """Takes a text file as input and binarizes it in memory at instantiation.
+    Original lines are also kept in memory"""
+
+    def __init__(self, path, dictionary, append_eos=True, reverse_order=False):
+        self.tokens_list = []
+        self.lines = []
+        self.start_idx = []
+        self.sizes = []
+        self.append_eos = append_eos
+        self.reverse_order = reverse_order
+        self.read_data(path, dictionary)
+        self.size = len(self.tokens_list)
+
+    def read_data(self, path, dictionary):
+        with open(path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = ujson.loads(line.strip('\n'))
+                line, start_idx = line[:-1], line[-1]
+                self.lines.append(line)
+                self.start_idx.append(start_idx)
+                tokens = dictionary.encode_line(
+                    line, line_tokenizer=None, add_if_not_exist=False,
                     append_eos=self.append_eos, reverse_order=self.reverse_order,
                 ).long()
                 self.tokens_list.append(tokens)

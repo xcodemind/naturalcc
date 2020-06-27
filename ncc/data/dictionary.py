@@ -325,7 +325,7 @@ class Dictionary(object):
             append_eos=True,
             reverse_order=False,
     ):
-        words = line_tokenizer(line)
+        words = line_tokenizer(line) if line_tokenizer is not None else line
         if reverse_order:
             words = list(reversed(words))
         nwords = len(words)
@@ -357,7 +357,7 @@ class Dictionary(object):
             append_eos=True,
             reverse_order=False,
     ):
-        words = line # line_tokenizer(line)
+        words = line  # line_tokenizer(line)
         if reverse_order:
             words = list(reversed(words))
         nwords = len(words)
@@ -426,7 +426,6 @@ class Dictionary(object):
                     filename, tokenize, eos_word
                 )
             )
-
 
     # TODO: I think we should not change the _add_ast_to_dictionary_single_worker function. Instead we can define different functions for different
     # modalities with different file format, in order to provide more flexibilities.
@@ -498,8 +497,7 @@ class Dictionary(object):
                 safe_readline(f)  # drop first incomplete line
             line = f.readline()
             while line:
-                # tokens = tokenize(line)
-                tokens = json.loads(line)
+                tokens = tokenize(line)
                 counter.update(tokens)
                 if eos_word is not None:
                     counter.update([eos_word])
