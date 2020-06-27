@@ -16,13 +16,6 @@ from multiprocessing import Pool, cpu_count
 from ncc.utils.mp_ppool import PPool
 
 from ncc import tasks
-from collections import (
-    Counter,
-)
-from ncc.data import (
-    indexed_dataset,
-)
-from ncc.data.tools.binarizer import Binarizer
 from ncc.utils.util_file import load_yaml
 from ncc import LOGGER
 from ncc.utils import py150_utils
@@ -66,28 +59,6 @@ def dataset_dest_prefix(args, output_prefix, lang):
 def dataset_dest_file(args, output_prefix, lang, extension):
     base = dataset_dest_prefix(args, output_prefix, lang)
     return "{}.{}".format(base, extension)
-
-
-def string2dfs(line):
-    line = json.loads(line)
-    # ast = line[:args['preprocess']['n_ctx']]
-    ast = line[:1000]
-    assert len(ast) > 1
-    ast = py150_utils.get_dfs(ast)
-    return ast
-
-
-def binarize(args, filename, vocab, output_prefix, lang, offset, end, append_eos=True):
-    ds = indexed_dataset.make_builder(dataset_dest_file(args, output_prefix, lang, "bin"),
-                                      impl=args['preprocess']['dataset_impl'], vocab_size=len(vocab))
-
-    def consumer(tensor):
-        ds.add_item(tensor)
-
-    res = Binarizer.binarize(filename, vocab, consumer, tokenize=string2dfs, append_eos=append_eos,
-                             offset=offset, end=end)
-    ds.finalize(dataset_dest_file(args, output_prefix, lang, "idx"))
-    return res
 
 
 # TODO: Don't abstract it. Try to be consistent with Fairseq.
@@ -136,73 +107,6 @@ def main(args):
             src_dict.save(dict_path(args['preprocess']['source_lang']))
 
     # 2. ***************build dataset********************
-    def make_binary_dataset(vocab, input_prefix, output_prefix, lang, num_workers):
-        LOGGER.info("[{}] Dictionary: {} types".format(lang, len(vocab) - 1))
-        n_seq_tok = [0, 0]
-        replaced = Counter()
-
-        def merge_result(worker_result):
-            replaced.update(worker_result["replaced"])
-            n_seq_tok[0] += worker_result["nseq"]
-            n_seq_tok[1] += worker_result["ntok"]
-
-        input_file = "{}{}".format(
-            input_prefix, ("." + lang) if lang is not None else ""
-        )
-        lang = None
-        offsets = Binarizer.find_offsets(input_file, num_workers)
-        pool = None
-        if num_workers > 1:
-            pool = Pool(num_workers - 1)
-            for worker_id in range(1, num_workers):
-                prefix = "{}{}".format(output_prefix, worker_id)
-                pool.apply_async(
-                    binarize,
-                    (
-                        args,
-                        input_file,
-                        vocab,
-                        prefix,
-                        lang,
-                        offsets[worker_id],
-                        offsets[worker_id + 1],
-                    ),
-                    callback=merge_result
-                )
-            pool.close()
-
-        ds = indexed_dataset.make_builder(dataset_dest_file(args, output_prefix, lang, "bin"),
-                                          impl=args['preprocess']['dataset_impl'], vocab_size=len(vocab))
-
-        merge_result(
-            Binarizer.binarize(
-                input_file, vocab, lambda t: ds.add_item(t),
-                tokenize=string2dfs,
-                offset=0, end=offsets[1]
-            )
-        )
-        if num_workers > 1:
-            pool.join()
-            for worker_id in range(1, num_workers):
-                prefix = "{}{}".format(output_prefix, worker_id)
-                temp_file_path = dataset_dest_prefix(args, prefix, lang)
-                ds.merge_file_(temp_file_path)
-                os.remove(indexed_dataset.data_file_path(temp_file_path))
-                os.remove(indexed_dataset.index_file_path(temp_file_path))
-
-        ds.finalize(dataset_dest_file(args, output_prefix, lang, "idx"))
-
-        LOGGER.info(
-            "[{}] {}: {} sents, {} tokens, {:.3}% replaced by {}".format(
-                lang,
-                input_file,
-                n_seq_tok[0],
-                n_seq_tok[1],
-                100 * sum(replaced.values()) / n_seq_tok[1],
-                vocab.unk_word,
-            )
-        )
-
     def make_dataset(vocab, input_prefix, output_prefix, lang, num_workers=1):
         if args['preprocess']['dataset_impl'] == "raw":
             thread_pool = PPool()
@@ -243,25 +147,11 @@ def main(args):
                         write_seqrnn_info(tokens, types)
                     del params
 
-                # token_list, type_list, count = [None] * MAX_SCRIPT_NUM, [None] * MAX_SCRIPT_NUM, 0
-                # for tokens, types in zip(tok_reader, type_reader):
-                #     token_list[count], type_list[count], count = tokens, types, count + 1
-                #     if count >= MAX_SCRIPT_NUM:
-                #         token_list = thread_pool.feed(_func, token_list, one_params=True)
-                #         type_list = thread_pool.feed(_func, type_list, one_params=True)
-                #         exit()
-                #         for tokens, types in zip(token_list, type_list):
-                #             write_seqrnn_info(tokens, types)
-                #         token_list, type_list, count = [None] * MAX_SCRIPT_NUM, [None] * MAX_SCRIPT_NUM, 0
-                # if count > 0:
-                #     token_list = thread_pool.feed(_func, token_list, one_params=True)
-                #     type_list = thread_pool.feed(_func, type_list, one_params=True)
-                #     for tokens, types in zip(token_list, type_list):
-                #         write_seqrnn_info(tokens, types)
 
         else:
             # TODO: please help me binarize it.
-            make_binary_dataset(vocab, input_prefix, output_prefix, lang, num_workers)
+            # make_binary_dataset(vocab, input_prefix, output_prefix, lang, num_workers)
+            ...
 
     def make_all(lang, vocab):
         if args['preprocess']['trainpref']:
@@ -278,30 +168,6 @@ def main(args):
 
     # build_dataset(args, src_dicts, tgt_dict)
     make_all(args['preprocess']['source_lang'], src_dict)
-
-    # # 3. ***************generate ids********************
-    # def generate_ids(input_prefix, output_prefix, lang):
-    #     with open(file_name(input_prefix, lang), "r", encoding="utf-8") as f, \
-    #             open(dest_path(output_prefix, lang), "w") as fout:
-    #         for line in f.readlines():
-    #             dp = json.loads(line.strip())
-    #             # asts = separate_dps(dp, args.n_ctx)
-    #             asts = py150_utils.separate_dps(dp, args['preprocess']['n_ctx'])
-    #
-    #             for ast, _ in asts:
-    #                 ids = {}
-    #                 if len(ast) > 1:
-    #                     if args['preprocess']['id_type'] in {"leaf", "all"}:
-    #                         ids.update(py150_utils.get_leaf_ids(ast))
-    #                     if args['preprocess']['id_type'] in {"value", "all"}:
-    #                         ids.update(py150_utils.get_value_ids(ast))
-    #                     if args['preprocess']['id_type'] in {"type", "all"}:
-    #                         ids.update(py150_utils.get_type_ids(ast))
-    #
-    #                     json.dump(ids, fp=fout)
-    #                     fout.write("\n")
-    #
-    # generate_ids(args['preprocess']['trainpref'], "train.generate_id", args['preprocess']['source_lang'])
 
 
 def cli_main():
