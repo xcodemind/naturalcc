@@ -1,23 +1,17 @@
-#!/usr/bin/env python2
-# Copyright (c) Facebook, Inc. and its affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
+# -*- coding: utf-8 -*-
 
 import argparse
-import ast
-import json
-import logging
 import os
+import json
+import ast
+from itertools import filterfalse
+
+from dataset.py150.seqrnn.astunparser import Unparser
+from ncc.utils.mp_ppool import PPool
+
 from collections import namedtuple
 
-from dataset.py150.seqrnn.utils import separate_dps
-from dataset.py150.seqrnn.astunparser import Unparser
-
-
 SrcASTToken = namedtuple("SrcASTToken", "text type")
-logging.basicConfig(level=logging.INFO)
 
 
 def get_leaf_ids(types_):
@@ -54,7 +48,7 @@ class MyListFile(list):
     def transpose(self, max_len):
         tokens = [tt.text for tt in self]
         types_ = [tt.type for tt in self]
-        return separate_dps(tokens, max_len), separate_dps(types_, max_len)
+        return tokens, types_
 
 
 def my_tokenize(code_str, n_ctx):
@@ -64,63 +58,80 @@ def my_tokenize(code_str, n_ctx):
     return lst.transpose(n_ctx)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Generate datapoints from source code")
+if __name__ == '__main__':
+    """
+    code string => code tokens and corresponding types sequence
+    # for train data
+    python -m dataset.py150.seqrnn.prepare -i ~/.ncc/py150/seqrnn/raw/python100k_train.txt -o ~/.ncc/py150/seqrnn/raw/train
+    # for eval data  
+    python -m dataset.py150.seqrnn.prepare -i ~/.ncc/py150/seqrnn/raw/python50k_eval.txt  -o ~/.ncc/py150/seqrnn/raw/test 
+    """
+    parser = argparse.ArgumentParser(description="Generate tokens and types from source code")
     parser.add_argument(
-        "--files_fp", "-f", help="Filepath with the filenames to be parsed"
+        "--in_file", "-i", default='~/.ncc/py150/seqrnn/raw/python100k_train.txt', help="source code file"
     )
     parser.add_argument(
-        "--out_fp", "-o", default="/tmp/dps.txt", help="Filepath with the output dps"
+        "--out_file", "-o", default='~/.ncc/py150/seqrnn/raw/train', help="source code file"
     )
-    parser.add_argument("--base_dir", "-b", help="Base dir to append for the fps")
     parser.add_argument(
         "--n_ctx", "-c", type=int, default=1000, help="Number of contexts for each dp"
     )
-    parser.add_argument(
-        "--id_type",
-        choices=["leaf", "value", "tok", "all"],
-        default="",
-        help="Which ids to generate. Default = get the tokens",
-    )
     args = parser.parse_args()
-    args.base_dir = os.path.expanduser('~/.ncc/py150/py150_files')
-    args.files_fp = os.path.expanduser('~/.ncc/py150/py150_files/python1k_train.txt')
-    args.out_fp = os.path.expanduser('~/.ncc/py150/seqrnn/raw/train.tok')
-    args.out_leafid = os.path.expanduser('~/.ncc/py150/seqrnn/data-raw/train.generate_id.leaf')
-    args.n_ctx = 10000000
-    args.id_type = 'tok'
-    if os.path.exists(args.out_fp):
-        os.remove(args.out_fp)
-    logging.info("Number of context: {}".format(args.n_ctx))
 
-    num_dps = 0
-    logging.info("Loading files from: {}".format(args.base_dir))
-
-    with open(args.files_fp, "r") as f, open(args.out_fp, "w") as fout, open(args.out_leafid, 'w') as fout_leafid:
-        for line in f.readlines():
-            fp = os.path.join(args.base_dir, line.strip())
-            try:
-                aug_tokens, aug_types = my_tokenize(open(fp).read(), args.n_ctx)
-                for (tokens, ext), (types_, _) in zip(aug_tokens, aug_types):
-                    if len(tokens) > 1:
-                        if args.id_type == "leaf":
-                            json.dump(get_leaf_ids(types_), fp=fout)
-                        elif args.id_type == "value":
-                            json.dump(get_value_ids(types_), fp=fout)
-                        elif args.id_type == "all":
-                            ids = get_leaf_ids(types_)
-                            ids.update(get_value_ids(types_))
-                            json.dump(ids, fp=fout)
-                        else:
-                            json.dump(tokens, fp=fout)
-                            json.dump(get_leaf_ids(types_), fp=fout_leafid)
-                            fout_leafid.write("\n")
-                        fout.write("\n")
-                        num_dps += 1
-            except:
-                continue
-    logging.info("Wrote {} datapoints to {}".format(num_dps, args.out_fp))
+    in_file = args.in_file
+    out_file_tok = args.out_file + '.tok'
+    out_file_ids = args.out_file + '.ids'
+    in_file, out_file_tok, out_file_ids = map(os.path.expanduser, (in_file, out_file_tok, out_file_ids,))
+    raw_data_dir = os.path.dirname(in_file)
+    n_ctx = args.n_ctx
+    # MAX_SCRIPT_NUM = 100  # debug
+    MAX_SCRIPT_NUM = 50000  # avoid out of memory
 
 
-if __name__ == "__main__":
-    main()
+    def parse_tokens_types(filename):
+        """
+        Examples:
+            def add(a, b):\n  return a + b
+        Returns
+            ['def', 'add', '(', 'a', ',', 'b', ')', ':', 'return', '(', 'a', '+', 'b', ')']
+            [None, 'FunctionDef', None, 'arg', None, 'arg', None, None, None, None, 'NameLoad', None, 'NameLoad', None]
+        """
+        try:
+            with open(filename, 'r', encoding='utf-8') as reader:
+                code_string = reader.read().strip()
+                # code_string = 'def add(a, b):\n  return a + b'
+                token, ids = my_tokenize(code_str=code_string, n_ctx=n_ctx)
+                return token, ids
+        except:
+            """ast parse expectation"""
+            return
+
+
+    with open(in_file, 'r', encoding='utf-8') as reader, \
+            open(out_file_tok, 'w', encoding='utf-8') as tok_writer, \
+            open(out_file_ids, 'w', encoding='utf-8') as ids_writer, \
+            PPool() as thread_pool:
+        file_stack = []
+        for line in reader:
+            raw_data_file = os.path.join(raw_data_dir, line.strip())
+            file_stack.append(raw_data_file)
+            if len(file_stack) >= MAX_SCRIPT_NUM:
+                result = thread_pool.feed(parse_tokens_types, file_stack, one_params=True)
+                result = filterfalse(lambda args: args is None, result)
+                for token, ids in result:
+                    if len(token) == len(ids) and len(ids) > 1 and \
+                            (token is not None) and (ids is not None):
+                        print(json.dumps(token), file=tok_writer)
+                        print(json.dumps(ids), file=ids_writer)
+                del file_stack
+                file_stack = []
+
+        if len(file_stack) > 0:
+            result = thread_pool.feed(parse_tokens_types, file_stack, one_params=True)
+            result = filterfalse(lambda args: args is None, result)
+            for tokens, types in result:
+                if len(tokens) == len(types) and len(tokens) > 1 and \
+                        (tokens is not None) and (types is not None):
+                    print(json.dumps(token), file=tok_writer)
+                    print(json.dumps(ids), file=ids_writer)
+            del file_stack

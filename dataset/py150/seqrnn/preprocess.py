@@ -8,18 +8,25 @@ Data pre-processing: build vocabularies and binarize training data.
 """
 import math
 import os
-import ujson
+import json
 import itertools
-from collections import namedtuple
-# from ncc.utils.mp_ppool import PPool, cpu_count
+from collections import (
+    namedtuple,
+    Counter,
+)
+
 from multiprocessing import Pool, cpu_count
 from ncc.utils.mp_ppool import PPool
-
+from ncc.data import indexed_dataset
+from ncc.data.tools.binarizer import Binarizer
 from ncc import tasks
 from ncc.utils.util_file import load_yaml
 from ncc import LOGGER
 from ncc.utils import py150_utils
-import json
+from ncc.utils.tokenizer import tokenize_list
+
+MAX_SCRIPT_NUM = 50000  # avoid out of memory
+# MAX_SCRIPT_NUM = 50  # debug
 
 
 def get_leaf_ids(types_):
@@ -110,44 +117,48 @@ def main(args):
     def make_dataset(vocab, input_prefix, output_prefix, lang, num_workers=1):
         if args['preprocess']['dataset_impl'] == "raw":
             thread_pool = PPool()
-            _func = lambda line: py150_utils.separate_dps(json.loads(line), args['preprocess']['n_ctx'])
-            MAX_SCRIPT_NUM = 50000  # avoid out of memory
+            _separate_ast = lambda line: py150_utils.separate_dps(json.loads(line), args['preprocess']['n_ctx'])
+            _func = lambda *args: list(map(_separate_ast, args))
 
-            # load tok/type files
+            # load tok/ids files
             with open(file_name(input_prefix, lang), 'r', encoding="utf-8") as tok_reader, \
-                    open(file_name(input_prefix, 'type'), 'r', encoding="utf-8") as type_reader, \
+                    open(file_name(input_prefix, 'ids'), 'r', encoding="utf-8") as ids_reader, \
                     open(dest_path(output_prefix, lang), 'w') as f_data, \
                     open(dest_path(output_prefix, 'ids'), 'w') as f_ids:
-                def write_seqrnn_info(tokens, types):
-                    for (tokens, ext), (types_, _) in zip(tokens, types):
-                        if len(tokens) > 1:
-                            if args['preprocess']['id_type'] == "leaf":
-                                json.dump(get_leaf_ids(types_), fp=f_ids)
-                            elif args['preprocess']['id_type'] == "value":
-                                json.dump(get_value_ids(types_), fp=f_ids)
-                            elif args['preprocess']['id_type'] == "all":
-                                ids = get_leaf_ids(types_)
-                                ids.update(get_value_ids(types_))
-                                json.dump(ids, fp=f_ids)
-                            f_ids.write("\n")
-                            json.dump(tokens + [ext], fp=f_data)  # [tokens, ext]
-                            f_data.write("\n")
+
+                def write_func(token, ids):
+                    def _write_token(token, ext):
+                        print(json.dumps(token + [ext]), file=f_data)
+
+                    def _write_ids(ids):
+                        if args['preprocess']['id_type'] == "leaf":
+                            print(json.dumps(get_leaf_ids(ids)), file=f_ids)
+                        elif args['preprocess']['id_type'] == "value":
+                            print(json.dumps(get_value_ids(ids)), file=f_ids)
+                        elif args['preprocess']['id_type'] == "all":
+                            new_ids = get_leaf_ids(ids)
+                            new_ids.update(get_value_ids(ids))
+                            print(json.dumps(get_value_ids(ids)), file=f_ids)
+
+                    for (sub_token, start_idx), (sub_ids, _) in zip(token, ids):
+                        if len(sub_token) > 1:
+                            _write_token(sub_token, start_idx)
+                            _write_ids(sub_ids)
 
                 params = []
-                for tokens, types in zip(tok_reader, type_reader):
-                    params.append((tokens, types,))
+                for token, ids in zip(tok_reader, ids_reader):
+                    params.append((token, ids,))
                     if len(params) >= MAX_SCRIPT_NUM:
-                        params = thread_pool.feed(lambda *args: list(map(_func, args)), params)
-                        for tokens, types in params:
-                            write_seqrnn_info(tokens, types)
+                        result = thread_pool.feed(_func, params)
+                        for res in result:
+                            write_func(*res)
                         del params
                         params = []
                 if len(params) > 0:
-                    params = thread_pool.feed(lambda *args: list(map(_func, args)), params)
-                    for tokens, types in params:
-                        write_seqrnn_info(tokens, types)
+                    result = thread_pool.feed(_func, params)
+                    for res in result:
+                        write_func(*res)
                     del params
-
 
         else:
             # TODO: please help me binarize it.
