@@ -25,3 +25,7 @@ sys.path:  ['/data/wanyao/Dropbox/ghproj-titan/naturalcode/src', '/home/wanyao/a
 Cython error
 如果提示 "pip install --editable"，说明cython/cpp文件没有编译，需要在v3根目录运行
 "python setup.py build_ext --inplace"
+
+-----------------------------------------
+
+data-mmap生成的代码问题较比严重，需要考虑继承的问题，不能只有有个encode_line, 在py150数据集处理时，能够明显感受到当前代码的局限性。希望后续remake时，考虑到这个不足
