@@ -318,6 +318,7 @@ class Trainer(object):
                         update_num=self.get_num_updates(),
                         ignore_grad=is_dummy_batch,
                     )
+                    logger.info('loss: {:.4f}'.format(loss))
                     del loss
 
                 logging_outputs.append(logging_output)

@@ -300,7 +300,6 @@ def cli_main():
     yaml_file = os.path.join(os.path.dirname(__file__), args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
-
     LOGGER.info(args)
 
     # if args['model']['arch'] in ['bert', 'roberta', 'distilbert', 'camembert'] and not args['task']['mlm']:
@@ -366,4 +365,5 @@ def cli_main():
 
 
 if __name__ == '__main__':
+    """nohup python -m run.completion.seqrnn.main > log.txt 2>&1 &"""
     cli_main()
