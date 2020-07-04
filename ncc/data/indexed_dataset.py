@@ -433,8 +433,8 @@ class IndexedDFSASTDataset(FairseqDataset):
                 line, start_idx = line[:-1], line[-1]
                 self.lines.append(line)
                 self.start_idx.append(start_idx)
-                tokens = dictionary.encode_line(
-                    line, line_tokenizer=None, add_if_not_exist=False,
+                tokens = dictionary.encode_tok(
+                    line, add_if_not_exist=False,
                     append_eos=self.append_eos, reverse_order=self.reverse_order,
                 ).long()
                 self.tokens_list.append(tokens)

@@ -22,6 +22,16 @@ python -m dataset.py150.seqrnn.prepare -i ~/.ncc/py150/seqrnn/raw/python100k_tra
 python -m dataset.py150.seqrnn.prepare -i ~/.ncc/py150/seqrnn/raw/python50k_eval.txt  -o ~/.ncc/py150/seqrnn/raw/test
 ```
 
+
+(ONLY FOR DEBUG)
+
+```
+# for train data
+python -m dataset.py150.seqrnn.prepare -i ~/.ncc/py150/seqrnn_debug/raw/python10k_train.txt -o ~/.ncc/py150/seqrnn_debug/raw/train
+# for eval data
+python -m dataset.py150.seqrnn.prepare -i ~/.ncc/py150/seqrnn_debug/raw/python5k_eval.txt  -o ~/.ncc/py150/seqrnn_debug/raw/test
+```
+
 # step 3
 run python to generate raw/bin(now unavailable) data and dictionary
 ```
