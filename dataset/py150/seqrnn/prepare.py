@@ -129,9 +129,9 @@ if __name__ == '__main__':
         if len(file_stack) > 0:
             result = thread_pool.feed(parse_tokens_types, file_stack, one_params=True)
             result = filterfalse(lambda args: args is None, result)
-            for tokens, types in result:
-                if len(tokens) == len(types) and len(tokens) > 1 and \
-                        (tokens is not None) and (types is not None):
+            for token, ids in result:
+                if len(token) == len(ids) and len(ids) > 1 and \
+                        (token is not None) and (ids is not None):
                     print(json.dumps(token), file=tok_writer)
                     print(json.dumps(ids), file=ids_writer)
             del file_stack
