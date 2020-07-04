@@ -10,6 +10,7 @@ import math
 import os
 import json
 import itertools
+import logging
 from collections import (
     namedtuple,
     Counter,
@@ -25,8 +26,9 @@ from ncc import LOGGER
 from ncc.utils import py150_utils
 from ncc.utils.tokenizer import tokenize_list
 
-MAX_SCRIPT_NUM = 50000  # avoid out of memory
+logger = logging.getLogger(__name__)
 # MAX_SCRIPT_NUM = 50  # debug
+MAX_SCRIPT_NUM = 50000  # avoid out of memory
 
 
 def get_leaf_ids(types_):
@@ -138,7 +140,7 @@ def main(args):
                         elif args['preprocess']['id_type'] == "all":
                             new_ids = get_leaf_ids(ids)
                             new_ids.update(get_value_ids(ids))
-                            print(json.dumps(get_value_ids(ids)), file=f_ids)
+                            print(json.dumps(new_ids), file=f_ids)
 
                     for (sub_token, start_idx), (sub_ids, _) in zip(token, ids):
                         if len(sub_token) > 1:
