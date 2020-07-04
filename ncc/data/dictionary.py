@@ -345,6 +345,33 @@ class Dictionary(object):
 
     # TODO: I think we should not change the encode_line function. Instead we can define different functions for different
     # modalities with different file format, in order to provide more flexibilities.
+    def encode_tok(
+            self,
+            line,
+            # line_tokenizer,  # =tokenizer.tokenize_line
+            add_if_not_exist=True,
+            consumer=None,
+            append_eos=True,
+            reverse_order=False,
+    ):
+        words = line  # line_tokenizer(line)
+        if reverse_order:
+            words = list(reversed(words))
+        nwords = len(words)
+        ids = torch.IntTensor(nwords + 1 if append_eos else nwords)
+
+        for i, word in enumerate(words):
+            if add_if_not_exist:
+                idx = self.add_symbol(word)
+            else:
+                idx = self.index(word)
+            if consumer is not None:
+                consumer(word, idx)
+            ids[i] = idx
+        if append_eos:
+            ids[nwords] = self.eos_index
+        return ids
+
     def encode_path(self):
         pass
 
