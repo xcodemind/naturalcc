@@ -121,7 +121,7 @@ if __name__ == '__main__':
                 for token, ids in result:
                     if len(token) == len(ids) and len(ids) > 1 and \
                             (token is not None) and (ids is not None):
-                        print(json.dumps(+ token), file=tok_writer)
+                        print(json.dumps(token), file=tok_writer)
                         print(json.dumps(ids), file=ids_writer)
                 del file_stack
                 file_stack = []
@@ -132,6 +132,6 @@ if __name__ == '__main__':
             for token, ids in result:
                 if len(token) == len(ids) and len(ids) > 1 and \
                         (token is not None) and (ids is not None):
-                    print(json.dumps(+ token), file=tok_writer)
+                    print(json.dumps(token), file=tok_writer)
                     print(json.dumps(ids), file=ids_writer)
             del file_stack
