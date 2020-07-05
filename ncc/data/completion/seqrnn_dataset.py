@@ -50,6 +50,7 @@ def collate(samples, pad_idx, eos_idx):
         'node_ids': node_ids,
         'ntokens': ntokens,
         'loss_mask': loss_mask,
+        'id': [s['id'] for s in samples],
         # 'nsentences': 2,
         # 'sample_size': masked_ids.size(0),
     }
@@ -215,17 +216,6 @@ class SeqRNNDataset(FairseqDataset):
         filtering a dataset with ``--max-positions``."""
         # return (self.src_sizes[index], self.tgt_sizes[index] if self.tgt_sizes is not None else 0)
         return self.src_sizes[index]  # + self.tgt_sizes[index]
-
-    def ordered_indices(self):
-        """Return an ordered list of indices. Batches will be constructed based
-        on this order."""
-        if self.shuffle:
-            indices = np.random.permutation(len(self))
-        else:
-            indices = np.arange(len(self))
-        if self.tgt_sizes is not None:
-            indices = indices[np.argsort(self.tgt_sizes[indices], kind='mergesort')]
-        return indices[np.argsort(self.src_sizes[indices], kind='mergesort')]
 
     @property
     def supports_prefetch(self):
