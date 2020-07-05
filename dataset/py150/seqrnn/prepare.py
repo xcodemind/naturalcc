@@ -101,7 +101,7 @@ if __name__ == '__main__':
                 code_string = reader.read().strip()
                 # code_string = 'def add(a, b):\n  return a + b'
                 token, ids = my_tokenize(code_str=code_string, n_ctx=n_ctx)
-                return token, ids, filename
+                return token, ids
         except:
             """ast parse expectation"""
             return
@@ -118,10 +118,10 @@ if __name__ == '__main__':
             if len(file_stack) >= MAX_SCRIPT_NUM:
                 result = thread_pool.feed(parse_tokens_types, file_stack, one_params=True)
                 result = filterfalse(lambda args: args is None, result)
-                for token, ids, filename in result:
+                for token, ids in result:
                     if len(token) == len(ids) and len(ids) > 1 and \
                             (token is not None) and (ids is not None):
-                        print(json.dumps([filename] + token), file=tok_writer)
+                        print(json.dumps(+ token), file=tok_writer)
                         print(json.dumps(ids), file=ids_writer)
                 del file_stack
                 file_stack = []
@@ -129,9 +129,9 @@ if __name__ == '__main__':
         if len(file_stack) > 0:
             result = thread_pool.feed(parse_tokens_types, file_stack, one_params=True)
             result = filterfalse(lambda args: args is None, result)
-            for token, ids, filename in result:
+            for token, ids in result:
                 if len(token) == len(ids) and len(ids) > 1 and \
                         (token is not None) and (ids is not None):
-                    print(json.dumps([filename] + token), file=tok_writer)
+                    print(json.dumps(+ token), file=tok_writer)
                     print(json.dumps(ids), file=ids_writer)
             del file_stack
