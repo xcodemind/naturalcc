@@ -205,9 +205,9 @@ def single_main(args, init_distributed=False):
     # Setup task, e.g., translation, language modeling, etc.
     task = tasks.setup_task(args)
 
-    # Load valid dataset (we load training data below, based on the latest checkpoint)
-    for valid_sub_split in args['dataset']['valid_subset'].split(','):
-        task.load_dataset(valid_sub_split, combine=False, epoch=1)
+    # # Load valid dataset (we load training data below, based on the latest checkpoint)
+    # for valid_sub_split in args['dataset']['valid_subset'].split(','):
+    #     task.load_dataset(valid_sub_split, combine=False, epoch=1)
 
     # Build model and criterion
     model = task.build_model(args)
@@ -245,7 +245,6 @@ def single_main(args, init_distributed=False):
     ):
         # train for one epoch
         train(args, trainer, task, epoch_itr)
-        sys.exit()
         if not args['dataset']['disable_validation'] and epoch_itr.epoch % args['dataset']['validate_interval'] == 0:
             valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
         else:

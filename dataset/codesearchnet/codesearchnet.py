@@ -280,7 +280,7 @@ class CodeSearchNet(object):
                 code_info['docstring'] = code_info['docstring'].split('\n')[0]
             # write
             for key, entry in code_info.items():
-                writers[key].write(ujson.dumps(entry) + '\n')
+                print(ujson.dumps(entry), file=writers[key])
 
             data_line = reader.readline().strip()
         return MAX_SUB_TOKEN_LEN

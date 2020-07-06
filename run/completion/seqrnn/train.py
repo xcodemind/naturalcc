@@ -178,7 +178,6 @@ def should_stop_early(config, valid_loss):
         return should_stop_early.num_runs >= config['checkpoint']['patience']
 
 
-
 def single_main(args, init_distributed=False):
     # utils.import_user_module(args) # TODO: delete
 
@@ -195,9 +194,9 @@ def single_main(args, init_distributed=False):
 
     # Verify checkpoint directory
     if distributed_utils.is_master(args):
-        save_dir=args['checkpoint']['save_dir']
+        save_dir = args['checkpoint']['save_dir']
         checkpoint_utils.verify_checkpoint_directory(save_dir)
-        remove_files(save_dir,'pt')
+        remove_files(save_dir, 'pt')
 
     # Print args
     LOGGER.info(args)
@@ -205,15 +204,14 @@ def single_main(args, init_distributed=False):
     # Setup task, e.g., translation, language modeling, etc.
     # clean checkpoint folders
 
-
-    task = tasks.setup_task(args)   # task.tokenizer
+    task = tasks.setup_task(args)  # task.tokenizer
     # build model_config
     # config = task.build_config(args)
     # Build model and criterion
     model = task.build_model(args)
     # model_config = task.build_model_config()
 
-    # Load valid dataset (we load training data below, based on the latest checkpoint)
+    # # Load valid dataset (we load training data below, based on the latest checkpoint)
     # for valid_sub_split in args['dataset']['valid_subset'].split(','):
     #     task.load_dataset(valid_sub_split, combine=False, epoch=1)
 
@@ -245,12 +243,12 @@ def single_main(args, init_distributed=False):
     train_meter.start()
     valid_subsets = args['dataset']['valid_subset'].split(',')
     while (
-        lr > args['optimization']['min_lr']
-        and epoch_itr.next_epoch_idx <= max_epoch
-        and trainer.get_num_updates() < max_update
+            lr > args['optimization']['min_lr']
+            and epoch_itr.next_epoch_idx <= max_epoch
+            and trainer.get_num_updates() < max_update
     ):
         # train for one epoch
-        valid_losses = train(args, trainer, task, epoch_itr)    # max_update
+        valid_losses = train(args, trainer, task, epoch_itr)  # max_update
         if not args['dataset']['disable_validation'] and epoch_itr.epoch % args['dataset']['validate_interval'] == 0:
             valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
         else:
@@ -265,7 +263,8 @@ def single_main(args, init_distributed=False):
 
         # early stop
         if should_stop_early(args, valid_losses[0]):
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(args['checkpoint']['patience']))
+            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
+                args['checkpoint']['patience']))
             break
 
         epoch_itr = trainer.get_train_iterator(
@@ -334,7 +333,6 @@ def cli_main():
     if args['distributed_training']['distributed_init_method'] is None:
         distributed_utils.infer_init_method(args)
 
-
     if args['distributed_training']['distributed_init_method'] is not None:
         # distributed training
         if torch.cuda.device_count() > 1 and not args['distributed_training']['distributed_no_spawn']:
@@ -355,7 +353,7 @@ def cli_main():
         args['distributed_training']['distributed_rank'] = None  # set based on device id
         torch.multiprocessing.spawn(
             fn=distributed_main,
-            args=(args, ),
+            args=(args,),
             nprocs=args['distributed_training']['distributed_world_size'],
         )
     else:
