@@ -20,7 +20,7 @@ from numba import (
 
 Any_t = Any
 Const_t = Any
-Void_t = Union[None, NoReturn]
+Void_t = None
 Func_t = Callable
 Class_t = Union[object, ABC]
 String_t = str
