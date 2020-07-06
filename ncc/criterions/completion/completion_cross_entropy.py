@@ -32,7 +32,7 @@ class CompletionCrossEntropyCriterion(FairseqCriterion):
         loss, ncorrect, mrr = self.compute_loss(model, net_output, sample, reduce=reduce)
 
         sample_size = sample['target'].size(0) if self.sentence_avg else sample['ntokens']
-        loss /= sample_size  # TODO: check
+        loss /= sample['loss_mask'].sum()
 
         logging_output = {
             'loss': loss.data,

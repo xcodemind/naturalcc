@@ -7,7 +7,7 @@ import warnings
 
 import torch
 
-from ncc.utils import tokenizer # , utils # metrics, search,
+from ncc.utils import tokenizer  # , utils # metrics, search,
 from ncc.utils import utils
 from ncc.logging import metrics
 from ncc.data.tools import data_utils
@@ -49,11 +49,14 @@ class FairseqTask(object):
         Args:
             filename (str): the filename
         """
-        return Dictionary.load(filename)
+        if filename.endswith('.txt'):
+            return Dictionary.load(filename)
+        else:
+            return Dictionary.load_json(filename)
 
     @classmethod
     def build_dictionary(
-        cls, filenames, workers=1, threshold=-1, nwords=-1, padding_factor=8
+            cls, filenames, workers=1, threshold=-1, nwords=-1, padding_factor=8
     ):
         """Build the dictionary
 
@@ -113,18 +116,18 @@ class FairseqTask(object):
         return self.datasets[split]
 
     def get_batch_iterator(
-        self,
-        dataset,
-        max_tokens=None,
-        max_sentences=None,
-        max_positions=None,
-        ignore_invalid_inputs=False,
-        required_batch_size_multiple=1,
-        seed=1,
-        num_shards=1,
-        shard_id=0,
-        num_workers=0,
-        epoch=1,
+            self,
+            dataset,
+            max_tokens=None,
+            max_sentences=None,
+            max_positions=None,
+            ignore_invalid_inputs=False,
+            required_batch_size_multiple=1,
+            seed=1,
+            num_shards=1,
+            shard_id=0,
+            num_workers=0,
+            epoch=1,
     ):
         """
         Get an iterator that yields batches of data from the given dataset.
@@ -337,7 +340,7 @@ class FairseqTask(object):
     #     )
 
     def train_step(
-        self, sample, model, criterion, optimizer, update_num, ignore_grad=False
+            self, sample, model, criterion, optimizer, update_num, ignore_grad=False
     ):
         """
         Do forward and backward, and return the loss as computed by *criterion*

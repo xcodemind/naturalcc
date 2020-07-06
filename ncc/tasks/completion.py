@@ -148,7 +148,7 @@ class CompletionTask(FairseqTask):
         elif self.args['model']['arch'] == 'seqrnn':
             self.datasets[split] = load_tok_dataset(data_path, split, src, self.source_dictionary,
                                                     dataset_impl=self.args['dataset']['dataset_impl'])
-        print('self.datasets[split]: ', self.datasets[split].__getitem__(0))
+        # print('self.datasets[split]: ', self.datasets[split].__getitem__(0))
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
         return SeqRNNDataset(src_tokens, src_lengths, self.source_dictionary)  # TODO: bug

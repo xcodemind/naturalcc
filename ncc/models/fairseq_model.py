@@ -19,7 +19,6 @@ from ncc.modules.code2vec import FairseqEncoder
 from ncc.modules.summarization import FairseqDecoder
 from torch import Tensor
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -45,10 +44,10 @@ class BaseFairseqModel(nn.Module):
         return sample["target"]
 
     def get_normalized_probs(
-        self,
-        net_output: Tuple[Tensor, Dict[str, List[Optional[Tensor]]]],
-        log_probs: bool,
-        sample: Optional[Dict[str, Tensor]] = None,
+            self,
+            net_output: Tuple[Tensor, Dict[str, List[Optional[Tensor]]]],
+            log_probs: bool,
+            sample: Optional[Dict[str, Tensor]] = None,
     ):
         """Get normalized probabilities (or log probs) from a net's output."""
         return self.get_normalized_probs_scriptable(net_output, log_probs, sample)
@@ -58,10 +57,10 @@ class BaseFairseqModel(nn.Module):
     # Current workaround is to add a helper function with different name and
     # call the helper function from scriptable Subclass.
     def get_normalized_probs_scriptable(
-        self,
-        net_output: Tuple[Tensor, Dict[str, List[Optional[Tensor]]]],
-        log_probs: bool,
-        sample: Optional[Dict[str, Tensor]] = None,
+            self,
+            net_output: Tuple[Tensor, Dict[str, List[Optional[Tensor]]]],
+            log_probs: bool,
+            sample: Optional[Dict[str, Tensor]] = None,
     ):
         """Scriptable helper function for get_normalized_probs in ~BaseFairseqModel"""
         if hasattr(self, "decoder"):
@@ -126,6 +125,7 @@ class BaseFairseqModel(nn.Module):
         def _apply(m):
             if hasattr(m, 'set_num_updates') and m != self:
                 m.set_num_updates(num_updates)
+
         self.apply(_apply)
 
     def make_generation_fast_(self, **kwargs):
@@ -147,9 +147,9 @@ class BaseFairseqModel(nn.Module):
 
         def apply_make_generation_fast_(module):
             if (
-                module != self
-                and hasattr(module, "make_generation_fast_")
-                and module not in seen
+                    module != self
+                    and hasattr(module, "make_generation_fast_")
+                    and module not in seen
             ):
                 seen.add(module)
                 module.make_generation_fast_(**kwargs)
@@ -170,9 +170,9 @@ class BaseFairseqModel(nn.Module):
 
         def apply_prepare_for_onnx_export_(module):
             if (
-                module != self
-                and hasattr(module, "prepare_for_onnx_export_")
-                and module not in seen
+                    module != self
+                    and hasattr(module, "prepare_for_onnx_export_")
+                    and module not in seen
             ):
                 seen.add(module)
                 module.prepare_for_onnx_export_(**kwargs)
@@ -181,11 +181,11 @@ class BaseFairseqModel(nn.Module):
 
     @classmethod
     def from_pretrained(
-        cls,
-        model_name_or_path,
-        checkpoint_file="model.pt",
-        data_name_or_path=".",
-        **kwargs,
+            cls,
+            model_name_or_path,
+            checkpoint_file="model.pt",
+            data_name_or_path=".",
+            **kwargs,
     ):
         """
         Load a :class:`~fairseq.models.FairseqModel` from a pre-trained model
@@ -331,11 +331,11 @@ class FairseqMultiModel(BaseFairseqModel):
 
     @staticmethod
     def build_shared_embeddings(
-        dicts: Dict[str, Dictionary],
-        langs: List[str],
-        embed_dim: int,
-        build_embedding: callable,
-        pretrained_embed_path: Optional[str] = None,
+            dicts: Dict[str, Dictionary],
+            langs: List[str],
+            embed_dim: int,
+            build_embedding: callable,
+            pretrained_embed_path: Optional[str] = None,
     ):
         """
         Helper function to build shared embeddings for a set of languages after
@@ -507,3 +507,37 @@ class FairseqEncoderModel(BaseFairseqModel):
     def max_positions(self):
         """Maximum length supported by the model."""
         return self.encoder.max_positions()
+
+
+class FairseqRetrievalModel(BaseFairseqModel):
+    """Base class for a simple encoder-encoder retrieval models.
+
+    Args:
+        src_encoder (FairseqEncoder): the encoder
+        tgt_encoder (FairseqEncoder): the encoder
+    """
+
+    def __init__(self, src_encoder, tgt_encoder):
+        super().__init__()
+        self.src_encoder = src_encoder
+        self.tgt_encoder = tgt_encoder
+        assert isinstance(self.src_encoder, FairseqEncoder) and isinstance(self.tgt_encoder, FairseqEncoder)
+
+    def forward(self,
+                src_tokens, src_tokens_len, src_tokens_mask,
+                tgt_tokens, tgt_tokens_len, tgt_tokens_mask,
+                ):
+        """
+        Run the forward pass for a encoder-only model.
+
+        Feeds a batch of tokens through the encoder to generate features.
+
+        Args:
+            src_tokens (LongTensor): input tokens of shape `(batch, src_len)`
+            tgt_tokens (LongTensor): input tokens of shape `(batch, src_len)`
+
+        Returns:
+            the encoder's output, typically of shape `(batch, src_len, features)`
+        """
+        return self.src_encoder(src_tokens, src_tokens_len, src_tokens_mask), \
+               self.tgt_encoder(tgt_tokens, tgt_tokens_len, tgt_tokens_mask),
