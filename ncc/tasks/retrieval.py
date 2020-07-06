@@ -9,8 +9,8 @@
 from ncc.tasks import register_task
 from ncc.tasks.fairseq_task import FairseqTask
 
-from ncc.types import *
-
+# from ncc.types import *
+from ncc.types import Dict_t, Class_t, String_t, Int_t, Bool_t
 from ncc.utils import utils
 from ncc.utils import path
 
