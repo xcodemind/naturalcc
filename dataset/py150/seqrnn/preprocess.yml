@@ -21,17 +21,19 @@ preprocess:
   source_lang: tok
   #  target_lang: docstring #", default=None, metavar="TARGET", help="target language"
   # ~ path for dataset default. e.g.  for CodeSearchNet, ~/flatten = ~/.ncc/CodeSearchNet/flatten
-  trainpref: ~/.ncc/py150/seqrnn_debug/raw/train #", metavar="FP", default=None, help="train file prefix"
+#  trainpref: ~/.ncc/py150/seqrnn_debug/raw/train #", metavar="FP", default=None, help="train file prefix"
+  trainpref: ~/.ncc/py150/seqrnn/raw/train #", metavar="FP", default=None, help="train file prefix"
   validpref: ~ #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-  testpref:  ~/.ncc/py150/seqrnn_debug/raw/test #", metavar="FP", default=None, help="comma separated, test file prefixes"
+#  testpref:  ~/.ncc/py150/seqrnn_debug/raw/test #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  testpref:  ~/.ncc/py150/seqrnn/raw/test #", metavar="FP", default=None, help="comma separated, test file prefixes"
   #  trainpref: ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path #", metavar="FP", default=None, help="train file prefix"
   #  validpref: ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path #", metavar="FP", default=None, help="comma separated, valid file prefixes"
   #  testpref:  ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
   align_suffix: ~ # ", metavar="FP", default=None, help="alignment file suffix"
   #  destdir: ~/.ncc/CodeSearchNet/codebert/data-mmap/ruby/docstring_path/ #", metavar="DIR", default="data-bin", help="destination dir"
-  destdir: ~/.ncc/py150/seqrnn_debug/data-raw #", metavar="DIR", default="data-bin", help="destination dir"
-#  destdir: ~/.ncc/py150/seqrnn/data-mmap
+#  destdir: ~/.ncc/py150/seqrnn_debug/data-raw #", metavar="DIR", default="data-bin", help="destination dir"
+  destdir: ~/.ncc/py150/seqrnn/data-raw
   thresholdtgt: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
   thresholdsrc: 20 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
   #  srcdict: ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path/codesearchnet.dict
@@ -49,3 +51,4 @@ preprocess:
 
   n_ctx: 1000 # type=int, default=1000, help="Number of contexts for each dp"
   id_type: all # value, type, all. all=value+type
+

@@ -62,7 +62,7 @@ if __name__ == '__main__':
     """
     code string => code tokens and corresponding types sequence
     # for train data
-    python -m dataset.py150.seqrnn.prepare -i ~/.ncc/py150/seqrnn/raw/python100k_train.txt -o ~/.ncc/py150/seqrnn/raw/train
+    python -m dataset.py150.seqrnn.prepare -i ~/.ncc/py150/seqrnn/raw/python100k_train.txt -o ~/.ncc/py150/seqrnn/raw/trainN
     # for eval data  
     python -m dataset.py150.seqrnn.prepare -i ~/.ncc/py150/seqrnn/raw/python50k_eval.txt  -o ~/.ncc/py150/seqrnn/raw/test 
     """

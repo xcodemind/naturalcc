@@ -130,7 +130,8 @@ def main(args):
 
                 def write_func(token, ids):
                     def _write_token(token, ext):
-                        print(json.dumps(token + [ext]), file=f_data)
+                        print(json.dumps(token + [ext]), file=f_data)  # our format
+                        # print(json.dumps([token, ext]), file=f_data) #code-prediction-transform format
 
                     def _write_ids(ids):
                         if args['preprocess']['id_type'] == "leaf":
