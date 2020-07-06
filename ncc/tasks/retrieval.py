@@ -11,13 +11,13 @@ from ncc.data.tools import data_utils
 from ncc.data.dictionary import Dictionary
 from ncc.tasks import register_task
 from ncc.tasks.fairseq_task import FairseqTask
-from ncc.types import *
-from ncc.utils import (
-    utils,
-    path,
-)
 from ncc.utils.tokenizer import tokenize_string
 from ncc.data.retrieval.retrieval_dataset import RetrievalDataset
+
+# from ncc.types import *
+from ncc.types import Dict_t, Class_t, String_t, Int_t, Bool_t
+from ncc.utils import utils
+from ncc.utils import path
 
 
 def load_tokens_dataset(data_path, split, src, src_dict, tgt, tgt_dict, dataset_impl):
