@@ -48,7 +48,7 @@ class MaskedLmLoss(FairseqCriterion):
 
         logits = model(**sample['net_input'], masked_tokens=masked_tokens)[0]
         targets = model.get_targets(sample, [logits])
-        # targets = targets[masked_tokens] #TODO: unilm doesnt require this line, if other needs, pls annotate here
+        targets = targets[masked_tokens] #TODO: unilm doesnt require this line, if other needs, pls annotate here
 
         loss = cross_entropy(
             logits.view(-1, logits.size(-1)),

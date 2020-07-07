@@ -7,13 +7,13 @@ bpe: ~ # default=None
 
 ##################### default args #####################
 common:
-#  device: 0 # GPU device. if None, as CPU
+  device: 0 # GPU device. if None, as CPU
   no_progress_bar: 0 # action='store_true', help='disable progress bar'
   log_interval: 100 # type=int, default=100, metavar='N', help='log progress every N batches (when progress bar is disabled)'
   log_format: simple # default=None, help='log format to use', choices=['json', 'none', 'simple', 'tqdm']
   tensorboard_logdir: '' # default='', help='path to save logs for tensorboard, should match --logdir of running tensorboard (default: no tensorboard logging)'
   seed: 1 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
-  cpu: 1 # action='store_true', help='use CPU instead of CUDA'
+  cpu: 0 # action='store_true', help='use CPU instead of CUDA'
   fp16: 0 # action='store_true', help='use FP16'
   memory_efficient_fp16: 0 # action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
   fp16_no_flatten_grads: 0 # action='store_true', help='don\'t flatten FP16 grads tensor'
@@ -69,7 +69,7 @@ distributed_training:
 task:
   data: ~/.ncc/wikitext-103-raw/data-mmap # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
-  tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
+  tokens_per_sample: 128 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
   mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
   leave_unmasked_prob: 0.1 # default=0.1, type=float, help='probability that a masked token is unmasked'
   random_token_prob: 0.1 # default=0.1, type=float, help='probability of replacing a token with a random token'
@@ -115,7 +115,7 @@ model:
   no_scale_embedding: 0 # action='store_true', help='if True, dont scale embeddings'
 
 optimization:
-  max_epoch: 0 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
+  max_epoch: 6 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
   max_update: 12500 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
   clip_norm: 25 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
   sentence_avg: ~ # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'
