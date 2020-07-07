@@ -161,20 +161,23 @@ class CompletionTask(FairseqTask):
 
     def build_model(self, args):
         model = super().build_model(args)
-        if getattr(args, 'eval_bleu', False):
-            # assert getattr(args, 'eval_bleu_detok', None) is not None, (
-            #     '--eval-bleu-detok is required if using --eval-bleu; '
-            #     'try --eval-bleu-detok=moses (or --eval-bleu-detok=space '
-            #     'to disable detokenization, e.g., when using sentencepiece)'
-            # )
-            # detok_args = json.loads(getattr(args, 'eval_bleu_detok_args', '{}') or '{}')
-            # self.tokenizer = encoders.build_tokenizer(Namespace(
-            #     tokenizer=getattr(args, 'eval_bleu_detok', None),
-            #     **detok_args
-            # ))
+        # if getattr(args, 'eval_bleu', False):
+        #     # assert getattr(args, 'eval_bleu_detok', None) is not None, (
+        #     #     '--eval-bleu-detok is required if using --eval-bleu; '
+        #     #     'try --eval-bleu-detok=moses (or --eval-bleu-detok=space '
+        #     #     'to disable detokenization, e.g., when using sentencepiece)'
+        #     # )
+        #     # detok_args = json.loads(getattr(args, 'eval_bleu_detok_args', '{}') or '{}')
+        #     # self.tokenizer = encoders.build_tokenizer(Namespace(
+        #     #     tokenizer=getattr(args, 'eval_bleu_detok', None),
+        #     #     **detok_args
+        #     # ))
+        #
+        #     # gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
+        #     self.sequence_completor = self.build_completor([model], Namespace(**gen_args))
+        if getattr(args, 'eval_accuracy', False):
+            self.sequence_completor = self.build_completor([model])
 
-            # gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
-            self.sequence_completor = self.build_completor([model], Namespace(**gen_args))
         return model
 
     def valid_step(self, sample, model, criterion):

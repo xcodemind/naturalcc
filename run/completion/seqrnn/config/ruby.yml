@@ -1,5 +1,5 @@
 #registry
-criterion: completion_cross_entropy
+criterion: cross_entropy
 optimizer: 'adam'
 lr_scheduler: 'polynomial_decay'
 tokenizer: ~ # default=None
@@ -28,7 +28,7 @@ common:
   task: completion # task
 
   seed: 42 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
-  cpu: 1 # action='store_true', help='use CPU instead of CUDA'
+  cpu: 0 # action='store_true', help='use CPU instead of CUDA'
   fp16: 0 # action='store_true', help='use FP16'
   fp16_opt_level: '01' # type=str, default="O1", help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']. See details at https://nvidia.github.io/apex/amp.html",
   server_ip: '' # type=str, default="", help="For distant debugging."
@@ -117,6 +117,9 @@ task:
   eval_bleu_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
   eval_bleu_print_samples: 0 #', action='store_true', help='print sample generations during validation'
 
+  eval_accuracy: 0
+  eval_mrr: 0
+
 
 model:
   arch: seqrnn
@@ -171,7 +174,7 @@ optimization:
   use_bmuf: 0 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
   #
   force_anneal: ~ # '--fa', type=int, metavar='N', help='force annealing at specified epoch'
-  warmup_updates: 10000 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
+  warmup_updates: 0 # 10000 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
   end_learning_rate: 0.0 # default=0.0, type=float
   power: 1.0 # default=1.0, type=float
   total_num_update: 125000 # default=1000000, type=int

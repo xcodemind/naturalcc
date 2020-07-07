@@ -255,7 +255,7 @@ class FairseqTask(object):
 
         return tokenizer.build_tokenization(args, self)
 
-    def build_generator(self, args):
+    def build_generator(self, models, args):
         if getattr(args, "score_reference", False):
             from ncc.eval.sequence_scorer import SequenceScorer
 
@@ -339,13 +339,8 @@ class FairseqTask(object):
             search_strategy=search_strategy,
         )
 
-    def build_completor(self, args):
-        from ncc.eval.sequence_generator import (
-            SequenceGenerator,
-        )
+    def build_completor(self, models, args):
         from ncc.eval.sequence_completor import SequenceCompletor
-
-
 
         return SequenceCompletor(
             self.target_dictionary,
