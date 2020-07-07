@@ -5,6 +5,9 @@
 
 import os
 from ncc import LOGGER
+from argparse import Namespace
+import numpy as np
+from ncc.logging import metrics
 from ncc.tasks.fairseq_task import FairseqTask
 from ncc.tasks import register_task
 from ncc.utils import utils
@@ -14,6 +17,8 @@ from ncc.data.completion.seqrnn_dataset import SeqRNNDataset
 from ncc.data.dictionary import Dictionary
 from ncc.utils import tokenizer  # , utils # metrics, search,
 import json
+
+EVAL_BLEU_ORDER = 4
 
 
 def load_path_dataset(data_path, split, src, src_dict, dataset_impl):
@@ -153,6 +158,83 @@ class CompletionTask(FairseqTask):
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
         return SeqRNNDataset(src_tokens, src_lengths, self.source_dictionary)  # TODO: bug
+
+    def build_model(self, args):
+        model = super().build_model(args)
+        if getattr(args, 'eval_bleu', False):
+            # assert getattr(args, 'eval_bleu_detok', None) is not None, (
+            #     '--eval-bleu-detok is required if using --eval-bleu; '
+            #     'try --eval-bleu-detok=moses (or --eval-bleu-detok=space '
+            #     'to disable detokenization, e.g., when using sentencepiece)'
+            # )
+            # detok_args = json.loads(getattr(args, 'eval_bleu_detok_args', '{}') or '{}')
+            # self.tokenizer = encoders.build_tokenizer(Namespace(
+            #     tokenizer=getattr(args, 'eval_bleu_detok', None),
+            #     **detok_args
+            # ))
+
+            # gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
+            self.sequence_completor = self.build_completor([model], Namespace(**gen_args))
+        return model
+
+    def valid_step(self, sample, model, criterion):
+        loss, sample_size, logging_output = super().valid_step(sample, model, criterion)
+        if self.args['task']['eval_bleu']:
+            bleu = self._inference_with_bleu(self.sequence_completor, sample, model)
+            logging_output['_bleu_sys_len'] = bleu.sys_len
+            logging_output['_bleu_ref_len'] = bleu.ref_len
+            # we split counts into separate entries so that they can be
+            # summed efficiently across workers using fast-stat-sync
+            assert len(bleu.counts) == EVAL_BLEU_ORDER
+            for i in range(EVAL_BLEU_ORDER):
+                logging_output['_bleu_counts_' + str(i)] = bleu.counts[i]
+                logging_output['_bleu_totals_' + str(i)] = bleu.totals[i]
+        return loss, sample_size, logging_output
+
+    def reduce_metrics(self, logging_outputs, criterion):
+        super().reduce_metrics(logging_outputs, criterion)
+
+        if self.args['task']['eval_accuracy']:
+
+            metrics.log_scalar('accuracy', 1.111)
+        if self.args['task']['eval_mrr']:
+            metrics.log_scalar('mrr', 2.222)
+        if self.args['task']['eval_bleu']:
+
+            def sum_logs(key):
+                return sum(log.get(key, 0) for log in logging_outputs)
+
+            counts, totals = [], []
+            for i in range(EVAL_BLEU_ORDER):
+                counts.append(sum_logs('_bleu_counts_' + str(i)))
+                totals.append(sum_logs('_bleu_totals_' + str(i)))
+
+            if max(totals) > 0:
+                # log counts as numpy arrays -- log_scalar will sum them correctly
+                metrics.log_scalar('_bleu_counts', np.array(counts))
+                metrics.log_scalar('_bleu_totals', np.array(totals))
+                metrics.log_scalar('_bleu_sys_len', sum_logs('_bleu_sys_len'))
+                metrics.log_scalar('_bleu_ref_len', sum_logs('_bleu_ref_len'))
+
+                def compute_bleu(meters):
+                    import inspect
+                    import sacrebleu
+                    fn_sig = inspect.getfullargspec(sacrebleu.compute_bleu)[0]
+                    if 'smooth_method' in fn_sig:
+                        smooth = {'smooth_method': 'exp'}
+                    else:
+                        smooth = {'smooth': 'exp'}
+                    bleu = sacrebleu.compute_bleu(
+                        correct=meters['_bleu_counts'].sum,
+                        total=meters['_bleu_totals'].sum,
+                        sys_len=meters['_bleu_sys_len'].sum,
+                        ref_len=meters['_bleu_ref_len'].sum,
+                        **smooth
+                    )
+                    return round(bleu.score, 2)
+
+                metrics.log_derived('bleu', compute_bleu)
+
 
     @property
     def source_dictionary(self):
