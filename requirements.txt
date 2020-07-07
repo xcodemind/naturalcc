@@ -9,3 +9,5 @@ ruamel.yaml
 ujson
 wget
 pathos
+tree_sitter
+jsonlines
