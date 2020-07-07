@@ -132,15 +132,6 @@ def tokenize(s):
     return list(filter(None, tokenized))[:5]
 
 
-def get_value(line, input_type):
-    if input_type == "ast":
-        return get_dfs(line)
-    elif input_type == "leaf":
-        return get_dfs(line, only_leaf=True)
-    elif input_type == "source_code":
-        return line[0]
-
-
 def get_leaf_ids(ast):
     ids = {"leaf_ids": [], "internal_ids": []}
     for i, node in enumerate(ast):

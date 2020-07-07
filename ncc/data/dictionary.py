@@ -428,7 +428,7 @@ class Dictionary(object):
         return ids
 
     # TODO: I think we should not change the encode_line function. Instead we can define different functions for different
-    # modalities with different file format, in order to provide more flexibilities.
+    #       modalities with different file format, in order to provide more flexibilities.
     def encode_tok(
             self,
             line,

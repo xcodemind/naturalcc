@@ -51,7 +51,7 @@ Convert the ASTs in py150 dataset (https://www.sri.inf.ethz.ch/phog) to modified
 This step is only for py150, since there is some problems for the generated ASTs, please refer to Appendix A.1, to check whether there is some problems for our generated ASTs on CodeSearchNet dataset.
 
 ```
-python generate_new_trees.py -i /home/wanyao/.ncc/py150/raw/python1k_train.json -o /home/wanyao/.ncc/py150/trav_trans/raw/train.ast_trav_df
+python -m dataset.py150.generate_new_trees -i ~/.ncc/py150/raw/python100_train.json -o ~/.ncc/py150/data/train.ast_trav_df
 ```
 
 

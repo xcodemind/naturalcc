@@ -11,7 +11,6 @@ import torch
 import ujson
 from collections import Counter
 
-
 SPACE_NORMALIZER = re.compile(r"\s+")
 
 
@@ -19,6 +18,7 @@ def tokenize_string(line):
     line = SPACE_NORMALIZER.sub(" ", line)
     line = line.strip()
     return line.split()
+
 
 # def tokenize_string(line: str) -> List[str]:
 #     """split string by regrex [\s+]"""
