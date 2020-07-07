@@ -198,7 +198,6 @@ class CompletionTask(FairseqTask):
         super().reduce_metrics(logging_outputs, criterion)
 
         if self.args['task']['eval_accuracy']:
-
             metrics.log_scalar('accuracy', 1.111)
         if self.args['task']['eval_mrr']:
             metrics.log_scalar('mrr', 2.222)
@@ -237,7 +236,6 @@ class CompletionTask(FairseqTask):
                     return round(bleu.score, 2)
 
                 metrics.log_derived('bleu', compute_bleu)
-
 
     @property
     def source_dictionary(self):

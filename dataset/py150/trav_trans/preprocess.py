@@ -27,6 +27,18 @@ from ncc import LOGGER
 from ncc.utils import py150_utils
 import json
 
+MAX_BATCH_SIZE = 50000
+
+
+def tokenize_func(line):
+    dp = []
+    for node in json.loads(line):
+        if "value" in node:
+            dp.append(node["value"])
+        else:
+            dp.append(node["type"])
+    return dp
+
 
 def dataset_dest_prefix(args, output_prefix, lang):
     base = "{}/{}".format(args['preprocess']['destdir'], output_prefix)
@@ -91,6 +103,7 @@ def main(args):
         assert src ^ tgt
         return task.build_dictionary(
             filenames,
+            tokenize_func=tokenize_func,
             workers=args['preprocess']['workers'],
             threshold=args['preprocess']['thresholdsrc'],
             nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
@@ -104,10 +117,15 @@ def main(args):
         src_dict = task.load_dictionary(args['preprocess']['srcdict'])
     else:
         assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
-        src_dict = build_dictionary([train_path(args['preprocess']['source_lang'])], src=True)
-
-    #  save dictionary
-    src_dict.save(dict_path(args['preprocess']['source_lang']))
+        dict_filename = dest_path("dict", args['preprocess']['source_lang']) + ".json"
+        if os.path.exists(dict_filename):
+            LOGGER.info('Loading dict from {}'.format(dict_filename))
+            src_dict = task.load_dictionary(dict_filename)
+        else:
+            src_dict = build_dictionary([train_path(args['preprocess']['source_lang'])], src=True)
+            #  save dictionary
+            LOGGER.info('Saving dict from {}'.format(dict_filename))
+            src_dict.save_json(dict_filename)
 
     # 2. ***************build dataset********************
     def make_binary_dataset(vocab, input_prefix, output_prefix, lang, num_workers):
@@ -179,59 +197,40 @@ def main(args):
 
     def make_dataset(vocab, input_prefix, output_prefix, lang, num_workers=1):
         if args['preprocess']['dataset_impl'] == "raw":
-            # Copy original text file to destination folder
-            # output_text_file = dest_path(
-            #     output_prefix, # '.bpe' #".{}-{}".format(args.source_lang, args.target_lang),
-            #     lang,
-            # ))
-            # shutil.copyfile(file_name(input_prefix, lang), output_text_file)
-            #     TODO: parse json to txt file, one line one traversal, please help me parallize it.
+            # TODO: parse json to txt file, one line one traversal, please help me parallize it.
             """
             because only 1 thread is allowed to write file, we have to use multi-processing for deal with data
             and merge results from CPUs into a block and then dumps such block. 
             """
-            cpu_num = cpu_count()
-            thread_pool = PPool(cpu_num)
-            MAX_BATCH_SIZE = 5000
-            SIZE_PER_BATCH = int(math.ceil(MAX_BATCH_SIZE / cpu_num))
-            batch_separate_dps = lambda lines: [line[:args['preprocess']['n_ctx']] for line in lines]
 
-            def batch_processing(batch_data):
-                params = [
-                    (batch_data[i * SIZE_PER_BATCH:(i + 1) * SIZE_PER_BATCH],)
-                    for i in range(cpu_num)
-                ]
-                result = thread_pool.feed(batch_separate_dps, params)
-                for ast in itertools.chain(*result):
-                    if len(ast) > 1:
-                        json.dump(py150_utils.get_dfs(ast), fp=fout)
-                        fout.write('\n')
+            def _func(line):
+                line = py150_utils.separate_dps(json.loads(line.strip()), args['preprocess']['n_ctx'])
+                line = [py150_utils.get_dfs(ast) + [ext] for ast, ext in line if len(ast) > 1]
+                # line = [json.dumps([py150_utils.get_dfs(ast), ext]) for ast, ext in line if len(ast) > 1]
+                return line
 
-            with open(file_name(input_prefix, lang), 'r', encoding="utf-8") as f, \
-                    open(dest_path(output_prefix, lang), 'w') as fout:
-                batch_data = []
-                for line in f:
-                    if len(line) > 0:
-                        line = json.loads(line.strip())
-                        if len(line) <= 1:
-                            continue
+            with PPool() as thread_pool:
+                with open(file_name(input_prefix, lang), 'r', encoding="utf-8") as f, \
+                        open(dest_path(output_prefix, lang), 'w') as fout:
+                    def _write(result):
+                        for res in itertools.chain(*result):
+                            print(json.dumps(res), file=fout)
+
+                    batch_data = []
+                    for line in f:
                         batch_data.append(line)
-                    else:
-                        break
-                    if len(batch_data) == MAX_BATCH_SIZE:
-                        batch_processing(batch_data)
-                        batch_data = []
+                        if len(batch_data) >= MAX_BATCH_SIZE:
+                            result = thread_pool.feed(_func, batch_data, one_params=True)
+                            _write(result)
+                            del batch_data
+                            batch_data = []
 
-                if len(batch_data) > 0:
-                    batch_processing(batch_data)
+                    if len(batch_data) > 0:
+                        result = thread_pool.feed(_func, batch_data, one_params=True)
+                        _write(result)
+                        del batch_data
 
-                # for line in f.readlines():
-                #     line = json.loads(line)
-                #     asts = py150_utils.separate_dps(line, args['preprocess']['n_ctx'])
-                #     for ast, extended in asts:
-                #         if len(ast) > 1:
-                #             json.dump(py150_utils.get_dfs(ast), fp=fout)
-                #             fout.write('\n')
+
         else:
             # TODO: please help me binarize it.
             make_binary_dataset(vocab, input_prefix, output_prefix, lang, num_workers)
@@ -249,32 +248,55 @@ def main(args):
                 outprefix = "test{}".format(k) if k > 0 else "test"
                 make_dataset(vocab, testpref, outprefix, lang, num_workers=args['preprocess']['workers'])
 
-    # build_dataset(args, src_dicts, tgt_dict)
     make_all(args['preprocess']['source_lang'], src_dict)
 
     # 3. ***************generate ids********************
     def generate_ids(input_prefix, output_prefix, lang):
-        with open(file_name(input_prefix, lang), "r", encoding="utf-8") as f, \
-                open(dest_path(output_prefix, lang), "w") as fout:
-            for line in f.readlines():
-                dp = json.loads(line.strip())
-                # asts = separate_dps(dp, args.n_ctx)
-                asts = py150_utils.separate_dps(dp, args['preprocess']['n_ctx'])
-
-                for ast, _ in asts:
+        def _func(line):
+            line = py150_utils.separate_dps(json.loads(line.strip()), args['preprocess']['n_ctx'])
+            tmp = []
+            for ast, _ in line:
+                if len(ast) > 1:
                     ids = {}
-                    if len(ast) > 1:
-                        if args['preprocess']['id_type'] in {"leaf", "all"}:
-                            ids.update(py150_utils.get_leaf_ids(ast))
-                        if args['preprocess']['id_type'] in {"value", "all"}:
-                            ids.update(py150_utils.get_value_ids(ast))
-                        if args['preprocess']['id_type'] in {"type", "all"}:
-                            ids.update(py150_utils.get_type_ids(ast))
+                    if args['preprocess']['id_type'] in {"leaf", "all"}:
+                        ids.update(py150_utils.get_leaf_ids(ast))
+                    if args['preprocess']['id_type'] in {"value", "all"}:
+                        ids.update(py150_utils.get_value_ids(ast))
+                    if args['preprocess']['id_type'] in {"type", "all"}:
+                        ids.update(py150_utils.get_type_ids(ast))
+                    tmp.append(ids)
+            return tmp
 
-                        json.dump(ids, fp=fout)
-                        fout.write("\n")
+        with PPool() as thread_pool:
+            with open(file_name(input_prefix, lang), "r", encoding="utf-8") as f, \
+                    open(dest_path(output_prefix, 'ids'), "w") as fout:
+                def _write(result):
+                    for res in itertools.chain(*result):
+                        print(json.dumps(res), file=fout)
 
-    generate_ids(args['preprocess']['trainpref'], "train.generate_id", args['preprocess']['source_lang'])
+                batch_data = []
+                for line in f:
+                    batch_data.append(line)
+                    if len(batch_data) >= MAX_BATCH_SIZE:
+                        result = thread_pool.feed(_func, batch_data, one_params=True)
+                        _write(result)
+                        del batch_data
+                        batch_data = []
+
+                if len(batch_data) > 0:
+                    result = thread_pool.feed(_func, batch_data, one_params=True)
+                    _write(result)
+                    del batch_data
+
+    def make_all_ids():
+        if args['preprocess']['trainpref']:
+            generate_ids(args['preprocess']['trainpref'], "train", args['preprocess']['source_lang'])
+        if args['preprocess']['validpref']:
+            generate_ids(args['preprocess']['validpref'], "valid", args['preprocess']['source_lang'])
+        if args['preprocess']['testpref']:
+            generate_ids(args['preprocess']['testpref'], "test", args['preprocess']['source_lang'])
+
+    make_all_ids()
 
 
 def cli_main():
