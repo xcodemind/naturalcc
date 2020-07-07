@@ -105,7 +105,8 @@ class CompletionTask(FairseqTask):
     # overwrite the build_dictionary function
     @classmethod
     def build_dictionary(
-            cls, filenames, workers=1, threshold=-1, nwords=-1, padding_factor=8
+            cls, filenames, tokenize_func=tokenizer.tokenize_list,
+            workers=1, threshold=-1, nwords=-1, padding_factor=8
     ):
         """Build the dictionary
 
@@ -123,7 +124,7 @@ class CompletionTask(FairseqTask):
 
         for filename in filenames:
             Dictionary.add_token_to_dictionary(
-                filename, d, tokenizer.tokenize_list, workers
+                filename, d, tokenize_func, workers
             )
 
         d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
