@@ -249,7 +249,7 @@ def get_special_symbols(args: Dict) -> Optional[Set]:
     def _special_symbols(args: Dict, modality: str) -> Optional[Set]:
         special_symbols = set()
         if modality in ['code']:
-            special_symbols.update([constants.S_SEP])
+            special_symbols.update([constants.S_SEP, constants.CLS])
         elif modality in ['path']:
             special_symbols.update([constants.H_SEP, constants.T_SEP, constants.S_SEP])
             special_symbols.update(path_special_symbols(args.input_files[modality]))
