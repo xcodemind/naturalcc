@@ -13,7 +13,7 @@ common:
   log_format: simple # default=None, help='log format to use', choices=['json', 'none', 'simple', 'tqdm']
   tensorboard_logdir: '' # default='', help='path to save logs for tensorboard, should match --logdir of running tensorboard (default: no tensorboard logging)'
   seed: 1 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
-  cpu: 1 # action='store_true', help='use CPU instead of CUDA'
+  cpu: 0 # action='store_true', help='use CPU instead of CUDA'
   fp16: 0 # action='store_true', help='use FP16'
   memory_efficient_fp16: 0 # action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
   fp16_no_flatten_grads: 0 # action='store_true', help='don\'t flatten FP16 grads tensor'
@@ -55,7 +55,7 @@ distributed_training:
   distributed_backend: nccl # default='nccl', type=str, help='distributed backend'
   distributed_init_method: ~ # default=None, type=str,help='typically tcp://hostname:port that will be used to establish initial connetion'
   distributed_port: -1 # default=-1, type=int, help='port number (not required if using --distributed-init-method)'
-  device_id: 0 # '--local_rank', default=0, type=int, help='which GPU to use (usually configured automatically)'
+  device_id: 6 # '--local_rank', default=0, type=int, help='which GPU to use (usually configured automatically)'
   #  local_rank: 0 #
   distributed_no_spawn: 0 # action='store_true', help='do not spawn multiple processes even if multiple GPUs are visible'
   ddp_backend: c10d # default='c10d', type=str, choices=['c10d', 'no_c10d'], help='DistributedDataParallel backend'

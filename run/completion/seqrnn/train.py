@@ -65,7 +65,7 @@ def train(args, trainer, task, epoch_itr):
             # reset mid-epoch stats after each log interval
             # the end-of-epoch stats will still be preserved
             metrics.reset_meters('train_inner')
-
+            break # TODO
         # if (
         #     not args['dataset']['disable_validation']
         #     and args['checkpoint']['save_interval_updates'] > 0
@@ -128,6 +128,7 @@ def validate(args, trainer, task, epoch_itr, subsets):
         with metrics.aggregate(new_root=True) as agg:
             for sample in progress:
                 trainer.valid_step(sample)
+                break # TODO
 
         # log validation stats
         stats = get_valid_stats(args, trainer, agg.get_smoothed_values())

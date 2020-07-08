@@ -69,7 +69,7 @@ class FairseqAdam(FairseqOptimizer):
         resume training using a different set of optimizer args, e.g., with a
         different learning rate.
         """
-        print("self.args['optimization']['lr']: ", self.args['optimization']['lr'])
+        # print("self.args['optimization']['lr']: ", self.args['optimization']['lr'])
         return {
             'lr': self.args['optimization']['lr'][0],
             'betas': eval(self.args['optimization']['adam']['adam_betas']),
