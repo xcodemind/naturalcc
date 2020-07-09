@@ -17,7 +17,7 @@ def collate(samples, pad_idx, eos_idx):
     def merge(key):
         return data_utils.collate_tokens(
             [s[key] for s in samples],
-            pad_idx, eos_idx,
+            pad_idx,
         )
 
     src_tokens = merge('source')
@@ -39,7 +39,7 @@ def collate(samples, pad_idx, eos_idx):
         loss_mask[idx, :samples[idx]['start_idx']] = False
     loss_mask = loss_mask.view(-1)
 
-    ntokens = tgt_tokens.size(0)
+    ntokens = sum(len(s['target']) for s in samples)
 
     batch = {
         'net_input': {
