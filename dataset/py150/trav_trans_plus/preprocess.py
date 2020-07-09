@@ -403,6 +403,54 @@ def main(args):
 
     make_all_ids()
 
+    # 4. ***************make relative mask********************
+    # def generate_rel_mask(input_prefix, output_prefix, lang):
+    #     def _func(line):
+    #         line = json.loads(line.strip())
+    #         asts = py150_utils.separate_dps(line, args['preprocess']['n_ctx'])
+    #         rel_masks = get_rel_masks(line, max_len=args['preprocess']['n_ctx'])
+    #         rel_masks = separate_rel_mask(rel_masks, max_len=args['preprocess']['n_ctx'])
+    #         # by now, rel_masks is a list of lower triple matrix
+    #
+    #         aug_dps = []
+    #         for (ast, ext), mask in zip(asts, rel_masks):
+    #             if len(ast) > 1:
+    #                 # mask = list(itertools.chain(*[line_mask.split() for line_mask in mask]))
+    #                 mask = ' '.join(mask)
+    #                 aug_dps.append((py150_utils.get_dfs(ast), ext, mask,))
+    #         return aug_dps
+    #
+    #     with PPool() as thread_pool:
+    #         with open(file_name(input_prefix, lang), "r", encoding="utf-8") as f, \
+    #                 open(dest_path(output_prefix, 'ids'), "w") as fout:
+    #             def _write(result):
+    #                 for res in itertools.chain(*result):
+    #                     print(json.dumps(res), file=fout)
+    #
+    #             batch_data = []
+    #             for line in f:
+    #                 batch_data.append(line)
+    #                 if len(batch_data) >= MAX_BATCH_SIZE:
+    #                     result = thread_pool.feed(_func, batch_data, one_params=True)
+    #                     _write(result)
+    #                     del batch_data
+    #                     batch_data = []
+    #
+    #             if len(batch_data) > 0:
+    #                 result = thread_pool.feed(_func, batch_data, one_params=True)
+    #                 _write(result)
+    #                 del batch_data
+    #
+    # def make_all_mask():
+    #     if args['preprocess']['trainpref']:
+    #         generate_ids(args['preprocess']['trainpref'], "train", args['preprocess']['source_lang'])
+    #     if args['preprocess']['validpref']:
+    #         generate_ids(args['preprocess']['validpref'], "valid", args['preprocess']['source_lang'])
+    #     if args['preprocess']['testpref']:
+    #         generate_ids(args['preprocess']['testpref'], "test", args['preprocess']['source_lang'])
+    #
+    # make_all_mask()
+
 
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')

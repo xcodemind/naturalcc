@@ -46,6 +46,6 @@ preprocess:
   workers: 10 # ", metavar="N", default=1, type=int, help="number of parallel workers"
   inserted: 0
 
-  n_ctx: 50 # type=int, default=1000, help="Number of contexts for each dp"
+  n_ctx: 1000 # type=int, default=1000, help="Number of contexts for each dp"
   id_type: all
   mask_dict: ~
