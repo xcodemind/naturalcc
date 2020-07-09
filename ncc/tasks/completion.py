@@ -70,6 +70,21 @@ def load_tok_dataset(data_path, split, src, src_dict, dataset_impl):
     )
 
 
+def load_dfs_dataset(data_path, split, src, src_dict, dataset_impl):
+    source_path = os.path.join(data_path, '{}.ast_trav_df'.format(split))
+    src_dataset = data_utils.load_indexed_dataset(source_path, 'dfs', src_dict, dataset_impl)
+
+    node_id_path = os.path.join(data_path, '{}.ids'.format(split))
+    node_ids = []
+    with open(node_id_path, 'r', encoding='utf-8') as f:
+        for ids_line in f:
+            node_ids.append(json.loads(ids_line))
+
+    return SeqRNNDataset(
+        src_dataset, src_dataset.sizes, src_dict, node_ids,
+    )
+
+
 @register_task('completion')
 class CompletionTask(FairseqTask):
     """Task for training masked language models (e.g., BERT, RoBERTa)."""
@@ -97,7 +112,7 @@ class CompletionTask(FairseqTask):
         paths = utils.split_paths(args['task']['data'])
         assert len(paths) > 0
         # load dictionaries
-        dictionary = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['source_lang'])))
+        dictionary = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.json'.format(args['task']['source_lang'])))
         # tgt_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['target_lang'])))
         # assert src_dict.pad() == tgt_dict.pad()
         # assert src_dict.eos() == tgt_dict.eos()
@@ -153,6 +168,9 @@ class CompletionTask(FairseqTask):
                                                      dataset_impl=self.args['dataset']['dataset_impl'])
         elif self.args['model']['arch'] == 'seqrnn':
             self.datasets[split] = load_tok_dataset(data_path, split, src, self.source_dictionary,
+                                                    dataset_impl=self.args['dataset']['dataset_impl'])
+        elif self.args['model']['arch'] == 'traverse_transformer':
+            self.datasets[split] = load_dfs_dataset(data_path, split, src, self.source_dictionary,
                                                     dataset_impl=self.args['dataset']['dataset_impl'])
         # print('self.datasets[split]: ', self.datasets[split].__getitem__(0))
 
