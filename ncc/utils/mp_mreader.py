@@ -4,6 +4,7 @@ from typing import *
 
 import os
 from pathos.multiprocessing import cpu_count
+from multiprocessing.pool import Pool
 from .mp_ppool import PPool
 
 
@@ -23,7 +24,10 @@ def _read(file: str, func: Any, param: Optional[List] = None, start: int = 0, en
         reader.seek(start)
         line = reader.readline()
         while line and (reader.tell() < end):
-            result.append(func(line, *param))
+            if param:
+                result.append(func(line, *param))
+            else:
+                result.append(func(line))  # param == None
             line = reader.readline()
     return result
 
@@ -45,7 +49,7 @@ def readline(file: str, func: Any, params: Optional[List[Sequence]] = None, cpu_
     if cpu_num is None:
         cpu_num = cpu_count()
     if params is None:
-        params = [[None]] * cpu_num
+        params = [None] * cpu_num
     pool = PPool(cpu_num)
     offsets = _find_offsets(file, cpu_num)
     _read_params = [
@@ -54,3 +58,27 @@ def readline(file: str, func: Any, params: Optional[List[Sequence]] = None, cpu_
     ]
     result = pool.feed(_read, _read_params)
     return result
+
+
+def _fast_readlines(file: str, start: int = 0, end: int = -1, func=None) -> List:
+    result = []
+    with open(file, 'r', encoding='UTF-8') as reader:
+        reader.seek(start)
+        line = reader.readline()
+        while line and (reader.tell() < end):
+            result.append(func(line))
+            line = reader.readline()
+    return result
+
+
+def fast_readlines(file: str, func=None, cpu_num: int = None) -> List:
+    if cpu_num is None:
+        cpu_num = cpu_count()
+    offsets = _find_offsets(file, cpu_num)
+    with Pool(cpu_num) as thread_pool:
+        jobs = [
+            thread_pool.apply_async(_fast_readlines, (file, offsets[worker_id], offsets[worker_id + 1], func))
+            for worker_id in range(cpu_num)
+        ]
+        multiple_results = [job.get() for job in jobs]
+    return multiple_results

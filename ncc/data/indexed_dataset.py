@@ -134,7 +134,7 @@ def index_file_path(prefix_path):
 
 
 def data_file_path(prefix_path):
-    return prefix_path + '.bin'
+    return prefix_path + '.mmap'
 
 
 class IndexedDataset(FairseqDataset):
@@ -936,6 +936,7 @@ class MMapIndexedDatasetBuilder(object):
             shutil.copyfileobj(f, self._data_file)
 
     def finalize(self, index_file):
+        # assert len(self._sizes) > 0, Exception('{} {}'.format(self._data_file, self._sizes))
         self._data_file.close()
 
         with MMapIndexedDataset.Index.writer(index_file, self._dtype) as index:
