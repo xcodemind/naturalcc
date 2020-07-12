@@ -24,4 +24,6 @@ cp ~/.ncc/py150/raw/test.json ~/.ncc/py150/trav_trans/raw/test.ast_trav_df
 generate AST DFS tokens and ids
 ```
 python -m dataset.py150.trav_trans.preprocess
+debug
+python -m dataset.py150.trav_trans_plus
 ```

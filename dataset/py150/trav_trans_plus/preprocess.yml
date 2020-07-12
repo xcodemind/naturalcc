@@ -29,8 +29,8 @@ preprocess:
 #  testpref:  ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
   align_suffix: ~ # ", metavar="FP", default=None, help="alignment file suffix"
-#  destdir: ~/.ncc/py150/trav_trans_plus/data-raw #", metavar="DIR", default="data-bin", help="destination dir"
-  destdir: ~/.ncc/py150/trav_trans_plus/data-mmap
+  destdir: ~/.ncc/py150/trav_trans_plus/data-raw #", metavar="DIR", default="data-bin", help="destination dir"
+#  destdir: ~/.ncc/py150/trav_trans_plus/data-mmap
   thresholdtgt: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
   thresholdsrc: 20 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
 #  srcdict: ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path/codesearchnet.dict
@@ -38,12 +38,12 @@ preprocess:
   nwordstgt: -1 #", metavar="N", default=-1, type=int, help="number of target words to retain"
   nwordssrc: -1 #", metavar="N", default=-1, type=int, help="number of source words to retain"
   alignfile: ~ #", metavar="ALIGN", default=None, help="an alignment file (optional)"
-#  dataset_impl: raw #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
-  dataset_impl: mmap
+  dataset_impl: raw #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
+#  dataset_impl: mmap
   joined_dictionary: 1 # ", action="store_true", help="Generate joined dictionary"
   only_source: 1 # ", action="store_true", help="Only process the source language"
   padding_factor: 8 #", metavar="N", default=8, type=int, help="Pad dictionary size to be multiple of N"
-  workers: 5 # ", metavar="N", default=1, type=int, help="number of parallel workers"
+  workers: 12 # ", metavar="N", default=1, type=int, help="number of parallel workers"
   inserted: 0
 
   n_ctx: 1000 # type=int, default=1000, help="Number of contexts for each dp"

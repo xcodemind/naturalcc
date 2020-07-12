@@ -101,7 +101,7 @@ def binarize(args, filename, vocab, output_prefix, lang, make_dataset_fn, offset
     return res
 
 
-MAX_BATCH_SIZE = 2
+MAX_BATCH_SIZE = 10000
 
 
 def main(args):
