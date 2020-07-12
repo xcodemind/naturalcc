@@ -120,3 +120,49 @@ class Binarizer:
                 safe_readline(f)
                 offsets[i] = f.tell()
             return offsets
+
+    @staticmethod
+    def binarize_trav_trans(
+            filename,
+            dicts,  # (token_dict, mask_dict)
+            consumer,  # (data, ext, ids, )
+            tokenize=tokenize_string,
+            offset=0,
+            end=-1,
+    ):
+        nseq, ntok = 0, 0  # nseq = sentence number, ntok = token number
+        token_dict, mask_dict = dicts
+        replaced = Counter()  # un-recorded tokens
+
+        def replaced_consumer(word, idx):
+            """save un-recorded token"""
+            if idx == token_dict.unk_index and word != token_dict.unk_word:
+                replaced.update([word])
+
+        with open(filename, "r", encoding="utf-8") as f:
+            f.seek(offset)
+            # next(f) breaks f.tell(), hence readline() must be used
+            line = safe_readline(f)
+            while line:
+                if end > 0 and f.tell() > end:
+                    break
+                for data, ext, ids, mask in tokenize(line):
+                    data = token_dict.encode_list(data, add_if_not_exist=False, consumer=replaced_consumer)
+                    ext = torch.IntTensor([ext])
+                    for key, value in ids.items():
+                        if len(value) == 0:
+                            ids[key] = torch.IntTensor([-1])
+                        else:
+                            ids[key] = torch.IntTensor(value)
+                    mask = mask_dict.encode_list(mask, add_if_not_exist=False)
+
+                    consumer(data, ext, ids, mask)
+                    nseq += 1
+                    ntok += len(data)
+                line = f.readline()
+        return {
+            "nseq": nseq,
+            "nunk": sum(replaced.values()),
+            "ntok": ntok,
+            "replaced": replaced,
+        }
