@@ -25,21 +25,6 @@ class CompletionScorer(object):
         """Score a batch of translations."""
         net_input = sample['net_input']
 
-        # def batch_for_softmax(dec_out, target):
-        #     # assumes decoder_out[0] is the only thing needed (may not be correct for future models!)
-        #     first, rest = dec_out[0], dec_out[1:]
-        #     bsz, tsz, dim = first.shape
-        #     if bsz * tsz < self.softmax_batch:
-        #         yield dec_out, target, True
-        #     else:
-        #         flat = first.contiguous().view(1, -1, dim)
-        #         flat_tgt = target.contiguous().view(flat.shape[:-1])
-        #         s = 0
-        #         while s < flat.size(1):
-        #             e = s + self.softmax_batch
-        #             yield (flat[:, s:e],) + rest, flat_tgt[:, s:e], False
-        #             s = e
-
         def gather_target_probs(probs, target):
             probs = probs.gather(
                 dim=2,
@@ -47,14 +32,9 @@ class CompletionScorer(object):
             )
             return probs
 
-        # orig_target = sample['target']
-
-        # compute scores for each model in the ensemble
         avg_probs = None
         avg_curr_probs = None
-        # avg_accuracy = []
-        # avg_mrr = []
-        # avg_attn = None
+
         for model in models:
             model.eval()
             decoder_out = model(**net_input)
@@ -72,84 +52,12 @@ class CompletionScorer(object):
                 avg_curr_probs = curr_prob
             else:
                 avg_curr_probs.add_(curr_prob)
-            # avg_accuracy.append(accuracy)
-            # avg_mrr.append(mrr)
 
-            # attn = decoder_out[1] if len(decoder_out) > 1 else None
-            # if type(attn) is dict:
-            #     attn = attn.get('attn', None)
-
-
-            # # For similication, we do not consider the batch_for_softmax
-            # # batched = batch_for_softmax(decoder_out, orig_target)
-            # batched = decoder_out, orig_target, True
-            #
-            # probs, idx = None, 0
-            # for bd, tgt, is_single in batched:
-            #     # sample['target'] = tgt
-            #     curr_prob = model.get_normalized_probs(decoder_out, log_probs=len(models) == 1, sample=sample).data
-            #
-            #     if is_single:
-            #         loss_mask = sample['loss_mask']
-            #         selected_prob = curr_prob.view(-1, curr_prob.size(-1))[loss_mask].contiguous()
-            #         rank = torch.argmax(selected_prob, 1)
-            #         mrr = np.mean([1. / (r.item() + 1) for r in rank.view(-1)])
-            #
-            #         ncorrect = torch.sum(rank == sample['target'][loss_mask].contiguous())
-            #         accuracy = ncorrect / sample['ntokens']
-            #
-            #         probs = gather_target_probs(curr_prob, orig_target)
-            #
-            #     # else:
-            #     #     if probs is None:
-            #     #         probs = curr_prob.new(orig_target.numel())
-            #     #     step = curr_prob.size(0) * curr_prob.size(1)
-            #     #     end = step + idx
-            #     #     tgt_probs = gather_target_probs(curr_prob.view(tgt.shape + (curr_prob.size(-1),)), tgt)
-            #     #     probs[idx:end] = tgt_probs.view(-1)
-            #     #     idx = end
-            #     # sample['target'] = orig_target
-            #
-            # probs = probs.view(sample['target'].shape)
-            #
-            # # lprobs = model.get_normalized_probs(net_output, log_probs=True)
-            # # loss_mask = sample['loss_mask']
-            # # lprobs = lprobs.view(-1, lprobs.size(-1))
-            # # lprobs = lprobs[loss_mask].contiguous()
-            # # target = model.get_targets(sample, net_output).view(-1)
-            # # target = target[loss_mask].contiguous()
-            # #
-            # # rank = torch.argmax(lprobs, 1)
-            # # mrr = np.mean([1. / (r.item() + 1) for r in rank.view(-1)])
-            # #
-            # # ncorrect = torch.sum(rank == target)
-            # #
-            # # accuracy = ncorrect / sample['ntokens']
-            # # logging_output['accuracy'] = accuracy
-            # # logging_output['mrr'] = mrr
-            #
-            # if avg_probs is None:
-            #     avg_probs = probs
-            # else:
-            #     avg_probs.add_(probs)
-            #
-            # avg_accuracy.append(accuracy)
-            # avg_mrr.append(mrr)
-            # if attn is not None and torch.is_tensor(attn):
-            #     attn = attn.data
-            #     if avg_attn is None:
-            #         avg_attn = attn
-            #     else:
-            #         avg_attn.add_(attn)
         if len(models) > 1:
             avg_probs.div_(len(models))
             avg_probs.log_()
             avg_curr_probs.div_(len(models))
             avg_curr_probs.log_()
-            # avg_accuracy = sum(avg_accuracy)/len(models)
-            # avg_mrr = sum(avg_mrr) / len(models)
-            # if avg_attn is not None:
-            #     avg_attn.div_(len(models))
 
         bsz = avg_probs.size(0)
         hypos = []
@@ -164,7 +72,6 @@ class CompletionScorer(object):
             score_i = avg_probs_i.sum() / tgt_len
 
             lprob = avg_curr_probs[i]
-            # loss_mask = sample['loss_mask']
 
             selected_prob = lprob[mask[i]].contiguous()
             rank = torch.argmax(selected_prob, 1)
@@ -173,26 +80,9 @@ class CompletionScorer(object):
             ncorrect = torch.sum(rank == sample['target'][i][mask[i]].contiguous())
             accuracy = ncorrect / sum(mask[i])
 
-
-            # if avg_attn is not None:
-            #     avg_attn_i = avg_attn[i]
-            #     if self.compute_alignment:
-            #         alignment = utils.extract_hard_alignment(
-            #             avg_attn_i,
-            #             sample['net_input']['src_tokens'][i],
-            #             sample['target'][i],
-            #             self.pad,
-            #             self.eos,
-            #         )
-            #     else:
-            #         alignment = None
-            # else:
-            # avg_attn_i = alignment = None
             hypos.append([{
                 'tokens': ref,
                 'score': score_i,
-                # 'attention': avg_attn_i,
-                # 'alignment': alignment,
                 'positional_scores': avg_probs_i,
                 'accuracy': accuracy,
                 'mrr': mrr,
