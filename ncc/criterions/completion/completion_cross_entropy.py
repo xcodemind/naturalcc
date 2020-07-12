@@ -29,40 +29,33 @@ class CompletionCrossEntropyCriterion(FairseqCriterion):
         3) logging outputs to display while training
         """
         net_output = model(**sample['net_input'])
-        loss, ncorrect, mrr = self.compute_loss(model, net_output, sample, reduce=reduce)
-
+        loss, _ = self.compute_loss(model, net_output, sample, reduce=reduce)
         sample_size = sample['target'].size(0) if self.sentence_avg else sample['ntokens']
-        loss /= sample['loss_mask'].sum()
-
         logging_output = {
             'loss': loss.data,
             'ntokens': sample['ntokens'],
             'nsentences': sample['target'].size(0),
             'sample_size': sample_size,
-            'ncorrect': ncorrect,
-            'mrr': mrr,
         }
-
         return loss, sample_size, logging_output
 
     def compute_loss(self, model, net_output, sample, reduce=True):
+        max_len = sample['target'].size(-1)
+        ids = []
+        for i, ext_i in enumerate(sample['extends']):
+            ids += [i * max_len + j for j in range(ext_i, max_len)]
+
         lprobs = model.get_normalized_probs(net_output, log_probs=True)
-        loss_mask = sample['loss_mask']
-        lprobs = lprobs.view(-1, lprobs.size(-1))
-        lprobs = lprobs[loss_mask].contiguous()
-        target = model.get_targets(sample, net_output).view(-1)
-        target = target[loss_mask].contiguous()
+        lprobs = lprobs.view(-1, lprobs.size(-1))[ids]
+        target = model.get_targets(sample, net_output).view(-1)[ids]
+
         loss = F.nll_loss(
             lprobs,
             target,
-            # ignore_index=self.padding_idx,  # skip this line, because loss_mask has skipped those padding idx
+            ignore_index=self.padding_idx,
             reduction='sum' if reduce else 'none',
         )
-        rank = torch.argmax(lprobs, 1)
-        mrr = np.mean([1. / (r.item() + 1) for r in rank.view(-1)])
-
-        ncorrect = torch.sum(rank == target)
-        return loss, ncorrect, mrr
+        return loss, loss
 
     @staticmethod
     def reduce_metrics(logging_outputs) -> None:
@@ -70,13 +63,8 @@ class CompletionCrossEntropyCriterion(FairseqCriterion):
         loss_sum = sum(log.get('loss', 0) for log in logging_outputs)
         ntokens = sum(log.get('ntokens', 0) for log in logging_outputs)
         sample_size = sum(log.get('sample_size', 0) for log in logging_outputs)
-        ncorrect = sum(log.get('ncorrect', 0) for log in logging_outputs)
-        mrr = sum(log.get('mrr', 0) for log in logging_outputs)
 
         metrics.log_scalar('loss', loss_sum / sample_size / math.log(2), sample_size, round=3)
-        metrics.log_scalar('accuracy', ncorrect / ntokens / math.log(2), sample_size, round=3)  # why log2
-        metrics.log_scalar('mrr', mrr / sample_size / math.log(2), sample_size, round=3)
-
         if sample_size != ntokens:
             metrics.log_scalar('nll_loss', loss_sum / ntokens / math.log(2), ntokens, round=3)
             metrics.log_derived('ppl', lambda meters: utils.get_perplexity(meters['nll_loss'].avg))

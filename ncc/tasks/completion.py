@@ -64,7 +64,7 @@ def load_tok_dataset(data_path, split, src, src_dict, dataset_impl):
             node_ids.append(json.loads(ids_line))
 
     return SeqRNNDataset(
-        src_dataset, src_dataset.sizes, src_dict, node_ids,
+        src_dataset, src_dataset.sizes, src_dict, node_ids, src_dataset.extends,
     )
 
 

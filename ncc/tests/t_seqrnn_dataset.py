@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     # data_path = os.path.expanduser('~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin')
     data_path = os.path.expanduser('~/.ncc/py150/seqrnn_debug/data-raw')
-    split = 'test'
+    split = 'train'
     # src_modalities = ['path'] # , 'code'
     # src_dicts = None
     # tgt = 'docstring'
@@ -53,13 +53,13 @@ if __name__ == '__main__':
                                                     dataset_impl=args['dataset']['dataset_impl'])
     data_item = dataset.__getitem__(0)
     print('data_item: ', data_item)
-    sys.exit()
+    # sys.exit()
     samples = []
     for i in range(100):
         print('i: ', i)
         data_item = dataset.__getitem__(i)
         samples.append(data_item)
-    print('samples: ', samples)
+    # print('samples: ', samples)
     # sys.exit()
     # sys.exit()
     task = tasks.setup_task(args)  # task.tokenizer
@@ -90,23 +90,24 @@ if __name__ == '__main__':
     #     left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
     #     input_feeding=dataset.input_feeding,
     # )
-    batch = collate(
-        samples, src_dict, tgt_dict,
-        left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
-        # input_feeding=dataset.input_feeding,
-    )
+    # batch = collate(
+    #     samples, src_dict, tgt_dict,
+    #     left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
+    #     # input_feeding=dataset.input_feeding,
+    # )
+    batch = collate(samples, pad_idx = src_dict.pad(), eos_idx=None)
     # torch.cuda.set_device(0)
     # batch.cuda()
     # model.cuda()
     print(batch)
-    sys.exit()
+
     # model(*batch)
     # 'src_tokens': input_ids,
     # 'segment_labels': segment_ids,
     # 'attention_mask': input_mask,
     # model(batch['net_input']['src_tokens'].cuda(), batch['net_input']['segment_labels'].cuda(), batch['net_input']['attention_mask'].cuda())
-    model(batch['net_input']['src_tokens'], batch['net_input']['segment_labels'], batch['net_input']['attention_mask'])
-    sys.exit()
+    # model(batch['net_input']['src_tokens'], batch['net_input']['segment_labels'], batch['net_input']['attention_mask'])
+    # sys.exit()
 
     # data_iter = iter(dataloader)
     # batch_data = data_iter.__next__()

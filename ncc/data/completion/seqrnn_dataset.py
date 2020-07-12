@@ -23,11 +23,12 @@ def collate(samples, pad_idx, eos_idx):
     src_tokens = merge('source')
     tgt_tokens = merge('target')
     node_ids = {name: [] for name in samples[0]['node_id'].keys()}
-
+    extends = []
     max_len = max(len(sample['source']) for sample in samples)
     max_len = max(max_len, 2)
     # TODO: illustrate this code, pls. do not understand
     for i, sample in enumerate(samples):
+        extends.append(sample['extend'])
         for name, lst in sample['node_id'].items():
             node_ids[name] += [j - 1 + (max_len - 1) * i for j in lst]
 
@@ -36,7 +37,7 @@ def collate(samples, pad_idx, eos_idx):
     loss_mask = (src_tokens != pad_idx).to(src_tokens.device)  # 1) skip padding idx
     # 2) begin counting at start idx
     for idx in range(len(samples)):
-        loss_mask[idx, :samples[idx]['start_idx']] = False
+        loss_mask[idx, :samples[idx]['extend']] = False
     loss_mask = loss_mask.view(-1)
 
     ntokens = sum(len(s['target']) for s in samples)
@@ -48,6 +49,7 @@ def collate(samples, pad_idx, eos_idx):
         },
         'target': tgt_tokens,
         'node_ids': node_ids,
+        "extends": extends,
         'ntokens': ntokens,
         'loss_mask': loss_mask,
         'id': [s['id'] for s in samples],
@@ -91,7 +93,7 @@ class SeqRNNDataset(FairseqDataset):
     """
 
     def __init__(
-            self, src, src_sizes, src_dict, node_ids,
+            self, src, src_sizes, src_dict, node_ids, extends,
             tgt=None, tgt_sizes=None, tgt_dict=None,
             left_pad_source=False, left_pad_target=False,
             # max_source_positions=1024, max_target_positions=1024,
@@ -111,6 +113,7 @@ class SeqRNNDataset(FairseqDataset):
         self.src_dict = src_dict
         self.tgt_dict = tgt_dict
         self.node_ids = node_ids
+        self.extends = extends
         self.left_pad_source = left_pad_source
         self.left_pad_target = left_pad_target
         # self.max_source_positions = max_source_positions
@@ -154,13 +157,15 @@ class SeqRNNDataset(FairseqDataset):
         #         src_item = self.src[index][:-1]
 
         node_id = self.node_ids[index]
-        start_idx = self.src.start_idx[index]
+        # start_idx = self.src.start_idx[index]
+        extend = self.extends[index]
         example = {
             'id': index,
             'source': src_item,
             'target': tgt_item,
             'node_id': node_id,
-            'start_idx': start_idx,
+            # 'start_idx': start_idx,
+            'extend': extend,
         }
         return example
 
