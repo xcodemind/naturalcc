@@ -345,7 +345,7 @@ def main(args):
                     if mask is not None:
                         print(' '.join(itertools.chain(*mask)), file=file_writers['mask'])
 
-            with PPool() as thread_pool:
+            with PPool(processor_num=args['preprocess']['workers']) as thread_pool:
                 batch_data = []
                 for line in file_writers['raw']:
                     batch_data.append(line.rstrip('\n'))
