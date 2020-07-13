@@ -45,7 +45,7 @@ dataset:
   valid_subset: train # test # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
   validate_interval: 1 # type=int, default=1, metavar='N', help='validate every N epochs'
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
-  disable_validation: 1 # 1 # action='store_true',help='disable validation'
+  disable_validation: 0 # 1 # action='store_true',help='disable validation'
   max_tokens_valid: ~ # type=int, metavar='N', help='maximum number of tokens in a validation batch (defaults to --max-tokens)'
   max_sentences_valid: 16 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
   curriculum: 5 # default=0, type=int, metavar='N', help='don\'t shuffle batches for first N epochs'
@@ -81,7 +81,7 @@ distributed_training:
   local_rank: -1 # type=int, default=-1, help="For distributed training: local_rank"
 
 task:
-  data: ~/.ncc/py150/seqrnn_debug/data-raw # /tmp/pycharm_project_629/data-bin help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/py150/seqrnn_debug/data-raw # /tmp/pycharm_project_629/data-bin default='', help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   #  sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
   #  tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
   #  mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
@@ -117,8 +117,8 @@ task:
   eval_bleu_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
   eval_bleu_print_samples: 0 #', action='store_true', help='print sample generations during validation'
 
-  eval_accuracy: 0
-  eval_mrr: 0
+  eval_accuracy: 1
+  eval_mrr: 1
 
 
 model:
@@ -164,7 +164,7 @@ model:
 
 optimization:
   max_epoch: 0 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
-  max_update: 12500 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
+  max_update: 5 #=====12500 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
   clip_norm: 25 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
     - 16
