@@ -4,6 +4,7 @@ import os
 import json
 import itertools
 import numpy as np
+import time
 
 from multiprocessing import Pool, cpu_count
 from collections import (
@@ -351,26 +352,26 @@ def main(args):
                     if mask is not None:
                         print(' '.join(itertools.chain(*mask)), file=file_writers['mask'])
 
-            # single-processing
-            for line in file_writers['raw']:
-                result = _make_dataset_func(line)
-                raw_write([result])
+            # # single-processing
+            # for line in file_writers['raw']:
+            #     result = _make_dataset_func(line)
+            #     raw_write([result])
 
             # multi-processing
-            # with PPool(processor_num=args['preprocess']['workers']) as thread_pool:
-            #     batch_data = []
-            #     for line in file_writers['raw']:
-            #         batch_data.append(line.rstrip('\n'))
-            #         if len(batch_data) >= MAX_BATCH_SIZE:
-            #             result = thread_pool.feed(_make_dataset_func, batch_data, one_params=True)
-            #             raw_write(result)
-            #             del batch_data, result
-            #             batch_data = []
-            #
-            #     if len(batch_data) > 0:
-            #         result = thread_pool.feed(_make_dataset_func, batch_data, one_params=True)
-            #         raw_write(result)
-            #         del batch_data, result
+            with PPool(processor_num=args['preprocess']['workers']) as thread_pool:
+                batch_data = []
+                for line in file_writers['raw']:
+                    batch_data.append(line.rstrip('\n'))
+                    if len(batch_data) >= MAX_BATCH_SIZE:
+                        result = thread_pool.feed(_make_dataset_func, batch_data, one_params=True)
+                        raw_write(result)
+                        del batch_data, result
+                        batch_data = []
+
+                if len(batch_data) > 0:
+                    result = thread_pool.feed(_make_dataset_func, batch_data, one_params=True)
+                    raw_write(result)
+                    del batch_data, result
 
             file_writers['raw'].close()
             file_writers['data'].close()
@@ -417,4 +418,12 @@ def cli_main():
 
 
 if __name__ == "__main__":
+    """
+    nohup python -m dataset.py150.trav_trans_plus.__main__ >> mmap.log 2>&1 &
+    nohup python -m dataset.py150.trav_trans_plus.__main__ >> raw.log 2>&1 &
+    nohup python -m dataset.py150.trav_trans_plus.__main__ >> sp.log 2>&1 &
+    """
+    start = time.time()
+    LOGGER.info('start time: {}'.format(start))
     cli_main()
+    LOGGER.info('time consuming: {}'.format(time.time() - start))
