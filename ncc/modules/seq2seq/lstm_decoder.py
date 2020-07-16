@@ -4,8 +4,10 @@ import torch.nn.functional as F
 from ncc.modules.summarization.fairseq_incremental_decoder import FairseqIncrementalDecoder
 from ncc.modules.embedding import Embedding
 from ncc.utils import utils
+from ncc.modules.adaptive_softmax import AdaptiveSoftmax
 
 DEFAULT_MAX_TARGET_POSITIONS = 1e5
+
 
 def Linear(in_features, out_features, bias=True, dropout=0):
     """Linear layer (input: N x T x C)"""
@@ -22,6 +24,39 @@ def LSTMCell(input_size, hidden_size, **kwargs):
         if 'weight' in name or 'bias' in name:
             param.data.uniform_(-0.1, 0.1)
     return m
+
+
+class AttentionLayer(nn.Module):
+    def __init__(self, input_embed_dim, source_embed_dim, output_embed_dim, bias=False):
+        super().__init__()
+
+        self.input_proj = Linear(input_embed_dim, source_embed_dim, bias=bias)
+        self.output_proj = Linear(input_embed_dim + source_embed_dim, output_embed_dim, bias=bias)
+
+    def forward(self, input, source_hids, encoder_padding_mask):
+        # input: bsz x input_embed_dim
+        # source_hids: srclen x bsz x source_embed_dim
+
+        # x: bsz x source_embed_dim
+        x = self.input_proj(input)
+
+        # compute attention
+        attn_scores = (source_hids * x.unsqueeze(0)).sum(dim=2)
+
+        # don't attend over padding
+        if encoder_padding_mask is not None:
+            attn_scores = attn_scores.float().masked_fill_(
+                encoder_padding_mask,
+                float('-inf')
+            ).type_as(attn_scores)  # FP16 support: cast to float and back
+
+        attn_scores = F.softmax(attn_scores, dim=0)  # srclen x bsz
+
+        # sum weighted sources
+        x = (attn_scores.unsqueeze(2) * source_hids).sum(dim=0)
+
+        x = torch.tanh(self.output_proj(torch.cat((x, input), dim=1)))
+        return x, attn_scores
 
 
 class LSTMDecoder(FairseqIncrementalDecoder):
@@ -68,16 +103,15 @@ class LSTMDecoder(FairseqIncrementalDecoder):
         ])
         if attention:
             # TODO make bias configurable
-            # self.attention = AttentionLayer(hidden_size, encoder_output_units, hidden_size, bias=False)
-            self.attention = None
+            self.attention = AttentionLayer(hidden_size, encoder_output_units, hidden_size, bias=False)
         else:
             self.attention = None
         if hidden_size != out_embed_dim:
             self.additional_fc = Linear(hidden_size, out_embed_dim)
-        # if adaptive_softmax_cutoff is not None:
-        #     # setting adaptive_softmax dropout to dropout_out for now but can be redefined
-        #     self.adaptive_softmax = AdaptiveSoftmax(num_embeddings, hidden_size, adaptive_softmax_cutoff,
-        #                                             dropout=dropout_out)
+        if adaptive_softmax_cutoff is not None:
+            # setting adaptive_softmax dropout to dropout_out for now but can be redefined
+            self.adaptive_softmax = AdaptiveSoftmax(num_embeddings, hidden_size, adaptive_softmax_cutoff,
+                                                    dropout=dropout_out)
         elif not self.share_input_output_embed:
             self.fc_out = Linear(out_embed_dim, num_embeddings, dropout=dropout_out)
 
