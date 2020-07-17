@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ncc.modules.summarization.fairseq_incremental_decoder import FairseqIncrementalDecoder
+from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
 from ncc.modules.embedding import Embedding
 from ncc.utils import utils
 from ncc.modules.adaptive_softmax import AdaptiveSoftmax

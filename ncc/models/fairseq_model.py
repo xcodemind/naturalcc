@@ -16,7 +16,7 @@ from ncc.utils import utils
 from ncc.utils.checkpoint_utils import prune_state_dict
 from ncc.data import Dictionary
 from ncc.modules.code2vec import FairseqEncoder
-from ncc.modules.summarization import FairseqDecoder
+from ncc.modules.seq2seq import FairseqDecoder
 from torch import Tensor
 
 logger = logging.getLogger(__name__)

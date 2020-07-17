@@ -18,7 +18,7 @@ from fairseq.modules import (
     SinusoidalPositionalEmbedding,
 )
 
-from ncc.modules.summarization.fairseq_incremental_decoder import FairseqIncrementalDecoder
+from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
 from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
 from ncc.models.fairseq_model import FairseqModel
 from ncc.models import register_model

@@ -3,7 +3,7 @@ import torch.nn as nn
 from ncc.models.fairseq_model import FairseqEncoderDecoderModel
 from ncc.modules.embedding import Embedding
 from ncc.modules.code2vec.lstm_encoder import LSTMEncoder
-from ncc.modules.summarization.lstm_decoder import LSTMDecoder
+from ncc.modules.seq2seq.lstm_decoder import LSTMDecoder
 from ncc.models import register_model
 from ncc.utils import utils
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5

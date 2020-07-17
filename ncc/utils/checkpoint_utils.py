@@ -16,7 +16,7 @@ from .file_io import PathManager
 # from fairseq.models import FairseqDecoder, FairseqEncoder
 from torch.serialization import default_restore_location
 from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
-from ncc.modules.summarization.fairseq_decoder import FairseqDecoder
+from ncc.modules.seq2seq.fairseq_decoder import FairseqDecoder
 
 
 logger = logging.getLogger(__name__)
