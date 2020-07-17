@@ -26,7 +26,7 @@ from ncc.data import iterators
 
 
 @metrics.aggregate('train')
-def train(args, trainer, task, epoch_itr, max_update=math.inf):
+def train(args, trainer, task, epoch_itr):
     """Train the model for one epoch."""
     # Initialize data iterator
     itr = epoch_itr.next_epoch_itr(
@@ -54,6 +54,7 @@ def train(args, trainer, task, epoch_itr, max_update=math.inf):
     task.begin_epoch(epoch_itr.epoch, trainer.get_model())
 
     valid_subsets = args['dataset']['valid_subset'].split(',')
+    max_update = args['optimization']['max_update'] or math.inf
     for samples in progress:
         with metrics.aggregate('train_inner'):
             log_output = trainer.train_step(samples)
@@ -66,13 +67,18 @@ def train(args, trainer, task, epoch_itr, max_update=math.inf):
             stats = get_training_stats(metrics.get_smoothed_values('train_inner'))
             progress.log(stats, tag='train_inner', step=num_updates)
 
-            # reset mid-epoch stats after each log interval
-            # the end-of-epoch stats will still be preserved
+            # reset epoch-level meters
             metrics.reset_meters('train_inner')
 
-        valid_losses = validate_and_save(args, trainer, task, epoch_itr, valid_subsets)
-        if should_stop_early(args, valid_losses[0]) or num_updates >= max_update:
-            break
+        if (
+            not args['dataset']['disable_validation']
+            and args['checkpoint']['save_interval_updates'] > 0
+            and num_updates % args['checkpoint']['save_interval_updates'] == 0
+            and num_updates > 0
+        ):
+            valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
+            checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, valid_losses[0])
+
         if num_updates >= max_update:
             break
 
@@ -83,41 +89,6 @@ def train(args, trainer, task, epoch_itr, max_update=math.inf):
 
     # reset epoch-level meters
     metrics.reset_meters('train')
-    return valid_losses
-
-def validate_and_save(args, trainer, task, epoch_itr, valid_subsets):
-    num_updates = trainer.get_num_updates()
-    do_save = (
-        (
-            args['checkpoint']['save_interval_updates'] > 0
-            and num_updates > 0
-            and num_updates % args['checkpoint']['save_interval_updates'] == 0
-        )
-        or (
-            epoch_itr.end_of_epoch()
-            and epoch_itr.epoch % args['checkpoint']['save_interval'] == 0
-        )
-    )
-    do_validate = (
-        (
-            do_save  # saving requires validation
-            or (
-                epoch_itr.end_of_epoch()
-                and epoch_itr.epoch % args['checkpoint']['validate_interval'] == 0
-            )
-        )
-        and not args.disable_validation
-    )
-
-    # Validate
-    valid_losses = [None]
-    if do_validate:
-        valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
-    # Save
-    if do_save:
-        checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, valid_losses[0])
-    return valid_losses
-
 
 
 def validate(args, trainer, task, epoch_itr, subsets):
@@ -162,7 +133,7 @@ def validate(args, trainer, task, epoch_itr, subsets):
         with metrics.aggregate(new_root=True) as agg:
             for sample in progress:
                 trainer.valid_step(sample)
-                break # TODO: only for debug
+                # break # TODO: only for debug
 
         # log validation stats
         stats = get_valid_stats(args, trainer, agg.get_smoothed_values())
@@ -217,8 +188,8 @@ def should_stop_early(args, valid_loss):
 
 
 def single_main(args, init_distributed=False):
-    # assert args['dataset']['max_tokens'] is not None or args['dataset']['max_sentences'] is not None, \
-    #     'Must specify batch size either with --max-tokens or --max-sentences' TODO: to be checked
+    assert args['dataset']['max_tokens'] is not None or args['dataset']['max_sentences'] is not None, \
+        'Must specify batch size either with --max-tokens or --max-sentences'
     metrics.reset()
 
     # 0. Initialize CUDA and distributed training
@@ -258,10 +229,10 @@ def single_main(args, init_distributed=False):
     # 4. Build trainer
     trainer = Trainer(args, task, model, criterion)
     LOGGER.info('training on {} GPUs'.format(args['distributed_training']['distributed_world_size']))
-    # LOGGER.info('max tokens per GPU = {} and max sentences per GPU = {}'.format(
-    #     args['dataset']['max_tokens'],
-    #     args['dataset']['max_sentences'],
-    # ))
+    LOGGER.info('max tokens per GPU = {} and max sentences per GPU = {}'.format(
+        args['dataset']['max_tokens'],
+        args['dataset']['max_sentences'],
+    ))
 
     # 5. Load the latest checkpoint if one is available and restore the corresponding train iterator
     extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer, combine=False)
@@ -272,34 +243,38 @@ def single_main(args, init_distributed=False):
     lr = trainer.get_lr()
     train_meter = meters.StopwatchMeter()
     train_meter.start()
-    # valid_subsets = args['dataset']['valid_subset'].split(',')
+    valid_subsets = args['dataset']['valid_subset'].split(',')
     while (
         lr > args['optimization']['min_lr']
         and epoch_itr.next_epoch_idx <= max_epoch
+        and trainer.get_num_updates() < max_update
     ):
         # train for one epoch
-        valid_losses = train(args, trainer, task, epoch_itr, max_update)  #
-        # if not args['dataset']['disable_validation'] and epoch_itr.epoch % args['dataset']['validate_interval'] == 0:
-        #     valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
-        # else:
-        #     valid_losses = [None]
-        # early stop
-        if should_stop_early(args, valid_losses[0]) or trainer.get_num_updates() >= max_update:
-            break
+        train(args, trainer, task, epoch_itr)
+
+        if not args['dataset']['disable_validation'] and epoch_itr.epoch % args['dataset']['validate_interval'] == 0:
+            valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
+        else:
+            valid_losses = [None]
 
         # only use first validation loss to update the learning rate
         lr = trainer.lr_step(epoch_itr.epoch, valid_losses[0])
+
+        # save checkpoint
+        if epoch_itr.epoch % args['checkpoint']['save_interval'] == 0:
+            checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, valid_losses[0])
+
+        # early stop
+        if should_stop_early(args, valid_losses[0]):
+            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(args['checkpoint']['patience']))
+            break
+
         epoch_itr = trainer.get_train_iterator(
             epoch_itr.next_epoch_idx,
             combine=False, # TODO to be checked
             # sharded data: get train iterator for next epoch
             load_dataset=(os.pathsep in args['task']['data']),
         )
-
-        # # save checkpoint
-        # if epoch_itr.epoch % args['checkpoint']['save_interval'] == 0:
-        #     checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, valid_losses[0])
-
     train_meter.stop()
     LOGGER.info('done training in {:.1f} seconds'.format(train_meter.sum))
 
@@ -313,7 +288,7 @@ def distributed_main(i, args, start_rank=0):
 
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('ruby.yml')  # train_sl
+    args_ = Argues('py150.yml')
     LOGGER.info(args_)
     yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))

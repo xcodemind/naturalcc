@@ -4,18 +4,16 @@
 # LICENSE file in the root directory of this source tree.
 
 import warnings
-
 import torch
-
-from ncc.utils import tokenizer  # , utils # metrics, search,
+from ncc.utils import tokenizer
 from ncc.utils import utils
 from ncc.logging import metrics
 from ncc.data.tools import data_utils
 from ncc.data import iterators
 from ncc.data.dictionary import Dictionary
-# from ncc.dataset.fairseq_dataset import FairseqDataset
 from ncc.data.fairseq_dataset import FairseqDataset
 from ncc.eval import search
+
 
 class FairseqTask(object):
     """
@@ -56,7 +54,7 @@ class FairseqTask(object):
 
     @classmethod
     def build_dictionary(
-            cls, filenames, workers=1, threshold=-1, nwords=-1, padding_factor=8
+        cls, filenames, workers=1, threshold=-1, nwords=-1, padding_factor=8
     ):
         """Build the dictionary
 
@@ -116,18 +114,18 @@ class FairseqTask(object):
         return self.datasets[split]
 
     def get_batch_iterator(
-            self,
-            dataset,
-            max_tokens=None,
-            max_sentences=None,
-            max_positions=None,
-            ignore_invalid_inputs=False,
-            required_batch_size_multiple=1,
-            seed=1,
-            num_shards=1,
-            shard_id=0,
-            num_workers=0,
-            epoch=1,
+        self,
+        dataset,
+        max_tokens=None,
+        max_sentences=None,
+        max_positions=None,
+        ignore_invalid_inputs=False,
+        required_batch_size_multiple=1,
+        seed=1,
+        num_shards=1,
+        shard_id=0,
+        num_workers=0,
+        epoch=1,
     ):
         """
         Get an iterator that yields batches of data from the given dataset.
@@ -342,20 +340,7 @@ class FairseqTask(object):
     def build_completor(self, models, args):
         from ncc.eval.sequence_completor import SequenceCompletor
 
-        return SequenceCompletor(
-            self.target_dictionary,
-            # beam_size=getattr(args, "beam", 5),
-            # max_len_a=getattr(args, "max_len_a", 0),
-            # max_len_b=getattr(args, "max_len_b", 200),
-            # min_len=getattr(args, "min_len", 1),
-            # normalize_scores=(not getattr(args, "unnormalized", False)),
-            # len_penalty=getattr(args, "lenpen", 1),
-            # unk_penalty=getattr(args, "unkpen", 0),
-            # temperature=getattr(args, "temperature", 1.0),
-            # match_source_len=getattr(args, "match_source_len", False),
-            # no_repeat_ngram_size=getattr(args, "no_repeat_ngram_size", 0),
-            # search_strategy=search_strategy,
-        )
+        return SequenceCompletor()
 
     def train_step(
             self, sample, model, criterion, optimizer, update_num, ignore_grad=False
