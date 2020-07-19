@@ -36,7 +36,7 @@ class SearchCrossEntropyCriterion(CrossEntropyCriterion):
         src_emb, tgt_emb = net_output  # B x T
         src_emb = model.get_normalized_probs(src_emb, log_probs=True)
         tgt_emb = model.get_normalized_probs(tgt_emb, log_probs=True)
-        logits = src_emb @ tgt_emb.t()
+        logits = tgt_emb @ src_emb.t()
         target = torch.arange(logits.size(0)).long().to(logits.device)
 
         loss = F.cross_entropy(

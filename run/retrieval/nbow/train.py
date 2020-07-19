@@ -76,10 +76,10 @@ def train(args, trainer, task, epoch_itr):
             metrics.reset_meters('train_inner')
 
         if (
-                not args['dataset']['disable_validation']
-                and args['checkpoint']['save_interval_updates'] > 0
-                and num_updates % args['checkpoint']['save_interval_updates'] == 0
-                and num_updates > 0
+            not args['dataset']['disable_validation']
+            and args['checkpoint']['save_interval_updates'] > 0
+            and num_updates % args['checkpoint']['save_interval_updates'] == 0
+            and num_updates > 0
         ):
             valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
             checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, valid_losses[0])
@@ -218,8 +218,8 @@ def single_main(args, init_distributed=False):
     task = tasks.setup_task(args)
 
     # # 2. Load valid dataset (we load training data below, based on the latest checkpoint)
-    # for valid_sub_split in args['dataset']['valid_subset'].split(','):
-    #     task.load_dataset(valid_sub_split, combine=False, epoch=1)
+    for valid_sub_split in args['dataset']['valid_subset'].split(','):
+        task.load_dataset(valid_sub_split, combine=False, epoch=1)
 
     # 3. Build model and criterion
     model = task.build_model(args)
@@ -250,12 +250,12 @@ def single_main(args, init_distributed=False):
     train_meter.start()
     valid_subsets = args['dataset']['valid_subset'].split(',')
     while (
-            lr > args['optimization']['min_lr']
-            and epoch_itr.next_epoch_idx <= max_epoch
-            and trainer.get_num_updates() < max_update
+        lr > args['optimization']['min_lr']
+        and epoch_itr.next_epoch_idx <= max_epoch
+        and trainer.get_num_updates() < max_update
     ):
         # train for one epoch
-        train(args, trainer, task, epoch_itr)
+        # train(args, trainer, task, epoch_itr)
 
         if not args['dataset']['disable_validation'] and epoch_itr.epoch % args['dataset']['validate_interval'] == 0:
             valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)

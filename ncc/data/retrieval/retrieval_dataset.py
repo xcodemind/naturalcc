@@ -7,6 +7,7 @@
 
 import torch
 import numpy as np
+from random import randint
 from ncc.data.fairseq_dataset import FairseqDataset
 from ncc.data.tools import data_utils
 
@@ -18,7 +19,7 @@ def collate(samples, pad_idx):
     def merge(key):
         return data_utils.collate_tokens([s[key] for s in samples], pad_idx)
 
-    id = [idx for idx in samples]
+    id = [idx['id'] for idx in samples]
     src_tokens = merge('source')
     src_tokens_mask = src_tokens.ne(pad_idx).float().to(src_tokens.device)
     src_tokens_len = src_tokens_mask.sum(-1, keepdim=True)
@@ -42,6 +43,16 @@ def collate(samples, pad_idx):
     }
 
 
+def truncate_tokens(tokens, max_len):
+    """truncate code/query tokens"""
+    if len(tokens) > max_len and max_len > 0:
+        # randome sample
+        start_idx = randint(0, len(tokens) - max_len)
+        return tokens[start_idx:start_idx + max_len]
+    else:
+        return tokens
+
+
 class RetrievalDataset(FairseqDataset):
     """
     A pair of torch.utils.data.Datasets.
@@ -57,33 +68,17 @@ class RetrievalDataset(FairseqDataset):
             (default: True).
         left_pad_target (bool, optional): pad target tensors on the left side
             (default: False).
-        max_source_positions (int, optional): max number of tokens in the
-            source sentence (default: 1024).
-        max_target_positions (int, optional): max number of tokens in the
-            target sentence (default: 1024).
         shuffle (bool, optional): shuffle dataset elements before batching
             (default: True).
         input_feeding (bool, optional): create a shifted version of the targets
             to be passed into the model for teacher forcing (default: True).
-        remove_eos_from_source (bool, optional): if set, removes eos from end
-            of source if it's present (default: False).
-        append_eos_to_target (bool, optional): if set, appends eos to end of
-            target if it's absent (default: False).
-        align_dataset (torch.utils.data.Dataset, optional): dataset
-            containing alignments.
-        append_bos (bool, optional): if set, appends bos to the beginning of
-            source/target sentence.
     """
 
     def __init__(
-            self, src, src_sizes, src_dict,
-            tgt=None, tgt_sizes=None, tgt_dict=None,
-            left_pad_source=True, left_pad_target=False,
-            max_source_positions=1024, max_target_positions=1024,
-            shuffle=True, input_feeding=True,
-            remove_eos_from_source=False, append_eos_to_target=False,
-            align_dataset=None,
-            append_bos=False, eos=None
+        self, src, src_sizes, src_dict,
+        tgt=None, tgt_sizes=None, tgt_dict=None,
+        max_source_positions=1024, max_target_positions=1024,
+        shuffle=True, input_feeding=True,
     ):
         if tgt_dict is not None:
             assert src_dict.pad() == tgt_dict.pad()
@@ -95,23 +90,16 @@ class RetrievalDataset(FairseqDataset):
         self.tgt_sizes = np.array(tgt_sizes) if tgt_sizes is not None else None
         self.src_dict = src_dict
         self.tgt_dict = tgt_dict
-        self.left_pad_source = left_pad_source
-        self.left_pad_target = left_pad_target
         self.max_source_positions = max_source_positions
         self.max_target_positions = max_target_positions
         self.shuffle = shuffle
         self.input_feeding = input_feeding
-        self.remove_eos_from_source = remove_eos_from_source
-        self.append_eos_to_target = append_eos_to_target
-        self.align_dataset = align_dataset
-        if self.align_dataset is not None:
-            assert self.tgt_sizes is not None, "Both source and target needed when alignments are provided"
-        self.append_bos = append_bos
-        self.eos = (eos if eos is not None else src_dict.eos())
 
     def __getitem__(self, index):
-        src_item = self.src[index]
-        tgt_item = self.tgt[index]
+        if self.max_source_positions:
+            src_item = truncate_tokens(self.src[index], self.max_source_positions)
+        if self.max_target_positions:
+            tgt_item = truncate_tokens(self.tgt[index], self.max_target_positions)
 
         example = {
             'id': index,

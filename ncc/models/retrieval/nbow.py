@@ -27,11 +27,11 @@ class NBOW(FairseqRetrievalModel):
     def build_model(cls, args, config, task):
         """dictionary, embed_dim: Int_t, dropout: Float_t = 0.1, pooling: String_t = None"""
         src_encoder = NBOWEncoder(
-            dictionary=task.source_dictionary, embed_dim=args['model']['embed_dim'],
+            dictionary=task.source_dictionary, embed_dim=args['model']['code_embed_dim'],
             dropout=args['model']['dropout'], pooling=args['model']['pooling'],
         )
         tgt_encoder = NBOWEncoder(
-            dictionary=task.target_dictionary, embed_dim=args['model']['embed_dim'],
+            dictionary=task.target_dictionary, embed_dim=args['model']['query_embed_dim'],
             dropout=args['model']['dropout'], pooling=args['model']['pooling'],
         )
         return cls(args, src_encoder, tgt_encoder)

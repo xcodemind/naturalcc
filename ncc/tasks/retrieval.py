@@ -20,7 +20,8 @@ from ncc.utils import utils
 from ncc.utils import path
 
 
-def load_tokens_dataset(data_path, split, src, src_dict, tgt, tgt_dict, dataset_impl):
+def load_tokens_dataset(data_path, split, src, src_dict, tgt, tgt_dict, dataset_impl,
+                        src_max_tokens=None, tgt_max_tokens=None):
     src_path = os.path.join(data_path, '{}.{}'.format(split, src))
     src_dataset = data_utils.load_indexed_dataset(src_path, 'tok', src_dict, dataset_impl)
     tgt_path = os.path.join(data_path, '{}.{}'.format(split, tgt))
@@ -28,6 +29,7 @@ def load_tokens_dataset(data_path, split, src, src_dict, tgt, tgt_dict, dataset_
     return RetrievalDataset(
         src_dataset, src_dataset.sizes, src_dict,
         tgt_dataset, tgt_dataset.sizes, tgt_dict,
+        max_source_positions=src_max_tokens, max_target_positions=tgt_max_tokens,
     )
 
 
@@ -59,8 +61,8 @@ class RetrievalTask(FairseqTask):
 
     @classmethod
     def build_dictionary(
-            cls, filenames, tokenize_func=tokenize_string,
-            workers=1, threshold=-1, nwords=-1, padding_factor=8
+        cls, filenames, tokenize_func=tokenize_string,
+        workers=1, threshold=-1, nwords=-1, padding_factor=8
     ):
         """Build the dictionary
 
@@ -99,7 +101,9 @@ class RetrievalTask(FairseqTask):
         if self.args['model']['arch'] == 'nbow':
             self.datasets[split] = load_tokens_dataset(
                 data_path, split, src, self.source_dictionary, tgt, self.target_dictionary,
-                dataset_impl=self.args['dataset']['dataset_impl']
+                dataset_impl=self.args['dataset']['dataset_impl'],
+                src_max_tokens=self.args['dataset']['code_max_tokens'],
+                tgt_max_tokens=self.args['dataset']['query_max_tokens'],
             )
         else:
             raise NotImplementedError

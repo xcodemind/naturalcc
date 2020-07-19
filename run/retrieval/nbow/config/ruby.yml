@@ -31,16 +31,19 @@ dataset:
   num_workers: 1 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
   skip_invalid_size_inputs_valid_test: 0 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
-  max_sentences: 32 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  max_sentences: 1000 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  code_max_tokens: 200 # type=int, if code_max_tokens>0 truncate code tokens to code_max_tokens; if code_max_tokens<=0, contain all code_tokens
+  query_max_tokens: 30 # type=int, if query_max_tokens>0 truncate query tokens to query_max_tokens; if query_max_tokens<=0, contain all query_tokens
+
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
   dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
   train_subset: test # train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
-  valid_subset: test # valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
+  valid_subset: valid # valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
   validate_interval: 1 # type=int, default=1, metavar='N', help='validate every N epochs'
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
   disable_validation: ~ # action='store_true',help='disable validation'
   max_tokens_valid: ~ # type=int, metavar='N', help='maximum number of tokens in a validation batch (defaults to --max-tokens)'
-  max_sentences_valid: 16 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
+  max_sentences_valid: 64 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
   curriculum: 0 # default=0, type=int, metavar='N', help='don\'t shuffle batches for first N epochs'
   gen_subset: test # default='test', metavar='SPLIT', help='data subset to generate (train, valid, test)'
   num_shards: 1 # default=1, type=int, metavar='N', help='shard generation over N shards'
@@ -93,21 +96,22 @@ task:
 
 model:
   arch: nbow # '-a', default='fconv', metavar='ARCH', choices=ARCH_MODEL_REGISTRY.keys(), help='Model Architecture'
-  embed_dim: 100
+  code_embed_dim: 128 # code embedding dim
+  query_embed_dim: 128 # query embedding dim
   activation_fn: tanh # choices=utils.get_available_activation_fns(), help='activation function to use'
   dropout: 0.1 # type=float, metavar='D', help='dropout probability'
   pooling: weighted_mean # None/max/mean/weighted_mean
 #  pooling: max # None/max/mean/weighted_mean
 
 optimization:
-  max_epoch: 0 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
+  max_epoch: 500 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
   max_update: 12500 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
-  clip_norm: 25 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
+  clip_norm: 1 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
   sentence_avg: ~ # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
     - 16
   lr: # '--learning-rate', default='0.25', type=eval_str_list, metavar='LR_1,LR_2,...,LR_N', help='learning rate for the first N epochs; all epochs >N using LR_N (note: this may be interpreted differently depending on --lr-scheduler)'
-    - 0.0005
+    - 0.01
   min_lr: -1 # default=-1, type=float, metavar='LR', help='stop training when the learning rate reaches this minimum'
   use_bmuf: 0 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
 
@@ -117,11 +121,10 @@ optimization:
   power: 1.0 # default=1.0, type=float
   total_num_update: 125000 # default=1000000, type=int
 
-
   adam:
     adam_betas: '(0.9, 0.999)' # default='(0.9, 0.999)', metavar='B', help='betas for Adam optimizer'
     adam_eps: 1e-8 # type=float, default=1e-8, metavar='D', help='epsilon for Adam optimizer'
-    weight_decay: 0.0 # '--wd', default=0.0, type=float, metavar='WD', help='weight decay'
+    weight_decay: 0.98 # '--wd', default=0.0, type=float, metavar='WD', help='weight decay'
     use_old_adam: 0 # action='store_true', default=False, help="Use fairseq.optim.adam.Adam"
 
   binary_cross_entropy:
