@@ -58,10 +58,8 @@ def load_tok_dataset(data_path, split, tgt_dict, dataset_impl, max_target_positi
     tgt_dataset = data_utils.load_indexed_dataset(target_path, 'dfs', tgt_dict, dataset_impl)
 
     node_id_path = os.path.join(data_path, '{}.ids'.format(split))
-    node_ids = []
     with open(node_id_path, 'r', encoding='utf-8') as f:
-        for ids_line in f:
-            node_ids.append(json.loads(ids_line))
+        node_ids = [json.loads(ids_line) for ids_line in f]
 
     return SeqRNNDataset(
         tgt_dataset, tgt_dataset.sizes, tgt_dict, node_ids, tgt_dataset.extends,
@@ -196,7 +194,7 @@ class CompletionTask(FairseqTask):
             return sum(log.get(key, 0) for log in logging_outputs)
 
         if self.args['task']['eval_accuracy']:
-            if sum_logs('accuracy') > 0:    # ==0: no accuracy items in the logging outputs, it means the training stage
+            if sum_logs('accuracy') > 0:  # ==0: no accuracy items in the logging outputs, it means the training stage
                 metrics.log_scalar('accuracy', sum_logs('accuracy'))
         if self.args['task']['eval_mrr']:
             if sum_logs('mrr') > 0:
