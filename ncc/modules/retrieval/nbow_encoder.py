@@ -27,7 +27,7 @@ class NBOWEncoder(FairseqEncoder):
         self.embed = Embedding(len(dictionary), embed_dim, padding_idx=self.dictionary.pad())
         self.dropout = dropout
         self.pooling = pooling1d(pooling)
-        self.weight_layer = Linear(embed_dim, 1) if 'weighted' in pooling else None
+        self.weight_layer = Linear(embed_dim, 1, bias=False) if 'weighted' in pooling else None
 
     def forward(self, tokens: Tensor_t, tokens_len: Tensor_t = None, tokens_mask: Tensor_t = None):
         """

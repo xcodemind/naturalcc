@@ -12,7 +12,12 @@ import math
 import random
 import numpy as np
 from collections import namedtuple
+
 import torch
+import torch.multiprocessing
+
+torch.multiprocessing.set_sharing_strategy('file_system')
+
 from ncc import LOGGER
 from ncc import tasks
 from ncc.logging import meters
@@ -71,17 +76,16 @@ def train(args, trainer, task, epoch_itr):
             metrics.reset_meters('train_inner')
 
         if (
-            not args['dataset']['disable_validation']
-            and args['checkpoint']['save_interval_updates'] > 0
-            and num_updates % args['checkpoint']['save_interval_updates'] == 0
-            and num_updates > 0
+                not args['dataset']['disable_validation']
+                and args['checkpoint']['save_interval_updates'] > 0
+                and num_updates % args['checkpoint']['save_interval_updates'] == 0
+                and num_updates > 0
         ):
             valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
             checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, valid_losses[0])
 
         if num_updates >= max_update:
             break
-
 
     # log end-of-epoch stats
     stats = get_training_stats(metrics.get_smoothed_values('train'))
@@ -182,7 +186,8 @@ def should_stop_early(args, valid_loss):
     else:
         should_stop_early.num_runs += 1
         if should_stop_early.num_runs >= args['checkpoint']['patience']:
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(args['checkpoint']['patience']))
+            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
+                args['checkpoint']['patience']))
 
         return should_stop_early.num_runs >= args['checkpoint']['patience']
 
@@ -212,9 +217,9 @@ def single_main(args, init_distributed=False):
     # 1. Setup task, e.g., translation, language modeling, etc.
     task = tasks.setup_task(args)
 
-    # 2. Load valid dataset (we load training data below, based on the latest checkpoint)
-    for valid_sub_split in args['dataset']['valid_subset'].split(','):
-        task.load_dataset(valid_sub_split, combine=False, epoch=1)
+    # # 2. Load valid dataset (we load training data below, based on the latest checkpoint)
+    # for valid_sub_split in args['dataset']['valid_subset'].split(','):
+    #     task.load_dataset(valid_sub_split, combine=False, epoch=1)
 
     # 3. Build model and criterion
     model = task.build_model(args)
@@ -245,9 +250,9 @@ def single_main(args, init_distributed=False):
     train_meter.start()
     valid_subsets = args['dataset']['valid_subset'].split(',')
     while (
-        lr > args['optimization']['min_lr']
-        and epoch_itr.next_epoch_idx <= max_epoch
-        and trainer.get_num_updates() < max_update
+            lr > args['optimization']['min_lr']
+            and epoch_itr.next_epoch_idx <= max_epoch
+            and trainer.get_num_updates() < max_update
     ):
         # train for one epoch
         train(args, trainer, task, epoch_itr)
@@ -266,12 +271,13 @@ def single_main(args, init_distributed=False):
 
         # early stop
         if should_stop_early(args, valid_losses[0]):
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(args['checkpoint']['patience']))
+            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
+                args['checkpoint']['patience']))
             break
 
         epoch_itr = trainer.get_train_iterator(
             epoch_itr.next_epoch_idx,
-            combine=False, # TODO to be checked
+            combine=False,  # TODO to be checked
             # sharded data: get train iterator for next epoch
             load_dataset=(os.pathsep in args['task']['data']),
         )

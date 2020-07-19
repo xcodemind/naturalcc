@@ -26,9 +26,9 @@ class SearchCrossEntropyCriterion(CrossEntropyCriterion):
         sample_size = sample['target'].size(0) if self.sentence_avg else sample['ntokens']
         logging_output = {
             'loss': loss.data,
-            # 'ntokens': sample_size,
-            # 'nsentences': sample_size,
-            # 'sample_size': sample_size,
+            'ntokens': sample_size,
+            'nsentences': sample_size,
+            'sample_size': sample_size,
         }
         return loss, sample_size, logging_output
 
@@ -42,7 +42,6 @@ class SearchCrossEntropyCriterion(CrossEntropyCriterion):
         loss = F.cross_entropy(
             logits,
             target,
-            ignore_index=self.padding_idx,
             reduction='sum' if reduce else 'none',
         )
         return loss
