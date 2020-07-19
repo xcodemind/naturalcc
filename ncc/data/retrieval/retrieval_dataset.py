@@ -169,8 +169,8 @@ class RetrievalDataset(FairseqDataset):
     @property
     def supports_prefetch(self):
         return (
-                getattr(self.src, 'supports_prefetch', False)
-                and (getattr(self.tgt, 'supports_prefetch', False) or self.tgt is None)
+            getattr(self.src, 'supports_prefetch', False)
+            and (getattr(self.tgt, 'supports_prefetch', False) or self.tgt is None)
         )
 
     def prefetch(self, indices):
