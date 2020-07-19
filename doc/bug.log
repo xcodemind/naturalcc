@@ -37,3 +37,11 @@ fix: input_weights = input_weights * kwargs['input_mask'].unsqueeze(dim=-1)  # B
 
 pathos.multiprocessing cpu利用率不高
 处理5w数据只有20%，处理5k能达到100%
+
+-----------------------------------------
+pytorch dataloader 加载error: open too many files
+```
+import torch.multiprocessing
+
+torch.multiprocessing.set_sharing_strategy('file_system')
+```
