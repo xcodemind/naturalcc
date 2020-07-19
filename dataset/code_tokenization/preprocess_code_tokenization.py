@@ -55,6 +55,12 @@ def build_vocab_dict(args: Dict, overwrite: bool = False):
         joined_dictionary = Dictionary.load(args['preprocess']['srcdict'])
         joined_dictionary.save(joined_dictionary_filename)
 
+    # build the vacab of docstring(same as code)
+    joined_tgt_lng_dictionary_filename = os.path.join(args['preprocess']['destdir'],
+                                              '{}.dict.txt'.format(args['preprocess']['target_lang']))
+
+    joined_dictionary.save(joined_tgt_lng_dictionary_filename)
+
     for modality in args['preprocess']['source_lang']:
         src_dicts[modality] = joined_dictionary
     tgt_dict = joined_dictionary
