@@ -7,11 +7,11 @@ import sys
 from collections import namedtuple
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
-from ncc.tasks.masked_code_docstring_unilm import load_masked_code_docstring_dataset_unilm
+from ncc.tasks.retrieval import load_tokens_dataset
 from ncc.tasks import FairseqTask
 from ncc import tasks
 import torch
-from ncc.data.codebert.mask_code_docstring_pair_dataset import collate
+from ncc.data.retrieval.retrieval_dataset import collate
 from ncc.data import iterators
 from ncc.logging import metrics, progress_bar
 from ncc.utils import checkpoint_utils, distributed_utils
@@ -28,14 +28,15 @@ if __name__ == '__main__':
     print('args: ', type(args_))
     # config = run_init(args.yaml, config=None)
     # yaml_file = os.path.join('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3/run/codebert/code_roberta/', args_.yaml)
-    yaml_file = os.path.join('../../../naturalcodev3/run/codebert/code_docstring_unilm/', args_.yaml)
+    yaml_file = os.path.join('../../../naturalcodev3/run/retrieval/nbow/config', args_.yaml)
     yaml_file = os.path.realpath(yaml_file)
     # yaml_file = os.path.join('/data/wanyao/Dropbox/ghproj-titan/naturalcodev3/run/summarization/seq2seq/', args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)
 
-    data_path = os.path.expanduser('~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin')
+    # data_path = os.path.expanduser('~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin')
+    data_path = os.path.expanduser('~/.ncc/CodeSearchNet/base/data-raw/ruby')
     split = 'test'
     # src_modalities = ['path'] # , 'code'
     # src_dicts = None
@@ -43,37 +44,22 @@ if __name__ == '__main__':
     # tgt_dict = None
     combine = False
 
-    tgt_dict = FairseqTask.load_dictionary(os.path.join(data_path, 'dict.{}.txt'.format(args['task']['target_lang'])))
+    # tgt_dict = FairseqTask.load_dictionary(os.path.join(data_path, 'dict.{}.txt'.format(args['task']['target_lang'])))
 
     src_dict = FairseqTask.load_dictionary(
-        os.path.join(data_path, 'dict.{}.txt'.format(args['task']['source_lang'])))  # args['task']['source_lang']
+        os.path.join(data_path, '{}.dict.json'.format(args['task']['source_lang'])))  # args['task']['source_lang']
+    tgt_dict = FairseqTask.load_dictionary(
+        os.path.join(data_path, '{}.dict.json'.format(args['task']['target_lang'])))  # args['task']['source_lang']
 
-    src_dict.add_symbol(constants.S_SEP)
-    src_dict.add_symbol(constants.S2S_SEP)
-    src_dict.add_symbol(constants.CLS)
-    src_dict.add_symbol(constants.T_MASK)
+    # dataset = load_tokens_dataset(data_path, split, args['task']['source_lang'], src_dict,
+    #                                                 dataset_impl=args['dataset']['dataset_impl'])
+    src, tgt = args['task']['source_lang'], args['task']['target_lang']
 
-    tgt_dict.add_symbol(constants.S2S_BOS)
-    tgt_dict.add_symbol(constants.T_MASK)
-    print('<T_MASK> id is', src_dict.index('<T_MASK>'))
-    print('<T_MASK> id is', tgt_dict.index('<T_MASK>'))
+    dataset = load_tokens_dataset(
+        data_path, split, src, src_dict, tgt, tgt_dict,
+        dataset_impl=args['dataset']['dataset_impl'])
 
-    assert src_dict.pad() == tgt_dict.pad()
-    assert src_dict.eos() == tgt_dict.eos()
-    assert src_dict.unk() == tgt_dict.unk()
-
-    dataset = load_masked_code_docstring_dataset_unilm(
-        data_path, split, args['task']['source_lang'], src_dict, args['task']['target_lang'], tgt_dict,
-        combine=combine, dataset_impl=args['dataset']['dataset_impl'],
-        upsample_primary=args['task']['upsample_primary'],
-        left_pad_source=args['task']['left_pad_source'],
-        left_pad_target=args['task']['left_pad_target'],
-        max_source_positions=args['task']['max_source_positions'],
-        max_target_positions=args['task']['max_target_positions'],
-        load_alignments=args['task']['load_alignments'],
-        truncate_source=args['task']['truncate_source'],
-    )
-    data_item = dataset.__getitem__(76)
+    data_item = dataset.__getitem__(0)
     print('data_item: ', data_item)
     # sys.exit()
     samples = []
@@ -81,9 +67,8 @@ if __name__ == '__main__':
         print('i: ', i)
         data_item = dataset.__getitem__(i)
         samples.append(data_item)
-    print('samples: ', samples)
-    # sys.exit()
-    # sys.exit()
+    # print('samples: ', samples)
+
     task = tasks.setup_task(args)  # task.tokenizer
     model = task.build_model(args)  # , config
     criterion = task.build_criterion(args)
@@ -112,23 +97,24 @@ if __name__ == '__main__':
     #     left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
     #     input_feeding=dataset.input_feeding,
     # )
-    batch = collate(
-        samples, src_dict, tgt_dict,
-        left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
-        # input_feeding=dataset.input_feeding,
-    )
+    # batch = collate(
+    #     samples, src_dict, tgt_dict,
+    #     left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
+    #     # input_feeding=dataset.input_feeding,
+    # )
+    batch = collate(samples, pad_idx=src_dict.pad())
     # torch.cuda.set_device(0)
     # batch.cuda()
     # model.cuda()
     print(batch)
-    sys.exit()
+
     # model(*batch)
     # 'src_tokens': input_ids,
     # 'segment_labels': segment_ids,
     # 'attention_mask': input_mask,
     # model(batch['net_input']['src_tokens'].cuda(), batch['net_input']['segment_labels'].cuda(), batch['net_input']['attention_mask'].cuda())
-    model(batch['net_input']['src_tokens'], batch['net_input']['segment_labels'], batch['net_input']['attention_mask'])
-    sys.exit()
+    # model(batch['net_input']['src_tokens'], batch['net_input']['segment_labels'], batch['net_input']['attention_mask'])
+    # sys.exit()
 
     # data_iter = iter(dataloader)
     # batch_data = data_iter.__next__()

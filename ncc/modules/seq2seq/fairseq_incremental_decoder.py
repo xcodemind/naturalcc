@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 from torch import Tensor
-from ncc.modules.summarization import FairseqDecoder
+from ncc.modules.seq2seq import FairseqDecoder
 # from ncc.modules.summarization.incremental_decoding_utils import with_incremental_state
 import uuid
 from typing import Dict, Optional

@@ -427,6 +427,25 @@ class Dictionary(object):
             ids[nwords] = self.eos_index
         return ids
 
+    def encode_list(
+            self,
+            words,
+            add_if_not_exist=True,
+            consumer=None,
+    ):
+        """In some cases, line have been tokenized already."""
+        nwords = len(words)
+        ids = torch.IntTensor(nwords)
+        for i, word in enumerate(words):
+            if add_if_not_exist:
+                idx = self.add_symbol(word)
+            else:
+                idx = self.index(word)
+            if consumer is not None:
+                consumer(word, idx)
+            ids[i] = idx
+        return ids
+
     # TODO: I think we should not change the encode_line function. Instead we can define different functions for different
     #       modalities with different file format, in order to provide more flexibilities.
     def encode_tok(

@@ -27,7 +27,7 @@ from ncc import LOGGER
 from ncc.utils import py150_utils
 import json
 
-MAX_BATCH_SIZE = 50000
+MAX_BATCH_SIZE = 5000
 
 
 def tokenize_func(line):

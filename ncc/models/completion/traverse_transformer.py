@@ -11,7 +11,7 @@ from ncc.models.fairseq_model import FairseqLanguageModel
 from ncc.modules.completion.transformer_encoder import TransformerEncoder
 from ncc.utils import utils
 from ncc.modules.completion.layer_norm import LayerNorm
-from ncc.modules.summarization.fairseq_decoder import FairseqDecoder
+from ncc.modules.seq2seq.fairseq_decoder import FairseqDecoder
 from ncc.models.hub_interface import RobertaHubInterface
 logger = logging.getLogger(__name__)
 

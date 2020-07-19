@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ncc.modules.summarization.fairseq_incremental_decoder import FairseqIncrementalDecoder
+from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
 from ncc.modules.embedding import Embedding
 from ncc.utils import utils
+from collections import OrderedDict
 
 DEFAULT_MAX_TARGET_POSITIONS = 1e5
 
@@ -24,16 +25,17 @@ def LSTMCell(input_size, hidden_size, **kwargs):
     return m
 
 
-class LSTMDecoder(FairseqIncrementalDecoder):
+class MMLSTMDecoder(FairseqIncrementalDecoder):
     """LSTM decoder."""
     def __init__(
-        self, dictionary, embed_dim=512, hidden_size=512, out_embed_dim=512,
+        self, dictionary, src_modalities=['code'], embed_dim=512, hidden_size=512, out_embed_dim=512,
         num_layers=1, dropout_in=0.1, dropout_out=0.1, attention=True,
         encoder_output_units=512, pretrained_embed=None,
         share_input_output_embed=False, adaptive_softmax_cutoff=None,
         max_target_positions=DEFAULT_MAX_TARGET_POSITIONS
     ):
         super().__init__(dictionary)
+        self.src_modalities = src_modalities
         self.dropout_in = dropout_in
         self.dropout_out = dropout_out
         self.hidden_size = hidden_size
@@ -93,23 +95,33 @@ class LSTMDecoder(FairseqIncrementalDecoder):
         """
         Similar to *forward* but only return features.
         """
-        if encoder_out is not None:
-            encoder_padding_mask = encoder_out['encoder_padding_mask']
-            encoder_out = encoder_out['encoder_out']
-        else:
-            encoder_padding_mask = None
-            encoder_out = None
+        encoder_padding_masks, encoder_outs = {}, {}
+        for modality in self.src_modalities:
+            if encoder_out[modality] is not None:
+                encoder_padding_masks[modality] = encoder_out[modality]['encoder_padding_mask']
+                encoder_outs[modality] = encoder_out[modality]['encoder_out']
+            else:
+                encoder_padding_masks[modality] = None
+                encoder_outs[modality] = None
 
         if incremental_state is not None:
             prev_output_tokens = prev_output_tokens[:, -1:]
         bsz, seqlen = prev_output_tokens.size()
 
         # get outputs from encoder
-        if encoder_out is not None:
-            encoder_outs, encoder_hiddens, encoder_cells = encoder_out[:3]
-            srclen = encoder_outs.size(0)
-        else:
-            srclen = None
+        encoder_outputs, encoder_hiddens, encoder_cells, srclen = {}, {}, {}, {}
+        for modality in self.src_modalities:
+            if encoder_outs[modality] is not None:
+                encoder_outputs[modality], encoder_hiddens[modality], encoder_cells[modality] = encoder_outs[modality][:3]
+                srclen[modality] = encoder_outputs[modality].size(0)
+                flag = True
+            else:
+                srclen[modality] = None
+
+        if flag: # TODO
+            # concatenate
+            encoder_hiddens = torch.cat([encoder_hiddens[modality]] for modality in self.src_modalities)
+            encoder_cells = torch.cat([encoder_cells[modality]] for modality in self.src_modalities)
 
         # embed tokens
         x = self.embed_tokens(prev_output_tokens)
@@ -163,7 +175,8 @@ class LSTMDecoder(FairseqIncrementalDecoder):
 
             # apply attention using the last layer's hidden state
             if self.attention is not None:
-                out, attn_scores[:, j, :] = self.attention(hidden, encoder_outs, encoder_padding_mask)
+                pass
+                # out, attn_scores[:, j, :] = self.attention(hidden, encoder_outs, encoder_padding_mask)
             else:
                 out = hidden
             out = F.dropout(out, p=self.dropout_out, training=self.training)

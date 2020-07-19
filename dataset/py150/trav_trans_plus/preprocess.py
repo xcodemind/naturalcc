@@ -35,22 +35,26 @@ def separate_rel_mask(rel_mask, max_len):
     For the masks, for each row, since we want the information to be relative
     to whatever is being predicted (ie. input_seq[i+1]), we are shifting
     everything by 1. Thus, the length of each mask will be len(seq) - 1.
+    (0)1-max_len, max_len/2-max_len/2+max_len, ...
     """
     if len(rel_mask) <= max_len:
-        return [[" ".join(lst.split()[:-1]) for lst in rel_mask[1:]]]
+        # return [[" ".join(lst.split()[:-1]) for lst in rel_mask[1:]]]
+        return [rel_mask[1:]]
 
     half_len = int(max_len / 2)
-    rel_mask_aug = [[" ".join(lst.split()[:-1]) for lst in rel_mask[1:max_len]]]
+    # rel_mask_aug = [[" ".join(lst.split()[:-1]) for lst in rel_mask[1:max_len]]]
+    rel_mask_aug = [rel_mask[1:max_len]]
 
     i = half_len
     while i < len(rel_mask) - max_len:
         rel_mask_aug.append(
-            [" ".join(lst.split()[i:-1]) for lst in rel_mask[i + 1: i + max_len]]
+            # [" ".join(lst.split()[i:-1]) for lst in rel_mask[i + 1: i + max_len]]
+            [lst[i:] for lst in rel_mask[i + 1: i + max_len]]
         )
         i += half_len
     rel_mask_aug.append(
         [
-            " ".join(lst.split()[-(i + 2): -1])
+            lst[-(i + 2): -1]
             for i, lst in enumerate(rel_mask[-max_len + 1:])
         ]
     )
@@ -58,6 +62,8 @@ def separate_rel_mask(rel_mask, max_len):
 
 
 def get_rel_masks(dp, max_len):
+    """get upper/down mask"""
+
     def get_ancestors(dp):
         ancestors = {0: []}
         node2parent = {0: 0}
@@ -71,33 +77,26 @@ def get_rel_masks(dp, max_len):
             ancestors[i] = [i] + ancestors[node2parent[i]]
         return ancestors, levels
 
-    def get_path(i, j):
-        if i == j:
-            return '1'
+    def get_path(i, j, anc_i, j_level):
         if i - j >= max_len:
             return '0'
-        anc_i = set(ancestors[i])
-        for node in ancestors[j][-(levels[i] + 1):]:
+        for node in ancestors[j][j_level:]:
             if node in anc_i:
                 up_n = levels[i] - levels[node]
                 down_n = levels[j] - levels[node]
-                # return str(up_n + 0.001 * down_n)
-                return 'U{}D{}'.format(up_n, down_n)
+                return '{}|{}'.format(up_n, down_n)  # 50 samples, time-consuming: 16.52610754966736
+                # return 'U{}D{}'.format(up_n, down_n)# 50 samples, time-consuming: 16.781269788742065
 
+    # ancestors, the path from current node to the root node
+    # levels, the depth of current node to the root node
     ancestors, levels = get_ancestors(dp)
-    path_rels = []
-    for i in range(len(dp)):
-        path_rels.append(" ".join([get_path(i, j) for j in range(i + 1)]))
+    # add an empty list ([]) at the head of path_rels so that we can use authors-defined code
+    path_rels = [None] * len(dp)
+    for i in range(1, len(dp)):
+        anc_i = set(ancestors[i])
+        j_level = -(levels[i] + 1)
+        path_rels[i] = [get_path(i, j, anc_i, j_level) for j in range(i)]
     return path_rels
-
-
-def get_dp(dp, n_ctx):
-    asts = py150_utils.separate_dps(dp, n_ctx)
-    rel_masks = separate_rel_mask(get_rel_masks(dp, n_ctx), n_ctx)
-    aug_dps = []
-    for (ast, ext), mask in zip(asts, rel_masks):
-        aug_dps.append([py150_utils.get_dfs(ast), ext, mask])
-    return aug_dps
 
 
 def tokenize_func(line):
@@ -302,14 +301,10 @@ def main(args):
                 asts = py150_utils.separate_dps(line, args['preprocess']['n_ctx'])
                 rel_masks = get_rel_masks(line, max_len=args['preprocess']['n_ctx'])
                 rel_masks = separate_rel_mask(rel_masks, max_len=args['preprocess']['n_ctx'])
-                # by now, rel_masks is a list of lower triple matrix
-
                 aug_dps = []
                 for (ast, ext), mask in zip(asts, rel_masks):
                     if len(ast) > 1:
-                        # mask = list(itertools.chain(*[line_mask.split() for line_mask in mask]))
-                        mask = ' '.join(mask)
-                        aug_dps.append((py150_utils.get_dfs(ast), ext, mask,))
+                        aug_dps.append([py150_utils.get_dfs(ast), ext, [' '.join(line) for line in mask]])
                 return aug_dps
 
             with PPool() as thread_pool:

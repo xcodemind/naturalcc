@@ -1,12 +1,13 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ncc.modules.summarization.fairseq_incremental_decoder import FairseqIncrementalDecoder
+from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
 from ncc.modules.embedding import Embedding
 from ncc.utils import utils
-from collections import OrderedDict
+from ncc.modules.adaptive_softmax import AdaptiveSoftmax
 
 DEFAULT_MAX_TARGET_POSITIONS = 1e5
+
 
 def Linear(in_features, out_features, bias=True, dropout=0):
     """Linear layer (input: N x T x C)"""
@@ -25,17 +26,49 @@ def LSTMCell(input_size, hidden_size, **kwargs):
     return m
 
 
-class MMLSTMDecoder(FairseqIncrementalDecoder):
+class AttentionLayer(nn.Module):
+    def __init__(self, input_embed_dim, source_embed_dim, output_embed_dim, bias=False):
+        super().__init__()
+
+        self.input_proj = Linear(input_embed_dim, source_embed_dim, bias=bias)
+        self.output_proj = Linear(input_embed_dim + source_embed_dim, output_embed_dim, bias=bias)
+
+    def forward(self, input, source_hids, encoder_padding_mask):
+        # input: bsz x input_embed_dim
+        # source_hids: srclen x bsz x source_embed_dim
+
+        # x: bsz x source_embed_dim
+        x = self.input_proj(input)
+
+        # compute attention
+        attn_scores = (source_hids * x.unsqueeze(0)).sum(dim=2)
+
+        # don't attend over padding
+        if encoder_padding_mask is not None:
+            attn_scores = attn_scores.float().masked_fill_(
+                encoder_padding_mask,
+                float('-inf')
+            ).type_as(attn_scores)  # FP16 support: cast to float and back
+
+        attn_scores = F.softmax(attn_scores, dim=0)  # srclen x bsz
+
+        # sum weighted sources
+        x = (attn_scores.unsqueeze(2) * source_hids).sum(dim=0)
+
+        x = torch.tanh(self.output_proj(torch.cat((x, input), dim=1)))
+        return x, attn_scores
+
+
+class LSTMDecoder(FairseqIncrementalDecoder):
     """LSTM decoder."""
     def __init__(
-        self, dictionary, src_modalities=['code'], embed_dim=512, hidden_size=512, out_embed_dim=512,
+        self, dictionary, embed_dim=512, hidden_size=512, out_embed_dim=512,
         num_layers=1, dropout_in=0.1, dropout_out=0.1, attention=True,
         encoder_output_units=512, pretrained_embed=None,
         share_input_output_embed=False, adaptive_softmax_cutoff=None,
         max_target_positions=DEFAULT_MAX_TARGET_POSITIONS
     ):
         super().__init__(dictionary)
-        self.src_modalities = src_modalities
         self.dropout_in = dropout_in
         self.dropout_out = dropout_out
         self.hidden_size = hidden_size
@@ -70,16 +103,15 @@ class MMLSTMDecoder(FairseqIncrementalDecoder):
         ])
         if attention:
             # TODO make bias configurable
-            # self.attention = AttentionLayer(hidden_size, encoder_output_units, hidden_size, bias=False)
-            self.attention = None
+            self.attention = AttentionLayer(hidden_size, encoder_output_units, hidden_size, bias=False)
         else:
             self.attention = None
         if hidden_size != out_embed_dim:
             self.additional_fc = Linear(hidden_size, out_embed_dim)
-        # if adaptive_softmax_cutoff is not None:
-        #     # setting adaptive_softmax dropout to dropout_out for now but can be redefined
-        #     self.adaptive_softmax = AdaptiveSoftmax(num_embeddings, hidden_size, adaptive_softmax_cutoff,
-        #                                             dropout=dropout_out)
+        if adaptive_softmax_cutoff is not None:
+            # setting adaptive_softmax dropout to dropout_out for now but can be redefined
+            self.adaptive_softmax = AdaptiveSoftmax(num_embeddings, hidden_size, adaptive_softmax_cutoff,
+                                                    dropout=dropout_out)
         elif not self.share_input_output_embed:
             self.fc_out = Linear(out_embed_dim, num_embeddings, dropout=dropout_out)
 
@@ -95,33 +127,23 @@ class MMLSTMDecoder(FairseqIncrementalDecoder):
         """
         Similar to *forward* but only return features.
         """
-        encoder_padding_masks, encoder_outs = {}, {}
-        for modality in self.src_modalities:
-            if encoder_out[modality] is not None:
-                encoder_padding_masks[modality] = encoder_out[modality]['encoder_padding_mask']
-                encoder_outs[modality] = encoder_out[modality]['encoder_out']
-            else:
-                encoder_padding_masks[modality] = None
-                encoder_outs[modality] = None
+        if encoder_out is not None:
+            encoder_padding_mask = encoder_out['encoder_padding_mask']
+            encoder_out = encoder_out['encoder_out']
+        else:
+            encoder_padding_mask = None
+            encoder_out = None
 
         if incremental_state is not None:
             prev_output_tokens = prev_output_tokens[:, -1:]
         bsz, seqlen = prev_output_tokens.size()
 
         # get outputs from encoder
-        encoder_outputs, encoder_hiddens, encoder_cells, srclen = {}, {}, {}, {}
-        for modality in self.src_modalities:
-            if encoder_outs[modality] is not None:
-                encoder_outputs[modality], encoder_hiddens[modality], encoder_cells[modality] = encoder_outs[modality][:3]
-                srclen[modality] = encoder_outputs[modality].size(0)
-                flag = True
-            else:
-                srclen[modality] = None
-
-        if flag: # TODO
-            # concatenate
-            encoder_hiddens = torch.cat([encoder_hiddens[modality]] for modality in self.src_modalities)
-            encoder_cells = torch.cat([encoder_cells[modality]] for modality in self.src_modalities)
+        if encoder_out is not None:
+            encoder_outs, encoder_hiddens, encoder_cells = encoder_out[:3]
+            srclen = encoder_outs.size(0)
+        else:
+            srclen = None
 
         # embed tokens
         x = self.embed_tokens(prev_output_tokens)
@@ -175,8 +197,7 @@ class MMLSTMDecoder(FairseqIncrementalDecoder):
 
             # apply attention using the last layer's hidden state
             if self.attention is not None:
-                pass
-                # out, attn_scores[:, j, :] = self.attention(hidden, encoder_outs, encoder_padding_mask)
+                out, attn_scores[:, j, :] = self.attention(hidden, encoder_outs, encoder_padding_mask)
             else:
                 out = hidden
             out = F.dropout(out, p=self.dropout_out, training=self.training)

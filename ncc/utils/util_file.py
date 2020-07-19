@@ -55,6 +55,16 @@ def load_yaml(yaml_file: str) -> Dict:
                     if val.startswith('~/'):
                         value[i] = os.path.expanduser(val)
 
+    if 'eval' in args:
+        # os.path.expanduser： ~/.ncc -> /home/user/.ncc
+        for key, value in args['eval'].items():
+            if isinstance(value, str) and value.startswith('~/'):
+                args['eval'][key] = os.path.expanduser(value)
+            if isinstance(value, list):
+                for i, val in enumerate(value):
+                    if val.startswith('~/'):
+                        value[i] = os.path.expanduser(val)
+
     return args
 
 

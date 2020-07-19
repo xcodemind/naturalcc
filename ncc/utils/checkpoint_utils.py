@@ -16,7 +16,7 @@ from .file_io import PathManager
 # from fairseq.models import FairseqDecoder, FairseqEncoder
 from torch.serialization import default_restore_location
 from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
-from ncc.modules.summarization.fairseq_decoder import FairseqDecoder
+from ncc.modules.seq2seq.fairseq_decoder import FairseqDecoder
 
 
 logger = logging.getLogger(__name__)
@@ -176,7 +176,7 @@ def load_checkpoint_to_cpu(path, arg_overrides=None):
     return state
 
 
-def load_model_ensemble(filenames, arg_overrides=None, task=None, strict=True):
+def load_model_ensemble(filenames, arg_overrides=None, task=None, strict=True, suffix=''):
     """Loads an ensemble of models.
 
     Args:
@@ -186,16 +186,17 @@ def load_model_ensemble(filenames, arg_overrides=None, task=None, strict=True):
         task (fairseq.tasks.FairseqTask, optional): task to use for loading
     """
     ensemble, args, _task = load_model_ensemble_and_task(
-        filenames, arg_overrides, task, strict
+        filenames, arg_overrides, task, strict, suffix,
     )
     return ensemble, args
 
 
-def load_model_ensemble_and_task(filenames, arg_overrides=None, task=None, strict=True):
+def load_model_ensemble_and_task(filenames, arg_overrides=None, task=None, strict=True, suffix=''):
     from ncc import tasks
 
     ensemble = []
     for filename in filenames:
+        filename = filename.replace(".pt", suffix + ".pt")
         if not PathManager.exists(filename):
             raise IOError("Model file not found: {}".format(filename))
         state = load_checkpoint_to_cpu(filename, arg_overrides)
@@ -347,13 +348,16 @@ def _upgrade_state_dict(state):
             "iterations_in_epoch": state["extra_state"].get("batch_offset", 0),
         }
     # default to translation task
-    if not hasattr(state["args"], "task"):
-        state["args"]["task"] = "translation"
+    # if not hasattr(state["args"], "task"):
+    if 'task' not in state["args"]['common']:
+        state["args"]['common']["task"] = "translation"
     # --raw-text and --lazy-load are deprecated
-    if getattr(state["args"], "raw_text", False):
-        state["args"]["dataset_impl"] = "raw"
-    elif getattr(state["args"], "lazy_load", False):
-        state["args"]["dataset_impl"] = "lazy"
+    # if getattr(state["args"], "raw_text", False):
+    if 'dataset_impl' not in state['args']['dataset']:
+        state["args"]['dataset']["dataset_impl"] = "raw"
+    # elif getattr(state["args"], "lazy_load", False):
+    # if ["args"]['dataset']['lazy_load']:
+    #     state["args"]['dataset']["dataset_impl"] = "lazy"
     # epochs start at 1
     if state["extra_state"]["train_iterator"] is not None:
         state["extra_state"]["train_iterator"]["epoch"] = max(

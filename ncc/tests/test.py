@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from typing import *
 
 import os
-from pathos.multiprocessing import cpu_count
-from multiprocessing.pool import Pool
-from .mp_ppool import PPool
+import json
+import itertools
+from multiprocessing import cpu_count, Pool
+from time import time
 
 
 def _safe_readline(f):
@@ -18,21 +18,7 @@ def _safe_readline(f):
             f.seek(pos)  # search where this character begins
 
 
-def _read(file: str, func: Any, param: Optional[List] = None, start: int = 0, end: int = -1) -> List:
-    result = []
-    with open(file, 'r', encoding='UTF-8') as reader:
-        reader.seek(start)
-        line = reader.readline()
-        while line and (reader.tell() < end):
-            if param:
-                result.append(func(line, *param))
-            else:
-                result.append(func(line))  # param == None
-            line = reader.readline()
-    return result
-
-
-def _find_offsets(file: str, cpu_num: int) -> List:
+def _find_offsets(file: str, cpu_num: int):
     with open(file, "r", encoding="utf-8") as f:
         size = os.fstat(f.fileno()).st_size
         chunk_size = size // cpu_num
@@ -45,22 +31,7 @@ def _find_offsets(file: str, cpu_num: int) -> List:
         return offsets
 
 
-def readline(file: str, func: Any, params: Optional[List[Sequence]] = None, cpu_num: int = None) -> List:
-    if cpu_num is None:
-        cpu_num = cpu_count()
-    if params is None:
-        params = [None] * cpu_num
-    pool = PPool(cpu_num)
-    offsets = _find_offsets(file, cpu_num)
-    _read_params = [
-        (file, func, params[idx], offsets[idx], offsets[idx + 1],)
-        for idx in range(cpu_num)
-    ]
-    result = pool.feed(_read, _read_params)
-    return result
-
-
-def _fast_readlines(file: str, start: int = 0, end: int = -1, func=None) -> List:
+def _fast_readlines(file: str, start: int = 0, end: int = -1, func=None):
     result = []
     with open(file, 'r', encoding='UTF-8') as reader:
         reader.seek(start)
@@ -71,7 +42,7 @@ def _fast_readlines(file: str, start: int = 0, end: int = -1, func=None) -> List
     return result
 
 
-def fast_readlines(file: str, func=None, cpu_num: int = None) -> List:
+def fast_readlines(file: str, func=None, cpu_num: int = None):
     if cpu_num is None:
         cpu_num = cpu_count()
     offsets = _find_offsets(file, cpu_num)
@@ -82,3 +53,32 @@ def fast_readlines(file: str, func=None, cpu_num: int = None) -> List:
         ]
         multiple_results = [job.get() for job in jobs]
     return multiple_results
+
+
+if __name__ == '__main__':
+    file = '~/.ncc/py150/raw/python100k_train.json'
+    file = os.path.expanduser(file)
+    start = time()
+    out = fast_readlines(file, func=json.loads, cpu_num=100)
+    out = list(itertools.chain(*out))
+    print(time() - start)
+    # print(len(out))
+    """
+    20.605948209762573
+    103254
+    """
+
+    start = time()
+    out = []
+    with open(file, 'r') as reader:
+        # out = [json.loads(line) for line in reader.readlines()]
+        line = reader.readline()
+        while line:
+            out.append(json.loads(line))
+            line = reader.readline()
+    print(time() - start)
+    # print(len(out))
+    """
+    15.215238571166992
+    103266
+    """

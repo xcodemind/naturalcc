@@ -34,3 +34,6 @@ data-mmap生成的代码问题较比严重，需要考虑继承的问题，不�
 input_weights *= kwargs['input_mask'].unsqueeze(dim=-1)  # B x T x 1
 # RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation: [torch.FloatTensor [16, 42, 1]], which is output 0 of SigmoidBackward, is at version 1; expected version 0 instead. Hint: enable anomaly detection to find the operation that failed to compute its gradient, with torch.autograd.set_detect_anomaly(True).
 fix: input_weights = input_weights * kwargs['input_mask'].unsqueeze(dim=-1)  # B x T x 1
+
+pathos.multiprocessing cpu利用率不高
+处理5w数据只有20%，处理5k能达到100%

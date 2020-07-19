@@ -86,7 +86,7 @@ def main(args):
 
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('preprocess_code_tokenization.yml')  # train_sl
+    args_ = Argues('preprocess_hicodebert.yml')  # train_sl
     LOGGER.info(args_)
     yaml_file = os.path.join(os.path.dirname(__file__), args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))

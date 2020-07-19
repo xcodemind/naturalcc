@@ -19,7 +19,7 @@ from ncc.models import (
     register_model,
     register_model_architecture,
 )
-from ncc.modules.summarization.fairseq_decoder import FairseqDecoder
+from ncc.modules.seq2seq.fairseq_decoder import FairseqDecoder
 # from ncc.modules import (
 #     LayerNorm,
 #     TransformerSentenceEncoder,

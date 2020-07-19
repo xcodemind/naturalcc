@@ -53,8 +53,22 @@ def load_path_dataset(data_path, split, src, src_dict, dataset_impl):
     )
 
 
-def load_tok_dataset(data_path, split, src, src_dict, dataset_impl):
-    source_path = os.path.join(data_path, '{}.tok'.format(split))
+def load_tok_dataset(data_path, split, tgt_dict, dataset_impl, max_target_positions):
+    target_path = os.path.join(data_path, '{}.tok'.format(split))
+    tgt_dataset = data_utils.load_indexed_dataset(target_path, 'dfs', tgt_dict, dataset_impl)
+
+    node_id_path = os.path.join(data_path, '{}.ids'.format(split))
+    with open(node_id_path, 'r', encoding='utf-8') as f:
+        node_ids = [json.loads(ids_line) for ids_line in f]
+
+    return SeqRNNDataset(
+        tgt_dataset, tgt_dataset.sizes, tgt_dict, node_ids, tgt_dataset.extends,
+        max_target_positions=max_target_positions,
+    )
+
+
+def load_dfs_dataset(data_path, split, src, src_dict, dataset_impl):
+    source_path = os.path.join(data_path, '{}.ast_trav_df'.format(split))
     src_dataset = data_utils.load_indexed_dataset(source_path, 'dfs', src_dict, dataset_impl)
 
     node_id_path = os.path.join(data_path, '{}.ids'.format(split))
@@ -74,8 +88,6 @@ class CompletionTask(FairseqTask):
 
     def __init__(self, args, dictionary):
         super().__init__(args)
-        # self.seed = args['common']['seed']
-        self.args = args
         self.dictionary = dictionary
 
     @classmethod
@@ -90,10 +102,9 @@ class CompletionTask(FairseqTask):
         assert len(paths) > 0
         # load dictionaries
         dictionary = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['source_lang'])))
-
+        LOGGER.info('[{}] dictionary: {} types'.format(args['task']['source_lang'], len(dictionary)))
         return cls(args, dictionary)
 
-    # overwrite the build_dictionary function
     @classmethod
     def build_dictionary(
             cls, filenames, tokenize_func=tokenizer.tokenize_list,
@@ -131,24 +142,24 @@ class CompletionTask(FairseqTask):
         assert len(paths) > 0
         data_path = paths[(epoch - 1) % len(paths)]
 
-        # infer langcode
-        src = self.args['task']['source_lang']
-
         if self.args['model']['arch'] == 'trav_trans':
-            self.datasets[split] = load_path_dataset(data_path, split, src, self.source_dictionary,
+            self.datasets[split] = load_path_dataset(data_path, split, self.target_dictionary,
                                                      dataset_impl=self.args['dataset']['dataset_impl'])
         elif self.args['model']['arch'] == 'seqrnn':
-            self.datasets[split] = load_tok_dataset(data_path, split, src, self.source_dictionary,
+            self.datasets[split] = load_tok_dataset(data_path, split, self.target_dictionary,
+                                                    dataset_impl=self.args['dataset']['dataset_impl'],
+                                                    max_target_positions=self.max_positions())
+        elif self.args['model']['arch'] == 'traverse_transformer':
+            self.datasets[split] = load_dfs_dataset(data_path, split, self.target_dictionary,
                                                     dataset_impl=self.args['dataset']['dataset_impl'])
-        # print('self.datasets[split]: ', self.datasets[split].__getitem__(0))
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
-        return SeqRNNDataset(src_tokens, src_lengths, self.source_dictionary)  # TODO: bug
+        return SeqRNNDataset(src_tokens, src_lengths, self.target_dictionary)  # TODO: bug
 
     def build_model(self, args):
         model = super().build_model(args)
 
-        if args['task']['eval_accuracy']:
+        if args['task']['eval_accuracy'] or args['task']['eval_mrr']:
             self.sequence_completor = self.build_completor([model], args)
 
         return model
@@ -183,14 +194,15 @@ class CompletionTask(FairseqTask):
             return sum(log.get(key, 0) for log in logging_outputs)
 
         if self.args['task']['eval_accuracy']:
-            metrics.log_scalar('accuracy', sum_logs('accuracy'))
+            if sum_logs('accuracy') > 0:  # ==0: no accuracy items in the logging outputs, it means the training stage
+                metrics.log_scalar('accuracy', sum_logs('accuracy'))
         if self.args['task']['eval_mrr']:
-            metrics.log_scalar('mrr', sum_logs('mrr'))
+            if sum_logs('mrr') > 0:
+                metrics.log_scalar('mrr', sum_logs('mrr'))
 
-    @property
-    def source_dictionary(self):
-        """Return the source :class:`~fairseq.data.Dictionary`."""
-        return self.dictionary
+    def max_positions(self):
+        """Return the max sentence length allowed by the task."""
+        return self.args['task']['max_target_positions']
 
     @property
     def target_dictionary(self):

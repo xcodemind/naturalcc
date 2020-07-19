@@ -134,7 +134,7 @@ def index_file_path(prefix_path):
 
 
 def data_file_path(prefix_path):
-    return prefix_path + '.bin'
+    return prefix_path + '.mmap'
 
 
 class IndexedDataset(FairseqDataset):
@@ -431,7 +431,7 @@ class IndexedDFSASTDataset(FairseqDataset):
     def __init__(self, path, dictionary, append_eos=True, reverse_order=False):
         self.tokens_list = []
         self.lines = []
-        self.start_idx = []
+        self.extends = []
         self.sizes = []
         self.append_eos = append_eos
         self.reverse_order = reverse_order
@@ -442,9 +442,9 @@ class IndexedDFSASTDataset(FairseqDataset):
         with open(path, 'r', encoding='utf-8') as f:
             for line in f:
                 line = ujson.loads(line.strip('\n'))
-                line, start_idx = line[:-1], line[-1]
+                line, ext = line[:-1], line[-1]
                 self.lines.append(line)
-                self.start_idx.append(start_idx)
+                self.extends.append(ext)
                 tokens = dictionary.encode_tok(
                     line, add_if_not_exist=False,
                     append_eos=self.append_eos, reverse_order=self.reverse_order,
@@ -936,6 +936,7 @@ class MMapIndexedDatasetBuilder(object):
             shutil.copyfileobj(f, self._data_file)
 
     def finalize(self, index_file):
+        # assert len(self._sizes) > 0, Exception('{} {}'.format(self._data_file, self._sizes))
         self._data_file.close()
 
         with MMapIndexedDataset.Index.writer(index_file, self._dtype) as index:

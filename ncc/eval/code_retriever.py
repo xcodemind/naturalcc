@@ -10,7 +10,7 @@ import torch
 from ncc.eval import search
 from ncc.utils import utils
 from ncc.data.tools import data_utils
-from ncc.modules.summarization.fairseq_incremental_decoder import FairseqIncrementalDecoder
+from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
 
 
 class CodeRetriever(object):

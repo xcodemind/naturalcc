@@ -11,8 +11,8 @@ from ncc.data.dict import Dict
 from ncc.models.Encoder import Encoder, RetrievalCodeEncoderWrapper, RetrievalCommentEncoderWrapper
 from ncc.modules.encoder.base.encoder_ast import TreeEncoder_TreeLSTM_dgl
 from ncc.modules.encoder.encoder_cfg  import CFGEncoder_GGNN, CFGEncoder_GGNN_add_node_token
-from ncc.modules.summarization.decoder import SeqDecoder
-from ncc.modules.summarization.discriminator import Discriminator, Discriminator_LSTM
+from ncc.modules.seq2seq.decoder import SeqDecoder
+from ncc.modules.seq2seq.discriminator import Discriminator, Discriminator_LSTM
 
 import torch.nn as nn
 from ncc.data.codesum.codesum_dataset import *
