@@ -18,6 +18,10 @@ from ncc.utils import checkpoint_utils, distributed_utils
 from ncc.trainer.fair_trainer import Trainer
 from ncc.data import constants
 
+import torch.multiprocessing
+
+torch.multiprocessing.set_sharing_strategy('file_system')
+
 if __name__ == '__main__':
     Argues = namedtuple('Argues', 'yaml')
 
@@ -59,16 +63,6 @@ if __name__ == '__main__':
         data_path, split, src, src_dict, tgt, tgt_dict,
         dataset_impl=args['dataset']['dataset_impl'])
 
-    data_item = dataset.__getitem__(0)
-    print('data_item: ', data_item)
-    # sys.exit()
-    samples = []
-    for i in range(100):
-        print('i: ', i)
-        data_item = dataset.__getitem__(i)
-        samples.append(data_item)
-    # print('samples: ', samples)
-
     task = tasks.setup_task(args)  # task.tokenizer
     model = task.build_model(args)  # , config
     criterion = task.build_criterion(args)
@@ -85,12 +79,13 @@ if __name__ == '__main__':
     #
     # sys.exit()
 
-    dataloader = torch.utils.data.DataLoader(
-        dataset,
-        collate_fn=dataset.collater,
-        # batch_sampler=batches[offset:],
-        num_workers=1  # args['dataset']['num_workers'],
-    )
+    # dataloader = torch.utils.data.DataLoader(
+    #     dataset,
+    #     collate_fn=dataset.collater,
+    #     # batch_sampler=batches[offset:],
+    #     num_workers=1,  # args['dataset']['num_workers'],
+    #     drop_last=True,
+    # )
 
     # batch = collate(
     #     samples, pad_idx=src_dict.pad(), eos_idx=dataset.eos,
@@ -102,11 +97,21 @@ if __name__ == '__main__':
     #     left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
     #     # input_feeding=dataset.input_feeding,
     # )
-    batch = collate(samples, pad_idx=src_dict.pad())
-    # torch.cuda.set_device(0)
-    # batch.cuda()
-    # model.cuda()
-    print(batch)
+
+    # data_item = dataset.__getitem__(0)
+    # print('data_item: ', data_item)
+    # # sys.exit()
+    # samples = []
+    # for i in range(100):
+    #     print('i: ', i)
+    #     data_item = dataset.__getitem__(i)
+    #     samples.append(data_item)
+    # # print('samples: ', samples)
+    # batch = collate(samples, pad_idx=src_dict.pad())
+    # # torch.cuda.set_device(0)
+    # # batch.cuda()
+    # # model.cuda()
+    # print(batch)
 
     # model(*batch)
     # 'src_tokens': input_ids,
