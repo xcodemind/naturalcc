@@ -76,23 +76,18 @@ def main(parsed_args, **unused_kwargs):
         default_log_format=('tqdm' if not args['common']['no_progress_bar'] else 'none'),
     )
 
-    gen_timer = StopwatchMeter()
+    complete_timer = StopwatchMeter()
     scorer = CompletionScorer(task.target_dictionary)
-
-    count = 0
-    accuracy = 0.
-    mrr = 0.
+    count, accuracy, mrr = 0, 0., 0.
 
     for sample in progress:
         if 'net_input' not in sample:
             continue
 
         sample = utils.move_to_cuda(sample) if use_cuda else sample
-
-        gen_timer.start()
-
-        hypos = scorer.generate(models, sample)
-        gen_timer.stop(sample['ntokens'])
+        complete_timer.start()
+        hypos = scorer.complete(models, sample, parsed_args['predict_type'])
+        complete_timer.stop(sample['ntokens'])
 
         for i, hypos_i in enumerate(hypos):
             hypo = hypos_i[0]

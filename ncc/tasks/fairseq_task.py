@@ -107,8 +107,6 @@ class FairseqTask(object):
 
         if split not in self.datasets:
             raise KeyError("Dataset not loaded: " + split)
-        print('self.datasets[split]: ', self.datasets[split])
-        print('isinstance(self.datasets[split], FairseqDataset): ', isinstance(self.datasets[split], FairseqDataset))
         if not isinstance(self.datasets[split], FairseqDataset):
             raise TypeError("Datasets are expected to be of type FairseqDataset")
         return self.datasets[split]

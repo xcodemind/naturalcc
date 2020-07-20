@@ -23,15 +23,16 @@ def collate(samples, pad_idx):
     tgt_tokens = merge('target')
     node_ids = {name: [] for name in samples[0]['node_id'].keys()}
     extends = []
-    max_len = max(len(sample['source']) for sample in samples)
-    max_len = max(max_len, 2)
+    # max_len = max(len(sample['source']) for sample in samples)
+    # max_len = max(max_len, 2)
 
     for i, sample in enumerate(samples):
         extends.append(sample['extend'])
         for name, lst in sample['node_id'].items():
-            node_ids[name] += [j - 1 + (max_len - 1) * i for j in lst]
+            # node_ids[name] += [j - 1 + (max_len - 1) * i for j in lst]
+            node_ids[name].append([j - 1 for j in lst if j > 1])
 
-    ntokens = sum(len(s['target']) for s in samples)
+    ntokens = sum(sum(s['target']!=pad_idx) for s in samples)
 
     batch = {
         'net_input': {
@@ -39,7 +40,7 @@ def collate(samples, pad_idx):
         },
         'target': tgt_tokens,
         'node_ids': node_ids,
-        "extends": extends,
+        'extends': extends,
         'ntokens': ntokens,
         'id': [s['id'] for s in samples],
     }

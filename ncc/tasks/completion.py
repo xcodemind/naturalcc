@@ -165,16 +165,36 @@ class CompletionTask(FairseqTask):
         return model
 
     def valid_step(self, sample, model, criterion):
+        print('valid_step...')
         loss, sample_size, logging_output = super().valid_step(sample, model, criterion)
         with torch.no_grad():
             net_output = self.sequence_completor.complete([model], sample, prefix_tokens=None)
 
+        # max_len = sample['target'].size(-1)
+        # ids = []
+        # for i, ext_i in enumerate(sample['extends']):
+        #     ids += [i * max_len + j for j in range(ext_i, max_len)]
+
+        selected = sample['node_ids']['leaf_ids']
+        max_len = sample['target'].size(-1)
+        node_ids = []
+        for i, lst in enumerate(selected):
+            node_ids += [j + (max_len - 1) * i for j in lst]
+
         lprobs = model.get_normalized_probs(net_output, log_probs=True)
-        loss_mask = sample['loss_mask']
-        lprobs = lprobs.view(-1, lprobs.size(-1))
-        lprobs = lprobs[loss_mask].contiguous()
-        target = model.get_targets(sample, net_output).view(-1)
-        target = target[loss_mask].contiguous()
+        # loss_mask = sample['loss_mask']
+        lprobs = lprobs.view(-1, lprobs.size(-1))[node_ids]
+        # lprobs = lprobs[loss_mask].contiguous()
+        target = model.get_targets(sample, net_output).view(-1)[node_ids]
+        # target = target[loss_mask].contiguous()
+
+        # node_ids
+        # for i, sample in enumerate(samples):
+        #     extends.append(sample['extend'])
+        #     for name, lst in sample['node_id'].items():
+        #         # node_ids[name] += [j - 1 + (max_len - 1) * i for j in lst]
+        #         node_ids[name].append([j - 1 for j in lst if j > 1])
+
 
         rank = torch.argmax(lprobs, 1)
         mrr = np.mean([1. / (r.item() + 1) for r in rank.view(-1)])

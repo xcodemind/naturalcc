@@ -48,6 +48,7 @@ class SequenceCompletor(object):
         net_output = model(**sample['net_input'])
         return net_output
 
+
 class EnsembleModel(torch.nn.Module):
     """A wrapper around an ensemble of models."""
 

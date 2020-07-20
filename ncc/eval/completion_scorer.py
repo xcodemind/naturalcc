@@ -21,10 +21,10 @@ class CompletionScorer(object):
         self.compute_alignment = compute_alignment
 
     @torch.no_grad()
-    def generate(self, models, sample, **kwargs):
+    def complete(self, models, sample, predict_type, **kwargs):
         """Score a batch of translations."""
         net_input = sample['net_input']
-
+        node_id = sample['node_id']
         def gather_target_probs(probs, target):
             probs = probs.gather(
                 dim=2,
@@ -62,7 +62,9 @@ class CompletionScorer(object):
         bsz = avg_probs.size(0)
         hypos = []
         start_idxs = sample['start_indices'] if 'start_indices' in sample else [0] * bsz
-        mask = sample['target'] != self.pad
+        # mask = sample['target'] != self.pad
+        selected = sample['node_ids'][predict_type]
+
         for i in range(bsz):
             # remove padding from ref
             ref = utils.strip_pad(sample['target'][i, start_idxs[i]:], self.pad) \
@@ -73,12 +75,12 @@ class CompletionScorer(object):
 
             lprob = avg_curr_probs[i]
 
-            selected_prob = lprob[mask[i]].contiguous()
+            selected_prob = lprob[selected[i]].contiguous()
             rank = torch.argmax(selected_prob, 1)
             mrr = np.mean([1. / (r.item() + 1) for r in rank.view(-1)])
 
-            ncorrect = torch.sum(rank == sample['target'][i][mask[i]].contiguous())
-            accuracy = ncorrect / sum(mask[i])
+            ncorrect = torch.sum(rank == sample['target'][i][selected[i]].contiguous())
+            accuracy = ncorrect / sum(selected[i])
 
             hypos.append([{
                 'tokens': ref,

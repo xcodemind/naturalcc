@@ -16,7 +16,8 @@ class SeqRNNModel(FairseqLanguageModel):
 
     @classmethod
     def build_model(cls, args, config, task):
-        max_target_positions = args['model']['max_target_positions'] if args['model']['max_target_positions'] else DEFAULT_MAX_TARGET_POSITIONS
+        max_target_positions = args['model']['max_target_positions'] if args['model']['max_target_positions'] \
+            else DEFAULT_MAX_TARGET_POSITIONS
 
         decoder = LSTMDecoder(
             dictionary=task.target_dictionary,
