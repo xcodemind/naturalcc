@@ -24,7 +24,7 @@ class CompletionScorer(object):
     def complete(self, models, sample, predict_type, **kwargs):
         """Score a batch of translations."""
         net_input = sample['net_input']
-        node_id = sample['node_id']
+        # node_id = sample['node_ids']
         def gather_target_probs(probs, target):
             probs = probs.gather(
                 dim=2,
@@ -75,18 +75,27 @@ class CompletionScorer(object):
 
             lprob = avg_curr_probs[i]
 
-            selected_prob = lprob[selected[i]].contiguous()
-            rank = torch.argmax(selected_prob, 1)
-            mrr = np.mean([1. / (r.item() + 1) for r in rank.view(-1)])
+            if selected[i]:
+                selected_prob = lprob[selected[i]].contiguous()
+                rank = torch.argmax(selected_prob, 1)
+                mrr = np.mean([1. / (r.item() + 1) for r in rank.view(-1)])
 
-            ncorrect = torch.sum(rank == sample['target'][i][selected[i]].contiguous())
-            accuracy = ncorrect / sum(selected[i])
+                ncorrect = torch.sum(rank == sample['target'][i][selected[i]].contiguous())
+                accuracy = ncorrect / sum(selected[i])
 
-            hypos.append([{
-                'tokens': ref,
-                'score': score_i,
-                'positional_scores': avg_probs_i,
-                'accuracy': accuracy,
-                'mrr': mrr,
-            }])
+                hypos.append([{
+                    'tokens': ref,
+                    'score': score_i,
+                    'positional_scores': avg_probs_i,
+                    'accuracy': accuracy,
+                    'mrr': mrr,
+                }])
+            else:
+                hypos.append([{
+                    'tokens': ref,
+                    'score': score_i,
+                    'positional_scores': avg_probs_i,
+                    'accuracy': 0.0,
+                    'mrr': 0.0,
+                }])
         return hypos

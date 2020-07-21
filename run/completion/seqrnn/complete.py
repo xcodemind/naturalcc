@@ -86,7 +86,7 @@ def main(parsed_args, **unused_kwargs):
 
         sample = utils.move_to_cuda(sample) if use_cuda else sample
         complete_timer.start()
-        hypos = scorer.complete(models, sample, parsed_args['predict_type'])
+        hypos = scorer.complete(models, sample, parsed_args['eval']['predict_type'])
         complete_timer.stop(sample['ntokens'])
 
         for i, hypos_i in enumerate(hypos):

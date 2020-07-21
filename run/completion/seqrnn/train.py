@@ -76,6 +76,8 @@ def train(args, trainer, task, epoch_itr):
             and num_updates % args['checkpoint']['save_interval_updates'] == 0
             and num_updates > 0
         ):
+            # print('bug...')
+            # exit()
             valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
             checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, valid_losses[0])
 
@@ -133,13 +135,14 @@ def validate(args, trainer, task, epoch_itr, subsets):
         with metrics.aggregate(new_root=True) as agg:
             for sample in progress:
                 trainer.valid_step(sample)
-                break # TODO: only for debug
+                # break # TODO: only for debug
 
         # log validation stats
         stats = get_valid_stats(args, trainer, agg.get_smoothed_values())
         progress.print(stats, tag=subset, step=trainer.get_num_updates())
 
         valid_losses.append(stats[args['checkpoint']['best_checkpoint_metric']])
+
     return valid_losses
 
 
@@ -275,6 +278,7 @@ def single_main(args, init_distributed=False):
             # sharded data: get train iterator for next epoch
             load_dataset=(os.pathsep in args['task']['data']),
         )
+
     train_meter.stop()
     LOGGER.info('done training in {:.1f} seconds'.format(train_meter.sum))
 
