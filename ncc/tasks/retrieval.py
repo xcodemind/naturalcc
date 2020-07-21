@@ -45,7 +45,7 @@ class RetrievalTask(FairseqTask):
         self.args = args
         self.src_dict = src_dict
         self.tgt_dict = tgt_dict
-        self.seed = args['common']['seed']
+        # self.seed = args['common']['seed']
 
     @classmethod
     def setup_task(cls, args: Dict_t, **kwargs) -> Class_t:
