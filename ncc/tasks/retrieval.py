@@ -98,7 +98,7 @@ class RetrievalTask(FairseqTask):
 
         src, tgt = self.args['task']['source_lang'], self.args['task']['target_lang']
 
-        if self.args['model']['arch'] == 'nbow':
+        if self.args['model']['arch'] in ['nbow', 'conv1d_res', 'rnn']:
             self.datasets[split] = load_tokens_dataset(
                 data_path, split, src, self.source_dictionary, tgt, self.target_dictionary,
                 dataset_impl=self.args['dataset']['dataset_impl'],
