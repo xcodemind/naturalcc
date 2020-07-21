@@ -255,7 +255,7 @@ def single_main(args, init_distributed=False):
         and trainer.get_num_updates() < max_update
     ):
         # train for one epoch
-        # train(args, trainer, task, epoch_itr)
+        train(args, trainer, task, epoch_itr)
 
         if not args['dataset']['disable_validation'] and epoch_itr.epoch % args['dataset']['validate_interval'] == 0:
             valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
