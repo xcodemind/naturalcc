@@ -72,7 +72,7 @@ distributed_training:
   warmup_iterations: 500 # default=500, type=int, help="warmup iterations for model to broadcast",
 
 task:
-  data: ~/.ncc/CodeSearchNet/base/data-raw/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/CodeSearchNet/base/data-raw/_ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
   tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
   mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
@@ -133,7 +133,7 @@ optimization:
     log-keys: '' # type=str, default=None, help='output keys to log'
 
 checkpoint:
-  save_dir: ~/.ncc/CodeSearchNet/retrieval/checkpoints # default='checkpoints', help='path to save checkpoints'
+  save_dir: ~/.ncc/CodeSearchNet/base/data-raw/_ruby/checkpoints # default='checkpoints', help='path to save checkpoints'
   restore_file: checkpoint_last.pt # default='checkpoint_last.pt', help='filename from which to load checkpoint (default: <save-dir>/checkpoint_last.pt'
   reset_dataloader: ~ # action='store_true', help='if set, does not reload dataloader state from the checkpoint'
   reset_lr_scheduler: ~ # action='store_true', help='if set, does not load lr scheduler state from the checkpoint'
