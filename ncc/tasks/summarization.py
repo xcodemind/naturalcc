@@ -3,9 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import *
 import os
 import json
+import numpy as np
+from ncc.logging import metrics
 import itertools
 from argparse import Namespace
 from ncc import LOGGER
@@ -21,10 +22,8 @@ from ncc.data.wrappers.strip_token_dataset import StripTokenDataset
 from ncc.data.concat_dataset import ConcatDataset
 from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
 from ncc.data.summarization.language_pair_dataset import LanguagePairDataset
-from ncc.data.dictionary import Dictionary
-# from ncc.data.constants import *
-from ncc.utils import tokenizer  # , utils # metrics, search,
 
+EVAL_BLEU_ORDER = 4
 
 def load_langpair_dataset(
         data_path, split,
@@ -35,7 +34,7 @@ def load_langpair_dataset(
         max_target_positions, prepend_bos=False, load_alignments=False,
         truncate_source=False, append_source_id=False
 ):
-    def split_exists(split, src, tgt, lang, data_path):
+    def split_exists(split, src, data_path):
         filename = os.path.join(data_path, '{}.{}'.format(split, src))  # -{}.{} , tgt, lang
         return indexed_dataset.dataset_exists(filename, impl=dataset_impl)
 
@@ -46,9 +45,9 @@ def load_langpair_dataset(
         split_k = split + (str(k) if k > 0 else '')
 
         # infer langcode
-        if split_exists(split_k, src, tgt, src, data_path):
+        if split_exists(split_k, src, data_path):
             prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , src, tgt
-        elif split_exists(split_k, tgt, src, src, data_path):
+        elif split_exists(split_k, tgt, data_path):
             prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , tgt, src
 
         else:
@@ -56,7 +55,7 @@ def load_langpair_dataset(
                 break
             else:
                 raise FileNotFoundError('Dataset not found: {} ({})'.format(split, data_path))
-        print('prefix + src: ', prefix + src)
+
         src_dataset = data_utils.load_indexed_dataset(prefix + src, 'text', src_dict, dataset_impl)
         if truncate_source:
             src_dataset = AppendTokenDataset(
@@ -126,17 +125,8 @@ def load_langpair_dataset(
 
 @register_task('summarization')
 class SummarizationTask(FairseqTask):
-    """Task for training masked language models (e.g., BERT, RoBERTa)."""
-
     def __init__(self, args, src_dict, tgt_dict):
         super().__init__(args)
-        # self.dictionary = dictionary
-        # self.seed = args['common']['seed']
-
-        # # add mask token
-        # self.mask_idx = dictionary.add_symbol('<mask>')、
-        # self.tokenizer = tokenizer
-        # self.mask_idx = self.tokenizer.mask_token_id
         self.src_dict = src_dict
         self.tgt_dict = tgt_dict
 
@@ -160,8 +150,8 @@ class SummarizationTask(FairseqTask):
             raise Exception('Could not infer language pair, please provide it explicitly')
 
         # load dictionaries
-        src_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['source_lang'])))
-        tgt_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['target_lang'])))
+        src_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['source_lang'])))
+        tgt_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['target_lang'])))
         assert src_dict.pad() == tgt_dict.pad()
         assert src_dict.eos() == tgt_dict.eos()
         assert src_dict.unk() == tgt_dict.unk()
@@ -200,15 +190,17 @@ class SummarizationTask(FairseqTask):
 
     def build_model(self, args):
         model = super().build_model(args)
-        if getattr(args, 'eval_bleu', False):
-            assert getattr(args, 'eval_bleu_detok', None) is not None, (
+        if args['task']['eval_bleu']:
+            assert args['task']['eval_bleu_detok'] is not None, (
                 '--eval-bleu-detok is required if using --eval-bleu; '
                 'try --eval-bleu-detok=moses (or --eval-bleu-detok=space '
                 'to disable detokenization, e.g., when using sentencepiece)'
             )
-            detok_args = json.loads(getattr(args, 'eval_bleu_detok_args', '{}') or '{}')
-            self.tokenizer = encoders.build_tokenizer(Namespace(
-                tokenizer=getattr(args, 'eval_bleu_detok', None),
+            # detok_args = json.loads(getattr(args, 'eval_bleu_detok_args', '{}') or '{}')
+            detok_args = json.loads(args['task']['eval_bleu_detok_args'] if args['task']['eval_bleu_detok_args'] else '{}')
+            self.tokenizer = encoders.build_tokenizer(
+                dict(
+                tokenizer=args['task']['eval_bleu_detok'] if args['task']['eval_bleu_detok'] else None,  #getattr(args, 'eval_bleu_detok', None),
                 **detok_args
             ))
 
@@ -216,32 +208,62 @@ class SummarizationTask(FairseqTask):
             self.sequence_generator = self.build_generator([model], Namespace(**gen_args))
         return model
 
-    @classmethod
-    def build_dictionary(
-            cls, filenames: List, tokenize_func: Any,
-            eos_word: Optional[str] = None, workers: int = 1, threshold: int = -1, nwords: int = -1,
-            padding_factor: int = 8,
-    ) -> Dictionary: #, modality: str,
-        """
-        Build the dictionary
+    def valid_step(self, sample, model, criterion):
+        loss, sample_size, logging_output = super().valid_step(sample, model, criterion)
+        if self.args['task']['eval_bleu']:
+            bleu = self._inference_with_bleu(self.sequence_generator, sample, model)
+            logging_output['_bleu_sys_len'] = bleu.sys_len
+            logging_output['_bleu_ref_len'] = bleu.ref_len
+            # we split counts into separate entries so that they can be
+            # summed efficiently across workers using fast-stat-sync
+            assert len(bleu.counts) == EVAL_BLEU_ORDER
+            for i in range(EVAL_BLEU_ORDER):
+                logging_output['_bleu_counts_' + str(i)] = bleu.counts[i]
+                logging_output['_bleu_totals_' + str(i)] = bleu.totals[i]
+        return loss, sample_size, logging_output
 
-        Args:
-            filenames (list): list of filenames
-            workers (int): number of concurrent workers
-            threshold (int): defines the minimum word count
-            nwords (int): defines the total number of words in the final dictionary,
-                including special symbols
-            padding_factor (int): can be used to pad the dictionary size to be a
-                multiple of 8, which is important on some hardware (e.g., Nvidia
-                Tensor Cores).
-        """
-        dict = Dictionary()
-        for filename in filenames:
-            Dictionary.add_file_to_dictionary(
-                filename, dict, tokenize_func, eos_word, workers
-            )
-        dict.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
-        return dict
+    def reduce_metrics(self, logging_outputs, criterion):
+        super().reduce_metrics(logging_outputs, criterion)
+        if self.args['task']['eval_bleu']:
+
+            def sum_logs(key):
+                return sum(log.get(key, 0) for log in logging_outputs)
+
+            counts, totals = [], []
+            for i in range(EVAL_BLEU_ORDER):
+                counts.append(sum_logs('_bleu_counts_' + str(i)))
+                totals.append(sum_logs('_bleu_totals_' + str(i)))
+
+            if max(totals) > 0:
+                # log counts as numpy arrays -- log_scalar will sum them correctly
+                metrics.log_scalar('_bleu_counts', np.array(counts))
+                metrics.log_scalar('_bleu_totals', np.array(totals))
+                metrics.log_scalar('_bleu_sys_len', sum_logs('_bleu_sys_len'))
+                metrics.log_scalar('_bleu_ref_len', sum_logs('_bleu_ref_len'))
+
+                def compute_bleu(meters):
+                    import inspect
+                    import sacrebleu
+                    fn_sig = inspect.getfullargspec(sacrebleu.compute_bleu)[0]
+                    if 'smooth_method' in fn_sig:
+                        smooth = {'smooth_method': 'exp'}
+                    else:
+                        smooth = {'smooth': 'exp'}
+                    bleu = sacrebleu.compute_bleu(
+                        correct=meters['_bleu_counts'].sum,
+                        total=meters['_bleu_totals'].sum,
+                        sys_len=meters['_bleu_sys_len'].sum,
+                        ref_len=meters['_bleu_ref_len'].sum,
+                        **smooth
+                    )
+                    return round(bleu.score, 2)
+
+                metrics.log_derived('bleu', compute_bleu)
+
+    def max_positions(self):
+        """Return the max sentence length allowed by the task."""
+        return (self.args['task']['max_source_positions'], self.args['task']['max_target_positions'])
+
 
     @property
     def source_dictionary(self):
@@ -252,3 +274,34 @@ class SummarizationTask(FairseqTask):
     def target_dictionary(self):
         """Return the target :class:`~fairseq.data.Dictionary`."""
         return self.tgt_dict
+
+    def _inference_with_bleu(self, generator, sample, model):
+        import sacrebleu
+
+        def decode(toks, escape_unk=False):
+            s = self.tgt_dict.string(
+                toks.int().cpu(),
+                self.args['task']['eval_bleu_remove_bpe'],
+                escape_unk=escape_unk,
+            )
+            if self.tokenizer:
+                s = self.tokenizer.decode(s)
+            return s
+
+        gen_out = self.inference_step(generator, [model], sample, None)
+        hyps, refs = [], []
+        for i in range(len(gen_out)):
+            hyps.append(decode(gen_out[i][0]['tokens']))
+            refs.append(decode(
+                utils.strip_pad(sample['target'][i], self.tgt_dict.pad()),
+                escape_unk=True,  # don't count <unk> as matches to the hypo
+            ))
+        if self.args['task']['eval_bleu_print_samples']:
+            LOGGER.info('example hypothesis: ' + hyps[0])
+            LOGGER.info('example reference: ' + refs[0])
+        # tokenize = sacrebleu.DEFAULT_TOKENIZER if not self.args['task']['eval_tokenized_bleu'] else 'none'
+        # return sacrebleu.corpus_bleu(hyps, [refs], tokenize=tokenize)
+        if self.args['task']['eval_tokenized_bleu']:
+            return sacrebleu.corpus_bleu(hyps, [refs], tokenize='none')
+        else:
+            return sacrebleu.corpus_bleu(hyps, [refs])

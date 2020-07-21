@@ -30,7 +30,6 @@ def setup_registry(
     }
 
     def build_x(args, *extra_args, **extra_kwargs):
-        # choice = getattr(args, registry_name, None)
         choice = args[registry_name] if registry_name in args else None
         if choice is None:
             return None
