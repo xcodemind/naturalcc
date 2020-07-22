@@ -24,7 +24,7 @@ def main(parsed_args, **unused_kwargs):
     assert parsed_args['eval']['path'] is not None, '--path required for evaluation!'
 
     if torch.cuda.is_available() and not parsed_args['common']['cpu']:
-        torch.cuda.set_device(parsed_args['distributed']['device_id'])
+        torch.cuda.set_device(parsed_args['distributed_training']['device_id'])
 
     LOGGER.info(parsed_args)
     use_cuda = torch.cuda.is_available() and not parsed_args['common']['cpu']
@@ -108,7 +108,7 @@ def main(parsed_args, **unused_kwargs):
 
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('py150_complete.yml')  # train_sl
+    args_ = Argues('py150.yml')  # train_sl
     LOGGER.info(args_)
     yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))

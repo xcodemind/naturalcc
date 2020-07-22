@@ -80,7 +80,7 @@ distributed_training:
   local_rank: -1 # type=int, default=-1, help="For distributed training: local_rank"
 
 task:
-  data: ~/.ncc/py150/seqrnn/data-raw # /tmp/pycharm_project_629/data-bin default='', help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/py150/seqrnn_debug/data-raw # /tmp/pycharm_project_629/data-bin default='', help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   #  sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
   #  tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
   #  mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
@@ -95,7 +95,6 @@ task:
   #  do_train: 1 # action="store_true", default=True, help="Whether to run training."
   #  do_eval: 0 # action="store_true", help="Whether to run eval on the dev set."
   #  eval_all_checkpoints: 0 # action="store_true", help="Evaluate all checkpoints starting with the same prefix as model_name_or_path ending and ending with step number",
-
   # for summarization
   source_lang: tok
   #  target_lang: docstring
@@ -106,6 +105,7 @@ task:
   max_target_positions: 1e5 #', default=1024, type=int, metavar='N', help='max number of tokens in the target sequence'
   #  upsample_primary: 1 #', default=1, type=int, help='amount to upsample primary dataset'
   #  truncate_source: 0 #', action='store_true', default=False, help='truncate source to max-source-positions'
+  add_bos_token: 0 #', action='store_true', help='prepend beginning of sentence token (<s>)'
 
   # options for reporting BLEU during validation
   eval_bleu: 0 #action='store_true', help='evaluation with BLEU scores'
@@ -196,7 +196,7 @@ optimization:
 
 
 checkpoint:
-  save_dir: ~/.ncc/py150/seqrnn/checkpoints # default='checkpoints', help='path to save checkpoints'
+  save_dir: ~/.ncc/py150/seqrnn_debug/checkpoints # default='checkpoints', help='path to save checkpoints'
   restore_file: checkpoint_last.pt # default='checkpoint_last.pt', help='filename from which to load checkpoint (default: <save-dir>/checkpoint_last.pt'
   reset_dataloader: ~ # action='store_true', help='if set, does not reload dataloader state from the checkpoint'
   reset_lr_scheduler: ~ # action='store_true', help='if set, does not load lr scheduler state from the checkpoint'
@@ -224,3 +224,9 @@ checkpoint:
   save_total_limit: 2 # type=int, default=2, help="Limit the total amount of checkpoints, delete the older checkpoints in the output_dir, does not delete by default",
   overwrite_output_dir: 0 # action="store_true", help="Overwrite the content of the output directory"
   overwrite_cache: 0 # action="store_true", help="Overwrite the cached training and evaluation sets"
+
+eval:
+  path: ~/.ncc/py150/seqrnn_debug/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  model_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override model args at generation '
+  checkpoint_suffix: '' # default='', help='Suffix to add to the checkpoint file name'
+  predict_type: 'leaf_ids'
