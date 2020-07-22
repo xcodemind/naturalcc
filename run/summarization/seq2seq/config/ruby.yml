@@ -15,6 +15,10 @@ common:
 #  seed: 42 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
 #  cpu: 0 # action='store_true', help='use CPU instead of CUDA'
 #  fp16_fair: 1 # action='store_true', help='use FP16'
+  seed: 42 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
+  cpu: 0 # action='store_true', help='use CPU instead of CUDA'
+  fp16: 1 # action='store_true', help='use FP16'
+  fp16_opt_level: '01' # type=str, default="O1", help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']. See details at https://nvidia.github.io/apex/amp.html",
   memory_efficient_fp16: 0 # action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
   fp16_no_flatten_grads: 0 # action='store_true', help='don\'t flatten FP16 grads tensor'
   fp16_init_scale: 128 # 2 ** 7 # default=2 ** 7, type=int, help='default FP16 loss scale'
@@ -27,10 +31,6 @@ common:
 #  all_gather_list_size: 16384 # default=16384, type=int, help='number of bytes reserved for gathering stats from workers'
   task: summarization # task
 
-  seed: 42 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
-  cpu: 0 # action='store_true', help='use CPU instead of CUDA'
-  fp16: 1 # action='store_true', help='use FP16'
-  fp16_opt_level: '01' # type=str, default="O1", help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']. See details at https://nvidia.github.io/apex/amp.html",
   server_ip: '' # type=str, default="", help="For distant debugging."
   server_port: '' # type=str, default="", help="For distant debugging."
 
@@ -49,16 +49,9 @@ dataset:
   max_tokens_valid: ~ # type=int, metavar='N', help='maximum number of tokens in a validation batch (defaults to --max-tokens)'
   max_sentences_valid: 16 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
   curriculum: 0 # default=0, type=int, metavar='N', help='don\'t shuffle batches for first N epochs'
-#  gen_subset: test # default='test', metavar='SPLIT', help='data subset to generate (train, valid, test)'
-#  num_shards: 1 # default=1, type=int, metavar='N', help='shard generation over N shards'
-#  shard_id: 0 # default=0, type=int, metavar='ID', help='id of the shard to generate (id < num_shards)'
-#  train_data_file: /data/wanyao/ghproj_d/naturalcodev3/wikitext-103-raw/data/wiki.train.raw # type=str, help="The input training data file (a text file)."
-#  eval_data_file: ~ # default=None, type=str, help="An optional input evaluation data file to evaluate the perplexity on (a text file).",
-#  line_by_line: 0 # action="store_true", help="Whether distinct lines of text in the dataset are to be handled as distinct sequences.",
-#  tokenizer_name: /data/wanyao/ghproj_d/naturalcodev3/wikitext-103-raw/archive/WikiBERT-small #default='/data/wanyao/ghproj_d/transformers/models/EsperBERTo-small', type=str, help="Optional pretrained tokenizer name or path if not the same as model_name_or_path. If both are None, initialize a new tokenizer.",
-#  block_size: -1 # default=-1, type=int, help="Optional input sequence length after tokenization. The training dataset will be truncated in block of this size for training. Default to the model max input length for single sentence inputs (take into account special tokens).",
-#  per_gpu_train_batch_size: 16 # default=16, type=int, help="Batch size per GPU/CPU for training."
-#  per_gpu_eval_batch_size: 4 # default=4, type=int, help="Batch size per GPU/CPU for evaluation."
+  gen_subset: test # default='test', metavar='SPLIT', help='data subset to generate (train, valid, test)'
+  num_shards: 1 # default=1, type=int, metavar='N', help='shard generation over N shards'
+  shard_id: 0 # default=0, type=int, metavar='ID', help='id of the shard to generate (id < num_shards)'
 
 distributed_training:
   distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
@@ -81,20 +74,7 @@ distributed_training:
 
 task:
   data: ~/.ncc/CodeSearchNet/base/data-raw/ruby # /tmp/pycharm_project_629/data-bin help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
-#  sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
-#  tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
-#  mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
-#  leave_unmasked_prob: 0.1 # default=0.1, type=float, help='probability that a masked token is unmasked'
-#  random_token_prob: 0.1 # default=0.1, type=float, help='probability of replacing a token with a random token'
-#  freq_weighted_replacement: 0 # default=False, action='store_true', help='sample random replacement words based on word frequencies'
-#  mask_whole_words: 0 # default=False, action='store_true', help='mask whole words; you may also want to set --bpe'
-##
-##  pooler_activation_fn: 'tanh' # choices=utils.get_available_activation_fns(), help='Which activation function to use for pooler layer.'
-#  mlm: 1 # action="store_true", default=True, help="Train with masked-language modeling loss instead of language modeling."
-#  mlm_probability: 0.15 # type=float, default=0.15, help="Ratio of tokens to mask for masked language modeling loss"
-#  do_train: 1 # action="store_true", default=True, help="Whether to run training."
-#  do_eval: 0 # action="store_true", help="Whether to run eval on the dev set."
-#  eval_all_checkpoints: 0 # action="store_true", help="Evaluate all checkpoints starting with the same prefix as model_name_or_path ending and ending with step number",
+  tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
 
   # for summarization
   source_lang: code_tokens
@@ -106,6 +86,7 @@ task:
   max_target_positions: 1024 #', default=1024, type=int, metavar='N', help='max number of tokens in the target sequence'
   upsample_primary: 1 #', default=1, type=int, help='amount to upsample primary dataset'
   truncate_source: 0 #', action='store_true', default=False, help='truncate source to max-source-positions'
+  add_bos_token: 0 # ', action='store_true', help='prepend beginning of sentence token (<s>)'
 
   # options for reporting BLEU during validation
   eval_bleu: 1 #action='store_true', help='evaluation with BLEU scores'
@@ -177,10 +158,6 @@ optimization:
     weight_decay: 0.0 # '--wd', default=0.0, type=float, metavar='WD', help='weight decay'
     use_old_adam: 0 # action='store_true', default=False, help="Use fairseq.optim.adam.Adam"
 
-#  binary_cross_entropy:
-#    infonce: 0 # action='store_true', help='if set, uses cross entropy instead of binary cross entropy (i.e. InfoNCE loss)'
-#    loss_weights: '' # type=str, default=None, help='weights for additional loss terms (not first one)'
-#    log_keys: '' # type=str, default=None, help='output keys to log'
   learning_rate: 1e-4 # default=1e-4, type=float, help="The initial learning rate for Adam."
   weight_decay: 0.0 # default=0.0, type=float, help="Weight decay if we apply some."
   adam_epsilon: 1e-8 # default=1e-8, type=float, help="Epsilon for Adam optimizer."
@@ -219,3 +196,46 @@ checkpoint:
   save_total_limit: 2 # type=int, default=2, help="Limit the total amount of checkpoints, delete the older checkpoints in the output_dir, does not delete by default",
   overwrite_output_dir: 0 # action="store_true", help="Overwrite the content of the output directory"
   overwrite_cache: 0 # action="store_true", help="Overwrite the cached training and evaluation sets"
+
+
+eval:
+  path: ~/.ncc/CodeSearchNet/summarization/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
+  quiet: 1 # ', action='store_true', help='only print final scores'
+  results_path: ~ # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'
+  model_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override model args at generation '
+
+  beam: 5 # ', default=5, type=int, metavar='N', help='beam size')
+  nbest: 1 # ', default=1, type=int, metavar='N', help='number of hypotheses to output')
+  max_len_a: 0 #', default=0, type=float, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))
+  max_len_b: 200 #', default=200, type=int, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))
+  min_len: 1 # ', default=1, type=float, metavar='N', help=('minimum generation length'))
+  match_source_len: 0 #', default=False, action='store_true', help=('generations should match the source length'))
+  no_early_stop: 0 # ', action='store_true', help='deprecated')
+  unnormalized: 0 # ', action='store_true', help='compare unnormalized hypothesis scores')
+  no_beamable_mm: 0 # ', action='store_true', help='don\'t use BeamableMM in attention layers')
+  lenpen: 1 # ', default=1, type=float, help='length penalty: <1.0 favors shorter, >1.0 favors longer sentences')
+  unkpen: 0 # ', default=0, type=float, help='unknown word penalty: <0 produces more unks, >0 produces fewer')
+  replace_unk: ~ # ', nargs='?', const=True, default=None, help='perform unknown replacement (optionally with alignment dictionary)')
+  sacrebleu: 0 # ', action='store_true', help='score with sacrebleu')
+  score_reference: 0 # ', action='store_true', help='just score the reference translation')
+  prefix_size: 0 # ', default=0, type=int, metavar='PS', help='initialize generation by target prefix of given length')
+  no_repeat_ngram_size: 0 # ', default=0, type=int, metavar='N', help='ngram blocking such that this size ngram cannot be repeated in the generation')
+  sampling: 0 # ', action='store_true', help='sample hypotheses instead of using beam search')
+  sampling_topk: -1 # ', default=-1, type=int, metavar='PS', help='sample from top K likely next words instead of all words')
+  sampling_topp: -1 # ', default=-1.0, type=float, metavar='PS', help='sample from the smallest set whose cumulative probability mass exceeds p for next words')
+  temperature: 1. #', default=1., type=float, metavar='N', help='temperature for generation')
+  diverse_beam_groups: -1 # ', default=-1, type=int, metavar='N', help='number of groups for Diverse Beam Search')
+  diverse_beam_strength: 0.5 # ', default=0.5, type=float, metavar='N', help='strength of diversity penalty for Diverse Beam Search')
+  diversity_rate: -1.0 # ', default=-1.0, type=float, metavar='N', help='strength of diversity penalty for Diverse Siblings Search')
+  print_alignment: 0 # ', action='store_true', help='if set, uses attention feedback to compute and print alignment to source tokens')
+  print_step: 0 # ', action='store_true')
+  # arguments for iterative refinement generator
+  iter_decode_eos_penalty: 0.0 # ', default=0.0, type=float, metavar='N', help='if > 0.0, it penalized early-stopping in decoding.')
+  iter_decode_max_iter: 10 # ', default=10, type=int, metavar='N', help='maximum iterations for iterative refinement.')
+  iter_decode_force_max_iter: 0 #', action='store_true', help='if set, run exact the maximum number of iterations without early stop')
+  iter_decode_with_beam: 1 # ', default=1, type=int, metavar='N', help='if > 1, model will generate translations varying by the lengths.')
+  iter_decode_with_external_reranker: 0 # ', action='store_true', help='if set, the last checkpoint are assumed to be a reranker to rescore the translations'),
+  retain_iter_history: 0 # ', action='store_true', help='if set, decoding returns the whole history of iterative refinement')
+  # special decoding format for advanced decoding.
+  decoding_format: ~ # ', default=None, type=str, choices=['unigram', 'ensemble', 'vote', 'dp', 'bs'])

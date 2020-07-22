@@ -8,7 +8,6 @@ import json
 import numpy as np
 from ncc.logging import metrics
 import itertools
-from argparse import Namespace
 from ncc import LOGGER
 from ncc.tasks.fairseq_task import FairseqTask
 from ncc.tasks import register_task
@@ -203,9 +202,10 @@ class SummarizationTask(FairseqTask):
                 tokenizer=args['task']['eval_bleu_detok'] if args['task']['eval_bleu_detok'] else None,  #getattr(args, 'eval_bleu_detok', None),
                 **detok_args
             ))
-
-            gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
-            self.sequence_generator = self.build_generator([model], Namespace(**gen_args))
+            # The gen_args parameters have been set in the yml file
+            # gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
+            # self.sequence_generator = self.build_generator(Namespace(**gen_args))
+            self.sequence_generator = self.build_generator(args)
         return model
 
     def valid_step(self, sample, model, criterion):

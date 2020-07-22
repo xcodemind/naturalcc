@@ -171,7 +171,8 @@ def load_checkpoint_to_cpu(path, arg_overrides=None):
     args = state["args"]
     if arg_overrides is not None:
         for arg_name, arg_val in arg_overrides.items():
-            setattr(args, arg_name, arg_val)
+            # setattr(args, arg_name, arg_val)
+            args['model'][arg_name] = arg_val
     state = _upgrade_state_dict(state)
     return state
 
