@@ -46,22 +46,6 @@ class MaskedLMTask(FairseqTask):
         LOGGER.info('dictionary: {} types'.format(len(dictionary)))
         return cls(args, dictionary)
 
-    # def build_model(self, args, config):
-    #     """
-    #     Build the :class:`~fairseq.models.BaseFairseqModel` instance for this
-    #     task.
-    #
-    #     Args:
-    #         args (argparse.Namespace): parsed command-line arguments
-    #
-    #     Returns:
-    #         a :class:`~fairseq.models.BaseFairseqModel` instance
-    #     """
-    #     from ncc import models
-    #     # assert 0
-    #     args['model']['arch'] = '{}_{}'.format(args['model']['arch'], args['common']['task'])
-    #     return models.build_model(args, config, self)
-
     def load_dataset(self, split, epoch=1, combine=False, **kwargs):
         """Load a given dataset split.
 
