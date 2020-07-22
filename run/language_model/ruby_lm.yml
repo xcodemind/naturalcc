@@ -1,0 +1,31 @@
+##################### default args #####################
+common:
+  cpu: 0 # action='store_true', help='use CPU instead of CUDA'
+  task: summarization # task
+
+eval:
+  path: ~/.ncc/CodeSearchNet/summarization/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  model_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override model args at generation '
+  checkpoint_suffix: '' # default='', help='Suffix to add to the checkpoint file name'
+  output_word_probs: 0 # ', action='store_true', help='if set, outputs words and their predicted log probabilities to standard output'
+  output_word_stats: 0 # ', action='store_true', help='if set, outputs word statistics such as word count, average probability, etc'
+  context_window: 0 # ', default=0, type=int, metavar='N', help='ensures that every evaluated token has access to a context of at least this size, if possible'
+  softmax_batch: 100 # ', default=sys.maxsize, type=int, metavar='N', help='if BxT is more than this, will batch the softmax over vocab to this amount of tokens in order to fit into GPU memory'
+  remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
+
+task:
+  data: ~/.ncc/CodeSearchNet/base/data-raw/ruby # /tmp/pycharm_project_629/data-bin help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  # for summarization
+  source_lang: code_tokens
+  target_lang: docstring_tokens
+  load_alignments: 0 #', action='store_true', help='load the binarized alignments'
+  left_pad_source: 1 #', default='True', type=str, metavar='BOOL', help='pad the source on the left'
+  left_pad_target: 0 #', default='False', type=str, metavar='BOOL', help='pad the target on the left'
+  max_source_positions: 1024 #', default=1024, type=int, metavar='N', help='max number of tokens in the source sequence'
+  max_target_positions: 1024 #', default=1024, type=int, metavar='N', help='max number of tokens in the target sequence'
+  upsample_primary: 1 #', default=1, type=int, help='amount to upsample primary dataset'
+  truncate_source: 0 #', action='store_true', default=False, help='truncate source to max-source-positions'
+
+
+distributed:
+  device_id: 8 # '--local_rank', default=0, type=int, help='which GPU to use (usually configured automatically)'
