@@ -23,7 +23,7 @@ os.makedirs(CACHE_DIR, exist_ok=True)  # mkdir cache dir
 if __name__ == '__main__':
     """
     how to run
-    python -m dataset.common.bpe --src-files ~/.ncc/codenn/flatten/*.code,~/.ncc/CodeSearchNet/flatten/ruby/*.code
+    python -m dataset.common.bpe --src-files ~/.ncc/codenn/flatten/*.code,~/.ncc/CodeSearchNet/flatten/java/*.code
     """
 
     parser = argparse.ArgumentParser()
@@ -52,7 +52,7 @@ if __name__ == '__main__':
         filename_inserted = filename + constants.INSERTED
         LOGGER.info('Replace [\\n] with <S_SEP>, loading from {} and save at {}'.format(
             filename, filename_inserted))
-        # insert_sep_token(filename, filename_inserted)
+        insert_sep_token(filename, filename_inserted)
         args.src_files[idx] = filename_inserted
 
     # ======== STEP2 merge all string into a cache file ======== #
