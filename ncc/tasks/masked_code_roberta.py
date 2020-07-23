@@ -109,7 +109,7 @@ class MaskedCodeRobertaTask(FairseqTask):
         self.seed = args['common']['seed']
 
         # add mask token
-        # self.mask_idx = src_dict.add_symbol(constants.MASK)
+        self.mask_idx = self.dictionary.add_symbol(constants.MASK)
 
     @classmethod
     def setup_task(cls, args, **kwargs):
