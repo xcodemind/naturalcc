@@ -1,3 +1,12 @@
+# Preprocess for CodeBert
+```
+# step1
+preprocess_wordpiece.py
+# step2
+preprocess_codebert.py # from data-raw to data-mmap
+```
+
+
 # Preprocess for HiCodeBert
 
 The flatten data is in ~/.ncc/CodeSearchNet/flatten/ruby/
