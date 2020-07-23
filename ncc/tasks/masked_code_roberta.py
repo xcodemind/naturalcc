@@ -115,7 +115,7 @@ class MaskedCodeRobertaTask(FairseqTask):
     def setup_task(cls, args, **kwargs):
         paths = utils.split_paths(args['task']['data'])
         assert len(paths) > 0
-        dictionary = cls.load_dictionary(os.path.join(paths[0], 'dict.code.txt'))
+        dictionary = cls.load_dictionary(os.path.join(paths[0], 'codesearchnet.dict.txt'))
         LOGGER.info('dictionary: {} types'.format(len(dictionary)))
         return cls(args, dictionary)
 
