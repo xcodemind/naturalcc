@@ -103,7 +103,7 @@ def load_dict(args: Dict, task, modality: str, overwrite: bool):
 
 def vocab2dict(vocab_file: str, dict_file: str = None):
     if dict_file is None:
-        dict_file = vocab_file.replace('.vocab', '.dict')
+        dict_file = vocab_file.replace('.vocab', '.dict.txt')
     with open(vocab_file, 'r', encoding='UTF-8') as reader:
         with open(dict_file, 'w', encoding='UTF-8') as writer:
             for line in reader:
@@ -335,6 +335,7 @@ def build_model(file: str, model_name: str, vocab_size: int, special_symbols: Op
 
     LOGGER.info(params)
     spm.SentencePieceTrainer.train(params)
+
     vocab2dict(vocab_file='{}.vocab'.format(model_name))
 
 

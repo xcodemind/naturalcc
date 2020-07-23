@@ -21,6 +21,8 @@ from ncc.utils.util_file import load_yaml
 from ncc import tasks
 from ncc.data.tools.binarizer import Binarizer
 
+import sentencepiece as spm
+
 from ncc import LOGGER
 
 
@@ -33,8 +35,7 @@ def binarize(args: Dict, filename: str, dict: Dictionary, out_file_prefix: str, 
     def consumer(tensor):
         ds.add_item(tensor)
 
-    res = Binarizer.binarize(filename, dict, consumer, tokenize=tokenizer.CSN_tokenizer(attr),
-                             append_eos=False, offset=offset, end=end)
+    res = Binarizer.binarize_bpe(filename, dict, consumer, offset=offset, end=end)
     ds.finalize('{}.idx'.format(out_file_prefix))
     return res
 
@@ -44,73 +45,38 @@ def main(args):
     LOGGER.info('mkdir for {} task'.format(args['preprocess']['task']))
     os.makedirs(args['preprocess']['destdir'], exist_ok=True)
 
-    def train_path(lang):
-        return "{}{}".format(args['preprocess']['trainpref'], ("." + lang) if lang else "")
-
-    def build_dictionary(filenames, src=False, tgt=False):
-        assert src ^ tgt
-        return task.build_dictionary(
-            filenames,
-            tokenize_func=tokenizer.tokenize_string,
-            workers=args['preprocess']['workers'],
-            threshold=args['preprocess']['thresholdsrc'],
-            nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
-            padding_factor=args['preprocess']['padding_factor'],
-        )
-
-    def build_vocab_dict(args):
+    def load_bpe_vocab(args):
         """Build vocabulary (dictionary) for source and target domain"""
-        LOGGER.info('Build vocabularies...')
-        # task = tasks.get_task(args['preprocess']['task'])
+        LOGGER.info('Load BPE vocabularies...')
+        # ref: https://github.com/google/sentencepiece/blob/master/python/sentencepiece_python_module_example.ipynb
+        # makes segmenter instance and loads the model file (codesearchnet.model)
+        bpe_dict_filename = args['preprocess']['srcdict'] + '.model'
+
+        if args['preprocess']['dataset_impl'] == 'mmap':
+            # copy (*.model) and (*.vocab) to mmap directory
+            shutil.copy(args['preprocess']['srcdict'] + '.model', args['preprocess']['destdir'])
+            shutil.copy(args['preprocess']['srcdict'] + '.vocab', args['preprocess']['destdir'])
+            # copy (*.dict.txt) for model training. (*.dict.txt) contains same tokens of BPE dictionary
+            # but it has been transformed for ncc.Dictionary class usage while training
+            shutil.copy(args['preprocess']['srcdict'] + '.dict.txt', args['preprocess']['destdir'])
+
+        bpe_dict_filename = os.path.join(args['preprocess']['destdir'], os.path.basename(bpe_dict_filename))
+        sp = spm.SentencePieceProcessor()
+        sp.load(bpe_dict_filename)
+
         src_dicts = OrderedDict()
+        for modality in args['preprocess']['source_lang']:
+            src_dicts[modality] = sp
 
-        if args['preprocess']['joined_dictionary']:
-            modalities = args['preprocess']['source_lang'] + [args['preprocess']['target_lang']]
-            modalities = sorted(list(itertools.filterfalse(lambda modality: modality is None, modalities)))
-            joined_dictionary_filename = os.path.join(args['preprocess']['destdir'],
-                                                      '{}.dict.txt'.format('_'.join(modalities)))
-            if os.path.exists(joined_dictionary_filename):
-                LOGGER.info('Loading joint dict from {}'.format(joined_dictionary_filename))
-                joined_dictionary = Dictionary.load(joined_dictionary_filename)
-            else:
-                joined_dictionary = build_dictionary(
-                    [train_path(modality) for modality in modalities], src=True
-                )
-                LOGGER.info('Saving joint dict at {}'.format(joined_dictionary_filename))
-                joined_dictionary.save(joined_dictionary_filename)
-
-            for modality in modalities:
-                src_dicts[modality] = joined_dictionary
-            tgt_dict = joined_dictionary
+        if args['preprocess']['target_lang'] is None or args['preprocess']['only_source']:
+            tgt_dict = None
         else:
-            # src dict
-            for modality in args['preprocess']['source_lang']:
-                modality_dict_filename = os.path.join(args['preprocess']['destdir'], '{}.dict.txt'.format(modality))
-                if os.path.exists(modality_dict_filename):
-                    LOGGER.info('Loading {} dict from {}'.format(modality, modality_dict_filename))
-                    src_dicts[modality] = Dictionary.load(modality_dict_filename)
-                else:
-                    src_dicts[modality] = build_dictionary([train_path(modality)], src=True)
-                    LOGGER.info('Saving {} dict at {}'.format(modality, modality_dict_filename))
-                    src_dicts[modality].save(modality_dict_filename)
-            # tgt dict
-            if args['preprocess']['target_lang']:
-                modality_dict_filename = os.path.join(args['preprocess']['destdir'],
-                                                      '{}.dict.txt'.format(args['preprocess']['target_lang']))
-                if os.path.exists(modality_dict_filename):
-                    LOGGER.info('Loading {} dict from {}'.format(modality, modality_dict_filename))
-                    tgt_dict = Dictionary.load(modality_dict_filename)
-                else:
-                    tgt_dict = build_dictionary([train_path(args['preprocess']['target_lang'])], tgt=True)
-                    LOGGER.info('Saving {} dict at {}'.format(modality, modality_dict_filename))
-                    tgt_dict.save(modality_dict_filename)
-            else:
-                tgt_dict = None
+            tgt_dict = sp
 
         return src_dicts, tgt_dict
 
     # 1. build vocabulary from bpe directory
-    src_dicts, tgt_dict = build_vocab_dict(args)
+    src_dicts, tgt_dict = load_bpe_vocab(args)
 
     # 2. ***************build dataset********************
     def file_name(prefix, lang):
@@ -163,9 +129,8 @@ def main(args):
         ds_file = '{}.mmap'.format(output_file)
         ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(dict))
         merge_result(
-            Binarizer.binarize(
-                input_file, dict, lambda t: ds.add_item(t),
-                tokenize=tokenizer.CSN_tokenizer(attr), append_eos=False, offset=0, end=offsets[1]
+            Binarizer.binarize_bpe(
+                input_file, dict, lambda t: ds.add_item(t), offset=0, end=offsets[1]
             )
         )
         if num_workers > 1:
@@ -181,13 +146,11 @@ def main(args):
         ds.finalize('{}.idx'.format(output_file))
 
         LOGGER.info(
-            "[{}] {}: {} sents, {} tokens, {:.3}% replaced by {}".format(
+            "[{}] {}: {} sents, {} tokens, BPE no replaced token".format(
                 attr,
                 input_file,
                 n_seq_tok[0],
                 n_seq_tok[1],
-                100 * sum(replaced.values()) / n_seq_tok[1],
-                dict.unk_word,
             )
         )
 

@@ -43,6 +43,7 @@ if __name__ == "__main__":
     # parameters pre-processing
     # args.format = 'piece'
     args.language = 'ruby'
+    args.vocab_size = args.vocab_size - 1  # because sentencepiece lacks <PAD>, therefore we need to vocab_size-1
     # code, docstring, path
     # args.modalities = ['path', 'docstring', ]
     # args.modalities = ['code', 'docstring', ]

@@ -1,9 +1,18 @@
 # Preprocess for CodeBert
+
+### step1, generate BPE dictionary
 ```
-# step1
-preprocess_wordpiece.py
-# step2
-preprocess_codebert.py # from data-raw to data-mmap
+# BPE core config
+# --language ruby
+# --vocab-size 50000
+# --modalities ['code', ]
+
+python -m dataset.codesearchnet.codebert.preprocess_wordpiece
+```
+
+### step2, generate mmap data
+```
+python -m dataset.codesearchnet.codebert.preprocess_codebert.py # from data-raw to data-mmap
 ```
 
 
