@@ -40,15 +40,15 @@ def safe_readline(f):
 class Binarizer:
     @staticmethod
     def binarize(
-            filename,
-            dict,  # Ditionary
-            consumer,
-            tokenize=tokenize_string,
-            append_eos=True,
-            reverse_order=False,
-            offset=0,
-            end=-1,
-            already_numberized=False,
+        filename,
+        dict,  # Ditionary
+        consumer,
+        tokenize=tokenize_string,
+        append_eos=True,
+        reverse_order=False,
+        offset=0,
+        end=-1,
+        already_numberized=False,
     ):
         nseq, ntok = 0, 0  # nseq = sentence number, ntok = token number
         replaced = Counter()  # un-recorded tokens
@@ -94,6 +94,43 @@ class Binarizer:
         }
 
     @staticmethod
+    def binarize_bpe(
+        filename,
+        dict,  # BPE Ditionary
+        consumer,
+        # append_eos=True, # sentencepiece cannot add extra <EOS>
+        reverse_order=False,
+        offset=0,
+        end=-1,
+    ):
+        nseq, ntok = 0, 0  # nseq = sentence number, ntok = token number
+        replaced = Counter()  # un-recorded tokens
+
+        with open(filename, "r", encoding="utf-8") as f:
+            f.seek(offset)
+            # next(f) breaks f.tell(), hence readline() must be used
+            line = safe_readline(f)
+            while line:
+                if end > 0 and f.tell() > end:
+                    break
+
+                ids = dict.encode_as_ids(line)  # text => ids
+                if reverse_order:
+                    words = list(reversed(words))
+                ids = torch.IntTensor(ids)
+
+                nseq += 1
+                ntok += len(ids)
+                consumer(ids)
+                line = f.readline()
+        return {
+            "nseq": nseq,
+            "nunk": sum(replaced.values()),
+            "ntok": ntok,
+            "replaced": replaced,
+        }
+
+    @staticmethod
     def binarize_alignments(filename, alignment_parser, consumer, offset=0, end=-1):
         nseq = 0
 
@@ -123,12 +160,12 @@ class Binarizer:
 
     @staticmethod
     def binarize_trav_trans(
-            filename,
-            dicts,  # (token_dict, mask_dict)
-            consumer,  # (data, ext, ids, )
-            tokenize=tokenize_string,
-            offset=0,
-            end=-1,
+        filename,
+        dicts,  # (token_dict, mask_dict)
+        consumer,  # (data, ext, ids, )
+        tokenize=tokenize_string,
+        offset=0,
+        end=-1,
     ):
         nseq, ntok = 0, 0  # nseq = sentence number, ntok = token number
         token_dict, mask_dict = dicts
