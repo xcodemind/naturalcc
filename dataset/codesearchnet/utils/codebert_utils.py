@@ -73,7 +73,7 @@ def dict_path(args: Dict, modality: str) -> str:
 
 
 def build_dictionary(args: Dict, task, modality: str, filenames, src=False, tgt=False) \
-        -> Dictionary:
+    -> Dictionary:
     """build dictionary for modality"""
     assert src ^ tgt, RuntimeError('Cannot build dictionary for source and target domain at the same time.')
     return task.build_dictionary(
@@ -217,8 +217,11 @@ def make_all(args: Dict, attr: str, dict: Dictionary, modes: Optional[List] = No
         src_file = os.path.join(args['preprocess']['{}pref'.format(mode)], '.'.join([mode, attr]))
         tgt_file = os.path.join(args['preprocess']['destdir'], '.'.join([mode, attr]))
         if args['preprocess']['dataset_impl'] == "raw":
-            # Copy original text file to destination folder
-            shutil.copyfile(src_file, tgt_file)
+            if os.path.exists(src_file) and src_file == tgt_file:
+                pass
+            else:
+                # Copy original text file to destination folder
+                shutil.copyfile(src_file, tgt_file)
         else:
             make_binary_dataset(args, dict, src_file, tgt_file, attr, args['preprocess']['workers'])
 
@@ -321,7 +324,7 @@ def build_model(file: str, model_name: str, vocab_size: int, special_symbols: Op
                 overwrite: bool = False):
     os.makedirs(os.path.dirname(model_name), exist_ok=True)
     if os.path.exists('{}.model'.format(model_name)) and os.path.exists('{}.vocab'.format(model_name)) \
-            and not overwrite:
+        and not overwrite:
         return
     params = '--input={} --model_prefix={} --hard_vocab_limit=false'.format(','.join(file), model_name)
     if special_symbols is not None:

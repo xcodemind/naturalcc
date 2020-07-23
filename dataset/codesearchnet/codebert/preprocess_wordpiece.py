@@ -45,7 +45,8 @@ if __name__ == "__main__":
     args.language = 'ruby'
     # code, docstring, path
     # args.modalities = ['path', 'docstring', ]
-    args.modalities = ['code', 'docstring', ]
+    # args.modalities = ['code', 'docstring', ]
+    args.modalities = ['code', ]
 
     # ============================ #
     # we recommend below configure as freeze
