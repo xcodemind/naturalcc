@@ -21,21 +21,27 @@ CACHE_DIR = os.path.expanduser(CACHE_DIR)
 os.makedirs(CACHE_DIR, exist_ok=True)  # mkdir cache dir
 
 if __name__ == '__main__':
+    """
+    how to run
+    python -m dataset.common.bpe --src-files ~/.ncc/codenn/flatten/*.code,~/.ncc/CodeSearchNet/flatten/ruby/*.code
+    """
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--format", type=str, default='piece', help='id(num)/piece(str)')
     parser.add_argument("--vocab-size", type=int, default=50000, help='token dictionary size')
     parser.add_argument("--bpe-model", type=str, default='bpe', help='BPE model and vocab name')
-    parser.add_argument("--src-files", type=list,
-                        default=['~/.ncc/codenn/flatten/*.code', '~/.ncc/CodeSearchNet/flatten/ruby/*.code'],
+    parser.add_argument("--src-files", type=str,
+                        default='~/.ncc/codenn/flatten/*.code,~/.ncc/CodeSearchNet/flatten/ruby/*.code',
                         help='source data. E.g. *.* denotes [train/valid/test].[code/docstring]')
     parser.add_argument("--tgt-dir", type=str, default='~/.ncc/tmp',
                         help='save dir for sentencepiece bpe models or save files')
     parser.add_argument("--keep-empty", type=bool, default=True, help="keep empty lines")
-    parser.add_argument("--workers", type=int, default=999, help='multi-processors number')
+    # parser.add_argument("--workers", type=int, default=999, help='multi-processors number')
     args = parser.parse_args()
     args.vocab_size = args.vocab_size - 1  # because sentencepiece lacks <PAD>, therefore we need to vocab_size-1
-    args.workers = min(args.workers, cpu_count())
+    # args.workers = min(args.workers, cpu_count())
 
+    args.src_files = args.src_files.split(',')
     args.src_files = [glob(os.path.expanduser(directory)) for directory in args.src_files]
     args.src_files = list(itertools.chain(*args.src_files))
     args.tgt_dir = os.path.expanduser(args.tgt_dir)
