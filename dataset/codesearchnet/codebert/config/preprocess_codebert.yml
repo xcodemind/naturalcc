@@ -41,7 +41,7 @@ preprocess:
   nwordssrc: -1 #", metavar="N", default=-1, type=int, help="number of source words to retain"
   alignfile: ~ #", metavar="ALIGN", default=None, help="an alignment file (optional)"
   dataset_impl: mmap #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
-  joined_dictionary: 1 # ", action="store_true", help="Generate joined dictionary"
+  joined_dictionary: 0 # ", action="store_true", help="Generate joined dictionary"
   only_source: 1 # ", action="store_true", help="Only process the source language"
   padding_factor: 8 #", metavar="N", default=8, type=int, help="Pad dictionary size to be multiple of N"
   workers: 10 # ", metavar="N", default=1, type=int, help="number of parallel workers"

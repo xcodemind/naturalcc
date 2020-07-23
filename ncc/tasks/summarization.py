@@ -9,6 +9,7 @@ import numpy as np
 from ncc.logging import metrics
 import itertools
 from ncc import LOGGER
+from ncc.data.dictionary import Dictionary
 from ncc.tasks.fairseq_task import FairseqTask
 from ncc.tasks import register_task
 from ncc.utils import utils
@@ -21,17 +22,19 @@ from ncc.data.wrappers.strip_token_dataset import StripTokenDataset
 from ncc.data.concat_dataset import ConcatDataset
 from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
 from ncc.data.summarization.language_pair_dataset import LanguagePairDataset
+from ncc.utils.tokenizer import tokenize_string
 
 EVAL_BLEU_ORDER = 4
 
+
 def load_langpair_dataset(
-        data_path, split,
-        src, src_dict,
-        tgt, tgt_dict,
-        combine, dataset_impl, upsample_primary,
-        left_pad_source, left_pad_target, max_source_positions,
-        max_target_positions, prepend_bos=False, load_alignments=False,
-        truncate_source=False, append_source_id=False
+    data_path, split,
+    src, src_dict,
+    tgt, tgt_dict,
+    combine, dataset_impl, upsample_primary,
+    left_pad_source, left_pad_target, max_source_positions,
+    max_target_positions, prepend_bos=False, load_alignments=False,
+    truncate_source=False, append_source_id=False
 ):
     def split_exists(split, src, data_path):
         filename = os.path.join(data_path, '{}.{}'.format(split, src))  # -{}.{} , tgt, lang
@@ -159,6 +162,35 @@ class SummarizationTask(FairseqTask):
 
         return cls(args, src_dict, tgt_dict)
 
+
+    @classmethod
+    def build_dictionary(
+        cls, filenames, tokenize_func=tokenize_string,
+        workers=1, threshold=-1, nwords=-1, padding_factor=8
+    ):
+        """Build the dictionary
+
+        Args:
+            filenames (list): list of filenames
+            workers (int): number of concurrent workers
+            threshold (int): defines the minimum word count
+            nwords (int): defines the total number of words in the final dictionary,
+                including special symbols
+            padding_factor (int): can be used to pad the dictionary size to be a
+                multiple of 8, which is important on some hardware (e.g., Nvidia
+                Tensor Cores).
+        """
+        d = Dictionary()
+
+        for filename in filenames:
+            Dictionary.add_token_to_dictionary(
+                filename, d, tokenize_func, workers
+            )
+
+        d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
+        return d
+
+
     def load_dataset(self, split, epoch=1, combine=False, **kwargs):
         """Load a given dataset split.
 
@@ -196,12 +228,14 @@ class SummarizationTask(FairseqTask):
                 'to disable detokenization, e.g., when using sentencepiece)'
             )
             # detok_args = json.loads(getattr(args, 'eval_bleu_detok_args', '{}') or '{}')
-            detok_args = json.loads(args['task']['eval_bleu_detok_args'] if args['task']['eval_bleu_detok_args'] else '{}')
+            detok_args = json.loads(
+                args['task']['eval_bleu_detok_args'] if args['task']['eval_bleu_detok_args'] else '{}')
             self.tokenizer = encoders.build_tokenizer(
                 dict(
-                tokenizer=args['task']['eval_bleu_detok'] if args['task']['eval_bleu_detok'] else None,  #getattr(args, 'eval_bleu_detok', None),
-                **detok_args
-            ))
+                    tokenizer=args['task']['eval_bleu_detok'] if args['task']['eval_bleu_detok'] else None,
+                    # getattr(args, 'eval_bleu_detok', None),
+                    **detok_args
+                ))
             # The gen_args parameters have been set in the yml file
             # gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
             # self.sequence_generator = self.build_generator(Namespace(**gen_args))
@@ -263,7 +297,6 @@ class SummarizationTask(FairseqTask):
     def max_positions(self):
         """Return the max sentence length allowed by the task."""
         return (self.args['task']['max_source_positions'], self.args['task']['max_target_positions'])
-
 
     @property
     def source_dictionary(self):

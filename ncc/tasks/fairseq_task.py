@@ -71,7 +71,7 @@ class FairseqTask(object):
         d = Dictionary()
         for filename in filenames:
             Dictionary.add_file_to_dictionary(
-                filename, d, tokenizer.tokenize_line, workers
+                filename, d, tokenizer.tokenize_line, d.eos_word, workers
             )
         d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
         return d
@@ -343,7 +343,7 @@ class FairseqTask(object):
         return SequenceCompletor()
 
     def train_step(
-            self, sample, model, criterion, optimizer, update_num, ignore_grad=False
+        self, sample, model, criterion, optimizer, update_num, ignore_grad=False
     ):
         """
         Do forward and backward, and return the loss as computed by *criterion*

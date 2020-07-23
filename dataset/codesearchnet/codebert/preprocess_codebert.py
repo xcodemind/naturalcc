@@ -51,7 +51,7 @@ def main(args):
         assert src ^ tgt
         return task.build_dictionary(
             filenames,
-            tokenize_func=tokenizer.tokenize_list,
+            tokenize_func=tokenizer.tokenize_string,
             workers=args['preprocess']['workers'],
             threshold=args['preprocess']['thresholdsrc'],
             nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
@@ -61,24 +61,52 @@ def main(args):
     def build_vocab_dict(args):
         """Build vocabulary (dictionary) for source and target domain"""
         LOGGER.info('Build vocabularies...')
+        # task = tasks.get_task(args['preprocess']['task'])
         src_dicts = OrderedDict()
 
-        modalities = args['preprocess']['source_lang'] + [args['preprocess']['target_lang']]
-        modalities = sorted(list(itertools.filterfalse(lambda modality: modality is None, modalities)))
+        if args['preprocess']['joined_dictionary']:
+            modalities = args['preprocess']['source_lang'] + [args['preprocess']['target_lang']]
+            modalities = sorted(list(itertools.filterfalse(lambda modality: modality is None, modalities)))
+            joined_dictionary_filename = os.path.join(args['preprocess']['destdir'],
+                                                      '{}.dict.txt'.format('_'.join(modalities)))
+            if os.path.exists(joined_dictionary_filename):
+                LOGGER.info('Loading joint dict from {}'.format(joined_dictionary_filename))
+                joined_dictionary = Dictionary.load(joined_dictionary_filename)
+            else:
+                joined_dictionary = build_dictionary(
+                    [train_path(modality) for modality in modalities], src=True
+                )
+                LOGGER.info('Saving joint dict at {}'.format(joined_dictionary_filename))
+                joined_dictionary.save(joined_dictionary_filename)
 
-        dictionary_filename = args['preprocess']['srcdict']
-        assert os.path.exists(dictionary_filename)
-        joined_dictionary = Dictionary.load(dictionary_filename)
-        # copy dictionary
-        if os.path.dirname(dictionary_filename) == args['preprocess']['destdir']:
-            # because dictionary from bpe is directly save in data-raw, no need to process
-            pass
+            for modality in modalities:
+                src_dicts[modality] = joined_dictionary
+            tgt_dict = joined_dictionary
         else:
-            shutil.copy(dictionary_filename, args['preprocess']['destdir'])
+            # src dict
+            for modality in args['preprocess']['source_lang']:
+                modality_dict_filename = os.path.join(args['preprocess']['destdir'], '{}.dict.txt'.format(modality))
+                if os.path.exists(modality_dict_filename):
+                    LOGGER.info('Loading {} dict from {}'.format(modality, modality_dict_filename))
+                    src_dicts[modality] = Dictionary.load(modality_dict_filename)
+                else:
+                    src_dicts[modality] = build_dictionary([train_path(modality)], src=True)
+                    LOGGER.info('Saving {} dict at {}'.format(modality, modality_dict_filename))
+                    src_dicts[modality].save(modality_dict_filename)
+            # tgt dict
+            if args['preprocess']['target_lang']:
+                modality_dict_filename = os.path.join(args['preprocess']['destdir'],
+                                                      '{}.dict.txt'.format(args['preprocess']['target_lang']))
+                if os.path.exists(modality_dict_filename):
+                    LOGGER.info('Loading {} dict from {}'.format(modality, modality_dict_filename))
+                    tgt_dict = Dictionary.load(modality_dict_filename)
+                else:
+                    tgt_dict = build_dictionary([train_path(args['preprocess']['target_lang'])], tgt=True)
+                    LOGGER.info('Saving {} dict at {}'.format(modality, modality_dict_filename))
+                    tgt_dict.save(modality_dict_filename)
+            else:
+                tgt_dict = None
 
-        for modality in modalities:
-            src_dicts[modality] = joined_dictionary
-        tgt_dict = src_dicts
         return src_dicts, tgt_dict
 
     # 1. build vocabulary from bpe directory
