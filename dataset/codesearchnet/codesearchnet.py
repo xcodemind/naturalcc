@@ -101,7 +101,7 @@ class CodeSearchNet(object):
     def _check_exists(self) -> bool:
         for lng in self.resources.keys():
             if os.path.exists(os.path.join(self._LIB_DIR, '{}.zip'.format(lng))) and \
-                    os.path.exists(os.path.join(self._RAW_DIR, '{}.zip'.format(lng))):
+                os.path.exists(os.path.join(self._RAW_DIR, '{}.zip'.format(lng))):
                 pass
             else:
                 return False
@@ -291,27 +291,17 @@ class CodeSearchNet(object):
         def _check_attrs_valid() -> List:
             excluded_attrs = []
             for attr in save_attrs:
-                if attr not in self.attrs:
+                if (attr not in self.attrs) and (attr not in {'method', 'raw_ast', 'tok', 'comment'}):
                     excluded_attrs.append(attr)
             return excluded_attrs
 
-        if save_attrs is None:
-            save_attrs = ['code', 'code_tokens', 'docstring', 'docstring_tokens',
-                          'func_name', 'original_string', 'index']
-        else:
-            # if save_attrs is set, then check
-            excluded_attrs = _check_attrs_valid()
-            if len(excluded_attrs) > 0:
-                raise RuntimeError('{} Dataset do not include attributes:{}.'.format(
-                    self.__class__.__name__, excluded_attrs))
-        save_attrs = set(save_attrs)
         """
         1) [method] is sequence modal of [func_name]
         2) [raw_ast] is ast modal of [code]
         3) [tok] is refined from [code] or [code_tokens]
         4) [comment] is refined from [docstring] or [docstring_tokens]
         ** if [tok] or [comment] is None, use [code_tokens] or [docstring_tokens] as alternative
-        """
+        
         if 'func_name' in save_attrs:
             save_attrs.add('method')
         if 'code' in save_attrs:
@@ -320,6 +310,30 @@ class CodeSearchNet(object):
             save_attrs.add('tok')
         if ('docstring' in save_attrs) and ('docstring_tokens' in save_attrs):
             save_attrs.add('comment')
+        """
+
+        if save_attrs is None:
+            save_attrs = [
+                # CSN defined
+                'code', 'code_tokens', 'docstring', 'docstring_tokens', 'func_name', 'original_string', 'index',
+                # new attr
+                'method', 'raw_ast', 'tok', 'comment',
+            ]
+        else:
+            # if save_attrs is set, then check
+            excluded_attrs = _check_attrs_valid()
+            if len(excluded_attrs) > 0:
+                raise RuntimeError('{} Dataset do not include attributes:{}.'.format(
+                    self.__class__.__name__, excluded_attrs))
+            if 'method' in save_attrs:
+                assert 'func_name' in save_attrs
+            if 'raw_ast' in save_attrs:
+                assert 'code' in save_attrs
+            if 'tok' in save_attrs:
+                assert ('code' in save_attrs) and ('code_tokens' in save_attrs)
+            if 'comment' in save_attrs:
+                assert ('docstring' in save_attrs) and ('docstring_tokens' in save_attrs)
+            save_attrs = set(save_attrs)
 
         def _check_flatten_files_exist():
             """a simple check method"""
@@ -357,7 +371,8 @@ class CodeSearchNet(object):
             LOGGER.info('Save flatten data and {}\'s max sub-token info in {}'.format(
                 lng, os.path.join(self._FLATTEN_DIR, lng)))
 
-    def flatten_data_all(self, lngs: Union[List, str, None] = None, save_attrs: List = None, overwrite: bool = False):
+    def flatten_data_all(self, lngs: Union[List, str, None] = None, save_attrs: List = None,
+                         overwrite: bool = False):
         lngs = self._lngs_init(lngs)
         for lng in lngs:
             self.flatten_data(lng, save_attrs, overwrite)

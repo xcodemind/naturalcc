@@ -14,8 +14,8 @@ def main():
     dataset = CodeSearchNet(download=True, thread_num=cpu_count())
 
     lngs = ['ruby']
-    # flatten_attrs = ['code', 'docstring']
-    flatten_attrs = ['code_tokens', 'docstring_tokens']
+    flatten_attrs = ['code', 'docstring']
+    # flatten_attrs = ['code_tokens', 'docstring_tokens']
     # tree_attrs = ['path']
     # all_attrs = flatten_attrs + tree_attrs
     # flatten raw files separately
