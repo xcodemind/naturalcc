@@ -3,11 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# import argparse
 import importlib
 import os
-# import sys
-# # sys.path.append('.')
 from ncc.tasks.fairseq_task import FairseqTask
 
 TASK_REGISTRY = {}
@@ -84,4 +81,4 @@ for file in os.listdir(tasks_dir):
         #     TASK_REGISTRY[task_name].add_args(group_args)
         #     globals()[task_name + '_parser'] = parser
 
-print('TASK_REGISTRY-init: ', TASK_REGISTRY)
+# print('TASK_REGISTRY-init: ', TASK_REGISTRY)
