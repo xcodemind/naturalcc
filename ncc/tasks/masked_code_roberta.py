@@ -24,9 +24,7 @@ from ncc.data import constants
 
 
 def load_masked_code_dataset_roberta(args, epoch, data_path, split, source_dictionary, combine,):
-
     split_path = os.path.join(data_path, '{}.code'.format(split))
-
     dataset = data_utils.load_indexed_dataset(
         path=split_path,
         dictionary=source_dictionary,
