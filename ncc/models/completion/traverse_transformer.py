@@ -2,10 +2,10 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from ncc import LOGGER
 from ncc.models import register_model
 from ncc.models.fairseq_model import FairseqLanguageModel
 from ncc.modules.completion.transformer_encoder import TransformerEncoder
@@ -13,7 +13,6 @@ from ncc.utils import utils
 from ncc.modules.completion.layer_norm import LayerNorm
 from ncc.modules.seq2seq.fairseq_decoder import FairseqDecoder
 from ncc.models.hub_interface import RobertaHubInterface
-logger = logging.getLogger(__name__)
 
 
 @register_model('traverse_transformer')
@@ -24,7 +23,7 @@ class TraverseTransformerModel(FairseqLanguageModel):
 
     @classmethod
     def build_model(cls, args, config, task):
-        decoder = GPT2Encoder(args, task.source_dictionary)
+        decoder = GPT2Encoder(args, task.target_dictionary)
         return cls(args, decoder)
 
     def reset_parameters(self):
@@ -88,7 +87,7 @@ class TraverseTransformerModel(FairseqLanguageModel):
                     self.register_classification_head(head_name, num_classes, inner_dim)
             else:
                 if head_name not in current_head_names:
-                    logger.warning(
+                    LOGGER.warning(
                         'deleting classification head ({}) from checkpoint '
                         'not present in current model: {}'.format(head_name, k)
                     )
@@ -97,7 +96,7 @@ class TraverseTransformerModel(FairseqLanguageModel):
                         num_classes != self.classification_heads[head_name].out_proj.out_features
                         or inner_dim != self.classification_heads[head_name].dense.out_features
                 ):
-                    logger.warning(
+                    LOGGER.warning(
                         'deleting classification head ({}) from checkpoint '
                         'with different dimensions than current model: {}'.format(head_name, k)
                     )
@@ -111,7 +110,7 @@ class TraverseTransformerModel(FairseqLanguageModel):
             cur_state = self.classification_heads.state_dict()
             for k, v in cur_state.items():
                 if prefix + 'classification_heads.' + k not in state_dict:
-                    logger.info('Overwriting ' + prefix + 'classification_heads.' + k)
+                    LOGGER.info('Overwriting ' + prefix + 'classification_heads.' + k)
                     state_dict[prefix + 'classification_heads.' + k] = v
 
 
@@ -175,7 +174,3 @@ class GPT2Encoder(FairseqDecoder):
 
     def output_layer(self, features, masked_tokens=None, **unused):
         return self.lm_head(features, masked_tokens)
-
-    def max_positions(self):
-        """Maximum output length supported by the encoder."""
-        return self.args['model']['max_positions']
