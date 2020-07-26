@@ -25,13 +25,13 @@ class Dictionary(object):
     """A mapping from symbols to consecutive integers"""
 
     def __init__(
-            self,
-            pad=constants.PAD,
-            eos=constants.EOS,
-            unk=constants.UNK,
-            bos=constants.BOS,
-            extra_special_symbols=None,
-            # attr: str = None,  # special attribute may need extra_special_symbols
+        self,
+        pad=constants.PAD,
+        eos=constants.EOS,
+        unk=constants.UNK,
+        bos=constants.BOS,
+        extra_special_symbols=None,
+        # attr: str = None,  # special attribute may need extra_special_symbols
     ):
         self.unk_word, self.pad_word, self.eos_word = unk, pad, eos
         self.symbols = []
@@ -401,13 +401,13 @@ class Dictionary(object):
     #     return ids
 
     def encode_line(
-            self,
-            line,
-            line_tokenizer,  # =tokenizer.tokenize_line
-            add_if_not_exist=True,
-            consumer=None,
-            append_eos=True,
-            reverse_order=False,
+        self,
+        line,
+        line_tokenizer,  # =tokenizer.tokenize_line
+        add_if_not_exist=True,
+        consumer=None,
+        append_eos=True,
+        reverse_order=False,
     ):
         words = line_tokenizer(line) if line_tokenizer is not None else line
         if reverse_order:
@@ -428,10 +428,10 @@ class Dictionary(object):
         return ids
 
     def encode_list(
-            self,
-            words,
-            add_if_not_exist=True,
-            consumer=None,
+        self,
+        words,
+        add_if_not_exist=True,
+        consumer=None,
     ):
         """In some cases, line have been tokenized already."""
         nwords = len(words)
@@ -449,13 +449,13 @@ class Dictionary(object):
     # TODO: I think we should not change the encode_line function. Instead we can define different functions for different
     #       modalities with different file format, in order to provide more flexibilities.
     def encode_tok(
-            self,
-            line,
-            # line_tokenizer,  # =tokenizer.tokenize_line
-            add_if_not_exist=True,
-            consumer=None,
-            append_eos=True,
-            reverse_order=False,
+        self,
+        line,
+        # line_tokenizer,  # =tokenizer.tokenize_line
+        add_if_not_exist=True,
+        consumer=None,
+        append_eos=True,
+        reverse_order=False,
     ):
         words = line  # line_tokenizer(line)
         if reverse_order:
@@ -479,13 +479,13 @@ class Dictionary(object):
         pass
 
     def encode_ast(
-            self,
-            line,
-            # line_tokenizer,  # =tokenizer.tokenize_line
-            add_if_not_exist=True,
-            consumer=None,
-            append_eos=True,
-            reverse_order=False,
+        self,
+        line,
+        # line_tokenizer,  # =tokenizer.tokenize_line
+        add_if_not_exist=True,
+        consumer=None,
+        append_eos=True,
+        reverse_order=False,
     ):
         words = line  # line_tokenizer(line)
         if reverse_order:
@@ -507,8 +507,8 @@ class Dictionary(object):
 
     @staticmethod
     def _add_file_to_dictionary_single_worker(
-            filename: str, tokenize: Any,
-            eos_word: Optional[str], worker_id: int = 0, num_workers: int = 1
+        filename: str, tokenize: Any,
+        eos_word: Optional[str], worker_id: int = 0, num_workers: int = 1
     ) -> Counter:
         counter = Counter()
         with open(PathManager.get_local_path(filename), "r", encoding="utf-8") as f:
@@ -561,7 +561,7 @@ class Dictionary(object):
     # modalities with different file format, in order to provide more flexibilities.
     @staticmethod
     def _add_ast_to_dictionary_single_worker(
-            filename, tokenize, eos_word, worker_id=0, num_workers=1
+        filename, tokenize, eos_word, worker_id=0, num_workers=1
     ):
         counter = Counter()
         with open(PathManager.get_local_path(filename), "r", encoding="utf-8") as f:
@@ -613,8 +613,8 @@ class Dictionary(object):
 
     @staticmethod
     def _add_tok_to_dictionary_single_worker(
-            filename: str, tokenize: Any,
-            eos_word: Optional[str], worker_id: int = 0, num_workers: int = 1
+        filename: str, tokenize: Any,
+        eos_word: Optional[str], worker_id: int = 0, num_workers: int = 1
     ) -> Counter:
         counter = Counter()
         with open(PathManager.get_local_path(filename), "r", encoding="utf-8") as f:
