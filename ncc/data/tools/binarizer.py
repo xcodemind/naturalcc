@@ -186,12 +186,14 @@ class Binarizer:
                 for data, ext, ids, mask in tokenize(line):
                     data = token_dict.encode_list(data, add_if_not_exist=False, consumer=replaced_consumer)
                     ext = torch.IntTensor([ext])
-                    for key, value in ids.items():
-                        if len(value) == 0:
-                            ids[key] = torch.IntTensor([-1])
-                        else:
-                            ids[key] = torch.IntTensor(value)
-                    mask = mask_dict.encode_list(mask, add_if_not_exist=False)
+                    if ids:
+                        for key, value in ids.items():
+                            if len(value) == 0:
+                                ids[key] = torch.IntTensor([-1])
+                            else:
+                                ids[key] = torch.IntTensor(value)
+                    if mask:
+                        mask = mask_dict.encode_list(mask, add_if_not_exist=False)
 
                     consumer(data, ext, ids, mask)
                     nseq += 1
