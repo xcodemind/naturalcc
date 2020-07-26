@@ -59,50 +59,57 @@ def binarize(args, filename, vocab, output_prefix, lang, make_dataset_fn, offset
     """binarize function for multi-processing"""
     src_vocab, mask_dict = vocab
 
+    def mmap_dest_file(suffix):
+        return dataset_dest_file(args, output_prefix, '{}.{}'.format(lang, suffix), 'mmap')
+
     ds = {
         'data': indexed_dataset.make_builder(
-            dataset_dest_file(args, output_prefix, lang, "mmap"),
+            mmap_dest_file(suffix='data'),
             impl=args['preprocess']['dataset_impl'], vocab_size=len(src_vocab)  # np.int32
         ),
         'ext': indexed_dataset.MMapIndexedDatasetBuilder(
-            dataset_dest_file(args, output_prefix, 'ext', "mmap"), dtype=np.uint16
+            mmap_dest_file(suffix='ext'), dtype=np.uint16
         ),
     }
     if args['preprocess']['id_type']:
         ds['ids'] = {
             cls: indexed_dataset.make_builder(
-                dataset_dest_file(args, output_prefix, cls, "mmap"),
+                mmap_dest_file(suffix=cls),
                 impl=args['preprocess']['dataset_impl'],  # np.int32
             )
             for cls in tranv_trans.IDS_CLS
         }
     if args['preprocess']['rel_mask']:
         ds['mask'] = indexed_dataset.make_builder(
-            dataset_dest_file(args, output_prefix, 'mask', "mmap"),
+            mmap_dest_file(suffix='mask'),
             impl=args['preprocess']['dataset_impl'], vocab_size=len(mask_dict)  # np.uint16
         )
 
     def consumer(data, ext, ids, mask):
         ds['data'].add_item(data)
         ds['ext'].add_item(ext)
-        for key, value in ids.items():
-            ds['ids'][key].add_item(value)
-        ds['mask'].add_item(mask)
+        if ids:
+            for key, value in ids.items():
+                ds['ids'][key].add_item(value)
+        if mask:
+            ds['mask'].add_item(mask)
 
     res = Binarizer.binarize_trav_trans(
         filename, vocab, consumer,
         tokenize=make_dataset_fn,
         offset=offset, end=end
     )
-    ds['data'].finalize(dataset_dest_file(args, output_prefix, lang, "idx"))
-    ds['ext'].finalize(dataset_dest_file(args, output_prefix, 'ext', "idx"))
-    for cls in tranv_trans.IDS_CLS:
-        ds['ids'][cls].finalize(dataset_dest_file(args, output_prefix, cls, "idx"))
-    ds['mask'].finalize(dataset_dest_file(args, output_prefix, 'mask', "idx"))
+    ds['data'].finalize(dataset_dest_file(args, output_prefix, '{}.data'.format(lang), "idx"))
+    ds['ext'].finalize(dataset_dest_file(args, output_prefix, '{}.ext'.format(lang), "idx"))
+    if args['preprocess']['id_type']:
+        for cls in tranv_trans.IDS_CLS:
+            ds['ids'][cls].finalize(dataset_dest_file(args, output_prefix, '{}.{}'.format(lang, cls), "idx"))
+    if args['preprocess']['rel_mask']:
+        ds['mask'].finalize(dataset_dest_file(args, output_prefix, '{}.mask'.format(lang), "idx"))
     return res
 
 
-MAX_BATCH_SIZE = 5000
+MAX_BATCH_SIZE = 1000
 
 
 def main(args):
@@ -178,7 +185,7 @@ def main(args):
         because only 1 thread is allowed to write file, we have to use multi-processing for deal with data
         and merge results from CPUs into a block and then dumps such block.
         """
-        line = json.loads(line.strip())
+        line = json.loads(line)
         sep_asts = tranv_trans.separate_dps(line, args['preprocess']['n_ctx'])
         if rel_mask:
             masks = tranv_trans.get_rel_masks(line, max_len=args['preprocess']['n_ctx'])
@@ -236,30 +243,35 @@ def main(args):
         def consumer(data, ext, ids, mask):
             ds['data'].add_item(data)
             ds['ext'].add_item(ext)
-            for key, value in ids.items():
-                ds['ids'][key].add_item(value)
-            ds['mask'].add_item(mask)
+            if ids:
+                for key, value in ids.items():
+                    ds['ids'][key].add_item(value)
+            if mask:
+                ds['mask'].add_item(mask)
+
+        def mmap_dest_file(suffix):
+            return dataset_dest_file(args, output_prefix, '{}.{}'.format(lang, suffix), 'mmap')
 
         ds = {
             'data': indexed_dataset.make_builder(
-                dataset_dest_file(args, output_prefix, lang, "mmap"),
-                impl=args['preprocess']['dataset_impl'], vocab_size=len(src_vocab)  # np.int32
+                mmap_dest_file('data'),
+                impl=args['preprocess']['dataset_impl'], vocab_size=len(src_vocab)
             ),
             'ext': indexed_dataset.MMapIndexedDatasetBuilder(
-                dataset_dest_file(args, output_prefix, 'ext', "mmap"), dtype=np.uint16
+                mmap_dest_file('ext'), dtype=np.uint16
             ),
         }
         if args['preprocess']['id_type']:
             ds['ids'] = {
                 cls: indexed_dataset.make_builder(
-                    dataset_dest_file(args, output_prefix, cls, "mmap"),
+                    mmap_dest_file(cls),
                     impl=args['preprocess']['dataset_impl'],  # np.int32
                 )
                 for cls in tranv_trans.IDS_CLS
             }
         if args['preprocess']['rel_mask']:
             ds['mask'] = indexed_dataset.make_builder(
-                dataset_dest_file(args, output_prefix, 'mask', "mmap"),
+                mmap_dest_file('mask'),
                 impl=args['preprocess']['dataset_impl'], vocab_size=len(mask_dict)  # np.uint16
             )
 
@@ -279,28 +291,32 @@ def main(args):
             for worker_id in range(1, num_workers):
                 prefix = "{}{}".format(output_prefix, worker_id)
                 # data
-                temp_file_path = dataset_dest_prefix(args, prefix, lang)
+                temp_file_path = dataset_dest_prefix(args, prefix, '{}.data'.format(lang))
                 ds['data'].merge_file_(temp_file_path)
                 remove_mmap_idx(temp_file_path)
                 # ext
-                temp_file_path = dataset_dest_prefix(args, prefix, 'ext')
+                temp_file_path = dataset_dest_prefix(args, prefix, '{}.ext'.format(lang))
                 ds['ext'].merge_file_(temp_file_path)
                 remove_mmap_idx(temp_file_path)
                 # ids
-                for cls in tranv_trans.IDS_CLS:
-                    temp_file_path = dataset_dest_prefix(args, prefix, cls)
-                    ds['ids'][cls].merge_file_(temp_file_path)
-                    remove_mmap_idx(temp_file_path)
+                if args['preprocess']['id_type']:
+                    for cls in tranv_trans.IDS_CLS:
+                        temp_file_path = dataset_dest_prefix(args, prefix, '{}.{}'.format(lang, cls))
+                        ds['ids'][cls].merge_file_(temp_file_path)
+                        remove_mmap_idx(temp_file_path)
                 # mask
-                temp_file_path = dataset_dest_prefix(args, prefix, 'mask')
-                ds['mask'].merge_file_(temp_file_path)
-                remove_mmap_idx(temp_file_path)
+                if args['preprocess']['rel_mask']:
+                    temp_file_path = dataset_dest_prefix(args, prefix, '{}.mask'.format(lang))
+                    remove_mmap_idx(temp_file_path)
+                    ds['mask'].merge_file_(temp_file_path)
 
-        ds['data'].finalize(dataset_dest_file(args, output_prefix, lang, "idx"))
-        ds['ext'].finalize(dataset_dest_file(args, output_prefix, 'ext', "idx"))
-        for cls in tranv_trans.IDS_CLS:
-            ds['ids'][cls].finalize(dataset_dest_file(args, output_prefix, cls, "idx"))
-        ds['mask'].finalize(dataset_dest_file(args, output_prefix, 'mask', "idx"))
+        ds['data'].finalize(dataset_dest_file(args, output_prefix, '{}.data'.format(lang), "idx"))
+        ds['ext'].finalize(dataset_dest_file(args, output_prefix, '{}.ext'.format(lang), "idx"))
+        if args['preprocess']['id_type']:
+            for cls in tranv_trans.IDS_CLS:
+                ds['ids'][cls].finalize(dataset_dest_file(args, output_prefix, '{}.{}'.format(lang, cls), "idx"))
+        if args['preprocess']['rel_mask']:
+            ds['mask'].finalize(dataset_dest_file(args, output_prefix, '{}.mask'.format(lang), "idx"))
 
         LOGGER.info(
             "[{}] {}: {} sents, {} tokens, {:.3}% replaced by {}".format(
@@ -314,24 +330,31 @@ def main(args):
         )
 
     def make_dataset(vocab, input_prefix, output_prefix, lang, num_workers=1):
+        data_info = ['data', 'ext']
+        if args['preprocess']['id_type']:
+            data_info.append('ids')
+        if args['preprocess']['rel_mask']:
+            data_info.append('mask')
+
         if args['preprocess']['dataset_impl'] == "raw":
-            LOGGER.info('Dumping raw data for {}: writing {} files'.format(
-                output_prefix,
-                '/'.join(['data', 'ext', 'ids' if args['preprocess']['id_type'] else '',
-                          'mask' if args['preprocess']['rel_mask'] else ''])
-            ))
+            LOGGER.info('Dumping raw data for {}: writing {} files'.format(output_prefix, '/'.join(data_info)))
+
+            def dest_file(suffix, format):
+                """get file path"""
+                return os.path.join(args['preprocess']['destdir'],
+                                    file_name(output_prefix, '{}.{}.{}'.format(lang, suffix, format)))
+
             file_writers = {
                 'raw': open(file_name(input_prefix, lang), 'r', encoding="utf-8"),
-                'data': open(dest_path(args['preprocess']['destdir'], output_prefix, lang), 'w'),
-                'ext': open(dest_path(args['preprocess']['destdir'], output_prefix, 'ext'), 'w'),
+                'data': open(dest_file(suffix='data', format='json'), 'w'),
+                'ext': open(dest_file(suffix='ext', format='txt'), 'w'),
             }
             if args['preprocess']['id_type']:
                 file_writers['ids'] = {
-                    cls: open(dest_path(args['preprocess']['destdir'], output_prefix, cls), 'w')
-                    for cls in tranv_trans.IDS_CLS
+                    cls: open(dest_file(suffix=cls, format='txt'), 'w') for cls in tranv_trans.IDS_CLS
                 }
             if args['preprocess']['rel_mask']:
-                file_writers['mask'] = open(dest_path(args['preprocess']['destdir'], output_prefix, 'mask'), 'w')
+                file_writers['mask'] = open(dest_file(suffix='mask', format='txt'), 'w')
 
             _make_dataset_func = lambda line: make_raw_dataset(
                 line, ids=bool(args['preprocess']['id_type']), rel_mask=bool(args['preprocess']['rel_mask'])
@@ -361,7 +384,7 @@ def main(args):
             with PPool(processor_num=args['preprocess']['workers']) as thread_pool:
                 batch_data = []
                 for line in file_writers['raw']:
-                    batch_data.append(line.rstrip('\n'))
+                    batch_data.append(line)
                     if len(batch_data) >= MAX_BATCH_SIZE:
                         result = thread_pool.feed(_make_dataset_func, batch_data, one_params=True)
                         raw_write(result)
@@ -373,21 +396,19 @@ def main(args):
                     raw_write(result)
                     del batch_data, result
 
-            file_writers['raw'].close()
-            file_writers['data'].close()
-            file_writers['ext'].close()
-            if args['preprocess']['id_type']:
-                for cls in tranv_trans.IDS_CLS:
-                    file_writers['ids'][cls].close()
-            if args['preprocess']['rel_mask']:
-                file_writers['mask'].close()
+            for key, value in file_writers.items():
+                value.close()
+            # file_writers['raw'].close()
+            # file_writers['data'].close()
+            # file_writers['ext'].close()
+            # if args['preprocess']['id_type']:
+            #     for cls in tranv_trans.IDS_CLS:
+            #         file_writers['ids'][cls].close()
+            # if args['preprocess']['rel_mask']:
+            #     file_writers['mask'].close()
 
         else:
-            LOGGER.info('Dumping mmap data for {}: writing {} files'.format(
-                output_prefix,
-                '/'.join(['data', 'ext', 'ids' if args['preprocess']['id_type'] else '',
-                          'mask' if args['preprocess']['rel_mask'] else ''])
-            ))
+            LOGGER.info('Dumping mmap data for {}: writing {} files'.format(output_prefix, '/'.join(data_info)))
             make_mmap_dataset(src_dict, mask_dict, input_prefix, output_prefix, lang, num_workers)
 
     def make_all(lang, vocab):
@@ -408,7 +429,8 @@ def main(args):
 
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('preprocess.yml')  # train_sl
+    # args_ = Argues('preprocess.yml')  # train_sl
+    args_ = Argues('csn.yml')  # train_sl
     LOGGER.info(args_)
     yaml_file = os.path.join(os.path.dirname(__file__), args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
