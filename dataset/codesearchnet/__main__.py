@@ -13,7 +13,7 @@ def main():
     # download neccesary files
     dataset = CodeSearchNet(download=True, thread_num=cpu_count())
 
-    lngs = ['ruby']
+    lngs = ['java']
     flatten_attrs = ['code', 'raw_ast']
     # flatten raw files separately
     dataset.flatten_data_all(lngs, save_attrs=flatten_attrs, overwrite=True)
