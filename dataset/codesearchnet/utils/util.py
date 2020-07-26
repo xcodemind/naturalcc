@@ -17,10 +17,10 @@ import re
 # Such methods are widely used. Therefore, we define them ahead of other functions
 
 # get children with NODE_FIX
-get_tree_children_func = lambda node: [name for name in node['children'] if name.startswith(constants.NODE_FIX)]
+get_tree_children_func = lambda node: [name for name in node['children'] if isinstance(name, int)]
 
 # get children without NODE_FIX
-get_token_children_func = lambda node: [name for name in node['children'] if not name.startswith(constants.NODE_FIX)]
+get_token_children_func = lambda node: [name for name in node['children'] if not isinstance(name, int)]
 
 
 def get_child_nodes(node: Dict) -> Tuple[List, List]:
@@ -148,7 +148,7 @@ def split_identifier(identifier: str, str_flag=True) -> List:
         # skip comment
         if len(identifier) > 1 and (identifier[:2] == '//' or \
                                     (identifier[:2] == '/*' and identifier[-2:] == '*/') \
-                ):
+            ):
             return []
     else:
         return [identifier]
@@ -175,7 +175,7 @@ def split_identifier(identifier: str, str_flag=True) -> List:
                     tmp += char
                 else:
                     if (subtoken_type == CharType.upper or subtoken_type == CharType.lower) \
-                            and current_type == CharType.digit:
+                        and current_type == CharType.digit:
                         # previous char type is alpha and current char type is digit, append it,
                         # and change current char type to digit
                         # eg. name 2 -> name2
@@ -196,7 +196,7 @@ def split_identifier(identifier: str, str_flag=True) -> List:
                         tmp = char
                         subtoken_type = current_type
                     elif subtoken_type == CharType.digit and \
-                            (current_type == CharType.upper or current_type == CharType.lower):
+                        (current_type == CharType.upper or current_type == CharType.lower):
                         # name23 N/n -> name23 N/n
                         subtokens.append(tmp)
                         tmp = char
@@ -239,8 +239,8 @@ def merge_freqency(multi_dicts: List[Dict]) -> Dict:
 def filter_func(code_snippet: Dict) -> Dict:
     # define your filter conditions
     if 10 <= len(code_snippet['tree']) <= 100 and \
-            3 <= len(code_snippet['tok']) <= 100 and \
-            3 <= len(code_snippet['comment']) <= 50:
+        3 <= len(code_snippet['tok']) <= 100 and \
+        3 <= len(code_snippet['comment']) <= 50:
         return code_snippet
     else:
         return dict()
@@ -254,7 +254,7 @@ def is_ascii(identifier: str) -> bool:
     print(is_ascii('你好'))
     """
     if ('0x' in identifier) or ('\\x' in identifier) or \
-            ('\\u' in identifier):  # hex or unicode
+        ('\\u' in identifier):  # hex or unicode
         return False
     else:
         return str.isascii(identifier)

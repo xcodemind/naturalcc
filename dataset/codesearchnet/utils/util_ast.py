@@ -12,6 +12,52 @@ from ncc.data.constants import PAD
 sys.setrecursionlimit(constants.RECURSION_DEPTH)  # recursion depth
 
 
+def delete_comment_node(ast_tree: Dict) -> Dict:
+    '''delete comment node and its children'''
+
+    def delete_cur_node(node_idx, cur_node):
+        # update its parent's children
+        parent_idx = cur_node['parent']
+        parent_node = ast_tree[parent_idx]
+        del_idx = parent_node['children'].index(node_idx)
+        del parent_node['children'][del_idx]
+        # delete node
+        ast_tree.pop(node_idx)
+        return parent_idx, parent_node
+
+    def dfs(node_idx):
+        cur_node = ast_tree[node_idx]
+        child_ids = cur_node.get('children', None)
+
+        if 'comment' in cur_node['type']:
+            node_idx, cur_node = delete_cur_node(node_idx, cur_node)
+            while len(cur_node['children']) == 0:
+                node_idx, cur_node = delete_cur_node(node_idx, cur_node)
+
+        if child_ids is None:
+            return
+
+        for idx in child_ids:
+            dfs(node_idx=idx)
+
+    dfs(node_idx=0)
+    return ast_tree
+
+
+def remove_only_one_child_root(ast_tree: Dict) -> Dict:
+    # 3) pop head node which has only 1 child
+    # because in such way, head node might be Program/Function/Error and its child is the code's AST
+    node_ids = deepcopy(list(ast_tree.keys()))
+    for idx in node_ids:
+        if (ast_tree[idx]['parent'] is None) and len(ast_tree[idx]['children']) == 1:
+            child_idx = ast_tree[idx]['children'][0]
+            ast_tree[child_idx]['parent'] = None
+            ast_tree.pop(idx)
+        else:
+            break
+    return ast_tree
+
+
 def delete_node_with_single_node(ast_tree: Dict) -> Dict:
     '''delete nodes who has only one child'''
 
@@ -215,69 +261,66 @@ def delete_single_child_ndoe(ast_tree: Dict) -> Dict:
 
 def reset_indices(ast_tree: Dict) -> Dict:
     '''rename ast tree's node indices with consecutive indices'''
-    new_ind = 1
-    root_ind = 1
+    if sorted(list(ast_tree.keys())) == list(range(len(ast_tree))):
+        return ast_tree
+
+    root_idx = 0
     while 1:
-        root_node_ind = constants.NODE_FIX + str(root_ind)
-        if root_node_ind in ast_tree:
+        if root_idx in ast_tree:
             break
         else:
-            root_ind += 1
+            root_idx += 1  # root node has been removed
 
-    def new_ndoe_name():
-        nonlocal new_ind
-        new_name = '_' + constants.NODE_FIX + str(new_ind)
-        new_ind += 1
-        return new_name
+    # firstly, resort node index with _
+    new_ast_idx = 0
 
-    def dfs(cur_node_ind):
-        cur_node = ast_tree[cur_node_ind]
-        # change from cur_node_ind to new_cur_node_ind
-        # copy a same node with new name
-        new_cur_node_ind = new_ndoe_name()
-        ast_tree[new_cur_node_ind] = deepcopy(cur_node)
+    def dfs(idx):
+        nonlocal new_ast_idx
+        new_cur_idx, new_ast_idx = '_{}'.format(new_ast_idx), new_ast_idx + 1  # update for next node
+        cur_node = ast_tree[idx]
+        ast_tree[new_cur_idx] = deepcopy(cur_node)
 
-        # update its parent's child nodes
+        # update its parent's children
         if cur_node['parent'] is None:
-            pass
+            pass  # current node is root node, no need for update its children
         else:
             parent_node = ast_tree[cur_node['parent']]
-            parent_node['children'][parent_node['children'].index(cur_node_ind)] = new_cur_node_ind
+            parent_node['children'][parent_node['children'].index(idx)] = new_cur_idx
 
-        if cur_node['children'][0].startswith(constants.NODE_FIX):
+        if 'children' in cur_node:
             # update its children nodes' parent
-            for child_name in cur_node['children']:
-                ast_tree[child_name]['parent'] = new_cur_node_ind
+            for child_idx in cur_node['children']:
+                ast_tree[child_idx]['parent'] = new_cur_idx
         else:
-            pass
+            pass  # current node is leaf, no children item, only value item
 
         # 2. delete old node
-        ast_tree.pop(cur_node_ind)
+        ast_tree.pop(idx)
 
-        child_node_indices = util.get_tree_children_func(cur_node)
+        child_ids = cur_node.get('children', None)
 
-        if len(child_node_indices) == 0:
+        if child_ids is None:
             return
 
-        for child_name in child_node_indices:
-            dfs(child_name)
+        for child_idx in child_ids:
+            dfs(child_idx)
 
-    dfs(root_node_ind)
+    dfs(root_idx)
 
-    # recover name
-    node_names = deepcopy(list(ast_tree.keys()))
-    for node_name in node_names:
-        node = deepcopy(ast_tree[node_name])
-        if node['children'][0].startswith('_' + constants.NODE_FIX):
-            node['children'] = [child_name[1:] for child_name in node['children']]
+    # recover name: from _* => *
+    node_ids = deepcopy(list(ast_tree.keys()))
+    for idx in node_ids:
+        node = deepcopy(ast_tree[idx])
+        if 'children' in node:
+            node['children'] = [int(child_idx[1:]) for child_idx in node['children']]
         else:
             pass
         if node['parent'] == None:
             pass
         else:
-            node['parent'] = node['parent'][1:]
-        ast_tree[node_name[1:]] = node
-        ast_tree.pop(node_name)
+            node['parent'] = int(node['parent'][1:])
+        ast_tree[int(idx[1:])] = node
+        ast_tree.pop(idx)
 
     return ast_tree
 
@@ -295,6 +338,95 @@ def parse_base(ast_tree: Dict) -> Optional[Dict]:
         return None
 
 
+def convert(ast: Dict[int, Dict]) -> List[Dict]:
+    new_ast = []
+    for idx in deepcopy(sorted(ast.keys(), key=int)):
+        node = ast[idx]
+        node.pop('parent')
+        new_ast.append(node)
+    ast = new_ast
+
+    increase_by = {}  # count of how many idx to increase the new idx by:
+    # each time there is a value node
+    cur = 0
+    for i, node in enumerate(ast):
+        increase_by[i] = cur
+        if "value" in node:
+            cur += 1
+
+    new_dp = []
+    for i, node in enumerate(ast):
+        inc = increase_by[i]
+        if "value" in node:
+            child = [i + inc + 1]
+            if "children" in node:
+                child += [n + increase_by[n] for n in node["children"]]
+            new_dp.append({"type": node["type"], "children": child})
+            new_dp.append({"value": node["value"]})
+        else:
+            if "children" in node:
+                node["children"] = [n + increase_by[n] for n in node["children"]]
+            new_dp.append(node)
+
+    # sanity check
+    children = []
+    for node in new_dp:
+        if "children" in node:
+            children += node["children"]
+    assert len(children) == len(set(children))
+    return new_dp
+
+
+def dfs_traversal(ast: List[Dict], only_leaf=False):
+    dfs_seq = []
+    for node in ast:
+        if "value" in node:
+            dfs_seq.append(node["value"])
+        else:
+            if not only_leaf:
+                dfs_seq.append(node["type"])
+    return dfs_seq
+
+
+def separate_ast(ast: List[Dict], max_len: int):
+    """
+    Handles training / evaluation on long ASTs by splitting
+    them into smaller ASTs of length max_len, with a sliding
+    window of max_len / 2.
+
+    Example: for an AST ast with length 1700, and max_len = 1000,
+    the output will be:
+    [[ast[0:1000], 0], [ast[500:1500], 1000], [ast[700:1700], 1500]]
+
+    Input:
+        ast : List[Dictionary]
+            List of nodes in pre-order traversal.
+        max_len : int
+
+    Output:
+        aug_asts : List[List[List, int]]
+            List of (ast, beginning idx of unseen nodes)
+    """
+    half_len = int(max_len / 2)
+    if len(ast) <= max_len:
+        return [[ast, 0]]
+
+    aug_asts = [[ast[:max_len], 0]]
+    i = half_len
+    while i < len(ast) - max_len:
+        aug_asts.append([ast[i: i + max_len], half_len])
+        i += half_len
+    idx = max_len - (len(ast) - (i + half_len))
+    aug_asts.append([ast[-max_len:], idx])
+    return aug_asts
+
+
+# def traversal(ast: Dict, method: str = 'dfs'):
+#     if method.lower() == 'dfs':
+#
+#     else:
+#         raise NotImplementedError
+
+
 if __name__ == '__main__':
-    ast = {'NODEFIX1': {'node': 'public_keyword', 'parent': None, 'children': ['public']}}
-    parse_base(ast)
+    convert(ast)
