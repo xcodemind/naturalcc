@@ -5,6 +5,7 @@ from typing import *
 import sys
 
 import re
+import ujson
 import itertools
 from copy import deepcopy
 from tree_sitter import Language, Parser
@@ -19,13 +20,18 @@ sys.setrecursionlimit(constants.RECURSION_DEPTH)  # recursion depth
 
 class CodeParser(object):
     '''parse code data into ast'''
-    __slots__ = ('parser', 'to_lower', 'LANGUAGE',)
+    __slots__ = ('parser', 'to_lower', 'LANGUAGE', 'operators',)
 
-    def __init__(self, SO_FILE: str, LANGUAGE: str, to_lower: bool = True, ):
+    def __init__(self, SO_FILE: str, LANGUAGE: str, to_lower: bool = True, operators_file: str = None):
         self.parser = Parser()
         self.parser.set_language(Language(SO_FILE, LANGUAGE))
         self.LANGUAGE = LANGUAGE
         self.to_lower = to_lower
+        if operators_file:
+            with open(operators_file, 'r') as reader:
+                self.operators = ujson.load(reader)
+        else:
+            self.operators = None
 
     def parse_docstring(self, docstring: str) -> List[str]:
         '''parse comment from docstring'''
@@ -56,7 +62,7 @@ class CodeParser(object):
         our refined comment parse function. if you prefer original comment, use docstring_tokens instead
         '''
         if (docstring_tokens[-1] in constants.COMMENT_END_TOKENS) or \
-                (len(docstring_tokens) > constants.MAX_COMMENT_TOKEN_LIST_LEN):
+            (len(docstring_tokens) > constants.MAX_COMMENT_TOKEN_LIST_LEN):
             # if docstring_tokens is too long or docstring_tokens is wrong parsed
             ''' exceptions in CodeSearchNet, eg.
             docstring: 'Set {@link ServletRegistrationBean}s that the filter will be registered against.
@@ -148,8 +154,8 @@ class CodeParser(object):
         in tree_sitter library, operator and keyword nodes are no pre-define node type, like:
         [type: 'def'/'&&', value: 'def'/'&&']
         :param token: node value
-        :return: if token is operator, its type will be {}_operator
-                  if token is keyword, its type will be {}_keyword
+        :return: if token is operator, its type will be EN name
+                  if token is keyword, its type will be {}Kw
         '''
         is_keyword = True
         for chr in token:
@@ -161,92 +167,57 @@ class CodeParser(object):
         if is_keyword:
             return '{}_keyword'.format(str.lower(token))
         else:
-            return '{}_operator'.format(token)
+            if self.operators and (token in self.operators):
+                return self.operators[token]
+            else:
+                return token
 
     def build_tree(self, root, code_lines: List[str]) -> Dict:
         '''
         build ast with tree_sitter, operator and keyword has no pre-defined type
         :param root: ast tree root node
         :param code_lines: [...], ...
-        :return: {1*NODEFI1: {'node': 'XX', 'parent': 'None', 'children': [XX, ...]}}
+        :return:
+            format1: {1*NODEFI1: {'node': 'XX', 'parent': 'None', 'children': [XX, ...]}}
+            format2: [
+                {'type': "node_type", 'children': "node_ids(List)", }, # non-leaf node
+                {'value': "leaf_node_value"}, # leaf node
+                ...
+            ]
         '''
         ast_tree = {}
 
-        def dfs(cur_node, parent_node_ind):
+        def dfs(cur_node, parent_node_idx):
             if len(cur_node.children) == 0:
                 # current node has no child node, it's leaf node, build a leaf node
+                new_node_idx = len(ast_tree)
                 if cur_node.is_named:
                     # leaf node's value is None. we have to extract its value from source code
-                    token_name = self.subcode(cur_node.start_point, cur_node.end_point, code_lines)
-                    new_node = {
-                        'node': cur_node.type,
-                        'parent': parent_node_ind,
-                        'children': [token_name.strip()],
+                    ast_tree[new_node_idx] = {
+                        'type': cur_node.type, 'parent': parent_node_idx,
+                        'value': self.subcode(cur_node.start_point, cur_node.end_point, code_lines).strip(),
                     }
-                    new_node_ind = constants.NODE_FIX + str(len(ast_tree) + 1)
-                    ast_tree[new_node_ind] = new_node
-                    ast_tree[parent_node_ind]['children'].append(new_node_ind)
+                    ast_tree[parent_node_idx]['children'].append(new_node_idx)
                 else:
                     # leaf node is operator or keyword
-                    new_node = {
-                        'node': self.define_node_type(cur_node.type),
-                        'parent': parent_node_ind,
-                        'children': [cur_node.type],
+                    ast_tree[new_node_idx] = {
+                        'type': self.define_node_type(cur_node.type),
+                        'parent': parent_node_idx,
+                        'value': cur_node.type,
                     }
-                    new_node_ind = constants.NODE_FIX + str(len(ast_tree) + 1)
-                    ast_tree[new_node_ind] = new_node
-                    ast_tree[parent_node_ind]['children'].append(new_node_ind)
+                    ast_tree[parent_node_idx]['children'].append(new_node_idx)
             else:
                 # current node has many child nodes
-                node_ind = constants.NODE_FIX + str(len(ast_tree) + 1)  # root node index
-                node = {
-                    'node': cur_node.type,
-                    'parent': parent_node_ind,
-                    'children': [],
-                }
-                ast_tree[node_ind] = node
-                # update parent node's child nodes
-                if parent_node_ind is None:
-                    pass
-                else:
-                    ast_tree[parent_node_ind]['children'].append(node_ind)
-
+                cur_node_idx = len(ast_tree)
+                ast_tree[cur_node_idx] = {'type': cur_node.type, 'parent': parent_node_idx, 'children': []}
+                # update parent node's children
+                if parent_node_idx is not None:
+                    ast_tree[parent_node_idx]['children'].append(cur_node_idx)
+                # update current node's children
                 for child_node in cur_node.children:
-                    dfs(child_node, parent_node_ind=node_ind)
+                    dfs(child_node, parent_node_idx=cur_node_idx)
 
-        dfs(root, parent_node_ind=None)
-        return ast_tree
-
-    def delete_comment_node(self, ast_tree: Dict) -> Dict:
-        '''delete comment node and its children'''
-
-        def delete_cur_node(node_ind, cur_node):
-            # update its parent's children
-            parent_ind = cur_node['parent']
-            parent_node = ast_tree[parent_ind]
-            del_ind = parent_node['children'].index(node_ind)
-            del parent_node['children'][del_ind]
-            # delete node
-            ast_tree.pop(node_ind)
-            return parent_ind, parent_node
-
-        def dfs(node_ind):
-            cur_node = ast_tree[node_ind]
-            child_node_indices = util.get_tree_children_func(cur_node)
-
-            if cur_node['node'] == 'comment':
-                node_ind, cur_node = delete_cur_node(node_ind, cur_node)
-
-                while len(cur_node['children']) == 0:
-                    node_ind, cur_node = delete_cur_node(node_ind, cur_node)
-
-            if len(child_node_indices) == 0:
-                return
-
-            for child_name in child_node_indices:
-                dfs(child_name)
-
-        dfs(constants.ROOT_NODE_NAME)
+        dfs(root, parent_node_idx=None)
         return ast_tree
 
     def parse_raw_ast(self, code: str, ) -> Optional[Dict]:
@@ -255,38 +226,24 @@ class CodeParser(object):
             code = '<?php ' + code
 
         ast_tree = self.parser.parse(
-            bytes(code.replace('\t', '    ').replace('\n', ' ').strip(), "utf8")
+            # bytes(code.replace('\t', '    ').replace('\n', ' ').strip(), "utf8")
+            bytes(code, "utf8")
         )
 
         code_lines = code.split('\n')  # raw code
         # 1) build ast tree in Dict type
         try:
             code_tree = self.build_tree(ast_tree.root_node, code_lines)
+            assert len(code_tree) > 0, AssertionError('AST parsed error.')
+            return code_tree
         except RecursionError as err:
             # RecursionError: maximum recursion depth exceeded while getting the str of an object
             print(err)
             # raw_ast is too large, skip this ast
             return None
-
-        # 2) delete comment node
-        code_tree = self.delete_comment_node(code_tree)
-        # 3) pop head node which has only 1 child
-        # because in such way, head node might be Program/Function/Error and its child is the code's AST
-        for ind in range(1, 1 + len(code_tree)):
-            cur_node_id = constants.NODE_FIX + str(ind)
-            if (code_tree[cur_node_id]['parent'] is None) and \
-                    len(code_tree[cur_node_id]['children']) == 1 and \
-                    code_tree[constants.NODE_FIX + str(ind)]['children'][0].startswith(constants.NODE_FIX):
-                child_node = code_tree[cur_node_id]['children'][0]
-                code_tree[child_node]['parent'] = None
-                code_tree.pop(cur_node_id)
-            else:
-                break
-        if len(code_tree) == 0:
+        except AssertionError as err:
+            print(err)
             return None
-        # 4) reset tree indices
-        raw_ast = util_ast.reset_indices(code_tree)  # reset node indices
-        return raw_ast
 
     def parse_method(self, func_name: str, ) -> Optional[List[str]]:
         # our defined method parse function
@@ -315,9 +272,9 @@ class CodeParser(object):
                     (str.startswith(token, '/*') and str.endswith(token, '*/')))
         ]
 
-        for ind, token in enumerate(code_tokens):
-            code_tokens[ind] = token.strip()
-            if not util.is_ascii(code_tokens[ind]) or len(code_tokens[ind]) > constants.MAX_CODE_TOKEN_LEN:
+        for idx, token in enumerate(code_tokens):
+            code_tokens[idx] = token.strip()
+            if not util.is_ascii(code_tokens[idx]) or len(code_tokens[idx]) > constants.MAX_CODE_TOKEN_LEN:
                 return None
 
         code_tokens = util.filter_tokens(code_tokens)
@@ -337,3 +294,38 @@ class CodeParser(object):
         new_code_snippet['comment'] = self.parse_comment(code_snippet['docstring'], code_snippet['docstring_tokens'])
         new_code_snippet['func_name'] = self.parse_method(code_snippet['func_name'])
         return new_code_snippet
+
+
+if __name__ == '__main__':
+    # unittest
+    import gzip
+    from dataset.utils.ast import tranv_trans
+
+    lang = 'python'
+    so_file = '/home/yang/.ncc/CodeSearchNet/so/{}.so'.format(lang)
+    parser = CodeParser(so_file, lang, to_lower=False, operators_file='operators.json')
+
+    while True:
+        # code = "# addition operator\ndef add(a, b):\n\treturn a+b".strip()
+        code = "def add(a, b):\n\treturn a+b".strip()
+        raw_ast = parser.parse_raw_ast(code)
+
+        # raw_ast = '{"0":{"type":"program","parent":null,"children":[1]},"1":{"type":"method","parent":0,"children":[2,3,4,8,20,26,28,36]},"2":{"type":"def_keyword","parent":1,"value":"def"},"3":{"type":"identifier","parent":1,"value":"set"},"4":{"type":"method_parameters","parent":1,"children":[5,6,7]},"5":{"type":"LeftParenOp","parent":4,"value":"("},"6":{"type":"identifier","parent":4,"value":"set_attributes"},"7":{"type":"LeftParenOp","parent":4,"value":")"},"8":{"type":"assignment","parent":1,"children":[9,10,11]},"9":{"type":"identifier","parent":8,"value":"old_attributes"},"10":{"type":"AsgnOp","parent":8,"value":"="},"11":{"type":"method_call","parent":8,"children":[12,13]},"12":{"type":"identifier","parent":11,"value":"compute_attributes"},"13":{"type":"argument_list","parent":11,"children":[14,15,19]},"14":{"type":"LeftParenOp","parent":13,"value":"("},"15":{"type":"call","parent":13,"children":[16,17,18]},"16":{"type":"identifier","parent":15,"value":"set_attributes"},"17":{"type":"DotOp","parent":15,"value":"."},"18":{"type":"identifier","parent":15,"value":"keys"},"19":{"type":"LeftParenOp","parent":13,"value":")"},"20":{"type":"method_call","parent":1,"children":[21,22]},"21":{"type":"identifier","parent":20,"value":"assign_attributes"},"22":{"type":"argument_list","parent":20,"children":[23,24,25]},"23":{"type":"LeftParenOp","parent":22,"value":"("},"24":{"type":"identifier","parent":22,"value":"set_attributes"},"25":{"type":"LeftParenOp","parent":22,"value":")"},"26":{"type":"yield","parent":1,"children":[27]},"27":{"type":"yield_keyword","parent":26,"value":"yield"},"28":{"type":"ensure","parent":1,"children":[29,30]},"29":{"type":"ensure_keyword","parent":28,"value":"ensure"},"30":{"type":"method_call","parent":28,"children":[31,32]},"31":{"type":"identifier","parent":30,"value":"assign_attributes"},"32":{"type":"argument_list","parent":30,"children":[33,34,35]},"33":{"type":"LeftParenOp","parent":32,"value":"("},"34":{"type":"identifier","parent":32,"value":"old_attributes"},"35":{"type":"LeftParenOp","parent":32,"value":")"},"36":{"type":"end_keyword","parent":1,"value":"end"}}'
+        # raw_ast = ujson.loads(raw_ast)
+        ast = util_ast.convert(raw_ast)
+
+        max_len = 10
+        masks = tranv_trans.get_rel_masks(ast, max_len)
+        masks = tranv_trans.separate_rel_mask(masks, max_len)
+        sep_asts = util_ast.separate_ast(ast, max_len)
+
+        for sep_ast, ext in sep_asts:
+            if len(sep_ast) > 1:
+                [util_ast.dfs_traversal(sep_ast), ext]
+
+    # raw_file = '/home/yang/.ncc/CodeSearchNet/raw_unzip/{}/{}_test_0.jsonl.gz'.format(lang, lang)
+    # with gzip.GzipFile(raw_file, 'r') as reader:
+    #     for line in reader:
+    #         if line:
+    #             line = ujson.loads(line)
+    #             parser.parse_raw_ast(line['code'])

@@ -45,7 +45,7 @@ class CodeSearchNet(object):
 
     attrs = set(['code', 'code_tokens', 'docstring', 'docstring_tokens', 'func_name', 'original_string',
                  'path', 'repo', 'sha', 'url', 'partition', 'language'])
-    extended_tree_modalities = set(['path', 'sbt', 'sbtao', 'bin_ast'])
+    extended_tree_modalities = set(['new_ast', 'path', 'sbt', 'sbtao', 'bin_ast'])
 
     _LIB_DIR = 'libs'  # tree-sitter libraries
     _SO_DIR = 'so'  # tree-sitter *.so files
@@ -234,7 +234,8 @@ class CodeSearchNet(object):
             save_attrs.add('index')
 
         so_file = os.path.join(self._SO_DIR, '{}.so'.format(lng))
-        parser = CodeParser(so_file, lng, to_lower=False)
+        parser = CodeParser(so_file, lng, to_lower=False, \
+                            operators_file=os.path.join(os.path.dirname(__file__), 'operators.json'))
         reader = gzip.GzipFile(raw_file, 'r')
         writers = {}
         for attr in save_attrs:
@@ -260,16 +261,17 @@ class CodeSearchNet(object):
                     code_info['tok'] = code_info['code_tokens']
             if 'raw_ast' in save_attrs:
                 code_info['raw_ast'] = parser.parse_raw_ast(code_info['code'])
+                # TODO: temporarily drop
                 # get max sub-tokens length for dgl training
-                max_sub_token_len = 0
-                if code_info['raw_ast'] is None:
-                    pass
-                else:
-                    for _, node in code_info['raw_ast'].items():
-                        if len(node['children']) == 1:
-                            max_sub_token_len = max(max_sub_token_len,
-                                                    len(util.split_identifier(node['children'][0])))
-                MAX_SUB_TOKEN_LEN = max(MAX_SUB_TOKEN_LEN, max_sub_token_len)
+                # max_sub_token_len = 0
+                # if code_info['raw_ast'] is None:
+                #     pass
+                # else:
+                #     for _, node in code_info['raw_ast'].items():
+                #         if len(node['children']) == 1:
+                #             max_sub_token_len = max(max_sub_token_len,
+                #                                     len(util.split_identifier(node['children'][0])))
+                # MAX_SUB_TOKEN_LEN = max(MAX_SUB_TOKEN_LEN, max_sub_token_len)
             if 'comment' in save_attrs:
                 code_info['comment'] = parser.parse_comment(code_info['docstring'], code_info['docstring_tokens'])
                 if code_info['comment'] is None:
@@ -394,17 +396,10 @@ class CodeSearchNet(object):
             #         writers[path_modal] = open(os.path.join(path_modal_dir, path_filename), 'w')
             writers[modal] = open(modal_file, 'w')
 
-        data_line = reader.readline().strip()
-        while len(data_line) > 0:
-            raw_ast = json.loads(data_line)
-            # because some raw_ast it is too large and thus time-consuming, we ignore it
-            if (raw_ast is not None) and (len(raw_ast) > constants.MAX_AST_NODE_NUM):
-                raw_ast = None
-            if raw_ast is None:
-                # if no raw ast, its other tree modalities is None
-                for writer in writers.values():
-                    writer.write(ujson.dumps(raw_ast) + '\n')
-            else:
+        for idx, line in enumerate(reader):
+            if line:
+                raw_ast = json.loads(line)
+                # because some raw_ast it is too large and thus time-consuming, we ignore it
                 if 'path' in writers:
                     copy_raw_ast = deepcopy(raw_ast)
                     path = util_path.ast_to_path(copy_raw_ast, MAX_PATH=constants.MAX_AST_PATH_NUM,
@@ -432,10 +427,14 @@ class CodeSearchNet(object):
                         writers['sbtao'].write(ujson.dumps(sbt) + '\n')
                 if 'bin_ast' in writers:
                     # ast
-                    bin_ast = util_ast.pad_leaf_node(util_ast.parse_base(raw_ast), MAX_SUB_TOKEN_LEN,
-                                                     to_lower=False)
+                    bin_ast = util_ast.pad_leaf_node(
+                        util_ast.parse_base(deepcopy(raw_ast)),
+                        MAX_SUB_TOKEN_LEN, to_lower=False
+                    )
                     writers['bin_ast'].write(ujson.dumps(bin_ast) + '\n')
-            data_line = reader.readline().strip()
+                if 'new_ast' in writers:
+                    new_ast = util_ast.convert(raw_ast)
+                    print(ujson.dumps(new_ast), file=writers['new_ast'])
         reader.close()
         for writer in writers.values():
             writer.close()
@@ -455,6 +454,8 @@ class CodeSearchNet(object):
         if modalities is None:
             modalities = list(self.extended_tree_modalities)
         else:
+            # if (('dfs' in modalities) or ('dfs+' in modalities)) and ('new_ast' not in modalities):
+            #     modalities = ['new_ast'] + modalities
             _check_modalities()
 
         def _check_new_tree_modalities_exist():
@@ -491,7 +492,7 @@ class CodeSearchNet(object):
                     modal_file = os.path.join(modal_dir, os.path.split(file)[-1])
                     new_tree_files[modal] = modal_file
                 params.append((file, new_tree_files, MAX_SUB_TOKEN_LEN,))
-        # self._parse_new_tree_modalities(*params[-1])
+        # self._parse_new_tree_modalities(*params[0])
         self.pool.feed(func=CodeSearchNet._parse_new_tree_modalities, params=params, )
 
     def parse_new_tree_modalities_all(self, lngs: Union[List, str, None] = None, modalities: Optional[List] = None, \
