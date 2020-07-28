@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from ncc.modules.completion.layer_norm import LayerNorm
+from ncc.modules.common.layer_norm import LayerNorm
 from ncc.modules.attention.path_multihead_attention import PathMultiheadAttention
 import torch.nn.functional as F
 from ncc.utils import utils

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from ncc.modules.completion.transformer_encoder_layer import TransformerEncoderLayer
-from ncc.modules.completion.layer_norm import LayerNorm
+from ncc.modules.common.layer_norm import LayerNorm
 from typing import Optional
 import torch.nn.functional as F
 import random
@@ -20,7 +20,7 @@ class PathLSTM(nn.Module):
         return h_n.permute((1, 0, 2)).view((batch_size, bag_size, -1))
 
 
-class TransformerEncoder(nn.Module):
+class TransformerEncoder(nn.Module):  # TODO: to check FairseqEncoder?
     def __init__(
         self,
         padding_idx: int,
