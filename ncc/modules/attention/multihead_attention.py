@@ -385,7 +385,7 @@ class MultiheadAttention(nn.Module):
             need_weights = True
 
         tgt_len, bsz, embed_dim = query.size()
-        src_len = value.size(0)
+        # src_len = value.size(0)
         assert embed_dim == self.embed_dim
         assert list(query.size()) == [tgt_len, bsz, embed_dim]
 
@@ -525,7 +525,8 @@ class MultiheadAttention(nn.Module):
             # In this branch incremental_state is never None
             assert incremental_state is not None
             incremental_state = self._set_input_buffer(incremental_state, saved_state)
-
+        assert k is not None
+        src_len = k.size(1)
         # This is part of a workaround to get around fork/join parallelism
         # not supporting Optional types.
         if key_padding_mask is not None and key_padding_mask.dim() == 0:
@@ -568,7 +569,7 @@ class MultiheadAttention(nn.Module):
             attn_weights += self.matmul_with_relative_representations(q, relative_repr_keys)
 
         # TODO: sparse operation, need to be implemented later
-        # attn_weights = MultiheadAttention.apply_sparse_mask(attn_weights, tgt_len, src_len, bsz)
+        attn_weights = MultiheadAttention.apply_sparse_mask(attn_weights, tgt_len, src_len, bsz)
 
         assert list(attn_weights.size()) == [bsz * self.num_heads, tgt_len, src_len]
 
