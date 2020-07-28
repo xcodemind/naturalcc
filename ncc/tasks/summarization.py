@@ -190,7 +190,6 @@ class SummarizationTask(FairseqTask):
         d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
         return d
 
-
     def load_dataset(self, split, epoch=1, combine=False, **kwargs):
         """Load a given dataset split.
 
