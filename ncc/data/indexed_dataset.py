@@ -74,7 +74,7 @@ def make_dataset(path, impl, modality='text', fix_lua_indexing=False, dictionary
             return IndexedRawNodeIdDataset(path, dictionary)
         elif modality == 'dfs':
             return IndexedDFSASTDataset(path, dictionary, append_eos=False)
-        elif modality == 'tok':
+        elif modality in ['tok', 'code_tokens', 'docstring_tokens']:
             return IndexedTokenDataset(path, dictionary)
         else:
             assert dictionary is not None
@@ -201,7 +201,7 @@ class IndexedDataset(FairseqDataset):
     @staticmethod
     def exists(path):
         return (
-                os.path.exists(index_file_path(path)) and os.path.exists(data_file_path(path))
+            os.path.exists(index_file_path(path)) and os.path.exists(data_file_path(path))
         )
 
     @property
@@ -901,7 +901,7 @@ class MMapIndexedDataset(torch.utils.data.Dataset):
     @staticmethod
     def exists(path):
         return (
-                os.path.exists(index_file_path(path)) and os.path.exists(data_file_path(path))
+            os.path.exists(index_file_path(path)) and os.path.exists(data_file_path(path))
         )
 
 

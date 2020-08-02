@@ -58,7 +58,7 @@ def load_langpair_dataset(
             else:
                 raise FileNotFoundError('Dataset not found: {} ({})'.format(split, data_path))
 
-        src_dataset = data_utils.load_indexed_dataset(prefix + src, 'text', src_dict, dataset_impl)
+        src_dataset = data_utils.load_indexed_dataset(prefix + src, src, src_dict, dataset_impl)
         if truncate_source:
             src_dataset = AppendTokenDataset(
                 TruncateDataset(
@@ -69,7 +69,7 @@ def load_langpair_dataset(
             )
         src_datasets.append(src_dataset)
 
-        tgt_dataset = data_utils.load_indexed_dataset(prefix + tgt, 'text', tgt_dict, dataset_impl)
+        tgt_dataset = data_utils.load_indexed_dataset(prefix + tgt, tgt, tgt_dict, dataset_impl)
         if tgt_dataset is not None:
             tgt_datasets.append(tgt_dataset)
 
@@ -155,8 +155,8 @@ class SummarizationTask(FairseqTask):
             raise Exception('Could not infer language pair, please provide it explicitly')
 
         # load dictionaries
-        src_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict4bert.json'.format(args['task']['source_lang'])))
-        tgt_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict4bert.json'.format(args['task']['target_lang'])))
+        src_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['source_lang'])))
+        tgt_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['target_lang'])))
         assert src_dict.pad() == tgt_dict.pad()
         assert src_dict.eos() == tgt_dict.eos()
         assert src_dict.unk() == tgt_dict.unk()
@@ -164,7 +164,6 @@ class SummarizationTask(FairseqTask):
         LOGGER.info('[{}] dictionary: {} types'.format(args['task']['target_lang'], len(tgt_dict)))
 
         return cls(args, src_dict, tgt_dict)
-
 
     @classmethod
     def build_dictionary(
