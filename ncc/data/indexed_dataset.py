@@ -566,7 +566,7 @@ class IndexedRawPathDataset(FairseqDataset):
 
 
 class IndexedTokenDataset(FairseqDataset):
-    def __init__(self, path, dictionary, append_eos=False, reverse_order=False):
+    def __init__(self, path, dictionary, append_eos=True, reverse_order=False):
         self.tokens_list = []
         self.lines = []
         self.sizes = []
