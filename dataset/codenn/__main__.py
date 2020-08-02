@@ -35,17 +35,17 @@ def flatten_data():
         with open(raw_filename, 'r') as reader, \
             open(code_filename, 'w') as code_writer, open(docstring_filename, 'w') as docstring_writer:
             for idx, line in enumerate(reader):
-                if line:
-                    """example: [\d+]\t[\d+]\t[docstring]\t[code]\t0\n"""
-                    try:
-                        parsed_line = line.rstrip('\n').split('\t')
-                        assert len(parsed_line) == 5, AssertionError(idx, line)
-                    except AssertionError:
-                        continue
-                    docstring, code = parsed_line[2].strip(), parsed_line[3].strip()
-                    docstring, code = docstring.replace('\\n', '\n'), code.replace('\\n', '\n')
-                    print(ujson.dumps(docstring), file=docstring_writer)
-                    print(ujson.dumps(code), file=code_writer)
+                """example: [\d+]\t[\d+]\t[docstring]\t[code]\t0\n"""
+                try:
+                    parsed_line = line.rstrip('\n').split('\t')
+                    assert len(parsed_line) == 5, AssertionError(idx, line)
+                except AssertionError:
+                    continue
+                docstring, code = parsed_line[2].strip(), parsed_line[3].strip()
+                docstring, code = map(lambda string: string.replace('\\r\\n', '\n').replace('\\n', '\n'),
+                                      (docstring, code,))
+                print(ujson.dumps(docstring), file=docstring_writer)
+                print(ujson.dumps(code), file=code_writer)
 
 
 if __name__ == '__main__':
