@@ -32,59 +32,6 @@ class TransformerModel(FairseqEncoderDecoderModel):
         super().__init__(encoder, decoder)
         self.args = args
         self.supports_align_args = True
-    #
-    # @staticmethod
-    # def add_args(parser):
-    #     """Add model-specific arguments to the parser."""
-    #     # fmt: off
-    #     parser.add_argument('--dropout', type=float, metavar='D',
-    #                         help='dropout probability')
-    #     parser.add_argument('--encoder-embed-dim', type=int, metavar='N',
-    #                         help='encoder embedding dimension')
-    #     parser.add_argument('--encoder-embed-path', type=str, metavar='STR',
-    #                         help='path to pre-trained encoder embedding')
-    #     parser.add_argument('--encoder-freeze-embed', action='store_true',
-    #                         help='freeze encoder embeddings')
-    #     parser.add_argument('--encoder-hidden-size', type=int, metavar='N',
-    #                         help='encoder hidden size')
-    #     parser.add_argument('--encoder-layers', type=int, metavar='N',
-    #                         help='number of encoder layers')
-    #     parser.add_argument('--encoder-bidirectional', action='store_true',
-    #                         help='make all layers of encoder bidirectional')
-    #     parser.add_argument('--decoder-embed-dim', type=int, metavar='N',
-    #                         help='decoder embedding dimension')
-    #     parser.add_argument('--decoder-embed-path', type=str, metavar='STR',
-    #                         help='path to pre-trained decoder embedding')
-    #     parser.add_argument('--decoder-freeze-embed', action='store_true',
-    #                         help='freeze decoder embeddings')
-    #     parser.add_argument('--decoder-hidden-size', type=int, metavar='N',
-    #                         help='decoder hidden size')
-    #     parser.add_argument('--decoder-layers', type=int, metavar='N',
-    #                         help='number of decoder layers')
-    #     parser.add_argument('--decoder-out-embed-dim', type=int, metavar='N',
-    #                         help='decoder output embedding dimension')
-    #     parser.add_argument('--decoder-attention', type=str, metavar='BOOL',
-    #                         help='decoder attention')
-    #     parser.add_argument('--adaptive-softmax-cutoff', metavar='EXPR',
-    #                         help='comma separated list of adaptive softmax cutoff points. '
-    #                              'Must be used with adaptive_loss criterion')
-    #     parser.add_argument('--share-decoder-input-output-embed', default=False,
-    #                         action='store_true',
-    #                         help='share decoder input and output embeddings')
-    #     parser.add_argument('--share-all-embeddings', default=False, action='store_true',
-    #                         help='share encoder, decoder and output embeddings'
-    #                              ' (requires shared dictionary and embed dim)')
-    #
-    #     # Granular dropout settings (if not specified these default to --dropout)
-    #     parser.add_argument('--encoder-dropout-in', type=float, metavar='D',
-    #                         help='dropout probability for encoder input embedding')
-    #     parser.add_argument('--encoder-dropout-out', type=float, metavar='D',
-    #                         help='dropout probability for encoder output')
-    #     parser.add_argument('--decoder-dropout-in', type=float, metavar='D',
-    #                         help='dropout probability for decoder input embedding')
-    #     parser.add_argument('--decoder-dropout-out', type=float, metavar='D',
-    #                         help='dropout probability for decoder output')
-    #     # fmt: on
 
     @classmethod
     def build_model(cls, args, config, task):
