@@ -131,6 +131,9 @@ class SummarizationTask(FairseqTask):
         super().__init__(args)
         self.src_dict = src_dict
         self.tgt_dict = tgt_dict
+        # add mask token
+        self.mask_idx = self.src_dict.add_symbol('<mask>')
+        self.mask_idx = self.tgt_dict.add_symbol('<mask>')
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -152,8 +155,8 @@ class SummarizationTask(FairseqTask):
             raise Exception('Could not infer language pair, please provide it explicitly')
 
         # load dictionaries
-        src_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['source_lang'])))
-        tgt_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['target_lang'])))
+        src_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict4bert.json'.format(args['task']['source_lang'])))
+        tgt_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict4bert.json'.format(args['task']['target_lang'])))
         assert src_dict.pad() == tgt_dict.pad()
         assert src_dict.eos() == tgt_dict.eos()
         assert src_dict.unk() == tgt_dict.unk()

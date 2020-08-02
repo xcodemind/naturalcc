@@ -158,6 +158,54 @@ class CodeRobertaModel(FairseqLanguageModel):
                     LOGGER.info('Overwriting ' + prefix + 'classification_heads.' + k)
                     state_dict[prefix + 'classification_heads.' + k] = v
 
+    def upgrade_state_dict_named_for_summarization(self, state_dict, name):
+        super().upgrade_state_dict_named(state_dict, name)
+
+        prefix = name + '.' if name != '' else ''
+        current_head_names = [] if not hasattr(self, 'classification_heads') else \
+            self.classification_heads.keys()
+
+        # Handle new classification heads present in the state dict.
+        keys_to_delete = []
+        for k in state_dict.keys():
+            if not k.startswith(prefix + 'classification_heads.'):
+                continue
+
+            head_name = k[len(prefix + 'classification_heads.'):].split('.')[0]
+            num_classes = state_dict[prefix + 'classification_heads.' + head_name + '.out_proj.weight'].size(0)
+            inner_dim = state_dict[prefix + 'classification_heads.' + head_name + '.dense.weight'].size(0)
+
+            # if getattr(self.args, 'load_checkpoint_heads', False):
+            if 'load_checkpoint_heads' in self.args['model']:
+                if head_name not in current_head_names:
+                    self.register_classification_head(head_name, num_classes, inner_dim)
+            else:
+                if head_name not in current_head_names:
+                    LOGGER.warning(
+                        'deleting classification head ({}) from checkpoint '
+                        'not present in current model: {}'.format(head_name, k)
+                    )
+                    keys_to_delete.append(k)
+                elif (
+                        num_classes != self.classification_heads[head_name].out_proj.out_features
+                        or inner_dim != self.classification_heads[head_name].dense.out_features
+                ):
+                    LOGGER.warning(
+                        'deleting classification head ({}) from checkpoint '
+                        'with different dimensions than current model: {}'.format(head_name, k)
+                    )
+                    keys_to_delete.append(k)
+        for k in keys_to_delete:
+            del state_dict[k]
+
+        # Copy any newly-added classification heads into the state dict
+        # with their current weights.
+        if hasattr(self, 'classification_heads'):
+            cur_state = self.classification_heads.state_dict()
+            for k, v in cur_state.items():
+                if prefix + 'classification_heads.' + k not in state_dict:
+                    LOGGER.info('Overwriting ' + prefix + 'classification_heads.' + k)
+                    state_dict[prefix + 'classification_heads.' + k] = v
 
 class RobertaLMHead(nn.Module):
     """Head for masked language modeling."""
@@ -267,18 +315,18 @@ class RobertaEncoder(FairseqDecoder):
                   is a list of hidden states. Note that the hidden
                   states have shape `(src_len, batch, vocab)`.
         """
-        x, extra = self.extract_features(src_tokens, return_all_hiddens=return_all_hiddens)
+        x, extra, padding_mask = self.extract_features(src_tokens, return_all_hiddens=return_all_hiddens)
         if not features_only:
             x = self.output_layer(x, masked_tokens=masked_tokens)
-        return x, extra
+        return x, extra, padding_mask
 
     def extract_features(self, src_tokens, return_all_hiddens=False, **unused):
-        inner_states, _ = self.sentence_encoder(
+        inner_states, _, padding_mask = self.sentence_encoder(
             src_tokens,
             last_state_only=not return_all_hiddens,
         )
         features = inner_states[-1].transpose(0, 1)  # T x B x C -> B x T x C
-        return features, {'inner_states': inner_states if return_all_hiddens else None}
+        return features, {'inner_states': inner_states if return_all_hiddens else None}, padding_mask
 
     def output_layer(self, features, masked_tokens=None, **unused):
         return self.lm_head(features, masked_tokens)

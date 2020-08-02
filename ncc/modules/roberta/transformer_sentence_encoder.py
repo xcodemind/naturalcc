@@ -235,4 +235,4 @@ class TransformerSentenceEncoder(nn.Module):
         if self.traceable:
             return torch.stack(inner_states), sentence_rep
         else:
-            return inner_states, sentence_rep
+            return inner_states, sentence_rep, padding_mask

@@ -12,6 +12,7 @@ import math
 import random
 import numpy as np
 from collections import namedtuple
+from collections import OrderedDict
 import torch
 from ncc import LOGGER
 from ncc import tasks
@@ -133,7 +134,7 @@ def validate(args, trainer, task, epoch_itr, subsets):
         with metrics.aggregate(new_root=True) as agg:
             for sample in progress:
                 trainer.valid_step(sample)
-                # break # TODO: only for debug
+                break # TODO: only for debug
 
         # log validation stats
         stats = get_valid_stats(args, trainer, agg.get_smoothed_values())
@@ -234,7 +235,50 @@ def single_main(args, init_distributed=False):
         args['dataset']['max_tokens'],
         args['dataset']['max_sentences'],
     ))
+    LOGGER.info('trainer.get_model().encoder: ', trainer.get_model().encoder)
 
+    # 5. Initialize model from CodeBERT
+    filename = args['checkpoint']['init_model']
+    state_dict = checkpoint_utils.load_checkpoint_to_cpu(filename)['model']
+    # keys_to_delete = [#'decoder.sentence_encoder.emb_layer_norm.weight', 'decoder.sentence_encoder.emb_layer_norm.bias',
+    #                   'decoder.lm_head.weight', 'decoder.lm_head.bias',
+    #                   'decoder.lm_head.dense.weight', 'decoder.lm_head.dense.bias',
+    #                   'decoder.lm_head.layer_norm.weight', 'decoder.lm_head.layer_norm.bias',
+    #                   ]
+    #
+    # for k in keys_to_delete:
+    #     del state_dict[k]
+    updated_state = OrderedDict()
+    prefix = 'decoder.'
+    for k, v in state_dict.items():
+        LOGGER.info('Overwriting ' + prefix + k)
+        # if k.replace(prefix, '') == 'embed_positions.weight':
+        #     updated_state['embed_positions._float_tensor'] = v
+        # else:
+        updated_state[k.replace(prefix, '')] = v
+    # updated_state['embed_positions.weight'] = updated_state['embed_positions._float_tensor']
+    # updated_state['version'] = torch.Tensor([3])
+    # model = task.build_model(args)
+    # model.load_state_dict(state["model"], strict=strict, args=args)
+    # Copy any newly-added classification heads into the state dict
+    # with their current weights.
+    # if hasattr(self, 'classification_heads'):
+    #     cur_state = self.classification_heads.state_dict()
+    #     for k, v in cur_state.items():
+    #         if prefix + 'classification_heads.' + k not in state_dict:
+    #             LOGGER.info('Overwriting ' + prefix + 'classification_heads.' + k)
+    #             state_dict[prefix + 'classification_heads.' + k] = v
+    try:
+        # trainer.get_model().encoder.load_state_dict(state["model"], strict=True, args=args)
+
+        trainer.get_model().encoder.load_state_dict(updated_state)
+
+    except Exception:
+        raise Exception(
+            "Cannot load model parameters from checkpoint {}; "
+            "please ensure that the architectures match.".format(filename)
+        )
+    # exit()
     # 5. Load the latest checkpoint if one is available and restore the corresponding train iterator
     extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer, combine=False)
 
@@ -290,11 +334,19 @@ def distributed_main(i, args, start_rank=0):
 
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('ruby_train.yml')
+    args_ = Argues('ruby_ft_summarization.yml')
     LOGGER.info(args_)
     yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
+
+    yaml_file_eval = os.path.join(os.path.dirname(__file__), 'config', 'ruby_summarization.yml')
+    LOGGER.info('Load arguments in {}'.format(yaml_file_eval))
+    args_eval = load_yaml(yaml_file_eval)
+
+    # Concatenate the training and evaluation arguments.
+    args = {**args, **args_eval}
+
     LOGGER.info(args)
 
     if args['distributed_training']['distributed_init_method'] is None:
