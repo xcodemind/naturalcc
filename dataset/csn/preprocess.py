@@ -180,4 +180,4 @@ if __name__ == '__main__':
             src_filename = os.path.join(args.flatten_dir, lang, '{}.{}'.format(mode, src_attr))
             tgt_filename = os.path.join(args.flatten_dir, lang, '{}.{}'.format(mode, tgt_attr))
             LOGGER.info('Generating {}'.format(tgt_filename))
-            process(src_filename, tgt_filename, lang, num_workers=10)
+            process(src_filename, tgt_filename, lang, num_workers=args.cores)

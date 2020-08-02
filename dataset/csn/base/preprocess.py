@@ -101,7 +101,7 @@ def main(args):
         else:
             # src dict
             for modality in args['preprocess']['source_lang']:
-                modality_dict_filename = os.path.join(args['preprocess']['destdir'], '{}.dict.txt'.format(modality))
+                modality_dict_filename = os.path.join(args['preprocess']['destdir'], '{}.dict.json'.format(modality))
                 if os.path.exists(modality_dict_filename):
                     LOGGER.info('Loading {} dict from {}'.format(modality, modality_dict_filename))
                     src_dicts[modality] = Dictionary.load_json(modality_dict_filename)
@@ -112,7 +112,7 @@ def main(args):
             # tgt dict
             if args['preprocess']['target_lang']:
                 modality_dict_filename = os.path.join(args['preprocess']['destdir'],
-                                                      '{}.dict.txt'.format(args['preprocess']['target_lang']))
+                                                      '{}.dict.json'.format(args['preprocess']['target_lang']))
                 if os.path.exists(modality_dict_filename):
                     LOGGER.info('Loading {} dict from {}'.format(modality, modality_dict_filename))
                     tgt_dict = Dictionary.load_json(modality_dict_filename)

@@ -6,6 +6,7 @@ ref: https://github.com/tech-srl/code2seq/blob/master/Python150kExtractor/extrac
 import re
 import itertools
 from random import shuffle
+from ncc.data.constants import PAD, EOS
 
 MAX_PATH_LENTH = 8
 MAX_PATH_WIDTH = 2
@@ -90,14 +91,19 @@ def __collect_sample(ast, MAX_PATH: int):
             # error path, skip it
             continue
 
-        start, connector, finish = map(lambda lst: ' '.join(lst), (start, connector, finish))
-        contexts.append(' <SEP> '.join([start, connector, finish]))
+        contexts.append(
+            list(itertools.chain(*[start, [PAD], connector, [PAD], finish]))
+        )
     try:
         assert len(contexts) > 0, Exception('ast\'s path is None')
         if len(contexts) > MAX_PATH:
             shuffle(contexts)
             contexts = contexts[:MAX_PATH]
-        return contexts
+        contexts_list = []
+        for ctx in contexts:
+            contexts_list += ctx
+            contexts_list.append(EOS)
+        return contexts_list
     except Exception as err:
         print(err)
         print(ast)
@@ -111,7 +117,7 @@ def ast_to_path(ast_tree, MAX_PATH: int):
 if __name__ == '__main__':
     import ujson
 
-    with open('/home/yang/.ncc/code_search_net/flatten/ruby/train.ast', 'r') as reader:
+    with open('/home/yang/.ncc/CodeSearchNet/flatten/ruby/train.ast', 'r') as reader:
         for line in reader:
             ast_tree = ujson.loads(line)
             paths = ast_to_path(ast_tree, MAX_PATH=300)
