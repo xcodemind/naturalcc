@@ -12,7 +12,6 @@ import math
 import random
 import numpy as np
 from collections import namedtuple
-from collections import OrderedDict
 import torch
 from ncc import LOGGER
 from ncc import tasks
@@ -24,6 +23,7 @@ from ncc.logging import metrics, progress_bar
 from ncc.utils import utils
 from ncc.utils.file_utils import remove_files
 from ncc.data import iterators
+from ncc.models.summarization.transformer_from_roberta import TransformerFromRobertaModel
 
 
 @metrics.aggregate('train')
@@ -219,8 +219,21 @@ def single_main(args, init_distributed=False):
         task.load_dataset(valid_sub_split, combine=False, epoch=1)
 
     # 3. Build model and criterion
-    model = task.build_model(args)
     criterion = task.build_criterion(args)
+
+    # 4. Initialize encoder from CodeBERT
+    encoder = TransformerFromRobertaModel.build_model(args, None, task).encoder
+    trainer_encoder = Trainer(args, task, encoder, criterion)
+    LOGGER.info('training on {} GPUs'.format(args['distributed_training']['distributed_world_size']))
+    LOGGER.info('max tokens per GPU = {} and max sentences per GPU = {}'.format(
+        args['dataset']['max_tokens'],
+        args['dataset']['max_sentences'],
+    ))
+    extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer_encoder, combine=False)
+
+    # 5. Build model
+    model = task.build_model(args)
+    model.encoder = trainer_encoder.get_model()
     LOGGER.info(model)
     LOGGER.info('model {}, criterion {}'.format(args['model']['arch'], criterion.__class__.__name__))
     LOGGER.info('num. model params: {} (num. trained: {})'.format(
@@ -228,59 +241,8 @@ def single_main(args, init_distributed=False):
         sum(p.numel() for p in model.parameters() if p.requires_grad),
     ))
 
-    # 4. Build trainer
+    # 6. Build trainer
     trainer = Trainer(args, task, model, criterion)
-    LOGGER.info('training on {} GPUs'.format(args['distributed_training']['distributed_world_size']))
-    LOGGER.info('max tokens per GPU = {} and max sentences per GPU = {}'.format(
-        args['dataset']['max_tokens'],
-        args['dataset']['max_sentences'],
-    ))
-    LOGGER.info('trainer.get_model().encoder: ', trainer.get_model().encoder)
-
-    # 5. Initialize model from CodeBERT
-    filename = args['checkpoint']['init_model']
-    state_dict = checkpoint_utils.load_checkpoint_to_cpu(filename)['model']
-    # keys_to_delete = [#'decoder.sentence_encoder.emb_layer_norm.weight', 'decoder.sentence_encoder.emb_layer_norm.bias',
-    #                   'decoder.lm_head.weight', 'decoder.lm_head.bias',
-    #                   'decoder.lm_head.dense.weight', 'decoder.lm_head.dense.bias',
-    #                   'decoder.lm_head.layer_norm.weight', 'decoder.lm_head.layer_norm.bias',
-    #                   ]
-    #
-    # for k in keys_to_delete:
-    #     del state_dict[k]
-    updated_state = OrderedDict()
-    prefix = 'decoder.'
-    for k, v in state_dict.items():
-        LOGGER.info('Overwriting ' + prefix + k)
-        # if k.replace(prefix, '') == 'embed_positions.weight':
-        #     updated_state['embed_positions._float_tensor'] = v
-        # else:
-        updated_state[k.replace(prefix, '')] = v
-    # updated_state['embed_positions.weight'] = updated_state['embed_positions._float_tensor']
-    # updated_state['version'] = torch.Tensor([3])
-    # model = task.build_model(args)
-    # model.load_state_dict(state["model"], strict=strict, args=args)
-    # Copy any newly-added classification heads into the state dict
-    # with their current weights.
-    # if hasattr(self, 'classification_heads'):
-    #     cur_state = self.classification_heads.state_dict()
-    #     for k, v in cur_state.items():
-    #         if prefix + 'classification_heads.' + k not in state_dict:
-    #             LOGGER.info('Overwriting ' + prefix + 'classification_heads.' + k)
-    #             state_dict[prefix + 'classification_heads.' + k] = v
-    try:
-        # trainer.get_model().encoder.load_state_dict(state["model"], strict=True, args=args)
-
-        trainer.get_model().encoder.load_state_dict(updated_state)
-
-    except Exception:
-        raise Exception(
-            "Cannot load model parameters from checkpoint {}; "
-            "please ensure that the architectures match.".format(filename)
-        )
-    # exit()
-    # 5. Load the latest checkpoint if one is available and restore the corresponding train iterator
-    extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer, combine=False)
 
     # 6. Train until the learning rate gets too small
     max_epoch = args['optimization']['max_epoch'] or math.inf

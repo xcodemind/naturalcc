@@ -15,6 +15,7 @@ from ncc.utils import utils
 from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.attention.multihead_attention import MultiheadAttention
 
+
 class TransformerSentenceEncoderLayer(nn.Module):
     """
     Implements a Transformer Encoder Layer used in BERT/XLM style pre-trained
