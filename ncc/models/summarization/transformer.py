@@ -1,5 +1,3 @@
-import torch
-import torch.nn as nn
 from ncc.models.fairseq_model import FairseqEncoderDecoderModel
 from ncc.modules.embedding import Embedding
 from ncc.modules.code2vec.transformer_encoder import TransformerEncoder

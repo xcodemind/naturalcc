@@ -231,6 +231,7 @@ class Trainer(object):
 
         return extra_state
 
+
     def get_train_iterator(
         self,
         epoch,

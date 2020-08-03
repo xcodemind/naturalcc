@@ -94,7 +94,7 @@ task:
   eval_bleu_print_samples: 0 #', action='store_true', help='print sample generations during validation'
 
 model:
-  arch: transformer_summarization_ft
+  arch: transformer_from_roberta_summarization
   pooler_dropout: 0.0 # type=float, metavar='D', help='dropout probability in the masked_lm pooler layers'
   activation_fn: gelu # choices=utils.get_available_activation_fns(), help='activation function to use'
   dropout: 0.1 # type=float, metavar='D', help='dropout probability'
@@ -193,13 +193,14 @@ optimization:
   gradient_accumulation_steps: 1 # type=int, default=1, help="Number of updates steps to accumulate before performing a backward/update pass."
 
 checkpoint:
-  init_model: ~/.ncc/py150/trav_trans_debug/checkpoints/checkpoint1.pt
+#  init_model: ~/.ncc/py150/trav_trans_debug/checkpoints/checkpoint1.pt
   save_dir: ~/.ncc/CodeSearchNet/codebert/traverse_roberta/summarization/checkpoints # default='checkpoints', help='path to save checkpoints'
-  restore_file: checkpoint_last.pt # default='checkpoint_last.pt', help='filename from which to load checkpoint (default: <save-dir>/checkpoint_last.pt'
+#  restore_file: checkpoint_last.pt # default='checkpoint_last.pt', help='filename from which to load checkpoint (default: <save-dir>/checkpoint_last.pt'
+  restore_file: ~/.ncc/py150/trav_trans_debug/checkpoints/checkpoint1.pt
   reset_dataloader: ~ # action='store_true', help='if set, does not reload dataloader state from the checkpoint'
   reset_lr_scheduler: ~ # action='store_true', help='if set, does not load lr scheduler state from the checkpoint'
-  reset_meters: ~ # action='store_true', help='if set, does not load meters from the checkpoint'
-  reset_optimizer: ~ # action='store_true', help='if set, does not load optimizer state from the checkpoint'
+  reset_meters: 1 # action='store_true', help='if set, does not load meters from the checkpoint'
+  reset_optimizer: 1 # action='store_true', help='if set, does not load optimizer state from the checkpoint'
   optimizer_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override optimizer args when loading a checkpoint'
   save_interval: 1 # type=int, default=1, metavar='N', help='save a checkpoint every N epochs'
   save_interval_updates: 0 # type=int, default=0, metavar='N', help='save a checkpoint (and validate) every N updates'

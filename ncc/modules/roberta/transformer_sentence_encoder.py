@@ -2,23 +2,14 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-import sys
 from typing import Optional, Tuple
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# from . import (
-#     LayerNorm,
-#     MultiheadAttention,
-#     PositionalEmbedding,
-#     TransformerSentenceEncoderLayer,
-# )
 from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.attention.multihead_attention import MultiheadAttention
 from ncc.modules.roberta.positional_embedding import PositionalEmbedding
 from ncc.modules.roberta.transformer_sentence_encoder_layer import TransformerSentenceEncoderLayer
-
 import random
 
 
@@ -235,4 +226,4 @@ class TransformerSentenceEncoder(nn.Module):
         if self.traceable:
             return torch.stack(inner_states), sentence_rep
         else:
-            return inner_states, sentence_rep, padding_mask
+            return inner_states, sentence_rep
