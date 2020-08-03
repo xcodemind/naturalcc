@@ -4,10 +4,10 @@ Naturalcode is a sequence modeling toolkit that allows researchers and developer
 ## Note
 This copy of code is private now, please do not distribute it. Thanks.
 
-We are planning to release part of this copy of code in the next year, after we submit a demo paper to ICSE2021.
+<!-- We are planning to release part of this copy of code in the next year, after we submit a demo paper to ICSE2021. -->
 
 ## What's New:
-May 2020: support CodeBert.
+Sep. 2020: support CodeBert.
 
 ## Features:
 - CNN
@@ -23,16 +23,19 @@ May 2020: support CodeBert.
 - For training new models, you'll also need an NVIDIA GPU and NCCL
 - For faster training install NVIDIA's apex library with the --cuda_ext and --deprecated_fused_adam options
 
-To install naturalcode:
+<!-- To install naturalcode: -->
 
-```
-pip install naturalcode
-```
-
-To install naturalcode from source and develop locally:
-
+<!-- ``` -->
+<!-- pip install naturalcode -->
+<!-- ``` -->
+#### Step 1: Clone it
 ```
 git clone https://github.com/whatsmyname/naturalcodev3
+```
+
+#### Step 2: To install naturalcode from source and develop locally
+
+```
 cd naturalcodev3
 pip install --editable .
 ```
@@ -40,26 +43,88 @@ pip install --editable .
 ## Dataset
 Currently, we have processed the following datasets:
 
-- codesearchnet
+- codesearchnet (see `dataset/csn`, and the `dataset/codesearchnet` is deprecated)
+- py150 (see `dataset/py150`)
+- codenn_charp (see `dataset/codenn_csharp`)
+- wikitext (see `dataset/wikitext` for Roberta pretraining.)
+- iwslt14 (see `dataset/iwstl14` for machine translation)
 
-Please refer to `dataset/codesearchnet/readme.md` to process the `codesearchnet` dataset.
-
-
-- py150
-- wikitext
-- iwslt14
 
 ## Runing
+> All the running commands here should be executed in the root of project folder (the path of your `naturalcodev3`).
+For example, in my environment I will stay at `/data/wanyao/Dropbox/ghproj-titan/naturalcodev3`.
 
-Please refer to the corresponding readme file in the `ncc/run` folder.
 
-## Organization
-* [dataset](dataset): processed dataset file
-* [demo](demo): demo display
-* [doc](doc): some description about this program
-* [eval](eval): evaluation codes
-* [exp](exp): codes for draw graphs
-* [run](run): run scripts
+
+### CodeBert and SCodeBert
+
+#### Step 1: Download the raw dataset and process it into data that can be fed to models.
+For our current SCodeBert task, we mainly use the CodeSearchNet dataset to fairly compare with CodeBert.
+
+Please refer to `dataset/csn/readme.md` to process the CodeSearchNet dataset.
+After this step, we will obtain the preprocessed data in `~/.ncc/` folder.
+
+#### Step 2: Pre-training
+
+##### Model 1 (code-roberta): only code tokens, Roberta architecture
+
+```
+python -m run.codebert.code_roberta.train
+```
+##### Model 2 (code-docstring-roberta): code tokens and comment tokens, Roberta architecture
+
+```
+python -m run.codebert.code_docstring_roberta.train
+```
+
+##### Model 3 (traverse-roberta): only code structure (AST traverse), Roberta architecture
+
+```
+python -m run.codebert.traverse_roberta.train
+```
+##### Model 4 (traverse-docstring-roberta): code structure (AST traverse) and comment tokens, Roberta architecture
+
+```
+python -m run.codebert.traverse_docstring_roberta.train
+```
+
+#### Step 3: Fine-tuning
+##### On code summarization
+##### Model 1 (traverse-roberta): only code structure (AST traverse), Roberta architecture
+
+```
+python -m run.codebert.traverse_roberta.ft_summarization
+```
+
+##### On code retrieval
+> TODO
+
+#### Step 4: Evaluation
+
+##### On code summarization
+```
+python -m run.codebert.traverse_roberta.summarize
+```
+
+##### On code retrieval
+> TODO
+
+### Code Completion
+TODO
+
+### Code Summarization
+TODO
+
+### Code Retrieval
+TODO
+
+<!-- ## Organization -->
+<!-- * [dataset](dataset): processed dataset file -->
+<!-- * [demo](demo): demo display -->
+<!-- * [doc](doc): some description about this program -->
+<!-- * [eval](eval): evaluation codes -->
+<!-- * [exp](exp): codes for draw graphs -->
+<!-- * [run](run): run scripts -->
 
 
 ## License
