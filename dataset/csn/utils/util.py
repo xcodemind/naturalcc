@@ -14,13 +14,8 @@ from collections import Counter
 from copy import deepcopy
 import re
 
+
 # Such methods are widely used. Therefore, we define them ahead of other functions
-
-# get children with NODE_FIX
-get_tree_children_func = lambda node: [name for name in node['children'] if isinstance(name, int)]
-
-# get children without NODE_FIX
-get_token_children_func = lambda node: [name for name in node['children'] if not isinstance(name, int)]
 
 
 def get_child_nodes(node: Dict) -> Tuple[List, List]:
@@ -33,9 +28,6 @@ def get_child_nodes(node: Dict) -> Tuple[List, List]:
             token_node.append(name)
     return token_node, tree_node,
 
-
-# get max node id
-last_index = lambda ast_tree: sorted([int(node_ind[len(constants.NODE_FIX):]) for node_ind in ast_tree.keys()])[-1]
 
 # is string token
 is_string = lambda identifier: \

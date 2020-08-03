@@ -9,10 +9,17 @@ FLATTEN_DIR = '~/.ncc/{}/flatten'.format(DATASET_NAME)
 LANGUAGES = ['ruby', 'python', 'java', 'go', 'php', 'javascript']
 MODES = ['train', 'valid', 'test']
 
+RECURSION_DEPTH = 999  # dfs recursion limitation
+# path modality
+PATH_NUM = 300  # path modality number
+# sbt modality
+MAX_SUB_TOKEN_LEN = 5  # we only consider the first 5 sub-tokens from tokenizer
+SBT_PARENTHESES = ['(_SBT', ')_SBT']
+# for binary-AST
+NODE_TMP = 'TMP'
+
 MEANINGLESS_TOKENS = set(['(', ')', '[', ']', '{', '}', ';', '@', '#', ':', '()', '<>', '{}'])
 COMMENT_END_TOKENS = set(['{', '[', '('])
-
-SBT_PARENTHESES = ['(_SBT', ')_SBT']
 
 import logging
 

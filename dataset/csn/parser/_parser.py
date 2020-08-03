@@ -151,7 +151,7 @@ class CodeParser(object):
             for line_num in range(start[0] + 1, end[0]):
                 sub_code_lines.append(code_lines[line_num])
             sub_code_lines.append(code_lines[end[0]][:end[1]])
-            return '\n'.join(sub_code_lines)
+            return b'\n'.join(sub_code_lines)
         else:
             raise NotImplemented
 
@@ -198,9 +198,12 @@ class CodeParser(object):
                 new_node_idx = len(ast_tree)
                 if cur_node.is_named:
                     # leaf node's value is None. we have to extract its value from source code
+                    value = self.subcode(cur_node.start_point, cur_node.end_point, code_lines).decode()
+                    if not value:  # value='', delete current node
+                        return
                     ast_tree[new_node_idx] = {
                         'type': cur_node.type, 'parent': parent_node_idx,
-                        'value': self.subcode(cur_node.start_point, cur_node.end_point, code_lines).strip(),
+                        'value': value,
                     }
                     ast_tree[parent_node_idx]['children'].append(new_node_idx)
                 else:
@@ -230,12 +233,10 @@ class CodeParser(object):
         if self.LANGUAGE == 'php':
             code = '<?php ' + code
 
-        ast_tree = self.parser.parse(
-            # bytes(code.replace('\t', '    ').replace('\n', ' ').strip(), "utf8")
-            bytes(code, "utf8")
-        )
+        ast_tree = self.parser.parse(code.encode())
 
-        code_lines = code.split('\n')  # raw code
+        code_lines = [line.encode() for line in code.split('\n')]
+
         # 1) build ast tree in Dict type
         try:
             code_tree = self.build_tree(ast_tree.root_node, code_lines)
@@ -300,7 +301,7 @@ if __name__ == '__main__':
     from dataset.utils.ast import tranv_trans
 
     lang = 'ruby'
-    so_file = '/home/yang/.ncc/code_search_net/libs/{}.so'.format(lang)
+    so_file = '/home/yang/.ncc/CodeSearchNet/libs/{}.so'.format(lang)
     parser = CodeParser(so_file, lang, to_lower=False, operators_file='operators.json')
 
     while True:

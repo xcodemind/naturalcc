@@ -63,11 +63,19 @@ def main(args):
     def train_path(lang):
         return "{}{}".format(args['preprocess']['trainpref'], ("." + lang) if lang else "")
 
-    def build_dictionary(filenames, src=False, tgt=False):
+    def build_dictionary(filenames, modality, src=False, tgt=False):
         assert src ^ tgt
+        tokenize_func = tokenizer.tokenize_list  # default tokenizer
+        if modality == 'path':
+            filenames = list(itertools.chain(*[[fl + '.head', fl + '.body', fl + '.tail'] for fl in filenames]))
+        elif modality in ['bin_ast']:
+            tokenize_func = tokenizer.tokenize_tree
+        elif modality in ['code_tokens', 'docstring_tokens', 'sbt', 'sbtao']:
+            pass
+
         return task.build_dictionary(
             filenames,
-            tokenize_func=tokenizer.tokenize_list,
+            tokenize_func=tokenize_func,
             workers=args['preprocess']['workers'],
             threshold=args['preprocess']['thresholdsrc'],
             nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
@@ -90,7 +98,7 @@ def main(args):
                 joined_dictionary = Dictionary.load_json(joined_dictionary_filename)
             else:
                 joined_dictionary = build_dictionary(
-                    [train_path(modality) for modality in modalities], src=True
+                    [train_path(modality) for modality in modalities], modalities, src=True
                 )
                 LOGGER.info('Saving joint dict at {}'.format(joined_dictionary_filename))
                 joined_dictionary.save_json(joined_dictionary_filename)
@@ -106,7 +114,7 @@ def main(args):
                     LOGGER.info('Loading {} dict from {}'.format(modality, modality_dict_filename))
                     src_dicts[modality] = Dictionary.load_json(modality_dict_filename)
                 else:
-                    src_dicts[modality] = build_dictionary([train_path(modality)], src=True)
+                    src_dicts[modality] = build_dictionary([train_path(modality)], modality, src=True)
                     LOGGER.info('Saving {} dict at {}'.format(modality, modality_dict_filename))
                     src_dicts[modality].save_json(modality_dict_filename)
             # tgt dict
@@ -117,7 +125,7 @@ def main(args):
                     LOGGER.info('Loading {} dict from {}'.format(modality, modality_dict_filename))
                     tgt_dict = Dictionary.load_json(modality_dict_filename)
                 else:
-                    tgt_dict = build_dictionary([train_path(args['preprocess']['target_lang'])], tgt=True)
+                    tgt_dict = build_dictionary([train_path(args['preprocess']['target_lang'])], modality, tgt=True)
                     LOGGER.info('Saving {} dict at {}'.format(modality, modality_dict_filename))
                     tgt_dict.save_json(modality_dict_filename)
             else:
@@ -213,9 +221,17 @@ def main(args):
             out_dir = args['preprocess']['destdir']
             os.makedirs(out_dir, exist_ok=True)
             logger.info('Copying {} into {}'.format(in_file, out_dir))
-            shutil.copy(src=in_file, dst=args['preprocess']['destdir'])
+            if lang == 'path':
+                shutil.copy(src=in_file + '.head', dst=args['preprocess']['destdir'])
+                shutil.copy(src=in_file + '.body', dst=args['preprocess']['destdir'])
+                shutil.copy(src=in_file + '.tail', dst=args['preprocess']['destdir'])
+            else:
+                shutil.copy(src=in_file, dst=args['preprocess']['destdir'])
         else:
-            # TODO: please help me binarize it.
+            if lang in ['path', 'bin_ast']:
+                LOGGER.error('Cannot binarize path/bin_ast modalities data because those data is not list. Ignore.')
+                return
+                # TODO: please help me binarize it.
             in_file = file_name(input_prefix, lang)
             out_file = dest_path(output_prefix, lang)
             os.makedirs(os.path.dirname(out_file), exist_ok=True)

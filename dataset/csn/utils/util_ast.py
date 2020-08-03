@@ -3,13 +3,74 @@ from typing import List, Dict, Any, Optional
 
 import sys
 from copy import deepcopy
-
-from dataset.codesearchnet.utils import constants
-from dataset.codesearchnet.utils import util
+from dataset.csn import RECURSION_DEPTH, SBT_PARENTHESES, NODE_TMP
+from dataset.csn.utils import util
 from ncc.data.constants import PAD
 
 # ignore those ast whose size is too large. Therefore set it as a small number
-sys.setrecursionlimit(constants.RECURSION_DEPTH)  # recursion depth
+sys.setrecursionlimit(RECURSION_DEPTH)  # recursion depth
+
+
+def value2children(ast_tree: Dict) -> Dict:
+    """node['value'] => node['children']"""
+    for idx, node in ast_tree.items():
+        value = node.get('value', None)
+        if value:
+            node.pop('value')
+            node['children'] = [value]
+    return ast_tree
+
+
+def pad_leaf_node(ast_tree: Dict, max_len: int, PAD_TOKEN=PAD) -> Dict:
+    '''
+    pad leaf node's child into [XX, [XX, ...]]
+    split token and pad it with PAD_TOKEN till reach MAX_TOKEN_LIST_LEN
+    e.g. VariableName ->  [VariableName, [Variable, Name, PAD_TOKEN, PAD_TOKEN, ...]]
+    '''
+    for idx, node in ast_tree.items():
+        if len(node['children']) == 1 and isinstance(node['children'][0], str):
+            subtokens = util.split_identifier(node['children'][0])
+            if len(subtokens) >= max_len:
+                subtokens = subtokens[:max_len]
+            else:
+                subtokens.extend([PAD_TOKEN] * (max_len - len(subtokens)))
+            node['children'].append(subtokens)
+    return ast_tree
+
+
+def build_sbt_tree(ast_tree: Dict, idx: str) -> List:
+    '''
+    build structure-based traversal SBT tree
+    ref: Deep Code Comment Generation
+    '''
+    if len(ast_tree[idx]['children']) == 2 and type(ast_tree[idx]['children'][1]) == list:
+        token = ast_tree[idx]['type'] + '_' + ast_tree[idx]['children'][0]
+        seq = [SBT_PARENTHESES[0], token, SBT_PARENTHESES[1], token]
+    else:
+        token = ast_tree[idx]['type']
+        seq = [SBT_PARENTHESES[0], token]
+        for child_idx in ast_tree[idx]['children']:
+            seq += build_sbt_tree(ast_tree, str(child_idx))
+        seq += [SBT_PARENTHESES[1], token]
+    return seq
+
+
+def build_sbtao_tree(ast_tree: Dict, idx: str) -> List:
+    '''
+    build structure-based traversal SBT tree
+    ref: Deep Code Comment Generation
+    :return:
+    '''
+    if len(ast_tree[idx]['children']) == 2 and type(ast_tree[idx]['children'][1]) == list:
+        token = ast_tree[idx]['type'] + '_' + '<other>'
+        seq = [SBT_PARENTHESES[0], token, SBT_PARENTHESES[1], token]
+    else:
+        token = ast_tree[idx]['type']
+        seq = [SBT_PARENTHESES[0], token]
+        for child_idx in ast_tree[idx]['children']:
+            seq += build_sbtao_tree(ast_tree, str(child_idx))
+        seq += [SBT_PARENTHESES[1], token]
+    return seq
 
 
 def delete_comment_node(ast_tree: Dict) -> Dict:
@@ -44,232 +105,114 @@ def delete_comment_node(ast_tree: Dict) -> Dict:
     return ast_tree
 
 
-def remove_only_one_child_root(ast_tree: Dict) -> Dict:
-    # 3) pop head node which has only 1 child
-    # because in such way, head node might be Program/Function/Error and its child is the code's AST
-    node_ids = deepcopy(list(ast_tree.keys()))
-    for idx in node_ids:
+def get_root_idx(ast_tree: Dict) -> int:
+    """get root node index"""
+    for idx, node in ast_tree.items():
+        if node['parent'] is None:
+            return idx
+
+
+def remove_root_with_uni_child(ast_tree: Dict) -> Dict:
+    """
+    delete root node with only a child
+    because in such way, head node might be Program/Function/Error and its child is the code's AST
+    """
+    ids = sorted([idx for idx in ast_tree.keys()], key=int)
+    for idx in ids:
         if (ast_tree[idx]['parent'] is None) and len(ast_tree[idx]['children']) == 1:
             child_idx = ast_tree[idx]['children'][0]
-            ast_tree[child_idx]['parent'] = None
+            ast_tree[str(child_idx)]['parent'] = None
             ast_tree.pop(idx)
         else:
             break
     return ast_tree
 
 
-def delete_node_with_single_node(ast_tree: Dict) -> Dict:
-    '''delete nodes who has only one child'''
-
-    def dfs(node_ind):
-        cur_node = ast_tree[node_ind]
-        child_node_indices = util.get_tree_children_func(cur_node)
-
-        # each ast tree generally is parsed from a method, so it has a "program" root node and a "method" node
-        # therefore, if current node is the root node with single child, we do not delete it
-        while len(child_node_indices) == 1 and cur_node['parent'] is not None:
-            # update its parent's children
-            parent_node = ast_tree[cur_node['parent']]
-            del_ind = parent_node['children'].index(node_ind)
-            del parent_node['children'][del_ind]
-            child_ind = child_node_indices[0]
-            # update its children's parent to its parent
-            ast_tree[child_ind]['parent'] = cur_node['parent']
-            # update its parent's children
-            parent_node['children'].insert(del_ind, child_ind)
-            # elete itself
-            ast_tree.pop(node_ind)
-
-            # update current info
-            node_ind = child_ind
-            cur_node = ast_tree[node_ind]
-            child_node_indices = util.get_tree_children_func(cur_node)
-
-        if len(child_node_indices) == 0:
-            return
-
-        for child_name in child_node_indices:
-            dfs(child_name)
-
-    dfs(constants.ROOT_NODE_NAME)
-    return ast_tree
-
-
-def binarize_tree(ast_tree: Dict) -> Dict:
-    '''ast tree -> binary ast tree'''
-    last_node_ind = util.last_index(ast_tree)
-
-    def dfs(cur_node_ind):
-        cur_node = ast_tree[cur_node_ind]
-        child_node_indices = util.get_tree_children_func(cur_node)
-
-        if len(child_node_indices) > 2:
-            # add new node
-            nonlocal last_node_ind
-            last_node_ind += 1
-            new_node_ind = constants.NODE_FIX + str(last_node_ind)
-            new_node = {
-                'node': constants.NODE_TMP,
-                'parent': cur_node_ind,
-                'children': child_node_indices[1:],
-            }
-            ast_tree[new_node_ind] = new_node
-            # update node's children info
-            cur_node['children'] = [child_node_indices[0], new_node_ind]
-            # update other childen nodes' parent info
-            for child_name in child_node_indices[1:]:
-                if child_name.startswith(constants.NODE_FIX) and child_name in ast_tree:
-                    ast_tree[child_name]['parent'] = new_node_ind
-            # update current node's children info
-            child_node_indices = util.get_tree_children_func(cur_node)
-
-        if len(child_node_indices) == 0:
-            return
-
-        for child_name in cur_node['children']:
-            dfs(child_name)
-
-    dfs(constants.ROOT_NODE_NAME)
-    return ast_tree
-
-
-def split_and_pad_token(token: str, MAX_TOKEN_LIST_LEN: int, to_lower: bool = True,
-                        PAD_TOKEN: str = constants.PAD_WORD) -> List:
-    '''
-    split token and pad it with PAD_TOKEN till reach MAX_TOKEN_LIST_LEN
-    e.g. VariableName ->  [VariableName, [Variable, Name, PAD_TOKEN, PAD_TOKEN, ...]]
-    :param token: raw token
-    :param MAX_TOKEN_LIST_LEN: max pad length
-    :param to_lower:
-    :return:
-    '''
-    tokens = util.split_identifier(token)
-    if to_lower:
-        tokens = util.lower(tokens)
-    tokens.extend([PAD_TOKEN for _ in range(MAX_TOKEN_LIST_LEN - len(tokens))])
-    return tokens
-
-
-def pad_leaf_node(ast_tree: Dict, MAX_LEN: int, to_lower: bool = True, PAD_TOKEN: str = PAD) -> Dict:
-    '''
-    pad leaf node's child into [XX, [XX, ...]]
-    :param ast_tree:
-    :param MAX_LEN: max pad length
-    :return:
-    '''
-    for key, node in ast_tree.items():
-        if len(node['children']) == 1 and (not str.startswith(node['children'][0], constants.NODE_FIX)):
-            ast_tree[key]['children'].append(
-                split_and_pad_token(ast_tree[key]['children'][0], MAX_LEN, to_lower, PAD_TOKEN)
-            )
-    return ast_tree
-
-
-def build_sbt_tree(ast_tree: Dict, node_ind: str, to_lower: bool) -> List:
-    '''
-    build structure-based traversal SBT tree
-    ref: Deep Code Comment Generation
-    '''
-    if len(ast_tree[node_ind]['children']) > 1 and type(ast_tree[node_ind]['children'][1]) == list:
-        token = ast_tree[node_ind]['node'] + '_' + ast_tree[node_ind]['children'][0]
-        if to_lower:
-            token = token.lower()
-        seq = [constants.SBT_PARENTHESES[0], token, constants.SBT_PARENTHESES[1], token]
-    else:
-        token = ast_tree[node_ind]['node']
-        if to_lower:
-            token = token.lower()
-        seq = [constants.SBT_PARENTHESES[0], token]
-        for child_ind in ast_tree[node_ind]['children']:
-            seq += build_sbt_tree(ast_tree, child_ind, to_lower)
-        seq += [constants.SBT_PARENTHESES[1], token]
-    return seq
-
-
-def build_sbtao_tree(ast_tree: Dict, node_ind: str, to_lower: bool) -> List:
-    '''
-    build structure-based traversal SBT tree
-    ref: Deep Code Comment Generation
-    :return:
-    '''
-    if len(ast_tree[node_ind]['children']) > 1 and type(ast_tree[node_ind]['children'][1]) == list:
-        token = ast_tree[node_ind]['node'] + '_' + '<other>'
-        if to_lower:
-            token = token.lower()
-        seq = [constants.SBT_PARENTHESES[0], token, constants.SBT_PARENTHESES[1], token]
-    else:
-        token = ast_tree[node_ind]['node']
-        if to_lower:
-            token = token.lower()
-        seq = [constants.SBT_PARENTHESES[0], token]
-        for child_ind in ast_tree[node_ind]['children']:
-            seq += build_sbtao_tree(ast_tree, child_ind, to_lower)
-        seq += [constants.SBT_PARENTHESES[1], token]
-    return seq
-
-
-def parse_deepcom(ast_tree: dict, sbt_func: Any, to_lower: bool) -> Optional[List]:
-    try:
-        sbt_seq = sbt_func(ast_tree, constants.ROOT_NODE_NAME, to_lower)
-        return sbt_seq
-    except Exception as err:
-        print(err)
-        print(ast_tree)
-        return None
-
-
-def delete_single_child_ndoe(ast_tree: Dict) -> Dict:
+def delete_node_with_uni_child(ast_tree: Dict, idx: int) -> Dict:
     '''
     delete nodes with single child node
-    :param ast_tree:
-    :return:
+    e.g. [1*NODEFIX1] ->  [1*NODEFIX2] -> ['void'] => [1*NODEFIX1] -> ['void']
     '''
 
-    def dfs(node_ind):
-        cur_node = ast_tree[node_ind]
-        child_node_indices = util.get_tree_children_func(cur_node)
+    def dfs(idx):
+        cur_node = ast_tree[idx]
+        # get current node's children indices, if it's leaf node, ignore.
+        if not (len(cur_node['children']) == 1 and isinstance(cur_node['children'][0], str)):
+            child_ids = cur_node['children']
+        else:
+            return  # move to leaf node, return
 
         # each ast tree generally is parsed from a method, so it has a "program" root node and a "method" node
         # therefore, if current node is the root node with single child, we do not delete it
-        while len(child_node_indices) == 1 and cur_node['parent'] is not None:
+        while (len(child_ids) == 1) and (cur_node['parent'] is not None):
             # update its parent's children
-            parent_node = ast_tree[cur_node['parent']]
-            del_ind = parent_node['children'].index(node_ind)
+            parent_node = ast_tree[str(cur_node['parent'])]
+            del_ind = parent_node['children'].index(int(idx))
             del parent_node['children'][del_ind]
-            child_ind = child_node_indices[0]
+            child_idx = child_ids[0]
             # update its children's parent to its parent
-            ast_tree[child_ind]['parent'] = cur_node['parent']
+            ast_tree[str(child_idx)]['parent'] = cur_node['parent']
             # update its parent's children
-            parent_node['children'].insert(del_ind, child_ind)
-            # elete itself
-            ast_tree.pop(node_ind)
+            parent_node['children'].insert(del_ind, child_idx)
+            # delete itself
+            ast_tree.pop(idx)
 
             # update current info
-            node_ind = child_ind
-            cur_node = ast_tree[node_ind]
-            child_node_indices = util.get_tree_children_func(cur_node)
+            idx = str(child_idx)
+            cur_node = ast_tree[idx]
+            # get current node's children indices, if it's leaf node, ignore.
+            if not (len(cur_node['children']) == 1 and isinstance(cur_node['children'][0], str)):
+                child_ids = cur_node['children']
+            else:
+                return  # move to leaf node, return
 
-        if len(child_node_indices) == 0:
-            return
+        for idx in child_ids:
+            dfs(str(idx))
 
-        for child_name in child_node_indices:
-            dfs(child_name)
-
-    dfs(constants.ROOT_NODE_NAME)
+    dfs(idx)
     return ast_tree
 
 
-def reset_indices(ast_tree: Dict) -> Dict:
+def binarize_tree(ast_tree: Dict, idx) -> Dict:
+    '''ast tree -> binary ast tree'''
+    last_node_idx = sorted(ast_tree.keys(), key=int)[-1]
+
+    def dfs(idx):
+        cur_node = ast_tree[idx]
+        # get current node's children indices, if it's leaf node, ignore.
+        if not (len(cur_node['children']) == 1 and isinstance(cur_node['children'][0], str)):
+            child_ids = cur_node['children']
+        else:
+            return  # move to leaf node, return
+
+        if len(child_ids) > 2:
+            # add new node
+            nonlocal last_node_idx
+            last_node_idx = str(int(last_node_idx) + 1)
+            ast_tree[last_node_idx] = {'type': NODE_TMP, 'parent': idx, 'children': child_ids[1:]}
+            # update node's children info
+            cur_node['children'] = [child_ids[0], int(last_node_idx)]
+            # update other childen nodes' parent info
+            for child_idx in child_ids[1:]:
+                ast_tree[str(child_idx)]['parent'] = last_node_idx
+            # update current node's children info
+            # get current node's children indices, if it's leaf node, ignore.
+            if not (len(cur_node['children']) == 1 and isinstance(cur_node['children'][0], str)):
+                child_ids = cur_node['children']
+            else:
+                return  # move to leaf node, return
+
+        for idx in child_ids:
+            dfs(str(idx))
+
+    dfs(idx)
+    return ast_tree
+
+
+def reset_indices(ast_tree: Dict, root_idx) -> Dict:
     '''rename ast tree's node indices with consecutive indices'''
     if sorted(list(ast_tree.keys())) == list(range(len(ast_tree))):
         return ast_tree
-
-    root_idx = 0
-    while 1:
-        if root_idx in ast_tree:
-            break
-        else:
-            root_idx += 1  # root node has been removed
 
     # firstly, resort node index with _
     new_ast_idx = 0
@@ -277,65 +220,51 @@ def reset_indices(ast_tree: Dict) -> Dict:
     def dfs(idx):
         nonlocal new_ast_idx
         new_cur_idx, new_ast_idx = '_{}'.format(new_ast_idx), new_ast_idx + 1  # update for next node
-        cur_node = ast_tree[idx]
-        ast_tree[new_cur_idx] = deepcopy(cur_node)
+        # cur_node = ast_tree[idx]
+        # ast_tree[new_cur_idx] = deepcopy(cur_node)
+        cur_node = ast_tree.pop(idx)
+        ast_tree[new_cur_idx] = cur_node
 
         # update its parent's children
         if cur_node['parent'] is None:
             pass  # current node is root node, no need for update its children
         else:
             parent_node = ast_tree[cur_node['parent']]
-            parent_node['children'][parent_node['children'].index(idx)] = new_cur_idx
+            parent_node['children'][parent_node['children'].index(int(idx))] = new_cur_idx
 
-        if 'children' in cur_node:
+        # get current node's children indices, if it's leaf node, ignore.
+        if not (len(cur_node['children']) == 1 and isinstance(cur_node['children'][0], str)):
             # update its children nodes' parent
             for child_idx in cur_node['children']:
-                ast_tree[child_idx]['parent'] = new_cur_idx
+                ast_tree[str(child_idx)]['parent'] = new_cur_idx
+
+        # # 2. delete old node
+        # ast_tree.pop(idx)
+
+        # get current node's children indices, if it's leaf node, ignore.
+        if not (len(cur_node['children']) == 1 and isinstance(cur_node['children'][0], str)):
+            # update its children nodes' parent
+            for child_idx in cur_node['children']:
+                dfs(str(child_idx))
         else:
-            pass  # current node is leaf, no children item, only value item
-
-        # 2. delete old node
-        ast_tree.pop(idx)
-
-        child_ids = cur_node.get('children', None)
-
-        if child_ids is None:
-            return
-
-        for child_idx in child_ids:
-            dfs(child_idx)
+            return  # move to leaf node, return
 
     dfs(root_idx)
 
     # recover name: from _* => *
     node_ids = deepcopy(list(ast_tree.keys()))
     for idx in node_ids:
-        node = deepcopy(ast_tree[idx])
-        if 'children' in node:
+        node = ast_tree.pop(idx)
+        # update children index
+        if not (len(node['children']) == 1 and isinstance(node['children'][0], str)):
             node['children'] = [int(child_idx[1:]) for child_idx in node['children']]
-        else:
-            pass
+        # update parent index
         if node['parent'] == None:
             pass
         else:
             node['parent'] = int(node['parent'][1:])
-        ast_tree[int(idx[1:])] = node
-        ast_tree.pop(idx)
-
+        ast_tree[int(idx[1:])] = node  # _idx => idx
     return ast_tree
-
-
-def parse_base(ast_tree: Dict) -> Optional[Dict]:
-    try:
-        # delete nodes with single node,eg. [1*NODEFIX1] ->  [1*NODEFIX2] -> ['void'] => [1*NODEFIX1] -> ['void']
-        ast_tree = delete_single_child_ndoe(ast_tree)
-        ast_tree = binarize_tree(ast_tree)  # to binary ast tree
-        ast_tree = reset_indices(ast_tree)  # reset node indices
-        return ast_tree
-    except Exception as err:
-        print(err)
-        print(ast_tree)
-        return None
 
 
 def convert(ast: Dict[int, Dict]) -> List[Dict]:
@@ -420,13 +349,8 @@ def separate_ast(ast: List[Dict], max_len: int):
     aug_asts.append([ast[-max_len:], idx])
     return aug_asts
 
-
 # def traversal(ast: Dict, method: str = 'dfs'):
 #     if method.lower() == 'dfs':
 #
 #     else:
 #         raise NotImplementedError
-
-
-if __name__ == '__main__':
-    convert(ast)

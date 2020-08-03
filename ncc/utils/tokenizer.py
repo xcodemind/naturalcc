@@ -42,7 +42,7 @@ def tokenize_tree(line: str) -> List[str]:
     line = ujson.loads(line)
     leaf_node_tokens = []
     for node_info in line.values():
-        if type(node_info['children'][-1]) == list:
+        if isinstance(node_info['children'][-1], list):
             for token in node_info['children'][-1]:
                 if token != PAD:
                     leaf_node_tokens.append(token)
