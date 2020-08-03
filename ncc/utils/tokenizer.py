@@ -66,20 +66,14 @@ def tokenize_body(line: str) -> List[str]:
     return line
 
 
-def tokenize_path(line: str, add_cls: bool = False) -> List[str]:
+def tokenize_path(line: str) -> List[str]:
     """
     load path's head/body/tail tokens
     add_cls: add cls at 1st position of path
     """
     line = ujson.loads(line)
-    paths = [CLS] if add_cls else []
-    for idx, path in enumerate(line):
-        head, body, tail = path
-        path = head + [H_SEP] + body + [T_SEP] + tail
-        paths.extend(path)
-        if idx < len(line) - 1:
-            paths.append(S_SEP)
-    return paths
+    tokens = list(itertools.chain(*line))
+    return tokens
 
 
 def CSN_tokenizer(modal: str):

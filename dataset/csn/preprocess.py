@@ -88,10 +88,31 @@ class AttrFns:
 
     @staticmethod
     def path_fn(filename, dest_filename, lang, start=0, end=-1):
-        dest_filename_head, dest_filename_body, dest_filename_tail = \
-            dest_filename + '.head', dest_filename + '.body', dest_filename + '.tail'
-        with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename_head, 'w') as writer_head, \
-            open(dest_filename_body, 'w') as writer_body, open(dest_filename_tail, 'w') as writer_tail:
+        # dest_filename_head, dest_filename_body, dest_filename_tail = \
+        #     dest_filename + '.head', dest_filename + '.body', dest_filename + '.tail'
+        # with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename_head, 'w') as writer_head, \
+        #     open(dest_filename_body, 'w') as writer_body, open(dest_filename_tail, 'w') as writer_tail:
+        #     reader.seek(start)
+        #     line = safe_readline(reader)
+        #     while line:
+        #         if end > 0 and reader.tell() > end:
+        #             break
+        #         ast = ujson.loads(line)
+        #         paths = util_path.ast_to_path(ast, MAX_PATH=PATH_NUM)
+        #         # copy paths size to PATH_NUM
+        #         if len(paths) < PATH_NUM:
+        #             supply_ids = list(range(len(paths))) * ((PATH_NUM - len(paths)) // len(paths)) \
+        #                          + random.sample(range(len(paths)), ((PATH_NUM - len(paths)) % len(paths)))
+        #             paths.extend([paths[idx] for idx in supply_ids])
+        #             random.shuffle(paths)
+        #         assert len(paths) == PATH_NUM
+        #         for head, body, tail in paths:
+        #             print(ujson.dumps(head, ensure_ascii=False), file=writer_head)
+        #             print(ujson.dumps(body, ensure_ascii=False), file=writer_body)
+        #             print(ujson.dumps(tail, ensure_ascii=False), file=writer_tail)
+        #         line = safe_readline(reader)
+
+        with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer_head:
             reader.seek(start)
             line = safe_readline(reader)
             while line:
@@ -104,12 +125,10 @@ class AttrFns:
                     supply_ids = list(range(len(paths))) * ((PATH_NUM - len(paths)) // len(paths)) \
                                  + random.sample(range(len(paths)), ((PATH_NUM - len(paths)) % len(paths)))
                     paths.extend([paths[idx] for idx in supply_ids])
-                    random.shuffle(paths)
+                random.shuffle(paths)
                 assert len(paths) == PATH_NUM
-                for head, body, tail in paths:
-                    print(ujson.dumps(head, ensure_ascii=False), file=writer_head)
-                    print(ujson.dumps(body, ensure_ascii=False), file=writer_body)
-                    print(ujson.dumps(tail, ensure_ascii=False), file=writer_tail)
+                for path in paths:
+                    print(ujson.dumps(path, ensure_ascii=False), file=writer_head)
                 line = safe_readline(reader)
 
     @staticmethod
@@ -193,18 +212,22 @@ def process(src_filename, tgt_filename, lang, num_workers=cpu_count()):
         ]
         result = [res.get() for res in result]
 
-    if modality == 'path':
-        _cat([_tgt_filename + str(idx) + '.head' for idx in range(num_workers)], tgt_filename + '.head')
-        _cat([_tgt_filename + str(idx) + '.body' for idx in range(num_workers)], tgt_filename + '.body')
-        _cat([_tgt_filename + str(idx) + '.tail' for idx in range(num_workers)], tgt_filename + '.tail')
-        for idx in range(num_workers):
-            os.remove(_tgt_filename + str(idx) + '.head')
-            os.remove(_tgt_filename + str(idx) + '.body')
-            os.remove(_tgt_filename + str(idx) + '.tail')
-    else:
-        _cat([_tgt_filename + str(idx) for idx in range(num_workers)], tgt_filename)
-        for idx in range(num_workers):
-            os.remove(_tgt_filename + str(idx))
+    # if modality == 'path':
+    #     _cat([_tgt_filename + str(idx) + '.head' for idx in range(num_workers)], tgt_filename + '.head')
+    #     _cat([_tgt_filename + str(idx) + '.body' for idx in range(num_workers)], tgt_filename + '.body')
+    #     _cat([_tgt_filename + str(idx) + '.tail' for idx in range(num_workers)], tgt_filename + '.tail')
+    #     for idx in range(num_workers):
+    #         os.remove(_tgt_filename + str(idx) + '.head')
+    #         os.remove(_tgt_filename + str(idx) + '.body')
+    #         os.remove(_tgt_filename + str(idx) + '.tail')
+    # else:
+    #     _cat([_tgt_filename + str(idx) for idx in range(num_workers)], tgt_filename)
+    #     for idx in range(num_workers):
+    #         os.remove(_tgt_filename + str(idx))
+
+    _cat([_tgt_filename + str(idx) for idx in range(num_workers)], tgt_filename)
+    for idx in range(num_workers):
+        os.remove(_tgt_filename + str(idx))
 
 
 if __name__ == '__main__':
@@ -220,7 +243,8 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         "--attrs", "-a",
-        default=['raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'bin_ast'], type=list,
+        # default=['raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'bin_ast'], type=list,
+        default=['path'], type=list,
         help="attrs: raw_ast, ...",
     )
     parser.add_argument(

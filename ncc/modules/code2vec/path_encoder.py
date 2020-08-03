@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -7,6 +8,7 @@ from ncc.utils import utils
 
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
 import sys
+
 
 def LSTM(input_size, hidden_size, **kwargs):
     m = nn.LSTM(input_size, hidden_size, **kwargs)
@@ -23,18 +25,18 @@ def LSTMCell(input_size, hidden_size, **kwargs):
             param.data.uniform_(-0.1, 0.1)
     return m
 
-# def __init__(self,
-#                  leaf_path_k: int,
-#                  # for ast node, start/end ast node
-#                  node_token_num: int, subtoken_token_num: int, embed_size: int,
-#                  # for RNN, Linear, attention
-#                  rnn_type: str, hidden_size: int, layer_num: int, dropout: float, bidirectional: bool,
-#                  ) -> None:
+
 class PathEncoder(FairseqEncoder):
-    """LSTM encoder."""
+    """
+    LSTM encoder:
+        head/tail -> sub_tokens -> embedding -> sum
+        body -> LSTM -> hidden state
+        head_sum, hidden state, tail_sum -> W -> tanh
+    """
+
     def __init__(
         self, dictionary, embed_dim=512, hidden_size=512, num_layers=1,
-        dropout_in=0.1, dropout_out=0.1, bidirectional=False,
+        dropout_in=0.1, dropout_out=0.1, bidirectional=True,
         left_pad=True, pretrained_embed=None, padding_idx=None,
         max_source_positions=DEFAULT_MAX_SOURCE_POSITIONS
     ):
@@ -46,14 +48,12 @@ class PathEncoder(FairseqEncoder):
         self.hidden_size = hidden_size
         self.max_source_positions = max_source_positions
 
-        num_embeddings_border, num_embeddings_center = len(dictionary[0]), len(dictionary[1])
-        self.padding_idx = padding_idx if padding_idx is not None else dictionary[0].pad()
+        self.padding_idx = padding_idx if padding_idx is not None else dictionary.pad()
         if pretrained_embed is None:
-            self.embed_tokens_border = Embedding(num_embeddings_border, embed_dim, self.padding_idx)
-            self.embed_tokens_center = Embedding(num_embeddings_center, embed_dim, self.padding_idx)
+            num_embeddings = len(dictionary)
+            self.embed_tokens = Embedding(num_embeddings, embed_dim, self.padding_idx)
         else:
-            self.embed_tokens_border = pretrained_embed[0]
-            self.embed_tokens_center = pretrained_embed[1]
+            self.embed_tokens = pretrained_embed
 
         self.lstm = LSTM(
             input_size=embed_dim,
@@ -63,68 +63,69 @@ class PathEncoder(FairseqEncoder):
             bidirectional=bidirectional,
         )
         self.left_pad = left_pad
+        self.transform = nn.Linear(2 * embed_dim + 2 * hidden_size, embed_dim, bias=False)
 
         self.output_units = hidden_size
         if bidirectional:
             self.output_units *= 2
 
-    # def forward(self,
-    #             head: torch.Tensor, head_len: torch.Tensor, head_mask: torch.Tensor,
-    #             center: torch.Tensor, center_len: torch.Tensor, center_mask: torch.Tensor,
-    #             tail: torch.Tensor, tail_len: torch.Tensor, tail_mask: torch.Tensor, ) -> Any:
-    # def forward(self, head_tokens, head_lengths, center_tokens, center_lengths, tail_tokens, tail_lengths):
-    def forward(self, src_tokens, src_lengths):
-        head_tokens, center_tokens, tail_tokens = src_tokens
-        head_lengths, center_lengths, tail_lengths = src_lengths
-        center_tokens = center_tokens.view(-1, center_tokens.size(-1))  # TODO
-        center_lengths = center_lengths.view(-1, 1).squeeze(1)  # TODO
+    @staticmethod
+    def _get_sorted_order(lens):
+        sorted_len, fwd_order = torch.sort(
+            lens.contiguous().reshape(-1), 0, descending=True
+        )
+        _, bwd_order = torch.sort(fwd_order)
+        return sorted_len.tolist(), fwd_order, bwd_order
 
-        if self.left_pad:
-            # nn.utils.rnn.pack_padded_sequence requires right-padding;
-            # convert left-padding to right-padding
-            center_tokens = utils.convert_padding_direction(
-                center_tokens,
-                self.padding_idx,
-                left_to_right=True,
-            )
+    def forward(self, src_tokens, src_lengths, **kwargs):
+        """head_tokens, tail_tokens, body_tokens: bsz, path_num, seqlen"""
+        head_tokens, body_tokens, tail_tokens = src_tokens
 
-        bsz, seqlen = center_tokens.size()
+        # head_tokens = head_tokens.view(-1, head_tokens.size(-1))
+        # tail_tokens = tail_tokens.view(-1, tail_tokens.size(-1))
+
+        head_repr = self.embed_tokens(head_tokens).sum(dim=-2)  # [bsz, path_num, embed_dim]
+        tail_repr = self.embed_tokens(tail_tokens).sum(dim=-2)  # [bsz, path_num, embed_dim]
 
         # embed tokens
-        x = self.embed_tokens_center(center_tokens)
+        x = self.embed_tokens(body_tokens)  # bsz, path_num, seqlen, embed_dim
+        bsz, path_num, seqlen, embed_dim = x.size()
+        x = x.view(-1, seqlen, embed_dim)
         x = F.dropout(x, p=self.dropout_in, training=self.training)
 
-        # B x T x C -> T x B x C
+        # B*P x T x C -> T x B*P x C
         x = x.transpose(0, 1)
-        print('center_lengths: ', center_lengths.size())
         # pack embedded source tokens into a PackedSequence
-        packed_x = nn.utils.rnn.pack_padded_sequence(x, center_lengths.data.tolist(), enforce_sorted=False) #TODO:enforce_sorted=False
+        src_lengths = src_lengths.view(-1)
+        src_lengths, fwd_order, bwd_order = self._get_sorted_order(src_lengths)
+        # sort seq_input & hidden state by seq_lens
+        x = x.index_select(dim=1, index=fwd_order)
+        packed_x = nn.utils.rnn.pack_padded_sequence(x, src_lengths, enforce_sorted=False)
 
         # apply LSTM
         if self.bidirectional:
-            state_size = 2 * self.num_layers, bsz, self.hidden_size
+            state_size = 2 * self.num_layers, bsz * path_num, self.hidden_size
         else:
-            state_size = self.num_layers, bsz, self.hidden_size
+            state_size = self.num_layers, bsz * path_num, self.hidden_size
         h0 = x.new_zeros(*state_size)
         c0 = x.new_zeros(*state_size)
-        packed_outs, (final_hiddens, final_cells) = self.lstm(packed_x, (h0, c0))
+        _, (final_hiddens, _) = self.lstm(packed_x, (h0, c0))
 
-        # unpack outputs and apply dropout
-        x, _ = nn.utils.rnn.pad_packed_sequence(packed_outs, padding_value=self.padding_idx)
-        x = F.dropout(x, p=self.dropout_out, training=self.training)
-        assert list(x.size()) == [seqlen, bsz, self.output_units]
+        # we only use hidden_state of LSTM
+        # x, _ = nn.utils.rnn.pad_packed_sequence(packed_outs, padding_value=self.padding_idx)
+        # x = x.index_select(dim=1, index=bwd_order)
+        final_hiddens = final_hiddens.index_select(dim=1, index=bwd_order)
+        # final_cells = final_cells.index_select(dim=1, index=bwd_order)
 
-        if self.bidirectional:
+        final_hiddens = final_hiddens[(-2 if self.bidirectional else -1):].transpose(dim0=0, dim1=1)
+        final_hiddens = final_hiddens.contiguous().view(bsz, path_num, -1)
 
-            def combine_bidir(outs):
-                out = outs.view(self.num_layers, 2, bsz, -1).transpose(1, 2).contiguous()
-                return out.view(self.num_layers, bsz, -1)
+        x = torch.cat([final_hiddens, head_repr, tail_repr], dim=-1)
+        x = torch.tanh(self.transform(x))
+        final_hiddens = x.mean(dim=1).unsqueeze(dim=0)
+        final_cells = torch.zeros_like(final_hiddens).to(final_hiddens.device)
+        encoder_padding_mask = torch.BoolTensor(bsz, x.size(1)).to(x.device).fill_(True)
 
-            final_hiddens = combine_bidir(final_hiddens)
-            final_cells = combine_bidir(final_cells)
-
-        encoder_padding_mask = center_tokens.eq(self.padding_idx).t()
-        
         return {
             'encoder_out': (x, final_hiddens, final_cells),
             'encoder_padding_mask': encoder_padding_mask if encoder_padding_mask.any() else None

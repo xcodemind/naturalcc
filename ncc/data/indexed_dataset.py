@@ -17,6 +17,7 @@ from tokenizers.processors import BertProcessing
 import ujson
 from ncc.utils import tokenizer
 import json
+from dataset.csn import PATH_NUM
 
 
 def __best_fitting_dtype(vocab_size=None):
@@ -66,7 +67,7 @@ def make_dataset(path, impl, modality='text', fix_lua_indexing=False, dictionary
 
     if impl == 'raw' and IndexedRawTextDataset.exists(path):
         if modality == 'path':
-            print('dictionary: ', dictionary)
+            # print('dictionary: ', dictionary)
             return IndexedRawPathDataset(path, dictionary)
         elif modality == 'ast':
             return IndexedRawASTDataset(path, dictionary)
@@ -487,52 +488,40 @@ class IndexedRawPathDataset(FairseqDataset):
     """Takes a text file as input and binarizes it in memory at instantiation.
     Original lines are also kept in memory"""
 
-    def __init__(self, path, dictionary, append_eos=True, reverse_order=False):
-        self.tokens_list = {'head': [], 'center': [], 'tail': []}
+    def __init__(self, path, dictionary, append_eos=False, reverse_order=False):
         # self.lines = []
-        self.sizes = {'head': [], 'center': [], 'tail': []}
+        self.tokens_list = {'head': [], 'body': [], 'tail': []}
+        # self.sizes = {'head': [], 'body': [], 'tail': []}
+        self.sizes = []  # body size
         self.append_eos = append_eos
         self.reverse_order = reverse_order
         self.read_data(path, dictionary)
         self.size = len(self.tokens_list['head'])
 
     def read_data(self, path, dictionary):
-        border_dictionary, center_dictionary = dictionary
-        sss = {'head': [], 'center': [], 'tail': []}
         with open(path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = ujson.loads(line)
-                tokens, sizes = {'head': [], 'center': [], 'tail': []}, {'head': [], 'center': [], 'tail': []}
-                line = line[0: 2]  # TODO [:10]
-                for path in line:
-                    head, center, tail = path
-                    head_tokens = border_dictionary.encode_line(
-                        head, line_tokenizer=None, add_if_not_exist=False,
-                        append_eos=self.append_eos, reverse_order=self.reverse_order, ).long()
-                    tail_tokens = border_dictionary.encode_line(
-                        tail, line_tokenizer=None, add_if_not_exist=False,
-                        append_eos=self.append_eos, reverse_order=self.reverse_order, ).long()
-                    center_tokens = center_dictionary.encode_line(
-                        center, line_tokenizer=None, add_if_not_exist=False,
-                        append_eos=self.append_eos, reverse_order=self.reverse_order, ).long()
-                    # tmp_tokens = torch.cat([head_tokens, center_tokens, tail_tokens])
-                    tokens['head'].append(head_tokens)
-                    sizes['head'].append(len(head_tokens))
-                    tokens['center'].append(center_tokens)
-                    sizes['center'].append(len(center_tokens))
-                    tokens['tail'].append(tail_tokens)
-                    sizes['tail'].append(len(tail_tokens))
+            f_size = os.fstat(f.fileno()).st_size
+            while f.tell() < f_size:
+                head_list, body_list, tail_list = [], [], []
+                max_len = -1
+                for _ in range(PATH_NUM):
+                    line = f.readline()
+                    head, body, tail = ujson.loads(line)
+                    head = dictionary.encode_line(head, line_tokenizer=None, add_if_not_exist=False,
+                                                  append_eos=self.append_eos, reverse_order=self.reverse_order).long()
+                    body = dictionary.encode_line(body, line_tokenizer=None, add_if_not_exist=False,
+                                                  append_eos=self.append_eos, reverse_order=self.reverse_order).long()
+                    tail = dictionary.encode_line(tail, line_tokenizer=None, add_if_not_exist=False,
+                                                  append_eos=self.append_eos, reverse_order=self.reverse_order).long()
+                    head_list.append(head)
+                    body_list.append(body)
+                    tail_list.append(tail)
+                    max_len = max(max_len, body.numel())
 
-                self.tokens_list['head'].append(tokens['head'])
-                self.tokens_list['center'].append(tokens['center'])
-                self.tokens_list['tail'].append(tokens['tail'])
-                sss['head'].append(sizes['head'])
-                sss['center'].append(sizes['center'])
-                sss['tail'].append(sizes['tail'])
-
-        self.sizes['head'] = np.array(sss['head'])
-        self.sizes['center'] = np.array(sss['center'])
-        self.sizes['tail'] = np.array(sss['tail'])
+                self.tokens_list['head'].append(head_list)
+                self.tokens_list['body'].append(body_list)
+                self.tokens_list['tail'].append(tail_list)
+                self.sizes.append(max_len)
 
     def check_index(self, i):
         if i < 0 or i >= self.size:
@@ -541,7 +530,7 @@ class IndexedRawPathDataset(FairseqDataset):
     @lru_cache(maxsize=8)
     def __getitem__(self, i):
         self.check_index(i)
-        return self.tokens_list['head'][i], self.tokens_list['center'][i], self.tokens_list['tail'][i]
+        return self.tokens_list['head'][i], self.tokens_list['body'][i], self.tokens_list['tail'][i]
 
     def get_original_text(self, i):
         # self.check_index(i)
@@ -555,10 +544,10 @@ class IndexedRawPathDataset(FairseqDataset):
         return self.size
 
     def num_tokens(self, index):
-        return self.sizes['head'][index], self.sizes['center'][index], self.sizes['tail'][index]
+        return self.sizes[index]
 
     def size(self, index):
-        return self.sizes['head'][index], self.sizes['center'][index], self.sizes['tail'][index]
+        return self.sizes[index]
 
     @staticmethod
     def exists(path):
@@ -585,7 +574,7 @@ class IndexedTokenDataset(FairseqDataset):
                     append_eos=self.append_eos, reverse_order=self.reverse_order,
                 ).long()
                 self.tokens_list.append(tokens)
-                self.sizes.append(len(tokens))
+                self.sizes.append(tokens.numel())
         self.sizes = np.array(self.sizes)
 
     def check_index(self, i):

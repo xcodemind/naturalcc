@@ -177,11 +177,6 @@ def should_stop_early(config, valid_loss):
 
 
 def single_main(args, init_distributed=False):
-    # utils.import_user_module(args) # TODO: delete
-
-    # assert args['dataset']['max_tokens'] is not None or args['dataset']['max_sentences'] is not None, \
-    #     'Must specify batch size either with --max-tokens or --max-sentences'
-
     # Setup CUDA, GPU & distributed training
     if torch.cuda.is_available() and not args['common']['cpu']:
         torch.cuda.set_device(args['distributed_training']['device_id'])
@@ -198,14 +193,11 @@ def single_main(args, init_distributed=False):
     LOGGER.info(args)
 
     # Setup task, e.g., translation, language modeling, etc.
-    task = tasks.setup_task(args)   # task.tokenizer
-    # build model_config
-    # config = task.build_config(args)
+    task = tasks.setup_task(args)  # task.tokenizer
     # Build model and criterion
     model = task.build_model(args)
-    # model_config = task.build_model_config()
 
-    # Load valid dataset (we load training data below, based on the latest checkpoint)
+    # # Load valid dataset (we load training data below, based on the latest checkpoint)
     # for valid_sub_split in args['dataset']['valid_subset'].split(','):
     #     task.load_dataset(valid_sub_split, combine=False, epoch=1)
 
@@ -242,7 +234,7 @@ def single_main(args, init_distributed=False):
         and trainer.get_num_updates() < max_update
     ):
         # train for one epoch
-        valid_losses = train(args, trainer, task, epoch_itr)    # max_update
+        valid_losses = train(args, trainer, task, epoch_itr)  # max_update
         LOGGER.info('valid_losses: ', valid_losses)
         sys.exit()
         if not args['dataset']['disable_validation'] and epoch_itr.epoch % args['dataset']['validate_interval'] == 0:
@@ -259,7 +251,8 @@ def single_main(args, init_distributed=False):
 
         # early stop
         if should_stop_early(args, valid_losses[0]):
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(args['checkpoint']['patience']))
+            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
+                args['checkpoint']['patience']))
             break
 
         epoch_itr = trainer.get_train_iterator(
@@ -280,14 +273,9 @@ def distributed_main(i, args, start_rank=0):
 
 
 def cli_main():
-    # args = get_args()
-    # dataset_dir = None, dataset_type = None, debug = 0, device = 0, lang_mode = None, log_root_dir = None, method_name = None, multi_processing = 0, occupy_gpu = 'no', save_dir = None, task = None, train_mode = None, yaml = 'wiki.yml'
-    # Argues = namedtuple('Argues', 'yaml task lang_mode method_name train_mode dataset_type multi_processing')
     Argues = namedtuple('Argues', 'yaml')
-
     args_ = Argues('ruby.yml')  # train_sl
     LOGGER.info(args_)
-    # print(type(args.multi_processing))
     # assert False
     print('args: ', type(args_))
     # config = run_init(args.yaml, config=None)
@@ -297,38 +285,8 @@ def cli_main():
 
     LOGGER.info(args)
 
-    # if args['model']['arch'] in ['bert', 'roberta', 'distilbert', 'camembert'] and not args['task']['mlm']:
-    #     raise ValueError(
-    #         "BERT and RoBERTa-like models do not have LM heads but masked LM heads. They must be run using the --mlm "
-    #         "flag (masked language modeling)."
-    #     )
-    # if args.eval_data_file is None and args.do_eval:
-    #     raise ValueError(
-    #         "Cannot do evaluation without an evaluation data file. Either supply a file to --eval_data_file "
-    #         "or remove the --do_eval argument."
-    #     )
-    # if args.should_continue:
-    #     sorted_checkpoints = _sorted_checkpoints(args)
-    #     if len(sorted_checkpoints) == 0:
-    #         raise ValueError("Used --should_continue but no checkpoint was found in --output_dir.")
-    #     else:
-    #         args.model_name_or_path = sorted_checkpoints[-1]
-
-    # if (
-    #         os.path.exists(args.output_dir)
-    #         and os.listdir(args.output_dir)
-    #         and args.do_train
-    #         and not args.overwrite_output_dir
-    # ):
-    #     raise ValueError(
-    #         "Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(
-    #             args.output_dir
-    #         )
-    #     )
-
     if args['distributed_training']['distributed_init_method'] is None:
         distributed_utils.infer_init_method(args)
-
 
     if args['distributed_training']['distributed_init_method'] is not None:
         # distributed training
@@ -350,7 +308,7 @@ def cli_main():
         args['distributed_training']['distributed_rank'] = None  # set based on device id
         torch.multiprocessing.spawn(
             fn=distributed_main,
-            args=(args, ),
+            args=(args,),
             nprocs=args['distributed_training']['distributed_world_size'],
         )
     else:

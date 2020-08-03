@@ -67,7 +67,8 @@ def main(args):
         assert src ^ tgt
         tokenize_func = tokenizer.tokenize_list  # default tokenizer
         if modality == 'path':
-            filenames = list(itertools.chain(*[[fl + '.head', fl + '.body', fl + '.tail'] for fl in filenames]))
+            # filenames = list(itertools.chain(*[[fl + '.head', fl + '.body', fl + '.tail'] for fl in filenames]))
+            tokenize_func = tokenizer.tokenize_path
         elif modality in ['bin_ast']:
             tokenize_func = tokenizer.tokenize_tree
         elif modality in ['code_tokens', 'docstring_tokens', 'sbt', 'sbtao']:
@@ -221,12 +222,13 @@ def main(args):
             out_dir = args['preprocess']['destdir']
             os.makedirs(out_dir, exist_ok=True)
             logger.info('Copying {} into {}'.format(in_file, out_dir))
-            if lang == 'path':
-                shutil.copy(src=in_file + '.head', dst=args['preprocess']['destdir'])
-                shutil.copy(src=in_file + '.body', dst=args['preprocess']['destdir'])
-                shutil.copy(src=in_file + '.tail', dst=args['preprocess']['destdir'])
-            else:
-                shutil.copy(src=in_file, dst=args['preprocess']['destdir'])
+            # if lang == 'path':
+            #     shutil.copy(src=in_file + '.head', dst=args['preprocess']['destdir'])
+            #     shutil.copy(src=in_file + '.body', dst=args['preprocess']['destdir'])
+            #     shutil.copy(src=in_file + '.tail', dst=args['preprocess']['destdir'])
+            # else:
+            #     shutil.copy(src=in_file, dst=args['preprocess']['destdir'])
+            shutil.copy(src=in_file, dst=args['preprocess']['destdir'])
         else:
             if lang in ['path', 'bin_ast']:
                 LOGGER.error('Cannot binarize path/bin_ast modalities data because those data is not list. Ignore.')

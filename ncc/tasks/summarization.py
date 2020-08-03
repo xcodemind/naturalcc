@@ -22,6 +22,7 @@ from ncc.data.wrappers.strip_token_dataset import StripTokenDataset
 from ncc.data.concat_dataset import ConcatDataset
 from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
 from ncc.data.summarization.language_pair_dataset import LanguagePairDataset
+from ncc.data.summarization.path_dataset import PathDataset
 from ncc.utils.tokenizer import tokenize_string
 
 EVAL_BLEU_ORDER = 4
@@ -114,15 +115,26 @@ def load_langpair_dataset(
             align_dataset = data_utils.load_indexed_dataset(align_path, None, dataset_impl)
 
     tgt_dataset_sizes = tgt_dataset.sizes if tgt_dataset is not None else None
-    return LanguagePairDataset(
-        src_dataset, src_dataset.sizes, src_dict,
-        tgt_dataset, tgt_dataset_sizes, tgt_dict,
-        left_pad_source=left_pad_source,
-        left_pad_target=left_pad_target,
-        max_source_positions=max_source_positions,
-        max_target_positions=max_target_positions,
-        align_dataset=align_dataset, eos=eos
-    )
+    if src == 'path':
+        return PathDataset(
+            src_dataset, src_dataset.sizes, src_dict,
+            tgt_dataset, tgt_dataset_sizes, tgt_dict,
+            left_pad_source=left_pad_source,
+            left_pad_target=left_pad_target,
+            max_source_positions=max_source_positions,
+            max_target_positions=max_target_positions,
+            align_dataset=align_dataset, eos=eos
+        )
+    else:
+        return LanguagePairDataset(
+            src_dataset, src_dataset.sizes, src_dict,
+            tgt_dataset, tgt_dataset_sizes, tgt_dict,
+            left_pad_source=left_pad_source,
+            left_pad_target=left_pad_target,
+            max_source_positions=max_source_positions,
+            max_target_positions=max_target_positions,
+            align_dataset=align_dataset, eos=eos
+        )
 
 
 @register_task('summarization')

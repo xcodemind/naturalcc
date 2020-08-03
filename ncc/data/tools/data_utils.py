@@ -13,10 +13,11 @@ import logging
 import os
 import sys
 import types
+import torch
 
 import numpy as np
-np.get_include()
 
+np.get_include()
 
 logger = logging.getLogger(__name__)
 
@@ -52,13 +53,7 @@ def collate_tokens(values, pad_idx, eos_idx=None, left_pad=False, move_eos_to_be
 
 def collate_paths(values, pad_idx, eos_idx=None, left_pad=False, move_eos_to_beginning=False):
     """Convert a list of list of 1d tensors into a padded 3d tensor."""
-    s = []
-    for value in values:
-        for v in value:
-            s.append(v.size(0))
-    size = max(s)
-
-    res = values[0][0].new(len(values), len(values[0]), size).fill_(pad_idx)
+    head, body, tail = zip(*values)
 
     def copy_tensor(src, dst):
         assert dst.numel() == src.numel()
@@ -69,13 +64,21 @@ def collate_paths(values, pad_idx, eos_idx=None, left_pad=False, move_eos_to_beg
         else:
             dst.copy_(src)
 
-    for i, value in enumerate(values):
-        for j, v in enumerate(value):
-            copy_tensor(v, res[i][j][size - len(v):] if left_pad else res[i][:len(v)])
-    return res
+    def pad_tensors(tensors_list):
+        size = max(tensor.numel() for tensors in tensors_list for tensor in tensors)
+        res = tensors_list[0][0].new(len(tensors_list), len(tensors_list[0]), size).fill_(pad_idx)
+
+        for i, tensors in enumerate(tensors_list):
+            for j, v in enumerate(tensors):
+                copy_tensor(v, res[i][j][:len(v)] if left_pad else res[i][j][size - len(v):])
+        return res
+
+    head, body, tail = map(pad_tensors, (head, body, tail))
+    return head, body, tail
 
 
-def load_indexed_dataset(path, modality='text', dictionary=None, tokenizer=None, dataset_impl=None, combine=False, default='cached'):
+def load_indexed_dataset(path, modality='text', dictionary=None, tokenizer=None, dataset_impl=None, combine=False,
+                         default='cached'):
     """A helper function for loading indexed datasets.
 
     Args:
@@ -230,6 +233,7 @@ def _filter_by_size_dynamic(indices, size_fn, max_positions, raise_exception=Fal
                 a is None or b is None or a <= b
                 for a, b in zip(size_fn(idx), max_positions)
             )
+
     ignored = []
     itr = collect_filtered(check_size, indices, ignored)
     indices = np.fromiter(itr, dtype=np.int64, count=-1)
@@ -262,14 +266,14 @@ def filter_by_size(indices, dataset, max_positions, raise_exception=False):
 
     if len(ignored) > 0 and raise_exception:
         raise Exception((
-            'Size of sample #{} is invalid (={}) since max_positions={}, '
-            'skip this example with --skip-invalid-size-inputs-valid-test'
-        ).format(ignored[0], dataset.size(ignored[0]), max_positions))
+                            'Size of sample #{} is invalid (={}) since max_positions={}, '
+                            'skip this example with --skip-invalid-size-inputs-valid-test'
+                        ).format(ignored[0], dataset.size(ignored[0]), max_positions))
     if len(ignored) > 0:
         logger.warning((
-            '{} samples have invalid sizes and will be skipped, '
-            'max_positions={}, first few sample ids={}'
-        ).format(len(ignored), max_positions, ignored[:10]))
+                           '{} samples have invalid sizes and will be skipped, '
+                           'max_positions={}, first few sample ids={}'
+                       ).format(len(ignored), max_positions, ignored[:10]))
     return indices
 
 
@@ -292,16 +296,16 @@ def batch_by_size(
         required_batch_size_multiple (int, optional): require batch size to
             be a multiple of N (default: 1).
     """
-    #try:
+    # try:
 
     import pyximport
     pyximport.install()
     from ncc.data.tools.data_utils_fast import batch_by_size_fast
 
-    #except ImportError:
+    # except ImportError:
     #    raise ImportError(
-            #'Please build Cython components with: `pip install --editable .` '
-            #'or `python setup.py build_ext --inplace`'
+    # 'Please build Cython components with: `pip install --editable .` '
+    # 'or `python setup.py build_ext --inplace`'
     #    )
 
     max_tokens = max_tokens if max_tokens is not None else -1
