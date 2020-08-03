@@ -150,7 +150,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         "--attrs", "-a",
-        default=['path'], type=list,
+        default=['raw_ast', 'ast', 'path'], type=list,
         help="attrs: raw_ast, ...",
     )
     parser.add_argument(
