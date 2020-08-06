@@ -14,15 +14,15 @@ class SGD(FairseqOptimizer):
         super().__init__(args)
         self._optimizer = torch.optim.SGD(params, **self.optimizer_config)
 
-    @staticmethod
-    def add_args(parser):
-        """Add optimizer-specific arguments to the parser."""
-        # fmt: off
-        parser.add_argument('--momentum', default=0.0, type=float, metavar='M',
-                            help='momentum factor')
-        parser.add_argument('--weight-decay', '--wd', default=0.0, type=float, metavar='WD',
-                            help='weight decay')
-        # fmt: on
+    # @staticmethod
+    # def add_args(parser):
+    #     """Add optimizer-specific arguments to the parser."""
+    #     # fmt: off
+    #     parser.add_argument('--momentum', default=0.0, type=float, metavar='M',
+    #                         help='momentum factor')
+    #     parser.add_argument('--weight-decay', '--wd', default=0.0, type=float, metavar='WD',
+    #                         help='weight decay')
+    #     # fmt: on
 
     @property
     def optimizer_config(self):
@@ -33,9 +33,11 @@ class SGD(FairseqOptimizer):
         different learning rate.
         """
         return {
-            'lr': self.args.lr[0],
-            'momentum': self.args.momentum,
-            'weight_decay': self.args.weight_decay,
+            'lr': self.args['optimization']['lr'][0],
+            'momentum': self.args['optimization']['sgd'].get('momentum', 0),
+            'weight_decay': self.args['optimization']['sgd'].get('weight_decay', 0),
+            'dampening': self.args['optimization']['sgd'].get('dampening', 0),
+            'nesterov': self.args['optimization']['sgd'].get('nesterov', False),
         }
 
     @property
