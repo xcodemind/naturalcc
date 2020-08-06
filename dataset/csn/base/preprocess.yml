@@ -21,16 +21,15 @@ preprocess:
   source_lang:
     # list, ujson.loads
 #    - code_tokens
-#    - docstring_tokens
+    - docstring_tokens
 #    - sbt
 #    - sbtao
     - path # path.head/body/tail -> ujson.loads
 #    - bin_ast # traverse ast's leaf node info
   target_lang: ~ #", default=None, metavar="TARGET", help="target language"
   # ~ path for dataset default. e.g.  for CodeSearchNet, ~/flatten = ~/.ncc/CodeSearchNet/flatten
-  trainpref: ~/.ncc/CodeSearchNet/flatten/ruby/test #", metavar="FP", default=None, help="train file prefix"
-#  validpref: ~/.ncc/CodeSearchNet/flatten/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-  validpref: ~
+  trainpref: ~/.ncc/CodeSearchNet/flatten/ruby/train #", metavar="FP", default=None, help="train file prefix"
+  validpref: ~/.ncc/CodeSearchNet/flatten/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
   testpref:  ~/.ncc/CodeSearchNet/flatten/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
   align_suffix: ~ # ", metavar="FP", default=None, help="alignment file suffix"
@@ -49,5 +48,5 @@ preprocess:
   joined_dictionary: 0 # ", action="store_true", help="Generate joined dictionary"
   only_source: 0 # ", action="store_true", help="Only process the source language"
   padding_factor: 8 #", metavar="N", default=8, type=int, help="Pad dictionary size to be multiple of N"
-  workers: 12 # ", metavar="N", default=1, type=int, help="number of parallel workers"
+  workers: 11 # ", metavar="N", default=1, type=int, help="number of parallel workers"
   inserted: 0

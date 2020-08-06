@@ -212,19 +212,6 @@ def process(src_filename, tgt_filename, lang, num_workers=cpu_count()):
         ]
         result = [res.get() for res in result]
 
-    # if modality == 'path':
-    #     _cat([_tgt_filename + str(idx) + '.head' for idx in range(num_workers)], tgt_filename + '.head')
-    #     _cat([_tgt_filename + str(idx) + '.body' for idx in range(num_workers)], tgt_filename + '.body')
-    #     _cat([_tgt_filename + str(idx) + '.tail' for idx in range(num_workers)], tgt_filename + '.tail')
-    #     for idx in range(num_workers):
-    #         os.remove(_tgt_filename + str(idx) + '.head')
-    #         os.remove(_tgt_filename + str(idx) + '.body')
-    #         os.remove(_tgt_filename + str(idx) + '.tail')
-    # else:
-    #     _cat([_tgt_filename + str(idx) for idx in range(num_workers)], tgt_filename)
-    #     for idx in range(num_workers):
-    #         os.remove(_tgt_filename + str(idx))
-
     _cat([_tgt_filename + str(idx) for idx in range(num_workers)], tgt_filename)
     for idx in range(num_workers):
         os.remove(_tgt_filename + str(idx))
