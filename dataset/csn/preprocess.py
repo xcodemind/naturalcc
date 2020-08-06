@@ -127,8 +127,8 @@ class AttrFns:
                     paths.extend([paths[idx] for idx in supply_ids])
                 random.shuffle(paths)
                 assert len(paths) == PATH_NUM
-                for path in paths:
-                    print(ujson.dumps(path, ensure_ascii=False), file=writer_head)
+                for head_body_tail in itertools.chain(*paths):
+                    print(ujson.dumps(head_body_tail, ensure_ascii=False), file=writer_head)
                 line = safe_readline(reader)
 
     @staticmethod

@@ -475,36 +475,6 @@ class Dictionary(object):
             ids[nwords] = self.eos_index
         return ids
 
-    def encode_path(self):
-        pass
-
-    def encode_ast(
-        self,
-        line,
-        # line_tokenizer,  # =tokenizer.tokenize_line
-        add_if_not_exist=True,
-        consumer=None,
-        append_eos=True,
-        reverse_order=False,
-    ):
-        words = line  # line_tokenizer(line)
-        if reverse_order:
-            words = list(reversed(words))
-        nwords = len(words)
-        ids = torch.IntTensor(nwords + 1 if append_eos else nwords)
-
-        for i, word in enumerate(words):
-            if add_if_not_exist:
-                idx = self.add_symbol(word)
-            else:
-                idx = self.index(word)
-            if consumer is not None:
-                consumer(word, idx)
-            ids[i] = idx
-        if append_eos:
-            ids[nwords] = self.eos_index
-        return ids
-
     @staticmethod
     def _add_file_to_dictionary_single_worker(
         filename: str, tokenize: Any,

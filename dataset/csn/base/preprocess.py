@@ -19,6 +19,7 @@ import shutil
 from collections import namedtuple
 from multiprocessing import Pool, cpu_count
 from ncc.utils.mp_ppool import PPool
+from ncc.utils.util_graph import (build_graph, tree2graph)
 
 from ncc import tasks
 from collections import (
@@ -65,14 +66,10 @@ def main(args):
 
     def build_dictionary(filenames, modality, src=False, tgt=False):
         assert src ^ tgt
-        tokenize_func = tokenizer.tokenize_list  # default tokenizer
-        if modality == 'path':
-            # filenames = list(itertools.chain(*[[fl + '.head', fl + '.body', fl + '.tail'] for fl in filenames]))
-            tokenize_func = tokenizer.tokenize_path
-        elif modality in ['bin_ast']:
+        if modality in ['bin_ast']:
             tokenize_func = tokenizer.tokenize_tree
-        elif modality in ['code_tokens', 'docstring_tokens', 'sbt', 'sbtao']:
-            pass
+        elif modality in ['code_tokens', 'docstring_tokens', 'sbt', 'sbtao', 'path']:
+            tokenize_func = tokenizer.tokenize_list
 
         return task.build_dictionary(
             filenames,
@@ -185,12 +182,12 @@ def main(args):
             pool.close()
         # process 1th file, if multi-processing available. If not, process all file
         # p0 -> 0,end
-        ds_file = '{}.bin'.format(output_file)
+        ds_file = '{}.mmap'.format(output_file)
         ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(dict))
         merge_result(
             Binarizer.binarize(
                 input_file, dict, lambda t: ds.add_item(t),
-                tokenize=tokenizer.CSN_tokenizer(attr), offset=0, end=offsets[1]
+                tokenize=tokenizer.tokenize_list, offset=0, end=offsets[1], append_eos=False,
             )
         )
         if num_workers > 1:
@@ -216,24 +213,35 @@ def main(args):
             )
         )
 
+    def make_graph_binary_dataset(dict: Dictionary, input_file, output_file):
+        import torch
+        import dgl
+        from dgl.data.graph_serialize import GraphData
+        from dgl.data.utils import save_graphs
+        from tqdm import tqdm
+        from sys import getsizeof
+
+        graph_batch, ids = [], []
+        with open(input_file, 'r') as reader:
+            num_lines = sum(1 for _ in reader)
+            reader.seek(0)
+            for idx, line in tqdm(enumerate(reader), total=num_lines):
+                ast = ujson.loads(line)
+                graph = tree2graph(ast, dict)
+                graph = GraphData.create(graph)
+                graph_batch.append(graph)
+                ids.append(idx)
+        graph_labels = {"glabel": torch.IntTensor(ids)}
+        save_graphs(output_file + '.mmap', graph_batch, graph_labels)
+
     def make_dataset(vocab, input_prefix, output_prefix, lang, num_workers=1):
         if args['preprocess']['dataset_impl'] == "raw":
             in_file = file_name(input_prefix, lang)
             out_dir = args['preprocess']['destdir']
             os.makedirs(out_dir, exist_ok=True)
             logger.info('Copying {} into {}'.format(in_file, out_dir))
-            # if lang == 'path':
-            #     shutil.copy(src=in_file + '.head', dst=args['preprocess']['destdir'])
-            #     shutil.copy(src=in_file + '.body', dst=args['preprocess']['destdir'])
-            #     shutil.copy(src=in_file + '.tail', dst=args['preprocess']['destdir'])
-            # else:
-            #     shutil.copy(src=in_file, dst=args['preprocess']['destdir'])
             shutil.copy(src=in_file, dst=args['preprocess']['destdir'])
         else:
-            if lang in ['path', 'bin_ast']:
-                LOGGER.error('Cannot binarize path/bin_ast modalities data because those data is not list. Ignore.')
-                return
-                # TODO: please help me binarize it.
             in_file = file_name(input_prefix, lang)
             out_file = dest_path(output_prefix, lang)
             os.makedirs(os.path.dirname(out_file), exist_ok=True)
