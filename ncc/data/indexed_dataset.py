@@ -18,6 +18,7 @@ import ujson
 from ncc.utils import tokenizer
 import json
 from dataset.csn import PATH_NUM
+from ncc.utils.util_graph import (build_graph, tree2graph)
 
 
 def __best_fitting_dtype(vocab_size=None):
@@ -67,9 +68,8 @@ def make_dataset(path, impl, modality='text', fix_lua_indexing=False, dictionary
 
     if impl == 'raw' and IndexedRawTextDataset.exists(path):
         if modality == 'path':
-            # print('dictionary: ', dictionary)
             return IndexedRawPathDataset(path, dictionary)
-        elif modality == 'ast':
+        elif modality == 'bin_ast':
             return IndexedRawASTDataset(path, dictionary)
         elif modality == 'ids':
             return IndexedRawNodeIdDataset(path, dictionary)
@@ -319,7 +319,6 @@ class IndexedRawASTDataset(FairseqDataset):
 
     def __init__(self, path, dictionary, append_eos=True, reverse_order=False):
         self.tokens_list = []
-        self.lines = []
         self.sizes = []
         self.append_eos = append_eos
         self.reverse_order = reverse_order
@@ -330,13 +329,9 @@ class IndexedRawASTDataset(FairseqDataset):
         with open(path, 'r', encoding='utf-8') as f:
             for line in f:
                 line = json.loads(line.strip('\n'))
-                self.lines.append(line)
-                tokens = dictionary.encode_ast(
-                    line, add_if_not_exist=False,
-                    append_eos=self.append_eos, reverse_order=self.reverse_order,
-                ).long()
-                self.tokens_list.append(tokens)
-                self.sizes.append(len(tokens))
+                graph = build_graph(line, dictionary)
+                self.tokens_list.append(graph)
+                self.sizes.append(len(graph))
         self.sizes = np.array(self.sizes)
 
     def check_index(self, i):
@@ -349,8 +344,7 @@ class IndexedRawASTDataset(FairseqDataset):
         return self.tokens_list[i]
 
     def get_original_text(self, i):
-        self.check_index(i)
-        return self.lines[i]
+        raise NotImplementedError
 
     def __del__(self):
         pass
@@ -487,41 +481,25 @@ class IndexedDFSASTDataset(FairseqDataset):
 class IndexedRawPathDataset(FairseqDataset):
     """Takes a text file as input and binarizes it in memory at instantiation.
     Original lines are also kept in memory"""
+    PATH_LENGTH = PATH_NUM * 3
 
     def __init__(self, path, dictionary, append_eos=False, reverse_order=False):
-        # self.lines = []
-        self.tokens_list = {'head': [], 'body': [], 'tail': []}
-        # self.sizes = {'head': [], 'body': [], 'tail': []}
+        # self.lines = []# because 1) path modality data are too large adnd 2) we cannot understand code via path data
+        self.tokens_list = []
         self.sizes = []  # body size
         self.append_eos = append_eos
         self.reverse_order = reverse_order
         self.read_data(path, dictionary)
-        self.size = len(self.tokens_list['head'])
+        self.size = len(self.tokens_list)
 
     def read_data(self, path, dictionary):
         with open(path, 'r', encoding='utf-8') as f:
-            f_size = os.fstat(f.fileno()).st_size
-            while f.tell() < f_size:
-                head_list, body_list, tail_list = [], [], []
-                max_len = -1
-                for _ in range(PATH_NUM):
-                    line = f.readline()
-                    head, body, tail = ujson.loads(line)
-                    head = dictionary.encode_line(head, line_tokenizer=None, add_if_not_exist=False,
-                                                  append_eos=self.append_eos, reverse_order=self.reverse_order).long()
-                    body = dictionary.encode_line(body, line_tokenizer=None, add_if_not_exist=False,
-                                                  append_eos=self.append_eos, reverse_order=self.reverse_order).long()
-                    tail = dictionary.encode_line(tail, line_tokenizer=None, add_if_not_exist=False,
-                                                  append_eos=self.append_eos, reverse_order=self.reverse_order).long()
-                    head_list.append(head)
-                    body_list.append(body)
-                    tail_list.append(tail)
-                    max_len = max(max_len, body.numel())
-
-                self.tokens_list['head'].append(head_list)
-                self.tokens_list['body'].append(body_list)
-                self.tokens_list['tail'].append(tail_list)
-                self.sizes.append(max_len)
+            for line in f:
+                line = ujson.loads(line)
+                line = dictionary.encode_line(line, line_tokenizer=None, add_if_not_exist=False,
+                                              append_eos=self.append_eos, reverse_order=self.reverse_order).long()
+                self.tokens_list.append(line)
+                self.sizes.append(len(line))
 
     def check_index(self, i):
         if i < 0 or i >= self.size:
@@ -530,11 +508,9 @@ class IndexedRawPathDataset(FairseqDataset):
     @lru_cache(maxsize=8)
     def __getitem__(self, i):
         self.check_index(i)
-        return self.tokens_list['head'][i], self.tokens_list['body'][i], self.tokens_list['tail'][i]
+        return self.tokens_list[i]
 
     def get_original_text(self, i):
-        # self.check_index(i)
-        # return self.lines[i]
         raise NotImplementedError
 
     def __del__(self):
@@ -567,14 +543,14 @@ class IndexedTokenDataset(FairseqDataset):
     def read_data(self, path, dictionary):
         with open(path, 'r', encoding='utf-8') as f:
             for line in f:
-                line = ujson.loads(line.rstrip('\n'))
+                line = ujson.loads(line)
                 self.lines.append(line)
                 tokens = dictionary.encode_tok(
                     line, add_if_not_exist=False,
                     append_eos=self.append_eos, reverse_order=self.reverse_order,
                 ).long()
                 self.tokens_list.append(tokens)
-                self.sizes.append(tokens.numel())
+                self.sizes.append(len(tokens))
         self.sizes = np.array(self.sizes)
 
     def check_index(self, i):
