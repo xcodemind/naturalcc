@@ -10,10 +10,8 @@ import re
 import traceback
 from collections import OrderedDict
 from typing import Union
-
 import torch
 from .file_io import PathManager
-# from fairseq.models import FairseqDecoder, FairseqEncoder
 from torch.serialization import default_restore_location
 from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
 from ncc.modules.seq2seq.fairseq_decoder import FairseqDecoder
