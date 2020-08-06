@@ -1,6 +1,6 @@
 #registry
 criterion: cross_entropy
-optimizer: 'sgd'
+optimizer: 'adam'
 lr_scheduler: 'fixed'
 tokenizer: ~ # default=None
 bpe: ~ # default=None
@@ -40,10 +40,10 @@ dataset:
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
   max_sentences: 2 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
-  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
-#  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
+#  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
+  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
   train_subset: train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
-  valid_subset: test # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
+  valid_subset: valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
   validate_interval: 1 # type=int, default=1, metavar='N', help='validate every N epochs'
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
   disable_validation: 1 # action='store_true',help='disable validation'
@@ -82,8 +82,8 @@ distributed_training:
   local_rank: -1 # type=int, default=-1, help="For distributed training: local_rank"
 
 task:
-  data: ~/.ncc/CodeSearchNet/summarization/data-raw/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
-#  data: ~/.ncc/CodeSearchNet/summarization/data-mmap/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+#  data: ~/.ncc/CodeSearchNet/summarization/data-raw/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/CodeSearchNet/summarization/data-mmap/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 #  sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
 #  tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
 #  mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
@@ -170,17 +170,14 @@ optimization:
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
     - 16
   lr: # '--learning-rate', default='0.25', type=eval_str_list, metavar='LR_1,LR_2,...,LR_N', help='learning rate for the first N epochs; all epochs >N using LR_N (note: this may be interpreted differently depending on --lr-scheduler)'
-    - 0.01
+    - 0.0005
   min_lr: -1 # default=-1, type=float, metavar='LR', help='stop training when the learning rate reaches this minimum'
   use_bmuf: 0 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
 
   force_anneal: 0 # '--fa', type=int, metavar='N', help='force annealing at specified epoch'
   warmup_updates: 0 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
   lr_shrink: 0.95
-  sgd:
-    momentum: 0.95
-    weight_decay: 0.0
-    nesterov: 1
+
 
 #  for cross entropy
   sentence_avg: ~ # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'
