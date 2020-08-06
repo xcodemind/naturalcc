@@ -19,8 +19,11 @@ def collate(
     left_pad_source=True, left_pad_target=False, input_feeding=True,
 ):
     """
-    src seq: [t1, t2, ...]
-    tgt seq: [t1, t2, ..., <EOS>] => +<BOS>,-<EOS> => prev_output_tokens: [<BOS>, t1, t2, ...]
+    src_seq: [t1, t2, ...]
+    src_seq => path encoder => path hidden state
+
+    tgt_seq: [t1, t2, ..., <EOS>] => append <BOS> and remove <EOS> => prev_output_tokens: [<BOS>, t1, t2, ...]
+    prev_output_tokens => decoder => predicted_seq => loss <= tgt_seq
     """
     if len(samples) == 0:
         return {}
@@ -203,7 +206,9 @@ class PathDataset(FairseqDataset):
         return example
 
     def __len__(self):
-        return len(self.src_sizes) // self.PATH_LENGTH  # path length = path_num *(1+1+1) # for head, body, tail
+        # path length = path_num *(1+1+1) # for head, body, tail
+        assert len(self.src) // self.PATH_LENGTH == len(self.tgt)
+        return len(self.tgt)
 
     def collater(self, samples):
         """Merge a list of samples to form a mini-batch.

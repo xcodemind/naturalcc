@@ -126,6 +126,7 @@ def load_langpair_dataset(
             max_source_positions=max_source_positions,
             max_target_positions=max_target_positions,
             align_dataset=align_dataset, eos=eos,
+            append_eos_to_target=True,
             num_sample=num_sample,
         )
     elif src == 'bin_ast':
