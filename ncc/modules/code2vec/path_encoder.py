@@ -35,10 +35,11 @@ class PathEncoder(FairseqEncoder):
     """
 
     def __init__(
-        self, dictionary, embed_dim=512, hidden_size=512, num_layers=1,
+        self, dictionary, embed_dim=512, hidden_size=512,
+        decoder_hidden_size=512, num_layers=1,
         dropout_in=0.1, dropout_out=0.1, bidirectional=True,
         left_pad=True, pretrained_embed=None, padding_idx=None,
-        max_source_positions=DEFAULT_MAX_SOURCE_POSITIONS
+        max_source_positions=DEFAULT_MAX_SOURCE_POSITIONS,
     ):
         super().__init__(dictionary)
         self.num_layers = num_layers
@@ -63,11 +64,8 @@ class PathEncoder(FairseqEncoder):
             bidirectional=bidirectional,
         )
         self.left_pad = left_pad
-        self.transform = nn.Linear(2 * embed_dim + 2 * hidden_size, embed_dim, bias=False)
-
-        self.output_units = hidden_size
-        if bidirectional:
-            self.output_units *= 2
+        self.transform = nn.Linear(2 * embed_dim + 2 * hidden_size, decoder_hidden_size, bias=False)
+        self.output_units = decoder_hidden_size
 
     @staticmethod
     def _get_sorted_order(lens):
@@ -80,9 +78,6 @@ class PathEncoder(FairseqEncoder):
     def forward(self, src_tokens, src_lengths, **kwargs):
         """head_tokens, tail_tokens, body_tokens: bsz, path_num, seqlen"""
         head_tokens, body_tokens, tail_tokens = src_tokens
-
-        # head_tokens = head_tokens.view(-1, head_tokens.size(-1))
-        # tail_tokens = tail_tokens.view(-1, tail_tokens.size(-1))
 
         head_repr = self.embed_tokens(head_tokens).sum(dim=-2)  # [bsz, path_num, embed_dim]
         tail_repr = self.embed_tokens(tail_tokens).sum(dim=-2)  # [bsz, path_num, embed_dim]
@@ -120,15 +115,17 @@ class PathEncoder(FairseqEncoder):
         final_hiddens = final_hiddens[(-2 if self.bidirectional else -1):].transpose(dim0=0, dim1=1)
         final_hiddens = final_hiddens.contiguous().view(bsz, path_num, -1)
 
-        x = torch.cat([final_hiddens, head_repr, tail_repr], dim=-1)
-        x = torch.tanh(self.transform(x))
-        final_hiddens = x.mean(dim=1).unsqueeze(dim=0)
-        final_cells = torch.zeros_like(final_hiddens).to(final_hiddens.device)
-        encoder_padding_mask = torch.BoolTensor(bsz, x.size(1)).to(x.device).fill_(True)
+        # different from paper, we obey the intuition of code:
+        #   https://github.com/tech-srl/code2seq/blob/a29d0c761f8eca4c27765a1ab04e44815f62bfe6/model.py#L537-L538
+        x = torch.cat([head_repr, final_hiddens, tail_repr], dim=-1)
+
+        x = F.dropout(x, p=self.dropout_out, training=self.training)
+        x = torch.tanh(self.transform(x))  # [bsz, time_step, dim]
+        final_hiddens = final_cells = x.sum(dim=1)
 
         return {
             'encoder_out': (x, final_hiddens, final_cells),
-            'encoder_padding_mask': encoder_padding_mask if encoder_padding_mask.any() else None
+            'encoder_padding_mask': None,
         }
 
     def reorder_encoder_out(self, encoder_out, new_order):

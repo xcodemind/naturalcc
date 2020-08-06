@@ -1,7 +1,7 @@
 #registry
 criterion: cross_entropy
-optimizer: 'adam'
-lr_scheduler: 'polynomial_decay'
+optimizer: 'sgd'
+lr_scheduler: 'fixed'
 tokenizer: ~ # default=None
 bpe: ~ # default=None
 
@@ -28,7 +28,7 @@ common:
   task: summarization # task
 
   seed: 42 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
-  cpu: 1 # action='store_true', help='use CPU instead of CUDA'
+  cpu: 0 # action='store_true', help='use CPU instead of CUDA'
   fp16: 0 # action='store_true', help='use FP16'
   fp16_opt_level: '01' # type=str, default="O1", help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']. See details at https://nvidia.github.io/apex/amp.html",
   server_ip: '' # type=str, default="", help="For distant debugging."
@@ -38,11 +38,12 @@ dataset:
   num_workers: 1 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
 #  skip_invalid_size_inputs_valid_test: 0 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
-  max_sentences: 2 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  max_sentences: 2 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
   dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
-  train_subset: test # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
-  valid_subset: valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
+#  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
+  train_subset: train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
+  valid_subset: test # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
   validate_interval: 1 # type=int, default=1, metavar='N', help='validate every N epochs'
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
   disable_validation: 1 # action='store_true',help='disable validation'
@@ -59,6 +60,7 @@ dataset:
 #  block_size: -1 # default=-1, type=int, help="Optional input sequence length after tokenization. The training dataset will be truncated in block of this size for training. Default to the model max input length for single sentence inputs (take into account special tokens).",
 #  per_gpu_train_batch_size: 16 # default=16, type=int, help="Batch size per GPU/CPU for training."
 #  per_gpu_eval_batch_size: 4 # default=4, type=int, help="Batch size per GPU/CPU for evaluation."
+  num_sample: 200 # we sample {num_sample} sub-paths from all code path-modality data
 
 distributed_training:
   distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
@@ -81,6 +83,7 @@ distributed_training:
 
 task:
   data: ~/.ncc/CodeSearchNet/summarization/data-raw/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+#  data: ~/.ncc/CodeSearchNet/summarization/data-mmap/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 #  sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
 #  tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
 #  mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
@@ -101,7 +104,7 @@ task:
   target_lang: docstring_tokens
   load_alignments: 0 #', action='store_true', help='load the binarized alignments'
   left_pad_source: 1 #', default='True', type=str, metavar='BOOL', help='pad the source on the left'
-  left_pad_target: 0 #', default='False', type=str, metavar='BOOL', help='pad the target on the left'
+  left_pad_target: 0 #', default='False', tydecoder_out_embed_dimpe=str, metavar='BOOL', help='pad the target on the left'
   max_source_positions: ~ #', default=1024, type=int, metavar='N', help='max number of tokens in the source sequence'
   max_target_positions: 1024 #', default=1024, type=int, metavar='N', help='max number of tokens in the target sequence'
   upsample_primary: 1 #', default=1, type=int, help='amount to upsample primary dataset'
@@ -137,16 +140,16 @@ model:
   decoder_freeze_embed: ~ #', action='store_true', help='freeze decoder embeddings'
   decoder_hidden_size: 512 #', type=int, metavar='N', help='decoder hidden size'
   decoder_layers: 1 #', type=int, metavar='N', help='number of decoder layers'
-  decoder_out_embed_dim: 512 #', type=int, metavar='N', help='decoder output embedding dimension'
+  decoder_out_embed_dim: 512
   decoder_attention: 1 #', type=str, metavar='BOOL', help='decoder attention'
   adaptive_softmax_cutoff: ~ #', metavar='EXPR', help='comma separated list of adaptive softmax cutoff points. Must be used with adaptive_loss criterion'
   share_decoder_input_output_embed: 0 #', default=False, action='store_true', help='share decoder input and output embeddings'
   share_all_embeddings: 0 #', default=False, action='store_true', help='share encoder, decoder and output embeddings (requires shared dictionary and embed dim)'
   # Granular dropout settings (if not specified these default to --dropout)
-  encoder_dropout_in: 0.1 #', type=float, metavar='D', help='dropout probability for encoder input embedding'
-  encoder_dropout_out: 0.1 #', type=float, metavar='D', help='dropout probability for encoder output'
-  decoder_dropout_in: 0.1 #' type=float, metavar='D', help='dropout probability for decoder input embedding'
-  decoder_dropout_out: 0.1 #', type=float, metavar='D', help='dropout probability for decoder output'
+  encoder_dropout_in: 0 #', type=float, metavar='D', help='dropout probability for encoder input embedding'
+  encoder_dropout_out: 0.5 #', type=float, metavar='D', help='dropout probability for encoder output'
+  decoder_dropout_in: 0 #' type=float, metavar='D', help='dropout probability for decoder input embedding'
+  decoder_dropout_out: 0 #', type=float, metavar='D', help='dropout probability for decoder output'
   # network: decoder
 #  attn_type: ~ # ~, general, dot, mlp, intra
 #  attn_unit: 512 # （固定，不要调）
@@ -167,15 +170,17 @@ optimization:
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
     - 16
   lr: # '--learning-rate', default='0.25', type=eval_str_list, metavar='LR_1,LR_2,...,LR_N', help='learning rate for the first N epochs; all epochs >N using LR_N (note: this may be interpreted differently depending on --lr-scheduler)'
-    - 0.0005
+    - 0.01
   min_lr: -1 # default=-1, type=float, metavar='LR', help='stop training when the learning rate reaches this minimum'
   use_bmuf: 0 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
-#
-  force_anneal: ~ # '--fa', type=int, metavar='N', help='force annealing at specified epoch'
-  warmup_updates: 10000 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
-  end_learning_rate: 0.0 # default=0.0, type=float
-  power: 1.0 # default=1.0, type=float
-  total_num_update: 125000 # default=1000000, type=int
+
+  force_anneal: 0 # '--fa', type=int, metavar='N', help='force annealing at specified epoch'
+  warmup_updates: 0 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
+  lr_shrink: 0.95
+  sgd:
+    momentum: 0.95
+    weight_decay: 0.0
+    nesterov: 1
 
 #  for cross entropy
   sentence_avg: ~ # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'

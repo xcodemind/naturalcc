@@ -14,6 +14,7 @@ import os
 import sys
 import types
 import torch
+import random
 
 import numpy as np
 
@@ -51,9 +52,11 @@ def collate_tokens(values, pad_idx, eos_idx=None, left_pad=False, move_eos_to_be
     return res
 
 
-def collate_paths(values, pad_idx, eos_idx=None, left_pad=False, move_eos_to_beginning=False):
+def collate_paths(values, num_sample, pad_idx, eos_idx=None, left_pad=False, move_eos_to_beginning=False):
     """Convert a list of list of 1d tensors into a padded 3d tensor."""
     head, body, tail = zip(*values)
+    map(random.shuffle, (head, body, tail))
+    head, body, tail = map(lambda tensor_list: [tensor[:num_sample] for tensor in tensor_list], (head, body, tail))
 
     def copy_tensor(src, dst):
         assert dst.numel() == src.numel()

@@ -5,7 +5,7 @@ from ncc.models import register_model
 from ncc.models.fairseq_model import FairseqEncoderDecoderModel
 from ncc.modules.embedding import Embedding
 from ncc.modules.code2vec.path_encoder import PathEncoder
-from ncc.modules.seq2seq.lstm_decoder import LSTMDecoder
+from ncc.modules.seq2seq.path_decoder import LSTMDecoder
 
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
 DEFAULT_MAX_TARGET_POSITIONS = 1e5
@@ -85,6 +85,7 @@ class Code2Seq(FairseqEncoderDecoderModel):
             dictionary=task.source_dictionary,
             embed_dim=args['model']['encoder_embed_dim'],
             hidden_size=args['model']['encoder_hidden_size'],
+            decoder_hidden_size=args['model']['decoder_hidden_size'],
             num_layers=args['model']['encoder_layers'],
             dropout_in=args['model']['encoder_dropout_in'],
             dropout_out=args['model']['encoder_dropout_out'],

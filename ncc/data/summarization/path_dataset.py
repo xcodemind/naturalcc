@@ -8,50 +8,50 @@ import numpy as np
 import torch
 from ncc.data.tools import data_utils
 from ncc.data.fairseq_dataset import FairseqDataset
+from dataset.csn import PATH_NUM
 
 logger = logging.getLogger(__name__)
 
 
 def collate(
-    samples, pad_idx, eos_idx, left_pad_source=True, left_pad_target=False,
-    input_feeding=True,
+    samples, num_sample,
+    pad_idx, eos_idx, bos_idx,
+    left_pad_source=True, left_pad_target=False, input_feeding=True,
 ):
+    """
+    src seq: [t1, t2, ...]
+    tgt seq: [t1, t2, ..., <EOS>] => +<BOS>,-<EOS> => prev_output_tokens: [<BOS>, t1, t2, ...]
+    """
     if len(samples) == 0:
         return {}
 
     def merge_path(key, left_pad, move_eos_to_beginning=False):
         return data_utils.collate_paths(
-            [s[key] for s in samples],
+            [s[key] for s in samples], num_sample,
             pad_idx, eos_idx, left_pad, move_eos_to_beginning,
         )
 
-    def merge_tokens(key, left_pad, move_eos_to_beginning=False):
+    def merge_tokens(key, left_pad, move_eos_to_beginning=False, append_bos=False):
         return data_utils.collate_tokens(
             [s[key] for s in samples],
             pad_idx, eos_idx, left_pad, move_eos_to_beginning,
         )
 
-    def check_alignment(alignment, src_len, tgt_len):
-        if alignment is None or len(alignment) == 0:
-            return False
-        if alignment[:, 0].max().item() >= src_len - 1 or alignment[:, 1].max().item() >= tgt_len - 1:
-            logger.warning("alignment size mismatch found, skipping alignment!")
-            return False
-        return True
+    def merge_tokens_add_bos_remove_eos(key, left_pad):
+        values = [s[key] for s in samples]
 
-    def compute_alignment_weights(alignments):
-        """
-        Given a tensor of shape [:, 2] containing the source-target indices
-        corresponding to the alignments, a weight vector containing the
-        inverse frequency of each target index is computed.
-        For e.g. if alignments = [[5, 7], [2, 3], [1, 3], [4, 2]], then
-        a tensor containing [1., 0.5, 0.5, 1] should be returned (since target
-        index 3 is repeated twice)
-        """
-        align_tgt = alignments[:, 1]
-        _, align_tgt_i, align_tgt_c = torch.unique(align_tgt, return_inverse=True, return_counts=True)
-        align_weights = align_tgt_c[align_tgt_i[np.arange(len(align_tgt))]]
-        return 1. / align_weights.float()
+        """Convert a list of 1d tensors into a padded 2d tensor."""
+        size = max(v.size(0) for v in values)
+        res = values[0].new(len(values), size).fill_(pad_idx)
+        res[:, 0].fill_(bos_idx)
+
+        def copy_tensor(src, dst):
+            assert dst.numel() == src.numel()
+            dst.copy_(src)
+
+        for i, v in enumerate(values):
+            copy_tensor(v[:-1], res[i][size - len(v) + 1:] if left_pad else res[i][1:len(v)])
+        return res
 
     id = torch.LongTensor([s['id'] for s in samples])
 
@@ -68,10 +68,9 @@ def collate(
         if input_feeding:
             # we create a shifted version of targets for feeding the
             # previous output token(s) into the next decoder step
-            prev_output_tokens = merge_tokens(
+            prev_output_tokens = merge_tokens_add_bos_remove_eos(
                 'target',
                 left_pad=left_pad_target,
-                move_eos_to_beginning=True,
             )
     else:
         ntokens = sum(len(s['source']) for s in samples)
@@ -124,6 +123,7 @@ class PathDataset(FairseqDataset):
         append_bos (bool, optional): if set, appends bos to the beginning of
             source/target sentence.
     """
+    PATH_LENGTH = PATH_NUM * 3
 
     def __init__(
         self, src, src_sizes, src_dict,
@@ -133,7 +133,8 @@ class PathDataset(FairseqDataset):
         shuffle=True, input_feeding=True,
         remove_eos_from_source=False, append_eos_to_target=False,
         align_dataset=None,
-        append_bos=False, eos=None
+        append_bos=False, eos=None,
+        num_sample=None,
     ):
         if tgt_dict is not None:
             assert src_dict.pad() == tgt_dict.pad()
@@ -159,9 +160,25 @@ class PathDataset(FairseqDataset):
         self.append_bos = append_bos
         self.eos = (eos if eos is not None else src_dict.eos())
 
+        # each batch we only sample some paths from all paths
+        if num_sample:
+            assert num_sample <= PATH_NUM, \
+                AssertionError('0 < num_sample <= {}, but {} instead.'.format(PATH_NUM, num_sample))
+            self.num_sample = num_sample
+        else:
+            self.num_sample = PATH_NUM
+
     def __getitem__(self, index):
         tgt_item = self.tgt[index] if self.tgt is not None else None
-        src_item = self.src[index]
+        src_item = list(zip(*[
+            (
+                self.src[index * self.PATH_LENGTH + i], \
+                self.src[index * self.PATH_LENGTH + i + 1], \
+                self.src[index * self.PATH_LENGTH + i + 2],
+            )
+            for i in range(0, self.PATH_LENGTH, 3)
+        ]))
+
         # Append EOS to end of tgt sentence if it does not have an EOS and remove
         # EOS from end of src sentence if it exists. This is useful when we use
         # use existing datasets for opposite directions i.e., when we want to
@@ -176,15 +193,6 @@ class PathDataset(FairseqDataset):
             if self.tgt and self.tgt[index][0] != bos:
                 tgt_item = torch.cat([torch.LongTensor([bos]), self.tgt[index]])
 
-            bos = self.src_dict.bos()
-            if self.src[index][-1] != bos:
-                src_item = torch.cat([torch.LongTensor([bos]), self.src[index]])
-
-        if self.remove_eos_from_source:
-            eos = self.src_dict.eos()
-            if self.src[index][-1] == eos:
-                src_item = self.src[index][:-1]
-
         example = {
             'id': index,
             'source': src_item,
@@ -195,7 +203,7 @@ class PathDataset(FairseqDataset):
         return example
 
     def __len__(self):
-        return len(self.src)
+        return len(self.src_sizes) // self.PATH_LENGTH  # path length = path_num *(1+1+1) # for head, body, tail
 
     def collater(self, samples):
         """Merge a list of samples to form a mini-batch.
@@ -227,8 +235,8 @@ class PathDataset(FairseqDataset):
                   on the left if *left_pad_target* is ``True``.
         """
         return collate(
-            samples, pad_idx=self.src_dict.pad(), eos_idx=self.eos,
-            left_pad_source=self.left_pad_source, left_pad_target=self.left_pad_target,
+            samples, num_sample=self.num_sample, pad_idx=self.src_dict.pad(), eos_idx=self.eos,
+            bos_idx=self.src_dict.bos(), left_pad_source=self.left_pad_source, left_pad_target=self.left_pad_target,
             input_feeding=self.input_feeding,
         )
 
@@ -245,13 +253,8 @@ class PathDataset(FairseqDataset):
     def ordered_indices(self):
         """Return an ordered list of indices. Batches will be constructed based
         on this order."""
-        if self.shuffle:
-            indices = np.random.permutation(len(self))
-        else:
-            indices = np.arange(len(self))
-        if self.tgt_sizes is not None:
-            indices = indices[np.argsort(self.tgt_sizes[indices], kind='mergesort')]
-        return indices[np.argsort(self.src_sizes[indices], kind='mergesort')]
+        indices = np.random.permutation(len(self))
+        return indices
 
     @property
     def supports_prefetch(self):

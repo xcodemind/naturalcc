@@ -23,6 +23,7 @@ from ncc.data.concat_dataset import ConcatDataset
 from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
 from ncc.data.summarization.language_pair_dataset import LanguagePairDataset
 from ncc.data.summarization.path_dataset import PathDataset
+from ncc.data.summarization.bin_ast_dataset import BinaryASTDataset
 from ncc.utils.tokenizer import tokenize_string
 
 EVAL_BLEU_ORDER = 4
@@ -35,7 +36,8 @@ def load_langpair_dataset(
     combine, dataset_impl, upsample_primary,
     left_pad_source, left_pad_target, max_source_positions,
     max_target_positions, prepend_bos=False, load_alignments=False,
-    truncate_source=False, append_source_id=False
+    truncate_source=False, append_source_id=False,
+    num_sample=None,  # only for code2seq or path modality
 ):
     def split_exists(split, src, data_path):
         filename = os.path.join(data_path, '{}.{}'.format(split, src))  # -{}.{} , tgt, lang
@@ -74,9 +76,9 @@ def load_langpair_dataset(
         if tgt_dataset is not None:
             tgt_datasets.append(tgt_dataset)
 
-        LOGGER.info('{} {} {}-{} {} examples'.format(
-            data_path, split_k, src, tgt, len(src_datasets[-1])
-        ))
+        # LOGGER.info('{} {} {}-{} {} examples'.format(
+        #     data_path, split_k, src, tgt, len(src_datasets[-1])
+        # ))
 
         if not combine:
             break
@@ -117,6 +119,17 @@ def load_langpair_dataset(
     tgt_dataset_sizes = tgt_dataset.sizes if tgt_dataset is not None else None
     if src == 'path':
         return PathDataset(
+            src_dataset, src_dataset.sizes, src_dict,
+            tgt_dataset, tgt_dataset_sizes, tgt_dict,
+            left_pad_source=left_pad_source,
+            left_pad_target=left_pad_target,
+            max_source_positions=max_source_positions,
+            max_target_positions=max_target_positions,
+            align_dataset=align_dataset, eos=eos,
+            num_sample=num_sample,
+        )
+    elif src == 'bin_ast':
+        return BinaryASTDataset(
             src_dataset, src_dataset.sizes, src_dict,
             tgt_dataset, tgt_dataset_sizes, tgt_dict,
             left_pad_source=left_pad_source,
@@ -227,6 +240,7 @@ class SummarizationTask(FairseqTask):
             max_target_positions=self.args['task']['max_target_positions'],
             load_alignments=self.args['task']['load_alignments'],
             truncate_source=self.args['task']['truncate_source'],
+            num_sample=self.args['dataset']['num_sample'],
         )
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
