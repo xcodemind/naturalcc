@@ -58,9 +58,12 @@ def safe_readline(f):
 
 class AttrFns:
     @staticmethod
-    def raw_ast_fn(filename, dest_filename, lang, start=0, end=-1):
+    def raw_ast_fn(filename, dest_filename, start=0, end=-1, **kwargs):
         """code => raw_ast"""
-        so_filename = os.path.join(os.path.expanduser(LIBS_DIR), '{}.so'.format(lang))
+        lang = kwargs.get('lang')
+        so_dir = kwargs.get('so_dir')
+
+        so_filename = os.path.join(os.path.expanduser(so_dir), '{}.so'.format(lang))
         parser = CodeParser(so_filename, lang)
         with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
             reader.seek(start)
@@ -74,7 +77,7 @@ class AttrFns:
                 line = safe_readline(reader)
 
     @staticmethod
-    def ast_fn(filename, dest_filename, lang, start=0, end=-1):
+    def ast_fn(filename, dest_filename, start=0, end=-1, **kwargs):
         with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
             reader.seek(start)
             line = safe_readline(reader)
@@ -87,31 +90,7 @@ class AttrFns:
                 line = safe_readline(reader)
 
     @staticmethod
-    def path_fn(filename, dest_filename, lang, start=0, end=-1):
-        # dest_filename_head, dest_filename_body, dest_filename_tail = \
-        #     dest_filename + '.head', dest_filename + '.body', dest_filename + '.tail'
-        # with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename_head, 'w') as writer_head, \
-        #     open(dest_filename_body, 'w') as writer_body, open(dest_filename_tail, 'w') as writer_tail:
-        #     reader.seek(start)
-        #     line = safe_readline(reader)
-        #     while line:
-        #         if end > 0 and reader.tell() > end:
-        #             break
-        #         ast = ujson.loads(line)
-        #         paths = util_path.ast_to_path(ast, MAX_PATH=PATH_NUM)
-        #         # copy paths size to PATH_NUM
-        #         if len(paths) < PATH_NUM:
-        #             supply_ids = list(range(len(paths))) * ((PATH_NUM - len(paths)) // len(paths)) \
-        #                          + random.sample(range(len(paths)), ((PATH_NUM - len(paths)) % len(paths)))
-        #             paths.extend([paths[idx] for idx in supply_ids])
-        #             random.shuffle(paths)
-        #         assert len(paths) == PATH_NUM
-        #         for head, body, tail in paths:
-        #             print(ujson.dumps(head, ensure_ascii=False), file=writer_head)
-        #             print(ujson.dumps(body, ensure_ascii=False), file=writer_body)
-        #             print(ujson.dumps(tail, ensure_ascii=False), file=writer_tail)
-        #         line = safe_readline(reader)
-
+    def path_fn(filename, dest_filename, start=0, end=-1, **kwargs):
         with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer_head:
             reader.seek(start)
             line = safe_readline(reader)
@@ -132,7 +111,7 @@ class AttrFns:
                 line = safe_readline(reader)
 
     @staticmethod
-    def sbt_fn(filename, dest_filename, lang, start=0, end=-1):
+    def sbt_fn(filename, dest_filename, start=0, end=-1, **kwargs):
         with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
             reader.seek(start)
             line = safe_readline(reader)
@@ -148,7 +127,7 @@ class AttrFns:
                 line = safe_readline(reader)
 
     @staticmethod
-    def sbtao_fn(filename, dest_filename, lang, start=0, end=-1):
+    def sbtao_fn(filename, dest_filename, start=0, end=-1, **kwargs):
         with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
             reader.seek(start)
             line = safe_readline(reader)
@@ -164,7 +143,7 @@ class AttrFns:
                 line = safe_readline(reader)
 
     @staticmethod
-    def bin_ast_fn(filename, dest_filename, lang, start=0, end=-1):
+    def binary_ast_fn(filename, dest_filename, start=0, end=-1, **kwargs):
         with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
             reader.seek(start)
             line = safe_readline(reader)
@@ -185,7 +164,7 @@ class AttrFns:
                 line = safe_readline(reader)
 
 
-def process(src_filename, tgt_filename, lang, num_workers=cpu_count()):
+def process(src_filename, tgt_filename, num_workers=cpu_count(), **kwargs):
     def _cat(src_filenames, tgt_filename):
         cmd = 'cat {} > {}'.format(' '.join(src_filenames), tgt_filename)
         # LOGGER.info(cmd)
@@ -200,13 +179,13 @@ def process(src_filename, tgt_filename, lang, num_workers=cpu_count()):
 
     # # for debug
     # idx = 0
-    # attr_fn(_src_filename, _tgt_filename + str(idx), lang, offsets[idx], offsets[idx + 1])
+    # attr_fn(_src_filename, _tgt_filename + str(idx), offsets[idx], offsets[idx + 1], kwargs)
 
     with Pool(num_workers) as mpool:
         result = [
             mpool.apply_async(
                 attr_fn,
-                (_src_filename, _tgt_filename + str(idx), lang, offsets[idx], offsets[idx + 1])
+                (_src_filename, _tgt_filename + str(idx), offsets[idx], offsets[idx + 1], kwargs)
             )
             for idx in range(num_workers)
         ]
@@ -223,22 +202,25 @@ if __name__ == '__main__':
     """
     parser = argparse.ArgumentParser(description="Download CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        "--language", "-l", default=LANGUAGES, type=list, help="languages constain [{}]".format(LANGUAGES),
+        "--language", "-l", default=LANGUAGES, type=str, nargs='+', help="languages constain [{}]".format(LANGUAGES),
     )
     parser.add_argument(
         "--flatten_dir", "-f", default=FLATTEN_DIR, type=str, help="data directory of flatten attribute",
     )
     parser.add_argument(
+        "--so_dir", "-s", default=LIBS_DIR, type=str, help="library directory of so file",
+    )
+    parser.add_argument(
         "--attrs", "-a",
-        # default=['raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'bin_ast'], type=list,
-        default=['path'], type=list,
+        # default=['raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'binary_ast'], type=list,
+        default=['path'], type=str, nargs='+',
         help="attrs: raw_ast, ...",
     )
     parser.add_argument(
         "--cores", "-c", default=cpu_count(), type=int, help="cpu cores for flatten raw data attributes",
     )
     args = parser.parse_args()
-    # print(args)
+    print(args)
 
     """
     a mapping to generate new attributes of code snippet.
@@ -248,8 +230,7 @@ if __name__ == '__main__':
         "path" <= "ast",        # path, a path from a leaf node to another leaf node 
         "sbt" <= "raw_ast",     # sbt, a depth first traversal path of an AST, tokenize leaf node and padding with <PAD>(for DGL Lib.)
         "sbtao" <= "st'",       # sbtao, an improved depth first traversal path of an AST, tokenize leaf node and padding with <PAD>(for DGL Lib.)
-        "bin_ast" <= "raw_ast", # bin_ast, an sophisticated binary AST, remove nodes with single child, tokenize leaf node and padding with <PAD>(for DGL Lib.)
-        
+        "binary_ast" <= "raw_ast", # bin_ast, an sophisticated binary AST, remove nodes with single child, tokenize leaf node and padding with <PAD>(for DGL Lib.)
     """
 
     dest_raw_attrs = {
@@ -258,14 +239,15 @@ if __name__ == '__main__':
         'path': 'ast',
         'sbt': 'raw_ast',
         'sbtao': 'raw_ast',
-        'bin_ast': 'raw_ast',
+        'binary_ast': 'raw_ast',
     }
 
-    args.language = ['ruby']
+    # args.language = ['ruby']
     for lang, mode in itertools.product(args.language, MODES):
         for tgt_attr in args.attrs:
             src_attr = dest_raw_attrs[tgt_attr]
             src_filename = os.path.join(args.flatten_dir, lang, '{}.{}'.format(mode, src_attr))
             tgt_filename = os.path.join(args.flatten_dir, lang, '{}.{}'.format(mode, tgt_attr))
             LOGGER.info('Generating {}'.format(tgt_filename))
-            process(src_filename, tgt_filename, lang, num_workers=args.cores)
+            process(src_filename, tgt_filename, num_workers=args.cores,
+                    lang=lang, so_dir=args.so_dir)
