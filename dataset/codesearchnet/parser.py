@@ -297,35 +297,37 @@ class CodeParser(object):
 
 
 if __name__ == '__main__':
-    # unittest
-    import gzip
-    from dataset.utils.ast import tranv_trans
+    # # unittest
+    # import gzip
+    # from dataset.utils.ast import tranv_trans
+    #
+    # lang = 'python'
+    # so_file = '/home/yang/.ncc/CodeSearchNet/so/{}.so'.format(lang)
+    # parser = CodeParser(so_file, lang, to_lower=False, operators_file='operators.json')
+    #
+    # while True:
+    #     # code = "# addition operator\ndef add(a, b):\n\treturn a+b".strip()
+    #     code = "def add(a, b):\n\treturn a+b".strip()
+    #     raw_ast = parser.parse_raw_ast(code)
+    #
+    #     # raw_ast = '{"0":{"type":"program","parent":null,"children":[1]},"1":{"type":"method","parent":0,"children":[2,3,4,8,20,26,28,36]},"2":{"type":"def_keyword","parent":1,"value":"def"},"3":{"type":"identifier","parent":1,"value":"set"},"4":{"type":"method_parameters","parent":1,"children":[5,6,7]},"5":{"type":"LeftParenOp","parent":4,"value":"("},"6":{"type":"identifier","parent":4,"value":"set_attributes"},"7":{"type":"LeftParenOp","parent":4,"value":")"},"8":{"type":"assignment","parent":1,"children":[9,10,11]},"9":{"type":"identifier","parent":8,"value":"old_attributes"},"10":{"type":"AsgnOp","parent":8,"value":"="},"11":{"type":"method_call","parent":8,"children":[12,13]},"12":{"type":"identifier","parent":11,"value":"compute_attributes"},"13":{"type":"argument_list","parent":11,"children":[14,15,19]},"14":{"type":"LeftParenOp","parent":13,"value":"("},"15":{"type":"call","parent":13,"children":[16,17,18]},"16":{"type":"identifier","parent":15,"value":"set_attributes"},"17":{"type":"DotOp","parent":15,"value":"."},"18":{"type":"identifier","parent":15,"value":"keys"},"19":{"type":"LeftParenOp","parent":13,"value":")"},"20":{"type":"method_call","parent":1,"children":[21,22]},"21":{"type":"identifier","parent":20,"value":"assign_attributes"},"22":{"type":"argument_list","parent":20,"children":[23,24,25]},"23":{"type":"LeftParenOp","parent":22,"value":"("},"24":{"type":"identifier","parent":22,"value":"set_attributes"},"25":{"type":"LeftParenOp","parent":22,"value":")"},"26":{"type":"yield","parent":1,"children":[27]},"27":{"type":"yield_keyword","parent":26,"value":"yield"},"28":{"type":"ensure","parent":1,"children":[29,30]},"29":{"type":"ensure_keyword","parent":28,"value":"ensure"},"30":{"type":"method_call","parent":28,"children":[31,32]},"31":{"type":"identifier","parent":30,"value":"assign_attributes"},"32":{"type":"argument_list","parent":30,"children":[33,34,35]},"33":{"type":"LeftParenOp","parent":32,"value":"("},"34":{"type":"identifier","parent":32,"value":"old_attributes"},"35":{"type":"LeftParenOp","parent":32,"value":")"},"36":{"type":"end_keyword","parent":1,"value":"end"}}'
+    #     # raw_ast = ujson.loads(raw_ast)
+    #     ast = util_ast.convert(raw_ast)
+    #
+    #     max_len = 10
+    #     masks = tranv_trans.get_rel_masks(ast, max_len)
+    #     masks = tranv_trans.separate_rel_mask(masks, max_len)
+    #     sep_asts = util_ast.separate_ast(ast, max_len)
+    #
+    #     for sep_ast, ext in sep_asts:
+    #         if len(sep_ast) > 1:
+    #             [util_ast.dfs_traversal(sep_ast), ext]
 
-    lang = 'python'
-    so_file = '/home/yang/.ncc/CodeSearchNet/so/{}.so'.format(lang)
-    parser = CodeParser(so_file, lang, to_lower=False, operators_file='operators.json')
+    parser = Parser()
 
-    while True:
-        # code = "# addition operator\ndef add(a, b):\n\treturn a+b".strip()
-        code = "def add(a, b):\n\treturn a+b".strip()
-        raw_ast = parser.parse_raw_ast(code)
-
-        # raw_ast = '{"0":{"type":"program","parent":null,"children":[1]},"1":{"type":"method","parent":0,"children":[2,3,4,8,20,26,28,36]},"2":{"type":"def_keyword","parent":1,"value":"def"},"3":{"type":"identifier","parent":1,"value":"set"},"4":{"type":"method_parameters","parent":1,"children":[5,6,7]},"5":{"type":"LeftParenOp","parent":4,"value":"("},"6":{"type":"identifier","parent":4,"value":"set_attributes"},"7":{"type":"LeftParenOp","parent":4,"value":")"},"8":{"type":"assignment","parent":1,"children":[9,10,11]},"9":{"type":"identifier","parent":8,"value":"old_attributes"},"10":{"type":"AsgnOp","parent":8,"value":"="},"11":{"type":"method_call","parent":8,"children":[12,13]},"12":{"type":"identifier","parent":11,"value":"compute_attributes"},"13":{"type":"argument_list","parent":11,"children":[14,15,19]},"14":{"type":"LeftParenOp","parent":13,"value":"("},"15":{"type":"call","parent":13,"children":[16,17,18]},"16":{"type":"identifier","parent":15,"value":"set_attributes"},"17":{"type":"DotOp","parent":15,"value":"."},"18":{"type":"identifier","parent":15,"value":"keys"},"19":{"type":"LeftParenOp","parent":13,"value":")"},"20":{"type":"method_call","parent":1,"children":[21,22]},"21":{"type":"identifier","parent":20,"value":"assign_attributes"},"22":{"type":"argument_list","parent":20,"children":[23,24,25]},"23":{"type":"LeftParenOp","parent":22,"value":"("},"24":{"type":"identifier","parent":22,"value":"set_attributes"},"25":{"type":"LeftParenOp","parent":22,"value":")"},"26":{"type":"yield","parent":1,"children":[27]},"27":{"type":"yield_keyword","parent":26,"value":"yield"},"28":{"type":"ensure","parent":1,"children":[29,30]},"29":{"type":"ensure_keyword","parent":28,"value":"ensure"},"30":{"type":"method_call","parent":28,"children":[31,32]},"31":{"type":"identifier","parent":30,"value":"assign_attributes"},"32":{"type":"argument_list","parent":30,"children":[33,34,35]},"33":{"type":"LeftParenOp","parent":32,"value":"("},"34":{"type":"identifier","parent":32,"value":"old_attributes"},"35":{"type":"LeftParenOp","parent":32,"value":")"},"36":{"type":"end_keyword","parent":1,"value":"end"}}'
-        # raw_ast = ujson.loads(raw_ast)
-        ast = util_ast.convert(raw_ast)
-
-        max_len = 10
-        masks = tranv_trans.get_rel_masks(ast, max_len)
-        masks = tranv_trans.separate_rel_mask(masks, max_len)
-        sep_asts = util_ast.separate_ast(ast, max_len)
-
-        for sep_ast, ext in sep_asts:
-            if len(sep_ast) > 1:
-                [util_ast.dfs_traversal(sep_ast), ext]
-
-    # raw_file = '/home/yang/.ncc/CodeSearchNet/raw_unzip/{}/{}_test_0.jsonl.gz'.format(lang, lang)
-    # with gzip.GzipFile(raw_file, 'r') as reader:
-    #     for line in reader:
-    #         if line:
-    #             line = ujson.loads(line)
-    #             parser.parse_raw_ast(line['code'])
+    so_file = '/home/yang/.ncc/codenn/lib/csharp.so'
+    parser = CodeParser(so_file, 'c_sharp', to_lower=False, operators_file='operators.json')
+    # code = "Console.WriteLine('cat'); int mouse = 5; int cat = 0.4; int cow = 'c'; int moo = \"mouse\"; "
+    code = 'string fixed = Regex.Replace(input, "\s*()","$1");'
+    raw_ast = parser.parse_raw_ast(code)
+    raw_ast
