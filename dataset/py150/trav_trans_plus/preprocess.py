@@ -136,7 +136,7 @@ def string2dfs(line):
 
 
 def binarize(args, filename, vocab, output_prefix, lang, offset, end, append_eos=True):
-    ds = indexed_dataset.make_builder(dataset_dest_file(args, output_prefix, lang, "bin"),
+    ds = indexed_dataset.make_builder(dataset_dest_file(args, output_prefix, lang, "mmap"),
                                       impl=args['preprocess']['dataset_impl'], vocab_size=len(vocab))
 
     def consumer(tensor):
