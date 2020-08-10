@@ -14,7 +14,7 @@ import math
 import torch
 from ncc import LOGGER
 from ncc import tasks
-from ncc.eval import bleu
+from ncc.eval import bleu_scorer
 from ncc.utils import checkpoint_utils
 from ncc.logging import progress_bar
 from ncc.utils import utils
@@ -107,9 +107,9 @@ def _main(args, output_file):
 
     # Generate and compute BLEU score
     if args['eval']['sacrebleu']:
-        scorer = bleu.SacrebleuScorer()
+        scorer = bleu_scorer.SacrebleuScorer()
     else:
-        scorer = bleu.Scorer(tgt_dict.pad(), tgt_dict.eos(), tgt_dict.unk())
+        scorer = bleu_scorer.Scorer(tgt_dict.pad(), tgt_dict.eos(), tgt_dict.unk())
     num_sentences = 0
     has_target = True
     wps_meter = TimeMeter()
