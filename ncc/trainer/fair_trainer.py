@@ -72,9 +72,9 @@ class Trainer(object):
     def criterion(self):
         if self._wrapped_criterion is None:
             if (
-                    utils.has_parameters(self._criterion)
-                    and self.args['distributed_training']['distributed_world_size'] > 1
-                    and not self.args['optimization']['use_bmuf']
+                utils.has_parameters(self._criterion)
+                and self.args['distributed_training']['distributed_world_size'] > 1
+                and not self.args['optimization']['use_bmuf']
             ):
                 self._wrapped_criterion = models.DistributedFairseqModel(
                     self.args, self._criterion
@@ -197,10 +197,10 @@ class Trainer(object):
             # only reload optimizer and lr_scheduler if they match
             last_optim = self._optim_history[-1]
             assert (
-                    last_optim["criterion_name"] == self.get_criterion().__class__.__name__
+                last_optim["criterion_name"] == self.get_criterion().__class__.__name__
             ), "Criterion does not match; please reset the optimizer (--reset-optimizer)."
             assert (
-                    last_optim["optimizer_name"] == self.optimizer.__class__.__name__
+                last_optim["optimizer_name"] == self.optimizer.__class__.__name__
             ), "Optimizer does not match; please reset the optimizer (--reset-optimizer)."
 
             if not reset_lr_scheduler:
@@ -230,7 +230,6 @@ class Trainer(object):
             logger.info("no existing checkpoint found {}".format(filename))
 
         return extra_state
-
 
     def get_train_iterator(
         self,
@@ -386,9 +385,9 @@ class Trainer(object):
             if (
                 self.args['common']['empty_cache_freq'] > 0
                 and (
-                    (self.get_num_updates() + self.args['common']['empty_cache_freq'] - 1)
-                    % self.args['common']['empty_cache_freq']
-                ) == 0
+                (self.get_num_updates() + self.args['common']['empty_cache_freq'] - 1)
+                % self.args['common']['empty_cache_freq']
+            ) == 0
                 and torch.cuda.is_available()
                 and not self.args['common']['cpu']
             ):

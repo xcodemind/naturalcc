@@ -201,8 +201,6 @@ class PathDataset(FairseqDataset):
             'source': src_item,
             'target': tgt_item,
         }
-        if self.align_dataset is not None:
-            example['alignment'] = self.align_dataset[index]
         return example
 
     def __len__(self):

@@ -132,7 +132,7 @@ def validate(args, trainer, task, epoch_itr, subsets):
         with metrics.aggregate(new_root=True) as agg:
             for sample in progress:
                 trainer.valid_step(sample)
-                break  # TODO: only for debug
+                # break  # TODO: only for debug
 
         # log validation stats
         stats = get_valid_stats(args, trainer, agg.get_smoothed_values())
@@ -251,7 +251,7 @@ def single_main(args, init_distributed=False):
         and trainer.get_num_updates() < max_update
     ):
         # train for one epoch
-        train(args, trainer, task, epoch_itr)
+        # train(args, trainer, task, epoch_itr)
 
         if not args['dataset']['disable_validation'] and epoch_itr.epoch % args['dataset']['validate_interval'] == 0:
             valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
@@ -330,5 +330,5 @@ def cli_main():
 
 
 if __name__ == '__main__':
-    """nohup python -m run.completion.seqrnn.main > log.txt 2>&1 &"""
+    """nohup python -m run.summarization.code2seq.train > run/summarization/code2seq/ruby.log 2>&1 &"""
     cli_main()
