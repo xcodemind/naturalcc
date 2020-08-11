@@ -30,6 +30,8 @@ class CodeParser(object):
 
     def __init__(self, SO_FILE: str, LANGUAGE: str, to_lower: bool = False, operators_file: str = None):
         self.parser = Parser()
+        if LANGUAGE == 'csharp':
+            LANGUAGE = 'c_sharp'
         self.parser.set_language(Language(SO_FILE, LANGUAGE))
         self.LANGUAGE = LANGUAGE
         self.to_lower = to_lower
