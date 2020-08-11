@@ -11,12 +11,12 @@ from multiprocessing import Pool, cpu_count
 from ncc import LOGGER
 
 LANGUAGE = 'csharp'
-_CODE_NN_ROOT_DIR = os.path.expanduser('~/.ncc/codenn/{}'.format(LANGUAGE))
-RAW_DIR = os.path.join(_CODE_NN_ROOT_DIR, 'raw')
+_CODE_NN_ROOT_DIR = os.path.expanduser('~/.ncc/codenn')
+RAW_DIR = os.path.join(_CODE_NN_ROOT_DIR, 'raw', LANGUAGE)
 os.makedirs(RAW_DIR, exist_ok=True)
-FLATTEN_DIR = os.path.join(_CODE_NN_ROOT_DIR, 'flatten')
+FLATTEN_DIR = os.path.join(_CODE_NN_ROOT_DIR, 'flatten', LANGUAGE)
 os.makedirs(FLATTEN_DIR, exist_ok=True)
-LIB_DIR = os.path.join(_CODE_NN_ROOT_DIR, 'lib')
+LIB_DIR = os.path.join(_CODE_NN_ROOT_DIR, 'lib', LANGUAGE)
 os.makedirs(LIB_DIR, exist_ok=True)
 
 
@@ -88,8 +88,8 @@ def flatten_data():
                 docstring, code = parsed_line[2].strip(), parsed_line[3].strip()
                 docstring, code = map(lambda string: string.replace('\\r\\n', '\n').replace('\\n', '\n'),
                                       (docstring, code,))
-                print(ujson.dumps(docstring), file=docstring_writer)
-                print(ujson.dumps(code), file=code_writer)
+                print(ujson.dumps(docstring, ensure_ascii=False), file=docstring_writer)
+                print(ujson.dumps(code, ensure_ascii=False), file=code_writer)
 
 
 def find_offsets(filename, num_chunks):
@@ -143,7 +143,7 @@ def tokenization():
         # run cat
         os.system(cmd)
 
-    modalities = ['code', 'docstring']
+    modalities = ['docstring', 'code', ]
     num_workers = cpu_count()
     # num_workers = 10
 
@@ -168,6 +168,9 @@ def tokenization():
 
 
 if __name__ == '__main__':
+    """
+    nohup python -m dataset.codenn.csharp.__main__ > codenn.log 2>&1 &
+    """
     download()
     build_so()
     flatten_data()
