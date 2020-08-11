@@ -30,7 +30,8 @@ def parse_csharp_code(code):
 
 
 def parse_csharp_docstring(docstring):
-    docstring = docstring.strip().decode('utf-8').encode('ascii', 'replace')
+    # docstring = docstring.strip().decode('utf-8').encode('ascii', 'replace')
+    docstring = docstring.strip()
     return re.findall(r"[\w]+|[^\s\w]", docstring)
 
 
