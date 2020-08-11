@@ -16,9 +16,7 @@ try:
         LOGGER,
     )
     from dataset.csn.parser._parser import CodeParser
-    from dataset.csn.utils import util
-    from dataset.csn.utils import util_ast
-    from dataset.csn.utils import util_path
+    from dataset.csn.utils import (util, util_ast, util_path, util_traversal)
 except ImportError:
     from . import (
         LANGUAGES, MODES,
@@ -26,9 +24,7 @@ except ImportError:
         LOGGER,
     )
     from dataset.csn.parser._parser import CodeParser
-    from .utils import util
-    from .utils import util_ast
-    from .utils import util_path
+    from .utils import (util, util_ast, util_path, util_traversal)
 
 
 def find_offsets(filename, num_chunks):
@@ -58,8 +54,9 @@ def safe_readline(f):
 
 class AttrFns:
     @staticmethod
-    def raw_ast_fn(filename, dest_filename, start=0, end=-1, **kwargs):
+    def raw_ast_fn(filename, dest_filename, start=0, end=-1, *args):
         """code => raw_ast"""
+        kwargs = args[0][0]  # canot feed dict parameters in multi-processing
         lang = kwargs.get('lang')
         so_dir = kwargs.get('so_dir')
 
@@ -77,7 +74,9 @@ class AttrFns:
                 line = safe_readline(reader)
 
     @staticmethod
-    def ast_fn(filename, dest_filename, start=0, end=-1, **kwargs):
+    def ast_fn(filename, dest_filename, start=0, end=-1, *args):
+        kwargs = args[0][0]  # canot feed dict parameters in multi-processing
+
         with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
             reader.seek(start)
             line = safe_readline(reader)
@@ -90,7 +89,9 @@ class AttrFns:
                 line = safe_readline(reader)
 
     @staticmethod
-    def path_fn(filename, dest_filename, start=0, end=-1, **kwargs):
+    def path_fn(filename, dest_filename, start=0, end=-1, *args):
+        kwargs = args[0][0]  # canot feed dict parameters in multi-processing
+
         with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer_head:
             reader.seek(start)
             line = safe_readline(reader)
@@ -99,11 +100,14 @@ class AttrFns:
                     break
                 ast = ujson.loads(line)
                 paths = util_path.ast_to_path(ast, MAX_PATH=PATH_NUM)
-                # copy paths size to PATH_NUM
-                if len(paths) < PATH_NUM:
-                    supply_ids = list(range(len(paths))) * ((PATH_NUM - len(paths)) // len(paths)) \
-                                 + random.sample(range(len(paths)), ((PATH_NUM - len(paths)) % len(paths)))
-                    paths.extend([paths[idx] for idx in supply_ids])
+                if paths is None:
+                    paths = [[None] * 3] * PATH_NUM
+                else:
+                    # copy paths size to PATH_NUM
+                    if len(paths) < PATH_NUM:
+                        supply_ids = list(range(len(paths))) * ((PATH_NUM - len(paths)) // len(paths)) \
+                                     + random.sample(range(len(paths)), ((PATH_NUM - len(paths)) % len(paths)))
+                        paths.extend([paths[idx] for idx in supply_ids])
                 random.shuffle(paths)
                 assert len(paths) == PATH_NUM
                 for head_body_tail in itertools.chain(*paths):
@@ -111,7 +115,9 @@ class AttrFns:
                 line = safe_readline(reader)
 
     @staticmethod
-    def sbt_fn(filename, dest_filename, start=0, end=-1, **kwargs):
+    def sbt_fn(filename, dest_filename, start=0, end=-1, *args):
+        kwargs = args[0][0]  # canot feed dict parameters in multi-processing
+
         with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
             reader.seek(start)
             line = safe_readline(reader)
@@ -127,7 +133,9 @@ class AttrFns:
                 line = safe_readline(reader)
 
     @staticmethod
-    def sbtao_fn(filename, dest_filename, start=0, end=-1, **kwargs):
+    def sbtao_fn(filename, dest_filename, start=0, end=-1, *args):
+        kwargs = args[0][0]  # canot feed dict parameters in multi-processing
+
         with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
             reader.seek(start)
             line = safe_readline(reader)
@@ -143,7 +151,9 @@ class AttrFns:
                 line = safe_readline(reader)
 
     @staticmethod
-    def binary_ast_fn(filename, dest_filename, start=0, end=-1, **kwargs):
+    def binary_ast_fn(filename, dest_filename, start=0, end=-1, *args):
+        kwargs = args[0][0]  # canot feed dict parameters in multi-processing
+
         with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
             reader.seek(start)
             line = safe_readline(reader)
@@ -151,16 +161,37 @@ class AttrFns:
                 if end > 0 and reader.tell() > end:
                     break
                 ast = ujson.loads(line)
-                ast = util_ast.value2children(ast)
-                ast = util_ast.remove_root_with_uni_child(ast)
-                root_idx = util_ast.get_root_idx(ast)
-                ast = util_ast.delete_node_with_uni_child(ast, idx=root_idx)
-                root_idx = util_ast.get_root_idx(ast)
-                bin_ast = util_ast.binarize_tree(ast, idx=root_idx)  # to binary ast tree
-                root_idx = util_ast.get_root_idx(ast)
-                bin_ast = util_ast.reset_indices(bin_ast, root_idx)  # reset node indices
-                bin_ast = util_ast.pad_leaf_node(bin_ast, MAX_SUB_TOKEN_LEN)
+                try:
+                    ast = util_ast.value2children(ast)
+                    ast = util_ast.remove_root_with_uni_child(ast)
+                    root_idx = util_ast.get_root_idx(ast)
+                    ast = util_ast.delete_node_with_uni_child(ast, idx=root_idx)
+                    root_idx = util_ast.get_root_idx(ast)
+                    bin_ast = util_ast.binarize_tree(ast, idx=root_idx)  # to binary ast tree
+                    root_idx = util_ast.get_root_idx(ast)
+                    bin_ast = util_ast.reset_indices(bin_ast, root_idx)  # reset node indices
+                    bin_ast = util_ast.pad_leaf_node(bin_ast, MAX_SUB_TOKEN_LEN)
+                except RecursionError:
+                    LOGGER.info('RecursionError, ignore this tree')
+                    bin_ast = None
+                except Exception as err:
+                    print(err)
+                    bin_ast = None
                 print(ujson.dumps(bin_ast, ensure_ascii=False), file=writer)
+                line = safe_readline(reader)
+
+    @staticmethod
+    def traversal_fn(filename, dest_filename, start=0, end=-1, *args):
+        kwargs = args[0][0]  # canot feed dict parameters in multi-processing
+        with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
+            reader.seek(start)
+            line = safe_readline(reader)
+            while line:
+                if end > 0 and reader.tell() > end:
+                    break
+                ast = ujson.loads(line)
+                ast_traversal = util_traversal.get_dfs(ast)
+                print(ujson.dumps(ast_traversal, ensure_ascii=False), file=writer)
                 line = safe_readline(reader)
 
 
@@ -179,13 +210,13 @@ def process(src_filename, tgt_filename, num_workers=cpu_count(), **kwargs):
 
     # # for debug
     # idx = 0
-    # attr_fn(_src_filename, _tgt_filename + str(idx), offsets[idx], offsets[idx + 1], kwargs)
+    # attr_fn(_src_filename, _tgt_filename + str(idx), offsets[idx], offsets[idx + 1], [kwargs])
 
     with Pool(num_workers) as mpool:
         result = [
             mpool.apply_async(
                 attr_fn,
-                (_src_filename, _tgt_filename + str(idx), offsets[idx], offsets[idx + 1], kwargs)
+                (_src_filename, _tgt_filename + str(idx), offsets[idx], offsets[idx + 1], [kwargs])
             )
             for idx in range(num_workers)
         ]
@@ -212,8 +243,8 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         "--attrs", "-a",
-        # default=['raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'binary_ast'], type=list,
-        default=['path'], type=str, nargs='+',
+        # default=['raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'binary_ast', 'traversal'], type=list,
+        default=['traversal'], type=str, nargs='+',
         help="attrs: raw_ast, ...",
     )
     parser.add_argument(
@@ -231,6 +262,7 @@ if __name__ == '__main__':
         "sbt" <= "raw_ast",     # sbt, a depth first traversal path of an AST, tokenize leaf node and padding with <PAD>(for DGL Lib.)
         "sbtao" <= "st'",       # sbtao, an improved depth first traversal path of an AST, tokenize leaf node and padding with <PAD>(for DGL Lib.)
         "binary_ast" <= "raw_ast", # bin_ast, an sophisticated binary AST, remove nodes with single child, tokenize leaf node and padding with <PAD>(for DGL Lib.)
+        "traversal" <= "ast",   #
     """
 
     dest_raw_attrs = {
@@ -240,9 +272,9 @@ if __name__ == '__main__':
         'sbt': 'raw_ast',
         'sbtao': 'raw_ast',
         'binary_ast': 'raw_ast',
+        'traversal': 'ast',
     }
 
-    # args.language = ['ruby']
     for lang, mode in itertools.product(args.language, MODES):
         for tgt_attr in args.attrs:
             src_attr = dest_raw_attrs[tgt_attr]
