@@ -129,8 +129,6 @@ def main(args):
             # src dict
             for modality in args['preprocess']['source_lang']:
                 src_dicts[modality] = load_dict(modality)
-                if modality == 'path':  # path.terminals dict
-                    src_dicts['path.terminals'] = load_dict('path.terminals')
 
             # tgt dict
             if args['preprocess']['target_lang']:
@@ -142,7 +140,8 @@ def main(args):
 
     # 1. build vocabulary
     src_dicts, tgt_dict = build_vocab_dict(args)
-    # exit()
+    exit()
+
     # src_dicts, tgt_dict = None, None
 
     # 2. ***************build dataset********************
@@ -250,7 +249,7 @@ def main(args):
         out_file = dest_path(output_prefix, args['preprocess']['dataset_impl'], lang, modality)
         os.makedirs(os.path.dirname(out_file), exist_ok=True)
         if args['preprocess']['dataset_impl'] == "raw":
-            logger.info('Copying {} into {}'.format(in_file, out_dir))
+            logger.info('Copying {} into {}'.format(in_file, out_file))
             shutil.copy(src=in_file, dst=out_file)
         else:
             make_binary_dataset(vocab, in_file, out_file, modality, num_workers)

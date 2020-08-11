@@ -25,7 +25,7 @@ preprocess:
     - sbt
     - sbtao
     - path # path and path.terminals
-#    - bin_ast # traverse ast's leaf node info
+    - bin_ast # traverse ast's leaf node info
     - traversal
   target_lang: ~ #", default=None, metavar="TARGET", help="target language"
   # ~ path for dataset default. e.g.  for CodeSearchNet, ~/flatten = ~/.ncc/CodeSearchNet/flatten
@@ -59,7 +59,7 @@ preprocess:
       validpref: ~/.ncc/codenn/flatten/csharp/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
       testpref:  ~/.ncc/codenn/flatten/csharp/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
-  dataset_impl: mmap #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
+  dataset_impl: raw #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
   destdir: ~/.ncc/202008/summarization/ #", metavar="DIR", default="data-bin", help="destination dir"
   # word frequency
   thresholdtgt: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
