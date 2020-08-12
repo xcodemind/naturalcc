@@ -29,7 +29,9 @@ def pad_leaf_node(ast_tree: Dict, max_len: int, PAD_TOKEN=PAD) -> Dict:
     '''
     for idx, node in ast_tree.items():
         if len(node['children']) == 1 and isinstance(node['children'][0], str):
-            subtokens = util.split_identifier(node['children'][0])
+            subtokens = util.split_identifier(node['children'][0], False)
+            if len(subtokens) == 0:
+                subtokens = [node['children'][0]]
             if len(subtokens) >= max_len:
                 subtokens = subtokens[:max_len]
             else:
