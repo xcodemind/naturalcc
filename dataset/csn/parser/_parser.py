@@ -244,7 +244,35 @@ class CodeParser(object):
             code_tree = self.build_tree(ast_tree.root_node, code_lines)
             # if str.lower(code_tree[0]['type']) == 'error':
             #     raise RuntimeError
+            if self.LANGUAGE == 'php':
+                """
+                first 3 nodes would be follow:
+                0: {'type': 'program', 'parent': None, 'children': [1, 2, 6]}
+                1: {'type': 'php_tag', 'parent': 0, 'value': '<?php'}
+                2: {'type': 'ERROR', 'parent': 0, 'children': [3, 5]}
+                solution: remove 2nd, connect 3rd to 1st, rename 3rd node's type to ‘local_variable_declaration’
+                """
+                php_tag_node = code_tree.pop(1)
+                del code_tree[0]['children'][code_tree[0]['children'].index(1)]
+                code_tree[2]['type'] = 'local_variable_declaration'
+                # node index: from 2-..., should move forward and update children info
+                code_tree[0]['children'] = [index - 1 for index in code_tree[0]['children']]
+                for idx in sorted(code_tree.keys())[1:]:
+                    new_idx = idx - 1
+                    new_node = code_tree.pop(idx)
+                    if new_node['parent'] > 1:
+                        new_node['parent'] = new_node['parent'] - 1
+                    if 'children' in new_node:
+                        new_node['children'] = [index - 1 for index in new_node['children'] if index > 0]
+                    code_tree[new_idx] = new_node
+
             assert len(code_tree) > 1, AssertionError('AST parsed error.')
+            # check whether an ast contains nodes with null children
+            for node in code_tree.values():
+                if 'children' in node:
+                    assert len(node['children']) > 0, AssertionError('AST has a node without child and value')
+                if 'value' in node:
+                    assert len(node['value']) > 0, AssertionError('AST has a node without child and value')
             return code_tree
         except RecursionError as err:
             # RecursionError: maximum recursion depth exceeded while getting the str of an object
