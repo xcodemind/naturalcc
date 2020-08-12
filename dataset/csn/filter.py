@@ -66,8 +66,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "--attrs", "-a",
         default=['code', 'code_tokens', 'docstring', 'docstring_tokens',
-                 'raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'binary_ast', 'traversal'], type=list,
-        # default=['binary_ast'], type=str, nargs='+',
+                 'raw_ast', 'ast', 'path', 'path.terminals', 'sbt', 'sbtao', 'binary_ast', 'traversal'], type=list,
         help="attrs: raw_ast, ...",
     )
     args = parser.parse_args()
@@ -92,9 +91,9 @@ if __name__ == '__main__':
             data_info = []
             drop = False
             for attr in attrs:
-                if attr == 'path':
-                    line = [readers[attr].readline() for _ in range(PATH_NUM * 3)]
-                    if all([hbt == 'null\n' for hbt in line]):
+                if attr == 'path.terminals':
+                    line = [readers[attr].readline() for _ in range(PATH_NUM * 2)]  # 2 for head and tail of a path
+                    if all([hbt == NONE_LINE for hbt in line]):
                         drop = True
                 else:
                     line = readers[attr].readline()
@@ -108,7 +107,7 @@ if __name__ == '__main__':
             data_info, drop = _read_attrs_lines()
             if not drop:
                 for idx, attr in enumerate(attrs):
-                    if attr == 'path':
+                    if attr == 'path.terminals':
                         for line in data_info[idx]:
                             writers[attr].write(line)
                     else:
