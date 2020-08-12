@@ -95,6 +95,10 @@ if __name__ == '__main__':
                     line = [readers[attr].readline() for _ in range(PATH_NUM * 2)]  # 2 for head and tail of a path
                     if all([hbt == NONE_LINE for hbt in line]):
                         drop = True
+                elif attr == 'path':
+                    line = [readers[attr].readline() for _ in range(PATH_NUM)]  # body of a path
+                    if all([hbt == NONE_LINE for hbt in line]):
+                        drop = True
                 else:
                     line = readers[attr].readline()
                     if line == NONE_LINE:
@@ -110,6 +114,9 @@ if __name__ == '__main__':
                     if attr == 'path.terminals':
                         for line in data_info[idx]:
                             writers[attr].write(line)
+                    elif attr == 'path':
+                        for line in data_info[idx]:
+                            writers[attr].write(line)
                     else:
                         writers[attr].write(data_info[idx])
 
@@ -118,5 +125,6 @@ if __name__ == '__main__':
             writers[attr].close()
 
 
+    MODES = ['test']
     for lang, mode in itertools.product(args.language, MODES):
         filter_fn(args.attrs)
