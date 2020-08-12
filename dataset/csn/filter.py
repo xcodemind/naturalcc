@@ -125,6 +125,5 @@ if __name__ == '__main__':
             writers[attr].close()
 
 
-    MODES = ['test']
     for lang, mode in itertools.product(args.language, MODES):
         filter_fn(args.attrs)
