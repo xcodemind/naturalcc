@@ -98,7 +98,7 @@ def main(args):
 
         def load_dict(modality):
             modality_dict_filename = os.path.join(
-                args['preprocess']['destdir'], 'data-{}'.format(args['preprocess']['dataset_impl']),    
+                args['preprocess']['destdir'], 'data-{}'.format(args['preprocess']['dataset_impl']),
                 '{}.dict.json'.format(modality))
             os.makedirs(os.path.dirname(modality_dict_filename), exist_ok=True)
             if os.path.exists(modality_dict_filename):
