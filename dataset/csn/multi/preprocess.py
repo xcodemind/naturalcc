@@ -76,10 +76,10 @@ def main(args):
         assert src ^ tgt
         if modality in ['binary_ast']:
             tokenize_func = tokenizer.tokenize_tree
-        elif modality in ['code_tokens', 'docstring_tokens', 'path', 'sbt', 'sbtao', 'traversal']:
+        elif modality in ['code_tokens', 'docstring_tokens', 'path', 'path.terminals', 'sbt', 'sbtao', 'traversal']:
             tokenize_func = tokenizer.tokenize_list
         else:
-            raise NotImplementedError
+            raise NotImplementedError("{}".format(modality))
 
         return task.build_dictionary(
             filenames,
@@ -98,6 +98,7 @@ def main(args):
 
         def load_dict(modality):
             modality_dict_filename = os.path.join(args['preprocess']['destdir'], '{}.dict.json'.format(modality))
+            os.makedirs(os.path.dirname(modality_dict_filename), exist_ok=True)
             if os.path.exists(modality_dict_filename):
                 LOGGER.info('Loading {} dict from {}'.format(modality, modality_dict_filename))
                 modality_dict = Dictionary.load_json(modality_dict_filename)
@@ -140,9 +141,6 @@ def main(args):
 
     # 1. build vocabulary
     src_dicts, tgt_dict = build_vocab_dict(args)
-    exit()
-
-    # src_dicts, tgt_dict = None, None
 
     # 2. ***************build dataset********************
     def file_name(prefix, lang):

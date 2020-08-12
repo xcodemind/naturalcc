@@ -7,7 +7,7 @@ preprocess:
   cpu: 0 # ', action='store_true', help='use CPU instead of CUDA'
   fp16: 0 # ', action='store_true', help='use FP16'
   memory_efficient_fp16: 0 # ', action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
-  fp16_no_flatten_grads: 0 #', action='store_true', help='don\'t flatten FP16 grads tensor'
+  fp16_no_refine_grads: 0 #', action='store_true', help='don\'t refine FP16 grads tensor'
   fp16_init_scale: 128 #', default=2 ** 7, type=int, help='default FP16 loss scale'
   fp16_scale_window: ~ #', type=int, help='number of updates before increasing loss scale'
   fp16_scale_tolerance: 0.0 #', default=0.0, type=float, help='pct of updates that can overflow before decreasing the loss scale'
@@ -24,42 +24,44 @@ preprocess:
     - docstring_tokens
     - sbt
     - sbtao
-    - path # path and path.terminals
-    - bin_ast # traverse ast's leaf node info
+    # path and path.terminals
+    - path
+    - path.terminals
+#    - binary_ast # traverse ast's leaf node info
     - traversal
   target_lang: ~ #", default=None, metavar="TARGET", help="target language"
-  # ~ path for dataset default. e.g.  for CodeSearchNet, ~/flatten = ~/.ncc/CodeSearchNet/flatten
+  # ~ path for dataset default. e.g.  for CodeSearchNet, ~/refine = ~/.ncc/CodeSearchNet/refine
   dataprefs:
     ruby:
-      trainpref: ~/.ncc/CodeSearchNet/flatten/ruby/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/flatten/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/flatten/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/CodeSearchNet/refine/ruby/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/CodeSearchNet/refine/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/CodeSearchNet/refine/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     go:
-      trainpref: ~/.ncc/CodeSearchNet/flatten/go/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/flatten/go/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/flatten/go/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/CodeSearchNet/refine/go/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/CodeSearchNet/refine/go/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/CodeSearchNet/refine/go/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     java:
-      trainpref: ~/.ncc/CodeSearchNet/flatten/java/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/flatten/java/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/flatten/java/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/CodeSearchNet/refine/java/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/CodeSearchNet/refine/java/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/CodeSearchNet/refine/java/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     javascript:
-      trainpref: ~/.ncc/CodeSearchNet/flatten/javascript/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/flatten/javascript/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/flatten/javascript/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/CodeSearchNet/refine/javascript/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/CodeSearchNet/refine/javascript/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/CodeSearchNet/refine/javascript/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     python:
-      trainpref: ~/.ncc/CodeSearchNet/flatten/python/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/flatten/python/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/flatten/python/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/CodeSearchNet/refine/python/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/CodeSearchNet/refine/python/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/CodeSearchNet/refine/python/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     php:
-      trainpref: ~/.ncc/CodeSearchNet/flatten/php/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/flatten/php/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/flatten/php/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/CodeSearchNet/refine/php/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/CodeSearchNet/refine/php/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/CodeSearchNet/refine/php/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     csharp:
-      trainpref: ~/.ncc/codenn/flatten/csharp/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/codenn/flatten/csharp/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/codenn/flatten/csharp/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/codenn/refine/csharp/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/codenn/refine/csharp/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/codenn/refine/csharp/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
-  dataset_impl: raw #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
+  dataset_impl: mmap #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
   destdir: ~/.ncc/202008/summarization/ #", metavar="DIR", default="data-bin", help="destination dir"
   # word frequency
   thresholdtgt: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
