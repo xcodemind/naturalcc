@@ -27,7 +27,7 @@ def is_master(args):
 
 
 def infer_init_method(args):
-    print('infer_init_method..')
+    # print('infer_init_method..')
     if args['distributed_training']['distributed_init_method'] is not None:
         return
 
