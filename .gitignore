@@ -41,3 +41,10 @@ src/test.py
 .idea/workspace.xml
 *.xml
 requirement.txt
+*.so
+*.o
+build/temp.linux-x86_64-3.7/.ninja_log
+build/temp.linux-x86_64-3.7/.ninja_deps
+build/temp.linux-x86_64-3.7/build.ninja
+ncc/data/tools/token_block_utils_fast.cpp
+ncc/data/tools/data_utils_fast.cpp
