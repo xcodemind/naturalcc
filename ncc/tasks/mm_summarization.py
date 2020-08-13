@@ -18,182 +18,113 @@ from ncc.data.wrappers.truncate_dataset import TruncateDataset
 from ncc.data.wrappers.strip_token_dataset import StripTokenDataset
 from ncc.data.concat_dataset import ConcatDataset
 from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
-from ncc.data.summarization.multi_language_pair_dataset import MultiLanguagePairDataset
+from ncc.data.summarization.multi_modalities_pair_dataset import MultiModalitiesPairDataset
 from typing import Dict
 from collections import OrderedDict
 from ncc.data.dictionary import Dictionary
-from ncc.utils import tokenizer # , utils # metrics, search,
+from ncc.utils import tokenizer  # , utils # metrics, search,
 
 
 def load_multimodalpair_dataset(
     data_path, split,
-    src_modalities, src_dicts,
+    srcs, src_dicts,
     tgt, tgt_dict,
     combine, dataset_impl, upsample_primary,
     left_pad_source, left_pad_target, max_source_positions,
     max_target_positions, prepend_bos=False, load_alignments=False,
-    truncate_source=False, append_source_id=False
+    truncate_source=False, append_source_id=False,
+    **kwargs,
 ):
-    # TODO: add modality argument
     def split_exists(split, modality, data_path):
-        # filename = os.path.join(data_path, '{}.{}-{}.{}'.format(split, src, tgt, lang))
         filename = os.path.join(data_path, '{}.{}'.format(split, modality))
         return indexed_dataset.dataset_exists(filename, impl=dataset_impl)
 
-    # code_datasets = []
-    # path_datasets = []
-    # ast_datasets = []
-    src_datasets = {modality: [] for modality in src_modalities}
-    src_dataset = {modality: None for modality in src_modalities}
+    src_datasets = OrderedDict()
+    for modality in srcs:
+        src_datasets[modality] = []
     tgt_datasets = []
 
     for k in itertools.count():
         split_k = split + (str(k) if k > 0 else '')
 
-        # infer langcode
-        # if split_exists(split_k, src, tgt, src, data_path):
-        #     prefix = os.path.join(data_path, '{}.{}-{}.'.format(split_k, src, tgt))
-        # elif split_exists(split_k, tgt, src, src, data_path):
-        #     prefix = os.path.join(data_path, '{}.{}-{}.'.format(split_k, tgt, src))
+        for modality in srcs:
+            # infer langcode
+            if split_exists(split_k, modality, data_path):
+                prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , src, tgt
+            elif split_exists(split_k, tgt, data_path):
+                prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , tgt, src
 
-        if 'code' in src_modalities:
-            if split_exists(split_k, 'code', data_path):
-                prefix = os.path.join(data_path, '{}.'.format(split_k))
-            # elif split_exists(split_k, tgt, src, src, data_path):
-            #     prefix = os.path.join(data_path, '{}.'.format(split_k))
             else:
                 if k > 0:
                     break
                 else:
                     raise FileNotFoundError('Dataset not found: {} ({})'.format(split, data_path))
 
-            code_dataset = data_utils.load_indexed_dataset(prefix + 'code', dictionary=src_dicts['code'], dataset_impl=dataset_impl)
+            src_dataset = data_utils.load_indexed_dataset(prefix + modality, modality, src_dicts[modality],
+                                                          dataset_impl)
             if truncate_source:
-                code_dataset = AppendTokenDataset(
+                src_dataset = AppendTokenDataset(
                     TruncateDataset(
-                        StripTokenDataset(code_dataset, src_dicts['code'].eos()),
+                        StripTokenDataset(src_dataset, src_dicts[modality].eos()),
                         max_source_positions - 1,
                     ),
-                    src_dicts['code'].eos(),
+                    src_dicts[modality].eos(),
                 )
-            src_datasets['code'].append(code_dataset)
-
-        # ast_datasets
-        if 'bin_ast' in src_modalities:
-            if split_exists(split_k, 'raw_ast', data_path):
-                prefix = os.path.join(data_path, '{}.'.format(split_k))
-            # elif split_exists(split_k, tgt, src, src, data_path):
-            #     prefix = os.path.join(data_path, '{}.'.format(split_k))
-            else:
-                if k > 0:
-                    break
-                else:
-                    raise FileNotFoundError('Dataset not found: {} ({})'.format(split, data_path))
-            ast_dataset = data_utils.load_indexed_dataset(prefix + 'raw_ast', 'ast', dictionary=src_dicts['raw_ast'], dataset_impl=dataset_impl)
-            if truncate_source:
-                ast_dataset = AppendTokenDataset(
-                    TruncateDataset(
-                        StripTokenDataset(ast_dataset, src_dicts['raw_ast'].eos()),
-                        max_source_positions - 1,
-                    ),
-                    src_dicts['raw_ast'].eos(),
-                )
-            src_datasets['ast'].append(ast_dataset)
-
-        # path_datasets
-        if 'path' in src_modalities:
-            if split_exists(split_k, 'path', data_path):
-                prefix = os.path.join(data_path, '{}.'.format(split_k))
-            # elif split_exists(split_k, tgt, src, src, data_path):
-            #     prefix = os.path.join(data_path, '{}.'.format(split_k))
-            else:
-                if k > 0:
-                    break
-                else:
-                    raise FileNotFoundError('Dataset not found: {} ({})'.format(split, data_path))
-            path_dataset = data_utils.load_indexed_dataset(prefix + 'path', 'path', dictionary=src_dicts['path'], dataset_impl=dataset_impl)
-            if truncate_source:
-                path_dataset = AppendTokenDataset(
-                    TruncateDataset(
-                        StripTokenDataset(path_dataset, src_dicts['path'].eos()),
-                        max_source_positions - 1,
-                    ),
-                    src_dicts['path'].eos(),
-                )
-            src_datasets['path'].append(path_dataset)
+            src_datasets[modality].append(src_dataset)
 
         tgt_dataset = data_utils.load_indexed_dataset(prefix + tgt, dictionary=tgt_dict, dataset_impl=dataset_impl)
         if tgt_dataset is not None:
             tgt_datasets.append(tgt_dataset)
 
-        # LOGGER.info('{} {} {}-{} {} examples'.format(
-        #     data_path, split_k, src, tgt, len(code_datasets[-1])
-        # ))
-
         if not combine:
             break
 
-    for modality in src_modalities:
+    for modality in srcs:
         assert len(src_datasets[modality]) == len(tgt_datasets) or len(tgt_datasets) == 0
 
     if len(tgt_datasets) == 1:
-        # code_dataset = code_datasets[0]
-        # path_dataset = path_datasets[0]
-        # ast_dataset = ast_datasets[0]
-        for modality in src_modalities:
+        src_dataset = OrderedDict()
+        for modality in srcs:
             src_dataset[modality] = src_datasets[modality][0]
         tgt_dataset = tgt_datasets[0] if len(tgt_datasets) > 0 else None
     else:
-        for modality in src_modalities:
-            sample_ratios = [1] * len(src_datasets[modality])
-            sample_ratios[0] = upsample_primary
-            src_dataset[modality] = ConcatDataset(src_datasets[modality], sample_ratios)
-            # path_dataset = ConcatDataset(path_datasets, sample_ratios)
-            # ast_dataset = ConcatDataset(ast_datasets, sample_ratios)
-            if len(tgt_datasets) > 0:
-                tgt_dataset = ConcatDataset(tgt_datasets, sample_ratios)
-            else:
-                tgt_dataset = None
+        raise NotImplementedError
 
     if prepend_bos:
-        assert hasattr(src_dicts['code'], "bos_index") and hasattr(tgt_dict, "bos_index")
-        for modality in src_modalities:
+        assert hasattr(src_dicts[modality], "bos_index") and hasattr(tgt_dict, "bos_index")
+        for modality in srcs:
             src_dataset[modality] = PrependTokenDataset(src_dataset[modality], src_dicts[modality].bos())
-            # code_dataset = PrependTokenDataset(code_dataset, src_dict['code'].bos())
-            # path_dataset = PrependTokenDataset(path_dataset, src_dict['ast'].bos())
-            # ast_dataset = PrependTokenDataset(ast_dataset, src_dict['path'].bos())
         if tgt_dataset is not None:
             tgt_dataset = PrependTokenDataset(tgt_dataset, tgt_dict.bos())
 
     eos = None
     if append_source_id:
-        for modality in src_modalities:
-            src_dataset[modality] = AppendTokenDataset(src_dataset[modality], src_dicts[modality].index('[{}]'.format(modality)))
-        # code_dataset = AppendTokenDataset(code_dataset, src_dict['code'].index('[{}]'.format(src)))
-        # path_dataset = AppendTokenDataset(path_dataset, src_dict['ast'].index('[{}]'.format(src)))
-        # ast_dataset = AppendTokenDataset(ast_dataset, src_dict['path'].index('[{}]'.format(src)))
+        for modality in srcs:
+            src_dataset[modality] = AppendTokenDataset(src_dataset[modality],
+                                                       src_dicts[modality].index('[{}]'.format(modality)))
         if tgt_dataset is not None:
             tgt_dataset = AppendTokenDataset(tgt_dataset, tgt_dict.index('[{}]'.format(tgt)))
         eos = tgt_dict.index('[{}]'.format(tgt))
 
     align_dataset = None
     if load_alignments:
-        align_path = os.path.join(data_path, '{}.align.{}-{}'.format(split, src_modalities, tgt))
+        align_path = os.path.join(data_path, '{}.align.{}-{}'.format(split, srcs, tgt))
         if indexed_dataset.dataset_exists(align_path, impl=dataset_impl):
             align_dataset = data_utils.load_indexed_dataset(align_path, None, dataset_impl)
 
     tgt_dataset_sizes = tgt_dataset.sizes if tgt_dataset is not None else None
-
-    src_dataset_sizes = {modality: src_dataset[modality].sizes for modality in src_modalities}
-    return MultiLanguagePairDataset(
+    src_dataset_sizes = OrderedDict()
+    for modality in srcs:
+        src_dataset_sizes[modality] = src_dataset[modality].sizes
+    return MultiModalitiesPairDataset(
         src_dataset, src_dataset_sizes, src_dicts,
-        src_modalities,
         tgt_dataset, tgt_dataset_sizes, tgt_dict,
         left_pad_source=left_pad_source,
         left_pad_target=left_pad_target,
         max_source_positions=max_source_positions,
         max_target_positions=max_target_positions,
-        align_dataset=align_dataset, eos=eos
+        align_dataset=align_dataset, eos=eos,
+        num_sample=kwargs.get('num_sample', None),
     )
 
 
@@ -203,13 +134,6 @@ class MMSummarizationTask(FairseqTask):
 
     def __init__(self, args, src_dicts: OrderedDict, tgt_dict):
         super().__init__(args)
-        # self.dictionary = dictionary
-        # self.seed = args['common']['seed']
-
-        # # add mask token
-        # self.mask_idx = dictionary.add_symbol('<mask>')、
-        # self.tokenizer = tokenizer
-        # self.mask_idx = self.tokenizer.mask_token_id
         self.src_dicts = src_dicts
         self.tgt_dict = tgt_dict
 
@@ -233,23 +157,16 @@ class MMSummarizationTask(FairseqTask):
             raise Exception('Could not infer language pair, please provide it explicitly')
 
         # load dictionaries
-        tgt_dict = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(args['task']['target_lang'])))
-        # src_dict = {modality: None for modality in args['task']['source_lang']}
+        tgt_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['target_lang'])))
         src_dicts = OrderedDict()
         for modality in args['task']['source_lang']:
-            if modality == 'path':  # special for path modality
-                dict_path_border = cls.load_dictionary(os.path.join(paths[0], 'dict.{}_border.txt'.format(modality)))  # args['task']['source_lang']
-                dict_path_center = cls.load_dictionary(os.path.join(paths[0], 'dict.{}_center.txt'.format(modality)))  # args['task']['source_lang']
-                src_dicts[modality] = [dict_path_border, dict_path_center]
-                assert src_dicts[modality][0].pad() == src_dicts[modality][1].pad() == tgt_dict.pad()
-                assert src_dicts[modality][0].eos() == src_dicts[modality][1].eos() == tgt_dict.eos()
-                assert src_dicts[modality][0].unk() == src_dicts[modality][1].unk() == tgt_dict.unk()
-            else:
-                src_dicts[modality] = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.txt'.format(modality)))    #args['task']['source_lang']
-                assert src_dicts[modality].pad() == tgt_dict.pad()
-                assert src_dicts[modality].eos() == tgt_dict.eos()
-                assert src_dicts[modality].unk() == tgt_dict.unk()
-        # LOGGER.info('[{}] dictionary: {} types'.format(args['task']['source_lang'], len(src_dict)))
+            src_dicts[modality] = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(modality)))
+            assert src_dicts[modality].pad() == tgt_dict.pad()
+            assert src_dicts[modality].eos() == tgt_dict.eos()
+            assert src_dicts[modality].unk() == tgt_dict.unk()
+        LOGGER.info('[{}] dictionary: {} types'.format(
+            args['task']['source_lang'], [len(src_dicts[modality]) for modality in args['task']['source_lang']])
+        )
         LOGGER.info('[{}] dictionary: {} types'.format(args['task']['target_lang'], len(tgt_dict)))
 
         return cls(args, src_dicts, tgt_dict)
@@ -265,10 +182,10 @@ class MMSummarizationTask(FairseqTask):
         data_path = paths[(epoch - 1) % len(paths)]
 
         # infer langcode
-        src_modalities, tgt = self.args['task']['source_lang'], self.args['task']['target_lang']
+        srcs, tgt = self.args['task']['source_lang'], self.args['task']['target_lang']
 
         self.datasets[split] = load_multimodalpair_dataset(
-            data_path, split, src_modalities, self.src_dicts, tgt, self.tgt_dict,
+            data_path, split, srcs, self.src_dicts, tgt, self.tgt_dict,
             combine=combine, dataset_impl=self.args['dataset']['dataset_impl'],
             upsample_primary=self.args['task']['upsample_primary'],
             left_pad_source=self.args['task']['left_pad_source'],
@@ -277,10 +194,11 @@ class MMSummarizationTask(FairseqTask):
             max_target_positions=self.args['task']['max_target_positions'],
             load_alignments=self.args['task']['load_alignments'],
             truncate_source=self.args['task']['truncate_source'],
+            num_sample=self.args['task']['num_sample'],
         )
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
-        return MultiLanguagePairDataset(src_tokens, src_lengths, self.source_dictionary)
+        return MultiModalitiesPairDataset(src_tokens, src_lengths, self.source_dictionary)
 
     def build_model(self, args):
         model = super().build_model(args)
@@ -334,7 +252,7 @@ class MMSummarizationTask(FairseqTask):
 
     @classmethod
     def build_dictionary(
-            cls, filenames, modality='code', workers=1, threshold=-1, nwords=-1, padding_factor=8
+        cls, filenames, modality='code', workers=1, threshold=-1, nwords=-1, padding_factor=8
     ):
         """Build the dictionary
 
@@ -369,7 +287,7 @@ class MMSummarizationTask(FairseqTask):
             d_center = Dictionary()
             for filename in filenames:
                 Dictionary.add_listfile_to_dictionary(
-                    filename, d_center, 'center',tokenizer.tokenize_path_line, workers
+                    filename, d_center, 'center', tokenizer.tokenize_path_line, workers
                 )
             d_center.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
             return d_border, d_center
@@ -382,7 +300,6 @@ class MMSummarizationTask(FairseqTask):
                 )
             d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
             return d
-
 
     def max_positions(self):
         """Return the max sentence length allowed by the task."""

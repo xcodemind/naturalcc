@@ -35,13 +35,16 @@ class PathEncoder(FairseqEncoder):
     """
 
     def __init__(
-        self, dictionary, embed_dim=512, hidden_size=512,
-        decoder_hidden_size=512, num_layers=1,
-        dropout_in=0.1, dropout_out=0.1, bidirectional=True,
-        left_pad=True, pretrained_embed=None, padding_idx=None,
+        self, dictionary,
+        embed_dim=512, t_embed_dim=512,
+        hidden_size=512, decoder_hidden_size=512, num_layers=1,
+        dropout_in=0.1, dropout_out=0.1, bidirectional=True, left_pad=True,
+        pretrained_path_embed=None, pretrained_terminals_embed=None,
+        padding_idx=None, t_padding_idx=None,
         max_source_positions=DEFAULT_MAX_SOURCE_POSITIONS,
     ):
-        super().__init__(dictionary)
+        super().__init__(dictionary['path'])
+        self.t_dictionary = dictionary['path.terminals']  # t_ for terminals_
         self.num_layers = num_layers
         self.dropout_in = dropout_in
         self.dropout_out = dropout_out
@@ -49,12 +52,17 @@ class PathEncoder(FairseqEncoder):
         self.hidden_size = hidden_size
         self.max_source_positions = max_source_positions
 
-        self.padding_idx = padding_idx if padding_idx is not None else dictionary.pad()
-        if pretrained_embed is None:
-            num_embeddings = len(dictionary)
-            self.embed_tokens = Embedding(num_embeddings, embed_dim, self.padding_idx)
+        self.padding_idx = padding_idx if padding_idx is not None else self.dictionary.pad()
+        self.t_padding_idx = t_padding_idx if t_padding_idx is not None else self.t_dictionary.pad()
+
+        if pretrained_path_embed is None:
+            self.embed_tokens = Embedding(len(dictionary), embed_dim, self.padding_idx)
         else:
-            self.embed_tokens = pretrained_embed
+            self.embed_tokens = pretrained_path_embed
+        if pretrained_terminals_embed is None:
+            self.t_embed_tokens = Embedding(len(self.t_dictionary), t_embed_dim, self.t_padding_idx)
+        else:
+            self.t_embed_tokens = pretrained_terminals_embed
 
         self.lstm = LSTM(
             input_size=embed_dim,
@@ -64,7 +72,7 @@ class PathEncoder(FairseqEncoder):
             bidirectional=bidirectional,
         )
         self.left_pad = left_pad
-        self.transform = nn.Linear(2 * embed_dim + 2 * hidden_size, decoder_hidden_size, bias=False)
+        self.transform = nn.Linear(2 * t_embed_dim + 2 * hidden_size, decoder_hidden_size, bias=False)
         self.output_units = decoder_hidden_size
 
     @staticmethod
@@ -77,10 +85,10 @@ class PathEncoder(FairseqEncoder):
 
     def forward(self, src_tokens, src_lengths, **kwargs):
         """head_tokens, tail_tokens, body_tokens: bsz, path_num, seqlen"""
-        head_tokens, body_tokens, tail_tokens = src_tokens
+        head_tokens, body_tokens, tail_tokens = src_tokens['path']
 
-        head_repr = self.embed_tokens(head_tokens).sum(dim=-2)  # [bsz, path_num, embed_dim]
-        tail_repr = self.embed_tokens(tail_tokens).sum(dim=-2)  # [bsz, path_num, embed_dim]
+        head_repr = self.t_embed_tokens(head_tokens).sum(dim=-2)  # [bsz, path_num, embed_dim]
+        tail_repr = self.t_embed_tokens(tail_tokens).sum(dim=-2)  # [bsz, path_num, embed_dim]
 
         # embed tokens
         x = self.embed_tokens(body_tokens)  # bsz, path_num, seqlen, embed_dim
@@ -91,7 +99,7 @@ class PathEncoder(FairseqEncoder):
         # B*P x T x C -> T x B*P x C
         x = x.transpose(0, 1)
         # pack embedded source tokens into a PackedSequence
-        src_lengths = src_lengths.view(-1)
+        src_lengths = src_lengths['path'].view(-1)
         src_lengths, fwd_order, bwd_order = self._get_sorted_order(src_lengths)
         # sort seq_input & hidden state by seq_lens
         x = x.index_select(dim=1, index=fwd_order)

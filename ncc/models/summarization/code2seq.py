@@ -34,63 +34,59 @@ class Code2Seq(FairseqEncoderDecoderModel):
             utils.print_embed_overlap(embed_dict, dictionary)
             return utils.load_embedding(embed_dict, dictionary, embed_tokens)
 
-        if args['model']['encoder_embed_path']:
-            pretrained_encoder_embed = load_pretrained_embedding_from_file(
-                args['model']['encoder_embed_path'], task.source_dictionary, args['model']['encoder_embed_dim'])
+        # path
+        if args['model']['encoder_path_embed']:
+            pretrained_encoder_path_embed = load_pretrained_embedding_from_file(
+                args['model']['encoder_path_embed'],
+                task.source_dictionary['path'], args['model']['encoder_path_embed_dim'])
         else:
-            num_embeddings = len(task.source_dictionary)
-            pretrained_encoder_embed = Embedding(
-                num_embeddings, args['model']['encoder_embed_dim'], task.source_dictionary.pad()
+            num_embeddings = len(task.source_dictionary['path'])
+            pretrained_encoder_path_embed = Embedding(
+                num_embeddings, args['model']['encoder_path_embed_dim'],
+                padding_idx=task.source_dictionary['path'].pad()
+            )
+        # path.terminals
+        if args['model']['encoder_terminals_embed']:
+            pretrained_encoder_terminals_embed = load_pretrained_embedding_from_file(
+                args['model']['encoder_terminals_embed'],
+                task.source_dictionary['path.terminals'], args['model']['encoder_terminals_embed_dim'])
+        else:
+            num_embeddings = len(task.source_dictionary['path.terminals'])
+            pretrained_encoder_terminals_embed = Embedding(
+                num_embeddings, args['model']['encoder_terminals_embed_dim'],
+                padding_idx=task.source_dictionary['path.terminals'].pad()
+            )
+        # decoder
+        if args['model']['decoder_embed']:
+            pretrained_decoder_embed = load_pretrained_embedding_from_file(
+                args['model']['decoder_embed'],
+                task.target_dictionary, args['model']['decoder_embed_dim'])
+        else:
+            num_embeddings = len(task.target_dictionary)
+            pretrained_decoder_embed = Embedding(
+                num_embeddings, args['model']['decoder_embed_dim'],
+                padding_idx=task.target_dictionary.pad()
             )
 
-        if args['model']['share_all_embeddings']:
-            # double check all parameters combinations are valid
-            if task.source_dictionary != task.target_dictionary:
-                raise ValueError('--share-all-embeddings requires a joint dictionary')
-            if args['model']['decoder_embed_path'] and (
-                args['model']['decoder_embed_path'] != args['model']['encoder_embed_path']):
-                raise ValueError(
-                    '--share-all-embed not compatible with --decoder-embed-path'
-                )
-            if args['model']['encoder_embed_dim'] != args['model']['decoder_embed_dim']:
-                raise ValueError(
-                    '--share-all-embeddings requires --encoder-embed-dim to '
-                    'match --decoder-embed-dim'
-                )
-            pretrained_decoder_embed = pretrained_encoder_embed
-            args['model']['share_decoder_input_output_embed'] = True
-        else:
-            # separate decoder input embeddings
-            pretrained_decoder_embed = None
-            if args['model']['decoder_embed_path']:
-                pretrained_decoder_embed = load_pretrained_embedding_from_file(
-                    args['model']['decoder_embed_path'],
-                    task.target_dictionary,
-                    args['model']['decoder_embed_dim']
-                )
-        # one last double check of parameter combinations
-        if args['model']['share_decoder_input_output_embed'] and (
-            args['model']['decoder_embed_dim'] != args['model']['decoder_out_embed_dim']):
-            raise ValueError(
-                '--share-decoder-input-output-embeddings requires '
-                '--decoder-embed-dim to match --decoder-out-embed-dim'
-            )
-
-        if args['model']['encoder_freeze_embed']:
-            pretrained_encoder_embed.weight.requires_grad = False
+        if args['model']['encoder_path_freeze_embed']:
+            pretrained_encoder_path_embed.weight.requires_grad = False
+        if args['model']['encoder_terminals_freeze_embed']:
+            pretrained_encoder_terminals_embed.weight.requires_grad = False
         if args['model']['decoder_freeze_embed']:
             pretrained_decoder_embed.weight.requires_grad = False
 
         encoder = PathEncoder(
             dictionary=task.source_dictionary,
-            embed_dim=args['model']['encoder_embed_dim'],
+            embed_dim=args['model']['encoder_path_embed_dim'],
+            t_embed_dim=args['model']['encoder_terminals_embed_dim'],
             hidden_size=args['model']['encoder_hidden_size'],
             decoder_hidden_size=args['model']['decoder_hidden_size'],
             num_layers=args['model']['encoder_layers'],
             dropout_in=args['model']['encoder_dropout_in'],
             dropout_out=args['model']['encoder_dropout_out'],
             bidirectional=bool(args['model']['encoder_bidirectional']),
-            pretrained_embed=pretrained_encoder_embed,
+            pretrained_path_embed=pretrained_encoder_path_embed,
+            pretrained_terminals_embed=pretrained_encoder_terminals_embed,
             max_source_positions=max_source_positions
         )
         decoder = LSTMDecoder(

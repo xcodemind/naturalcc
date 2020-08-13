@@ -52,11 +52,9 @@ def collate_tokens(values, pad_idx, eos_idx=None, left_pad=False, move_eos_to_be
     return res
 
 
-def collate_paths(values, num_sample, pad_idx, eos_idx=None, left_pad=False, move_eos_to_beginning=False):
+def collate_paths(head, body, tail,
+                  pad_idx, eos_idx=None, left_pad=False, move_eos_to_beginning=False):
     """Convert a list of list of 1d tensors into a padded 3d tensor."""
-    head, body, tail = zip(*values)
-    map(random.shuffle, (head, body, tail))
-    head, body, tail = map(lambda tensor_list: [tensor[:num_sample] for tensor in tensor_list], (head, body, tail))
 
     def copy_tensor(src, dst):
         assert dst.numel() == src.numel()
@@ -77,7 +75,7 @@ def collate_paths(values, num_sample, pad_idx, eos_idx=None, left_pad=False, mov
         return res
 
     head, body, tail = map(pad_tensors, (head, body, tail))
-    return head, body, tail
+    return (head, body, tail)
 
 
 def load_indexed_dataset(path, modality='text', dictionary=None, tokenizer=None, dataset_impl=None, combine=False,
