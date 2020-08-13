@@ -47,12 +47,14 @@ def collate(
         if modality == 'path' and 'path.terminals' in src_modalities:
             # handle path and path.terminals together
             src_tokens[modality] = merge('path', left_pad=left_pad_source)
-            src_lengths[modality] = (src_tokens[modality][1] != pad_idx).sum(-1)
+            src_lengths[modality] = (src_tokens[modality][1] != pad_idx).sum(-1). \
+                to(src_tokens[modality][1].device)
         elif modality == 'path.terminals':
             pass
         else:
             src_tokens[modality] = merge(modality, left_pad=left_pad_source)
-            src_lengths[modality] = torch.LongTensor([s[modality].numel() for s in samples])
+            src_lengths[modality] = torch.LongTensor([s[modality].numel() for s in samples]). \
+                to(src_tokens[modality].device)
 
     def merge_tokens_add_bos_remove_eos(key, left_pad):
         values = [s[key] for s in samples]
@@ -68,6 +70,8 @@ def collate(
 
         for i, v in enumerate(values):
             copy_tensor(v[:-1], res[i][size - len(v) + 1:] if left_pad else res[i][1:len(v)])
+        if torch.cuda.is_available():
+            res = res.cuda()
         return res
 
     prev_output_tokens = None
