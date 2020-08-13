@@ -15,12 +15,18 @@ import sys
 import types
 import torch
 import random
-
 import numpy as np
 
 np.get_include()
 
 logger = logging.getLogger(__name__)
+
+from multiprocessing import set_start_method
+
+try:
+    set_start_method('spawn')
+except RuntimeError:
+    pass
 
 
 def infer_language_pair(path):
@@ -49,6 +55,8 @@ def collate_tokens(values, pad_idx, eos_idx=None, left_pad=False, move_eos_to_be
 
     for i, v in enumerate(values):
         copy_tensor(v, res[i][size - len(v):] if left_pad else res[i][:len(v)])
+    if torch.cuda.is_available():
+        res = res.cuda()
     return res
 
 
@@ -72,6 +80,8 @@ def collate_paths(head, body, tail,
         for i, tensors in enumerate(tensors_list):
             for j, v in enumerate(tensors):
                 copy_tensor(v, res[i][j][:len(v)] if left_pad else res[i][j][size - len(v):])
+        if torch.cuda.is_available():
+            res = res.cuda()
         return res
 
     head, body, tail = map(pad_tensors, (head, body, tail))
