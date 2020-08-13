@@ -15,10 +15,6 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-import sys
-from ncc import *
-
-import argparse
 import importlib
 import os
 import datetime
@@ -34,6 +30,7 @@ from .fairseq_model import (
     FairseqLanguageModel,
     FairseqModel,
     FairseqMultiModel,
+    FairseqMoCoModel,
 )
 
 # from .composite_encoder import CompositeEncoder
@@ -158,5 +155,5 @@ for file in os.listdir(models_dir):
         #     MODEL_REGISTRY[model_name].add_args(group_args)
         #     globals()[model_name + '_parser'] = parser
 
-print('MODEL_REGISTRY: ', MODEL_REGISTRY)
+# print('MODEL_REGISTRY: ', MODEL_REGISTRY)
 # print('ARCH_MODEL_REGISTRY: ', ARCH_MODEL_REGISTRY)
