@@ -12,3 +12,4 @@ pathos
 tree_sitter
 jsonlines
 sentencepiece
+dgl
