@@ -27,9 +27,9 @@ common:
 #  all_gather_list_size: 16384 # default=16384, type=int, help='number of bytes reserved for gathering stats from workers'
   task: mm_summarization # multi-modalities task
 
-  seed: 42 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
+  seed: 666 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
   cpu: 0 # action='store_true', help='use CPU instead of CUDA'
-  fp16: 0 # action='store_true', help='use FP16'
+  fp16: 1 # action='store_true', help='use FP16'
   fp16_opt_level: '01' # type=str, default="O1", help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']. See details at https://nvidia.github.io/apex/amp.html",
   server_ip: '' # type=str, default="", help="For distant debugging."
   server_port: '' # type=str, default="", help="For distant debugging."
@@ -38,7 +38,7 @@ dataset:
   num_workers: 1 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
   skip_invalid_size_inputs_valid_test: 0 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
-  max_sentences: 256 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  max_sentences: 16 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
 #  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
   dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
@@ -158,7 +158,7 @@ optimization:
   max_update: 12500 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
   clip_norm: 25 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
-    - 16
+    - 512
   lr: # '--learning-rate', default='0.25', type=eval_str_list, metavar='LR_1,LR_2,...,LR_N', help='learning rate for the first N epochs; all epochs >N using LR_N (note: this may be interpreted differently depending on --lr-scheduler)'
     - 0.0005
   min_lr: -1 # default=-1, type=float, metavar='LR', help='stop training when the learning rate reaches this minimum'
@@ -189,7 +189,7 @@ optimization:
   num_train_epochs: 5 # default=5, type=float, help="Total number of training epochs to perform."
   max_steps: -1 # default=-1, type=int, help="If > 0: set total number of training steps to perform. Override num_train_epochs.",
   warmup_steps: 0 # default=0, type=int, help="Linear warmup over warmup_steps."
-  gradient_accumulation_steps: 1 # type=int, default=1, help="Number of updates steps to accumulate before performing a backward/update pass."
+  gradient_accumulation_steps: 10 # type=int, default=1, help="Number of updates steps to accumulate before performing a backward/update pass."
 
 
 checkpoint:
