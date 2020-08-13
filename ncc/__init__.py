@@ -18,7 +18,7 @@ import logging
 # LOGGER = get_logger()  # INFO, DEBUG
 # LOGGER = get_logger(level=logging.DEBUG )  # INFO, DEBUG
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='[%(asctime)-15s] %(levelname)7s >> %(message)s (%(filename)s:%(lineno)d, %(funcName)s())',
     datefmt='%Y-%m-%d %H:%M:%S',
 )
