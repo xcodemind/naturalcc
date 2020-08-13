@@ -541,3 +541,38 @@ class FairseqRetrievalModel(BaseFairseqModel):
         """
         return self.src_encoder(src_tokens, src_tokens_len, src_tokens_mask), \
                self.tgt_encoder(tgt_tokens, tgt_tokens_len, tgt_tokens_mask),
+
+
+class FairseqMoCoModel(BaseFairseqModel):
+    """Base class for a simple encoder-encoder retrieval models.
+
+    Args:
+        src_encoder (FairseqEncoder): the encoder
+        tgt_encoder (FairseqEncoder): the encoder
+    """
+
+    def __init__(self, encoder_q, encoder_k):
+        super().__init__()
+        self.encoder_q = encoder_q
+        self.encoder_k = encoder_k
+        assert isinstance(self.encoder_q, FairseqEncoder) and isinstance(self.encoder_k, FairseqEncoder)
+
+    def forward(self,
+                src_tokens, src_tokens_len, src_tokens_mask,
+                tgt_tokens, tgt_tokens_len, tgt_tokens_mask,
+                ):
+        """
+        Run the forward pass for a encoder-only model.
+
+        Feeds a batch of tokens through the encoder to generate features.
+
+        Args:
+            src_tokens (LongTensor): input tokens of shape `(batch, src_len)`
+            tgt_tokens (LongTensor): input tokens of shape `(batch, src_len)`
+
+        Returns:
+            the encoder's output, typically of shape `(batch, src_len, features)`
+        """
+        # return self.q_encoder(src_tokens, src_tokens_len, src_tokens_mask), \
+        #        self.k_encoder(tgt_tokens, tgt_tokens_len, tgt_tokens_mask),
+        raise NotImplementedError

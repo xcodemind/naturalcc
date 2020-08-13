@@ -7,18 +7,28 @@ from functools import lru_cache
 import os
 import shutil
 import struct
-
 import numpy as np
 import torch
-
 from .fairseq_dataset import FairseqDataset
-from tokenizers import ByteLevelBPETokenizer
-from tokenizers.processors import BertProcessing
 import ujson
 from ncc.utils import tokenizer
 import json
 from dataset.csn import PATH_NUM
-from ncc.utils.util_graph import (build_graph, tree2graph)
+# from ncc.utils.util_graph import (build_graph, tree2graph)
+from ncc import LOGGER
+import re
+
+
+_newline_regex = re.compile(r"\n")
+_whitespace_regex = re.compile(r"[ \t\n]+")
+
+
+def normalize_program(fn: str):
+    if not isinstance(fn, (str, bytes)):
+        LOGGER.error(f"normalize_program got non-str: {type(fn)}, {fn}")
+    fn = _newline_regex.sub(r" [EOL]", fn)
+    fn = _whitespace_regex.sub(" ", fn)
+    return fn
 
 
 def __best_fitting_dtype(vocab_size=None):
@@ -77,6 +87,8 @@ def make_dataset(path, impl, modality='text', fix_lua_indexing=False, dictionary
             return IndexedDFSASTDataset(path, dictionary, append_eos=False)
         elif modality in ['tok', 'code_tokens', 'docstring_tokens']:
             return IndexedTokenDataset(path, dictionary)
+        elif modality == 'javascript_augmented':
+            return IndexedJavascriptAugmentedDataset(path, dictionary)
         else:
             assert dictionary is not None
             return IndexedRawTextDataset(path, dictionary)
@@ -565,6 +577,91 @@ class IndexedTokenDataset(FairseqDataset):
     def get_original_text(self, i):
         self.check_index(i)
         return self.lines[i]
+
+    def __del__(self):
+        pass
+
+    def __len__(self):
+        return self.size
+
+    def num_tokens(self, index):
+        return self.sizes[index]
+
+    def size(self, index):
+        return self.sizes[index]
+
+    @staticmethod
+    def exists(path):
+        return os.path.exists(path)
+
+
+class IndexedJavascriptAugmentedDataset(FairseqDataset):
+    def __init__(self, path, dictionary, append_eos=True, reverse_order=False):
+        self.examples_list = []
+        self.lines = []
+        self.sizes = []
+        self.append_eos = append_eos
+        self.reverse_order = reverse_order
+        self.read_data(path, dictionary)
+        self.size = len(self.examples_list)
+
+    def read_data(self, path, dictionary):
+        import gzip
+        import pickle
+        if path.endswith(".gz"):
+            with gzip.open(path, "rb") as f:
+                examples = pickle.load(f)
+        elif path.endswith(".pickle"):
+            with open(path, 'rb') as f:
+                examples = pickle.load(f)
+        else:
+            raise NotImplementedError
+        for example in examples:
+            programs = []
+            for program in example:
+                program = normalize_program(program)
+                program = dictionary.encode_tok(
+                            program, add_if_not_exist=False,
+                            append_eos=self.append_eos, reverse_order=self.reverse_order,
+                        ).long()
+                programs.append(program)
+            self.sizes.append(len(programs[0]))
+            self.examples_list.append(programs)
+        self.sizes = np.array(self.sizes)
+                # # Encode as ids with sentencepiece
+                # if self.subword_regularization_alpha:
+                #     # using subword regularization: https://arxiv.org/pdf/1804.10959.pdf
+                #     # NOTE: what is the second argument here (-1)?
+                #     program = self.sp.SampleEncodeAsIds(program, -1, self.subword_regularization_alpha)
+                # else:
+                #     # using the best decoding
+                #     program = self.sp.EncodeAsIds(program)
+                #
+                # return torch.LongTensor([self.bos_id] + program[: (self.max_length - 2)] + [self.eos_id])
+        # with open(path, 'r', encoding='utf-8') as f:
+        #     for line in f:
+        #         line = ujson.loads(line)
+        #         self.lines.append(line)
+        #         tokens = dictionary.encode_tok(
+        #             line, add_if_not_exist=False,
+        #             append_eos=self.append_eos, reverse_order=self.reverse_order,
+        #         ).long()
+        #         self.examples_list.append(tokens)
+        #         self.sizes.append(len(tokens))
+        # self.sizes = np.array(self.sizes)
+
+    def check_index(self, i):
+        if i < 0 or i >= self.size:
+            raise IndexError('index out of range')
+
+    @lru_cache(maxsize=8)
+    def __getitem__(self, i):
+        self.check_index(i)
+        return self.examples_list[i]
+
+    # def get_original_text(self, i):
+    #     self.check_index(i)
+    #     return self.lines[i]
 
     def __del__(self):
         pass

@@ -15,10 +15,6 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-import sys
-from ncc import *
-
-import argparse
 import importlib
 import os
 import datetime
@@ -34,6 +30,7 @@ from .fairseq_model import (
     FairseqLanguageModel,
     FairseqModel,
     FairseqMultiModel,
+    FairseqMoCoModel,
 )
 
 # from .composite_encoder import CompositeEncoder
