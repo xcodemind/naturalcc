@@ -158,5 +158,5 @@ for file in os.listdir(models_dir):
         #     MODEL_REGISTRY[model_name].add_args(group_args)
         #     globals()[model_name + '_parser'] = parser
 
-print('MODEL_REGISTRY: ', MODEL_REGISTRY)
+# print('MODEL_REGISTRY: ', MODEL_REGISTRY)
 # print('ARCH_MODEL_REGISTRY: ', ARCH_MODEL_REGISTRY)
