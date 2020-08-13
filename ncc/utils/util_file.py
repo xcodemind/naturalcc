@@ -28,7 +28,7 @@ def load_yaml(yaml_file: str) -> Dict:
                 dictionary[key] = os.path.expanduser(value)
             elif isinstance(value, list):
                 for i, val in enumerate(value):
-                    if val.startswith('~/'):
+                    if isinstance(val, str) and val.startswith('~/'):
                         value[i] = os.path.expanduser(val)
 
     with open(yaml_file, 'r', encoding='utf-8') as reader:
