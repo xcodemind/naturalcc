@@ -55,8 +55,6 @@ def collate_tokens(values, pad_idx, eos_idx=None, left_pad=False, move_eos_to_be
 
     for i, v in enumerate(values):
         copy_tensor(v, res[i][size - len(v):] if left_pad else res[i][:len(v)])
-    if torch.cuda.is_available():
-        res = res.cuda()
     return res
 
 
@@ -80,12 +78,10 @@ def collate_paths(head, body, tail,
         for i, tensors in enumerate(tensors_list):
             for j, v in enumerate(tensors):
                 copy_tensor(v, res[i][j][:len(v)] if left_pad else res[i][j][size - len(v):])
-        if torch.cuda.is_available():
-            res = res.cuda()
         return res
 
     head, body, tail = map(pad_tensors, (head, body, tail))
-    return (head, body, tail)
+    return [head, body, tail]
 
 
 def load_indexed_dataset(path, modality='text', dictionary=None, tokenizer=None, dataset_impl=None, combine=False,
@@ -289,8 +285,8 @@ def filter_by_size(indices, dataset, max_positions, raise_exception=False):
 
 
 def batch_by_size(
-    indices, num_tokens_fn, max_tokens=None, max_sentences=None,
-    required_batch_size_multiple=1,
+        indices, num_tokens_fn, max_tokens=None, max_sentences=None,
+        required_batch_size_multiple=1,
 ):
     """
     Yield mini-batches of indices bucketed by size. Batches may contain
