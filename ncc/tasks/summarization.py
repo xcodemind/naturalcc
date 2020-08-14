@@ -30,14 +30,13 @@ EVAL_BLEU_ORDER = 4
 
 
 def load_langpair_dataset(
-    data_path, split,
-    src, src_dict,
-    tgt, tgt_dict,
-    combine, dataset_impl, upsample_primary,
-    left_pad_source, left_pad_target, max_source_positions,
-    max_target_positions, prepend_bos=False, load_alignments=False,
-    truncate_source=False, append_source_id=False,
-    num_sample=None,  # only for code2seq or path modality
+        data_path, split,
+        src, src_dict,
+        tgt, tgt_dict,
+        combine, dataset_impl, upsample_primary,
+        left_pad_source, left_pad_target, max_source_positions,
+        max_target_positions, prepend_bos=False, load_alignments=False,
+        truncate_source=False, append_source_id=False,
 ):
     def split_exists(split, src, data_path):
         filename = os.path.join(data_path, '{}.{}'.format(split, src))  # -{}.{} , tgt, lang
@@ -117,38 +116,15 @@ def load_langpair_dataset(
             align_dataset = data_utils.load_indexed_dataset(align_path, None, dataset_impl)
 
     tgt_dataset_sizes = tgt_dataset.sizes if tgt_dataset is not None else None
-    if src == 'path':
-        return PathDataset(
-            src_dataset, src_dataset.sizes, src_dict,
-            tgt_dataset, tgt_dataset_sizes, tgt_dict,
-            left_pad_source=left_pad_source,
-            left_pad_target=left_pad_target,
-            max_source_positions=max_source_positions,
-            max_target_positions=max_target_positions,
-            align_dataset=align_dataset, eos=eos,
-            append_eos_to_target=True,
-            num_sample=num_sample,
-        )
-    elif src == 'bin_ast':
-        return BinaryASTDataset(
-            src_dataset, src_dataset.sizes, src_dict,
-            tgt_dataset, tgt_dataset_sizes, tgt_dict,
-            left_pad_source=left_pad_source,
-            left_pad_target=left_pad_target,
-            max_source_positions=max_source_positions,
-            max_target_positions=max_target_positions,
-            align_dataset=align_dataset, eos=eos
-        )
-    else:
-        return LanguagePairDataset(
-            src_dataset, src_dataset.sizes, src_dict,
-            tgt_dataset, tgt_dataset_sizes, tgt_dict,
-            left_pad_source=left_pad_source,
-            left_pad_target=left_pad_target,
-            max_source_positions=max_source_positions,
-            max_target_positions=max_target_positions,
-            align_dataset=align_dataset, eos=eos
-        )
+    return LanguagePairDataset(
+        src_dataset, src_dataset.sizes, src_dict,
+        tgt_dataset, tgt_dataset_sizes, tgt_dict,
+        left_pad_source=left_pad_source,
+        left_pad_target=left_pad_target,
+        max_source_positions=max_source_positions,
+        max_target_positions=max_target_positions,
+        align_dataset=align_dataset, eos=eos
+    )
 
 
 @register_task('summarization')
@@ -193,8 +169,8 @@ class SummarizationTask(FairseqTask):
 
     @classmethod
     def build_dictionary(
-        cls, filenames, tokenize_func=tokenize_string,
-        workers=1, threshold=-1, nwords=-1, padding_factor=8
+            cls, filenames, tokenize_func=tokenize_string,
+            workers=1, threshold=-1, nwords=-1, padding_factor=8
     ):
         """Build the dictionary
 
@@ -241,7 +217,6 @@ class SummarizationTask(FairseqTask):
             max_target_positions=self.args['task']['max_target_positions'],
             load_alignments=self.args['task']['load_alignments'],
             truncate_source=self.args['task']['truncate_source'],
-            num_sample=self.args['dataset']['num_sample'],
         )
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
