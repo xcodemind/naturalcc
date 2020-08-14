@@ -337,6 +337,10 @@ class Trainer(object):
                     )
                     ooms += 1
                     self.zero_grad()
+                    if self.cuda:
+                        torch.cuda.empty_cache()
+                    if self.args['distributed_training']['distributed_world_size'] == 1:
+                        return None
                 else:
                     raise e
 
@@ -357,10 +361,7 @@ class Trainer(object):
             # multiply gradients by (# GPUs / sample_size) since DDP
             # already normalizes by the number of GPUs. Thus we get
             # (sum_of_gradients / sample_size).
-            if not self.args['optimization']['use_bmuf']:
-                # if Error raised in "self.task.train_step", sample_size may be 0
-                if sample_size == 0:
-                    sample_size = 1.0
+            if not self.args['optimization']['use_bmuf'] and sample_size > 0:
                 self.optimizer.multiply_grads(
                     self.args['distributed_training']['distributed_world_size'] / sample_size
                 )
