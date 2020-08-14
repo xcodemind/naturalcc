@@ -47,8 +47,11 @@ def collate_tokens(values, pad_idx, eos_idx=None, left_pad=False, move_eos_to_be
     def copy_tensor(src, dst):
         assert dst.numel() == src.numel()
         if move_eos_to_beginning:
-            assert src[-1] == eos_idx
-            dst[0] = eos_idx
+            if eos_idx is None:
+                # if no eos_idx is specified, then use the last token in src
+                dst[0] = src[-1]
+            else:
+                dst[0] = eos_idx
             dst[1:] = src[:-1]
         else:
             dst.copy_(src)
@@ -285,8 +288,8 @@ def filter_by_size(indices, dataset, max_positions, raise_exception=False):
 
 
 def batch_by_size(
-        indices, num_tokens_fn, max_tokens=None, max_sentences=None,
-        required_batch_size_multiple=1,
+    indices, num_tokens_fn, max_tokens=None, max_sentences=None,
+    required_batch_size_multiple=1,
 ):
     """
     Yield mini-batches of indices bucketed by size. Batches may contain
