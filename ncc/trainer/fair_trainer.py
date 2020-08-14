@@ -265,7 +265,6 @@ class Trainer(object):
             shard_id=self.args['distributed_training']['distributed_rank'] if shard_batch_itr else 0,
             num_workers=self.args['dataset']['num_workers'],
             epoch=epoch,
-            ignore_filter=self.args['dataset']['ignore_filter'],
         )
 
     @metrics.aggregate("train")
