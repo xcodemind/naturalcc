@@ -132,7 +132,6 @@ def validate(args, trainer, task, epoch_itr, subsets):
         with metrics.aggregate(new_root=True) as agg:
             for sample in progress:
                 trainer.valid_step(sample)
-                # break  # TODO: only for debug
 
         # log validation stats
         stats = get_valid_stats(args, trainer, agg.get_smoothed_values())
@@ -291,7 +290,8 @@ def distributed_main(i, args, start_rank=0):
 
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('ruby.yml')
+    args_ = Argues('ruby5e-4.yml')
+    # args_ = Argues('ruby1e-3.yml')
     LOGGER.info(args_)
     yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
@@ -330,5 +330,8 @@ def cli_main():
 
 
 if __name__ == '__main__':
-    """nohup python -m run.summarization.code2seq.train > run/summarization/code2seq/ruby.log 2>&1 &"""
+    """
+    nohup python -m run.summarization.code2seq.train > run/summarization/code2seq/ruby1e-3.log 2>&1 &
+    nohup python -m run.summarization.code2seq.train > run/summarization/code2seq/ruby5e-4.log 2>&1 &
+    """
     cli_main()
