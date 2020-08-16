@@ -361,7 +361,7 @@ class Trainer(object):
             # multiply gradients by (# GPUs / sample_size) since DDP
             # already normalizes by the number of GPUs. Thus we get
             # (sum_of_gradients / sample_size).
-            if not self.args['optimization']['use_bmuf'] and sample_size > 0:
+            if not self.args['optimization']['use_bmuf']:
                 self.optimizer.multiply_grads(
                     self.args['distributed_training']['distributed_world_size'] / sample_size
                 )
