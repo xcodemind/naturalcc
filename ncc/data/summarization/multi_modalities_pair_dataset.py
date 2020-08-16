@@ -16,7 +16,7 @@ from dataset.csn import PATH_NUM
 
 def collate(
     samples,
-    pad_idx, eos_idx, bos_idx, src_modalities, left_pad_source=True, left_pad_target=False,
+    pad_idx, eos_idx, src_modalities, left_pad_source=True, left_pad_target=False,
     input_feeding=True, **kwargs,
 ):
     if len(samples) == 0:
@@ -54,22 +54,6 @@ def collate(
             src_tokens[modality] = merge(modality, left_pad=left_pad_source)
             src_lengths[modality] = torch.LongTensor([s[modality].numel() for s in samples])
 
-    def merge_tokens_add_bos_remove_eos(key, left_pad):
-        values = [s[key] for s in samples]
-
-        """Convert a list of 1d tensors into a padded 2d tensor."""
-        size = max(v.size(0) for v in values)
-        res = values[0].new(len(values), size).fill_(pad_idx)
-        res[:, 0].fill_(bos_idx)
-
-        def copy_tensor(src, dst):
-            assert dst.numel() == src.numel()
-            dst.copy_(src)
-
-        for i, v in enumerate(values):
-            copy_tensor(v[:-1], res[i][size - len(v) + 1:] if left_pad else res[i][1:len(v)])
-        return res
-
     prev_output_tokens = None
     target = None
     if samples[0].get('target', None) is not None:
@@ -79,9 +63,10 @@ def collate(
         if input_feeding:
             # we create a shifted version of targets for feeding the
             # previous output token(s) into the next decoder step
-            prev_output_tokens = merge_tokens_add_bos_remove_eos(
+            prev_output_tokens = merge(
                 'target',
                 left_pad=left_pad_target,
+                move_eos_to_beginning=True
             )
     else:
         ntokens = sum(len(s['code']) for s in samples)
@@ -263,8 +248,7 @@ class MultiModalitiesPairDataset(FairseqDataset):
                   on the left if *left_pad_target* is ``True``.
         """
         return collate(
-            samples, pad_idx=self.src_dicts[self.src_modalities[0]].pad(),
-            eos_idx=self.eos, bos_idx=self.src_dicts[self.src_modalities[0]].bos(),
+            samples, pad_idx=self.src_dicts[self.src_modalities[0]].pad(), eos_idx=self.eos,
             src_modalities=self.src_modalities,
             left_pad_source=self.left_pad_source, left_pad_target=self.left_pad_target,
             input_feeding=self.input_feeding,
@@ -276,6 +260,7 @@ class MultiModalitiesPairDataset(FairseqDataset):
         Return the number of tokens in a sample. This value is used to enforce ``--max-tokens`` during batching.
         However, in multi-modalities encoder, sort or filter data by the size of each modality data are meaningless.
         """
+        # return max(self.src_sizes[index], self.tgt_sizes[index] if self.tgt_sizes is not None else 0)
         return max(0, self.tgt_sizes[index] if self.tgt_sizes is not None else 0)
 
     def size(self, index):
@@ -283,6 +268,7 @@ class MultiModalitiesPairDataset(FairseqDataset):
         Return an example's size as a float or tuple. This value is used when filtering a dataset with ``--max-positions``.
         However, in multi-modalities encoder, sort or filter data by the size of each modality data are meaningless.
         """
+        # return (self.src_sizes[index], self.tgt_sizes[index] if self.tgt_sizes is not None else 0)
         return (0, self.tgt_sizes[index] if self.tgt_sizes is not None else 0)
 
     @property
