@@ -90,7 +90,7 @@ class LSTMModel(FairseqEncoderDecoderModel):
             utils.print_embed_overlap(embed_dict, dictionary)
             return utils.load_embedding(embed_dict, dictionary, embed_tokens)
 
-        if args['model']['encoder_embed_path']:
+        if args['model']['encoder_embed']:
             pretrained_encoder_embed = load_pretrained_embedding_from_file(
                 args['model']['encoder_embed_path'], task.source_dictionary, args['model']['encoder_embed_dim'])
         else:
@@ -118,9 +118,9 @@ class LSTMModel(FairseqEncoderDecoderModel):
         else:
             # separate decoder input embeddings
             pretrained_decoder_embed = None
-            if args['model']['decoder_embed_path']:
+            if args['model']['decoder_embed']:
                 pretrained_decoder_embed = load_pretrained_embedding_from_file(
-                    args['model']['decoder_embed_path'],
+                    args['model']['decoder_embed'],
                     task.target_dictionary,
                     args['model']['decoder_embed_dim']
                 )
