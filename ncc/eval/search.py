@@ -62,7 +62,7 @@ class BeamSearch(Search):
         else:
             # make probs contain cumulative scores for each hypothesis
             assert scores is not None
-            lprobs.add_(scores[:, :, step - 1].unsqueeze(-1))
+            lprobs = lprobs + scores[:, :, step - 1].unsqueeze(-1)
 
         top_prediction = torch.topk(
             lprobs.view(bsz, -1),
@@ -75,8 +75,8 @@ class BeamSearch(Search):
         )
         scores_buf = top_prediction[0]
         indices_buf = top_prediction[1]
-        beams_buf = torch.div(indices_buf, vocab_size)
-        indices_buf.fmod_(vocab_size)
+        beams_buf = indices_buf // vocab_size
+        indices_buf = indices_buf.fmod(vocab_size)
         return scores_buf, indices_buf, beams_buf
 
 
@@ -88,13 +88,13 @@ class LengthConstrainedBeamSearch(Search):
         self.max_len_a = max_len_a
         self.max_len_b = max_len_b
         self.beam = BeamSearch(tgt_dict)
+        self.needs_src_lengths = True
 
     def step(self, step: int, lprobs, scores):
         min_lens = self.min_len_a * self.src_lengths + self.min_len_b
         max_lens = self.max_len_a * self.src_lengths + self.max_len_b
         lprobs[step < min_lens, :, self.eos] = -math.inf
-        lprobs[step == max_lens, :, self.eos] = 0
-        lprobs[step > max_lens, :, self.eos] = -math.inf
+        lprobs[step >= max_lens, :, self.eos] = 0
         return self.beam.step(step, lprobs, scores)
 
 
@@ -127,8 +127,8 @@ class DiverseBeamSearch(Search):
 
         scores_G, indices_G, beams_G = [], [], []
         for g in range(self.num_groups):
-            lprobs_g = lprobs[:, g :: self.num_groups, :]
-            scores_g = scores[:, g :: self.num_groups, :] if step > 0 else None
+            lprobs_g = lprobs[:, g:: self.num_groups, :]
+            scores_g = scores[:, g:: self.num_groups, :] if step > 0 else None
 
             # apply diversity penalty
             if g > 0:
@@ -333,7 +333,7 @@ class DiverseSiblingsSearch(Search):
             k,
         )
 
-        final_beams = torch.div(final_indices, k)
+        final_beams = final_indices // k
 
         for i in range(bsz):
             final_indices[i] = indices[i][final_indices[i]]
