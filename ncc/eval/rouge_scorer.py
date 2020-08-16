@@ -6,12 +6,14 @@ class RougeScorer(object):
     >>> rouge_scorer = RougeScorer()
     >>> rouge_scorer.add_string(ref='The dog bit the man.', hyp='The dog bit the man.')
     >>> score = rouge_scorer.score()
-    {'rouge-1': {'f': 0.999999995, 'p': 1.0, 'r': 1.0}, 'rouge-2': {'f': 0.999999995, 'p': 1.0, 'r': 1.0}, 'rouge-l': {'f': 0.999999995, 'p': 1.0, 'r': 1.0}}
+    >>> score
+    {'rouge-1': {'f': 1.0, 'p': 1.0, 'r': 1.0}, 'rouge-2': {'f': 1.0, 'p': 1.0, 'r': 1.0}, 'rouge-l': {'f': 1.0, 'p': 1.0, 'r': 1.0}}
     """
 
-    def __init__(self):
+    def __init__(self, precision=2):
         from rouge import Rouge
         self.rouge = Rouge()
+        self._precision = precision
         self.reset()
 
     def reset(self):
@@ -27,4 +29,8 @@ class RougeScorer(object):
         self.hyps.extend(hyps)
 
     def score(self, avg=True):
-        return self.rouge.get_scores(hyps=self.hyps, refs=self.refs, avg=avg)
+        performance = self.rouge.get_scores(hyps=self.hyps, refs=self.refs, avg=avg)
+        return {
+            name: {avg_name: round(avg_value, self._precision) for avg_name, avg_value in value.items()}
+            for name, value in performance.items()
+        }
