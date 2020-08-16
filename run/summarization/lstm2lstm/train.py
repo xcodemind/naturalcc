@@ -205,7 +205,7 @@ def single_main(args, init_distributed=False):
     if distributed_utils.is_master(args):
         save_dir = args['checkpoint']['save_dir']
         checkpoint_utils.verify_checkpoint_directory(save_dir)
-        remove_files(save_dir, 'pt')
+        # remove_files(save_dir, 'pt') this code will remove pre-trained models
 
     # Print args
     LOGGER.info(args)
