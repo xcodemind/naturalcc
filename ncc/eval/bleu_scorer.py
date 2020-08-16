@@ -11,9 +11,9 @@ try:
     from ncc import libbleu
 except ImportError as e:
     import sys
+
     sys.stderr.write('ERROR: missing libbleu.so. run `pip install --editable .`\n')
     raise e
-
 
 C = ctypes.cdll.LoadLibrary(libbleu.__file__)
 
@@ -49,6 +49,7 @@ class SacrebleuScorer(object):
     >>> bleu = sacrebleu.corpus_bleu(sys, refs)
     >>> bleu.score # 100.00000000000004
     """
+
     def __init__(self):
         import sacrebleu
         self.sacrebleu = sacrebleu
@@ -71,6 +72,104 @@ class SacrebleuScorer(object):
         if order != 4:
             raise NotImplementedError
         return self.sacrebleu.corpus_bleu(self.sys, [self.ref])
+
+
+class NLTKBleuScorer(object):
+    """
+    compute bleu score of string.
+    Examples:
+    >>> hypothesis1 = ['It', 'is', 'a', 'guide', 'to', 'action', 'which',
+    ...               'ensures', 'that', 'the', 'military', 'always',
+    ...               'obeys', 'the', 'commands', 'of', 'the', 'party']
+    >>> reference1 = ['It', 'is', 'a', 'guide', 'to', 'action', 'that',
+    ...              'ensures', 'that', 'the', 'military', 'will', 'forever',
+    ...              'heed', 'Party', 'commands']
+    >>> reference2 = ['It', 'is', 'the', 'guiding', 'principle', 'which',
+    ...              'guarantees', 'the', 'military', 'forces', 'always',
+    ...              'being', 'under', 'the', 'command', 'of', 'the',
+    ...              'Party']
+    >>> reference3 = ['It', 'is', 'the', 'practical', 'guide', 'for', 'the',
+    ...              'army', 'always', 'to', 'heed', 'the', 'directions',
+    ...              'of', 'the', 'party']
+    >>> bleu_scorer = NLTKBleuScorer()
+    >>> bleu_scorer.add_string(
+    ...    refs=[reference1, reference2, reference3],
+    ...    pred=hypothesis1,
+    ... )
+    >>> score = bleu_scorer.score()
+    >>> score
+    {'BLEU-1': 94.44, 'BLEU-2': 74.54, 'BLEU-3': 62.41, 'BLEU-4': 50.46}
+
+    References:
+    >>> from nltk.translate.bleu_score import corpus_bleu
+    >>> hyp1 = ['It', 'is', 'a', 'guide', 'to', 'action', 'which',
+    ...        'ensures', 'that', 'the', 'military', 'always',
+    ...        'obeys', 'the', 'commands', 'of', 'the', 'party']
+    >>> ref1a = ['It', 'is', 'a', 'guide', 'to', 'action', 'that',
+    ...         'ensures', 'that', 'the', 'military', 'will', 'forever',
+    ...         'heed', 'Party', 'commands']
+    >>> ref1b = ['It', 'is', 'the', 'guiding', 'principle', 'which',
+    ...         'guarantees', 'the', 'military', 'forces', 'always',
+    ...         'being', 'under', 'the', 'command', 'of', 'the', 'Party']
+    >>> ref1c = ['It', 'is', 'the', 'practical', 'guide', 'for', 'the',
+    ...         'army', 'always', 'to', 'heed', 'the', 'directions',
+    ...         'of', 'the', 'party']
+    >>> hyp2 = ['he', 'read', 'the', 'book', 'because', 'he', 'was',
+    ...        'interested', 'in', 'world', 'history']
+    >>> ref2a = ['he', 'was', 'interested', 'in', 'world', 'history',
+    ...         'because', 'he', 'read', 'the', 'book']
+    >>> list_of_references = [[ref1a, ref1b, ref1c], [ref2a]]
+    >>> hypotheses = [hyp1, hyp2]
+    >>> bleu1 = corpus_bleu(list_of_references, hypotheses, weights=(1, 0, 0, 0))  # doctest: +ELLIPSIS
+    >>> bleu2 = corpus_bleu(list_of_references, hypotheses, weights=(0.5, 0.5, 0, 0))  # doctest: +ELLIPSIS
+    >>> bleu3 = corpus_bleu(list_of_references, hypotheses, weights=(0.33, 0.33, 0.33, 0))  # doctest: +ELLIPSIS
+    >>> bleu4 = corpus_bleu(list_of_references, hypotheses, weights=(0.25, 0.25, 0.25, 0.25))  # doctest: +ELLIPSIS
+    >>> bleu1, bleu2, bleu3, bleu4
+    (0.9655172413793104, 0.8242803277698696, 0.7093989814471865, 0.5920778868801042)
+    """
+
+    def __init__(self, N_gram=4, precision=2):
+        from nltk.translate import bleu_score
+        self.bleu_score = bleu_score
+        self.N_gram = N_gram
+        self._precision = precision
+        self._weights = [
+            tuple([round(1 / i, 4)] * i + [0.] * (N_gram - i))
+            for i in range(1, N_gram + 1)
+        ]
+        self.smoothing_fn = bleu_score.SmoothingFunction().method3
+        self.reset()
+
+    def reset(self):
+        self.refs = []
+        self.sys = []
+
+    def add_string(self, refs, pred):
+        if isinstance(refs, str):
+            refs = [refs.split()]
+        if isinstance(pred, str):
+            pred = pred.split()
+        self.refs.append(refs)
+        self.sys.append(pred)
+
+    def sentence_score(self, refs, pred):
+        performance = {'BLEU-{}'.format(i): None for i in range(1, self.N_gram + 1)}
+        for idx, weights in enumerate(self._weights, start=1):
+            bleu_score = self.bleu_score.sentence_bleu(refs, pred, weights=weights, \
+                                                       smoothing_function=self.smoothing_fn)
+            performance['BLEU-{}'.format(idx)] = round(bleu_score * 100, self._precision)
+        return performance
+
+    def score(self):
+        return self.result_string()
+
+    def result_string(self):
+        performance = {'BLEU-{}'.format(i): None for i in range(1, self.N_gram + 1)}
+        for idx, weights in enumerate(self._weights, start=1):
+            bleu_score = self.bleu_score.corpus_bleu(self.refs, self.sys, weights=weights, \
+                                                     smoothing_function=self.smoothing_fn)
+            performance['BLEU-{}'.format(idx)] = round(bleu_score * 100, self._precision)
+        return performance
 
 
 class Scorer(object):
@@ -144,5 +243,5 @@ class Scorer(object):
         fmt += ' (BP={:.3f}, ratio={:.3f}, syslen={}, reflen={})'
         bleup = [p * 100 for p in self.precision()[:order]]
         return fmt.format(order, self.score(order=order), *bleup,
-                          self.brevity(), self.stat.predlen/self.stat.reflen,
+                          self.brevity(), self.stat.predlen / self.stat.reflen,
                           self.stat.predlen, self.stat.reflen)
