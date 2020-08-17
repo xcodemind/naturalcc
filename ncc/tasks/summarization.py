@@ -38,6 +38,7 @@ def load_langpair_dataset(
     left_pad_source, left_pad_target, max_source_positions,
     max_target_positions, prepend_bos=False, load_alignments=False,
     truncate_source=False, append_source_id=False,
+    append_eos_to_target=False,
 ):
     def split_exists(split, src, data_path):
         filename = os.path.join(data_path, '{}.{}'.format(split, src))  # -{}.{} , tgt, lang
@@ -125,6 +126,7 @@ def load_langpair_dataset(
         max_source_positions=max_source_positions,
         max_target_positions=max_target_positions,
         align_dataset=align_dataset, eos=eos,
+        append_eos_to_target=append_eos_to_target,
     )
 
 
@@ -218,6 +220,7 @@ class SummarizationTask(FairseqTask):
             max_target_positions=self.args['task']['max_target_positions'],
             load_alignments=self.args['task']['load_alignments'],
             truncate_source=self.args['task']['truncate_source'],
+            append_eos_to_target=self.args['task']['append_eos_to_target'],
         )
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
