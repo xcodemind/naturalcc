@@ -26,7 +26,7 @@ common:
 #  all_gather_list_size: 16384 # default=16384, type=int, help='number of bytes reserved for gathering stats from workers'
   task: summarization # multi-modalities task
 
-  seed: 666 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
+  seed: 1 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
   cpu: 0 # action='store_true', help='use CPU instead of CUDA'
   fp16: 0 # action='store_true', help='use FP16'
   fp16_opt_level: '01' # type=str, default="O1", help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']. See details at https://nvidia.github.io/apex/amp.html",
@@ -35,7 +35,7 @@ common:
 
 dataset:
   num_workers: 1 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
-  skip_invalid_size_inputs_valid_test: 0 # action='store_true', help='ignore too long or too short lines in valid and test set'
+  skip_invalid_size_inputs_valid_test: 1 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
   max_sentences: 8 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
@@ -47,7 +47,7 @@ dataset:
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
   disable_validation: 0 # action='store_true',help='disable validation'
   max_tokens_valid: ~ # type=int, metavar='N', help='maximum number of tokens in a validation batch (defaults to --max-tokens)'
-  max_sentences_valid: 16 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
+  max_sentences_valid: 8 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
   curriculum: 0 # default=0, type=int, metavar='N', help='don\'t shuffle batches for first N epochs'
   gen_subset: test # default='test', metavar='SPLIT', help='data subset to generate (train, valid, test)'
   num_shards: 1 # default=1, type=int, metavar='N', help='shard generation over N shards'
@@ -95,13 +95,15 @@ task:
   truncate_source: 0 #', action='store_true', default=False, help='truncate source to max-source-positions'
 
   # options for reporting BLEU during validation
-  eval_bleu: 0 #action='store_true', help='evaluation with BLEU scores'
+  eval_bleu: 1 #action='store_true', help='evaluation with BLEU scores'
   eval_bleu_detok: space #', type=str, default="space", help='detokenizer before computing BLEU (e.g., "moses"); required if using --eval-bleu; use "space" to disable detokenization; see fairseq.data.encoders for other options'
   eval_bleu_detok_args: ~ #', type=str, metavar='JSON', help='args for building the tokenizer, if needed'
   eval_tokenized_bleu: 0 #', action='store_true', default=False, help='if setting, we compute tokenized BLEU instead of sacrebleu'
   eval_bleu_remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE before computing BLEU'
   eval_bleu_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
   eval_bleu_print_samples: 0 #', action='store_true', help='print sample generations during validation'
+
+#
   num_sample: 200 # we sample {num_sample} sub-paths from all code path-modality data
 
 
@@ -147,7 +149,7 @@ model:
 #  dropout: 0.2 # （固定，不要调）dropout
 #  decoder_input_feed: False # （固定，不要调）True, False
   max_source_positions: ~
-  max_target_positions: ~
+  max_target_positions: 512
 
 
 optimization:
@@ -186,7 +188,7 @@ optimization:
   num_train_epochs: 5 # default=5, type=float, help="Total number of training epochs to perform."
   max_steps: -1 # default=-1, type=int, help="If > 0: set total number of training steps to perform. Override num_train_epochs.",
   warmup_steps: 0 # default=0, type=int, help="Linear warmup over warmup_steps."
-  gradient_accumulation_steps: 10 # type=int, default=1, help="Number of updates steps to accumulate before performing a backward/update pass."
+  gradient_accumulation_steps: 1 # type=int, default=1, help="Number of updates steps to accumulate before performing a backward/update pass."
 
 
 checkpoint:
@@ -230,7 +232,7 @@ eval:
   beam: 5 # ', default=5, type=int, metavar='N', help='beam size')
   nbest: 1 # ', default=1, type=int, metavar='N', help='number of hypotheses to output')
   max_len_a: 0 #', default=0, type=float, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))
-  max_len_b: 200 #', default=200, type=int, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))
+  max_len_b: 50 #', default=200, type=int, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))
   min_len: 1 # ', default=1, type=float, metavar='N', help=('minimum generation length'))
   match_source_len: 0 #', default=False, action='store_true', help=('generations should match the source length'))
   no_early_stop: 0 # ', action='store_true', help='deprecated')
