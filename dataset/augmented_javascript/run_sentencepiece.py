@@ -30,7 +30,7 @@ def make_corpus(input, output):
 
 
 def spm_train(
-    input: str, model_prefix: str, vocab_size: int, character_coverage=1.0, model_type='unigram'
+    input: str, model_prefix: str, vocab_size: int, character_coverage=0.9995, model_type='unigram'
 ):  # , input_sentence_size: int, shuffle_input_sentence: str):
     # command = f"--input={input} --model_prefix={model_prefix} --vocab_size={vocab_size} --character_coverage={character_coverage} --model_type={model_type} --input_sentence_size={input_sentence_size} --shuffle_input_sentence={shuffle_input_sentence}"
     command = f"--input={input} --model_prefix={model_prefix} --vocab_size={vocab_size} " \
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     parser.add_argument("--vocab-size", type=int, default=8000, help='token dictionary size')
     parser.add_argument("--src-dir", type=str, default='~/.ncc/augmented_javascript/raw', help='source data')
     parser.add_argument("--tgt-dir", type=str, default='~/.ncc/augmented_javascript/contracode/data-raw', help='save dir for sentencepiece bpe models or save files')
-    parser.add_argument("--model-type", type=str, default='bpe',  help='source data')
+    parser.add_argument("--model-type", type=str, default='unigram',  help='source data')
     parser.add_argument("--model-prefix", type=str, default='csnjs_8k_9995p_unigram_url',  help='source data')
 
     # parser.add_argument("--bpe-dir", type=str, default='wordpiece_bpe', help='wordpiece_bpe modal save direction')
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     input = os.path.join(args.src_dir, 'javascript_dedupe_definitions_nonoverlap_v2_train.jsonl')
     output = os.path.join(args.src_dir, 'javascript_dedupe_definitions_nonoverlap_v2_train.txt')
     # 1. make corpus
-    make_corpus(input, output)
+    # make_corpus(input, output)
     # exit()
     # 2. spm_train
     model_prefix = os.path.join(args.tgt_dir, args.model_prefix)
