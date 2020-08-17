@@ -22,6 +22,8 @@ from ncc.models.hub_interface import RobertaHubInterface
 from ncc.modules.code2vec.contracode_encoder import CodeEncoder, CodeEncoderLSTM
 from ncc import LOGGER
 
+DEFAULT_MAX_SOURCE_POSITIONS = 1e5
+
 
 @register_model('contracode_moco')
 class ContraCodeMoCo(FairseqMoCoModel):
@@ -50,13 +52,14 @@ class ContraCodeMoCo(FairseqMoCoModel):
         self.queue = nn.functional.normalize(self.queue, dim=0)
         self.register_buffer("queue_ptr", torch.zeros(1, dtype=torch.long))
 
-
     @classmethod
     def build_model(cls, args, config, task):
         """Build a new model instance."""
 
         # make sure all arguments are present
         # base_architecture(args)
+        max_source_positions = args['model']['max_source_positions'] if args['model'][
+            'max_source_positions'] else DEFAULT_MAX_SOURCE_POSITIONS
 
         if 'max_positions' not in args['model']:
             args['model']['max_positions'] = args['task']['tokens_per_sample']
@@ -65,27 +68,28 @@ class ContraCodeMoCo(FairseqMoCoModel):
             pass
 
         elif args['model']['encoder_type'] == "lstm":
-            encoder_q = CodeEncoderLSTM(args, dictionary=task.source_dictionary,
-                # n_tokens=n_tokens,
+            encoder_q = CodeEncoderLSTM(
+                dictionary=task.source_dictionary,
                 embed_dim=args['model']['encoder_embed_dim_q'],
                 hidden_size=args['model']['encoder_hidden_size_q'],
-                # d_rep=d_rep,
                 num_layers=args['model']['encoder_layers_q'],
-                # dropout=dropout,
-                # padding_idx=padding_idx,
-                project='hidden'
+                dropout_in=args['model']['encoder_dropout_in_q'],
+                dropout_out=args['model']['encoder_dropout_out_q'],
+                bidirectional=bool(args['model']['encoder_bidirectional_q']),
+                # pretrained_embed=pretrained_encoder_embed,
+                max_source_positions=max_source_positions
             )
-
-            encoder_k = CodeEncoderLSTM(args, dictionary=task.source_dictionary,
-                                        # n_tokens=n_tokens,
-                                        embed_dim=args['model']['encoder_embed_dim_k'],
-                                        hidden_size=args['model']['encoder_hidden_size_k'],
-                                        # d_rep=d_rep,
-                                        num_layers=args['model']['encoder_layers_k'],
-                                        # dropout=dropout,
-                                        # padding_idx=padding_idx,
-                                        project='hidden'
-                                        )
+            encoder_k = CodeEncoderLSTM(
+                dictionary=task.source_dictionary,
+                embed_dim=args['model']['encoder_embed_dim_k'],
+                hidden_size=args['model']['encoder_hidden_size_k'],
+                num_layers=args['model']['encoder_layers_k'],
+                dropout_in=args['model']['encoder_dropout_in_k'],
+                dropout_out=args['model']['encoder_dropout_out_k'],
+                bidirectional=bool(args['model']['encoder_bidirectional_k']),
+                # pretrained_embed=pretrained_encoder_embed,
+                max_source_positions=max_source_positions
+            )
 
         return cls(args, encoder_q, encoder_k)
 

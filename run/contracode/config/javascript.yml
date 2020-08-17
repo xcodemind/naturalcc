@@ -118,22 +118,27 @@ model:
 #  encoder_attention_heads_k: 12 # type=int, metavar='N', help='num encoder attention heads'
 #  encoder_normalize_before_k: 0 # action='store_true', help='apply layernorm before each encoder block'
 #  encoder_learned_pos_k: 0 # action='store_true', help='use learned positional embeddings in the encoder'
-
+  max_source_positions: 1024
 #  LSTM
   encoder_embed_dim_q: 512 #', type=int, metavar='N', help='encoder embedding dimension'
   encoder_embed_path_q: ~ #', type=str, metavar='STR', help='path to pre-trained encoder embedding'
   encoder_freeze_embed_q: 0 #', action='store_true', help='freeze encoder embeddings'
   encoder_hidden_size_q: 512 #', type=int, metavar='N', help='encoder hidden size'
   encoder_layers_q: 2 #', type=int, metavar='N', help='number of encoder layers'
-  encoder_bidirectional_q: 0 #, action='store_true', help='make all layers of encoder bidirectional'
+  encoder_bidirectional_q: 1 #, action='store_true', help='make all layers of encoder bidirectional'
+  encoder_dropout_in_q: 0.1
+  encoder_dropout_out_q: 0.1
 
   encoder_embed_dim_k: 512 #', type=int, metavar='N', help='encoder embedding dimension'
   encoder_embed_path_k: ~ #', type=str, metavar='STR', help='path to pre-trained encoder embedding'
   encoder_freeze_embed_k: 0 #', action='store_true', help='freeze encoder embeddings'
   encoder_hidden_size_k: 512 #', type=int, metavar='N', help='encoder hidden size'
   encoder_layers_k: 2 #', type=int, metavar='N', help='number of encoder layers'
-  encoder_bidirectional_k: 0 #, action='store_true', help='make all layers of encoder bidirectional'
+  encoder_bidirectional_k: 1 #, action='store_true', help='make all layers of encoder bidirectional'
+  encoder_dropout_in_k: 0.1
+  encoder_dropout_out_k: 0.1
 
+  project: hidden
 
   decoder_embed_path: '' # type=str, metavar='STR', help='path to pre-trained decoder embedding'
   decoder_embed_dim: 0 # type=int, metavar='N', help='decoder embedding dimension'
