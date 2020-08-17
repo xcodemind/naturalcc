@@ -255,12 +255,12 @@ class FairseqTask(object):
         self, models, args,
         seq_gen_cls=None, extra_gen_cls_kwargs=None
     ):
-        if getattr(args, "score_reference", False):
+        if getattr(args['eval'], "score_reference", False):
             from ncc.eval.sequence_scorer import SequenceScorer
 
             return SequenceScorer(
                 self.target_dictionary,
-                compute_alignment=getattr(args, "print_alignment", False),
+                compute_alignment=getattr(args['eval'], "print_alignment", False),
             )
 
         from ncc.eval.sequence_generator import (
@@ -319,7 +319,7 @@ class FairseqTask(object):
             search_strategy = search.BeamSearch(self.target_dictionary)
 
         if seq_gen_cls is None:
-            if getattr(args, "print_alignment", False):
+            if getattr(args['eval'], "print_alignment", False):
                 seq_gen_cls = SequenceGeneratorWithAlignment
             else:
                 seq_gen_cls = SequenceGenerator
