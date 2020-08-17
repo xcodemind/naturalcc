@@ -122,7 +122,8 @@ def _main(args, output_file):
     num_sentences = 0
     has_target = True
     wps_meter = TimeMeter()
-    for sample in tqdm(progress, total=len(progress)):
+    # for sample in tqdm(progress, total=len(progress)):
+    for sample in progress:
         torch.cuda.empty_cache()
         sample = utils.move_to_cuda(sample) if use_cuda else sample
         if 'net_input' not in sample:
@@ -219,6 +220,8 @@ def _main(args, output_file):
                             scorer[metric].add_string(target_str, hypo_str)
                         else:
                             scorer[metric].add(target_tokens, hypo_tokens)
+                print('Ref >> {}'.format(target_str))
+                print('Hyp >> {}'.format(hypo_str))
 
         wps_meter.update(num_generated_tokens)
         progress.log({'wps': round(wps_meter.avg)})
@@ -251,4 +254,8 @@ def cli_main():
 
 
 if __name__ == '__main__':
+    """
+    device: v100 - RAM 16GB
+    nohup python -m run.summarization.lstm2lstm.summarize > run/summarization/lstm2lstm/ruby_eval.log 2>&1 &
+    """
     cli_main()
