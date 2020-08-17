@@ -28,7 +28,7 @@ EVAL_BLEU_ORDER = 4
 
 
 def load_langpair_dataset(
-        args,
+    args,
     programming_langs,
     data_path, split,
     src, src_dict,
@@ -183,8 +183,8 @@ class UniversalSummarizationTask(FairseqTask):
             raise Exception('Could not infer language pair, please provide it explicitly')
 
         # load dictionaries
-        src_dict = cls.load_dictionary(os.path.join(paths[0], 'all.dict.json'))
-        tgt_dict = cls.load_dictionary(os.path.join(paths[0], 'all.dict.json'))
+        src_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['source_lang'])))
+        tgt_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['target_lang'])))
 
         assert src_dict.pad() == tgt_dict.pad()
         assert src_dict.eos() == tgt_dict.eos()
