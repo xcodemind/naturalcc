@@ -6,6 +6,7 @@
 import os
 import json
 import numpy as np
+from argparse import Namespace
 from ncc.logging import metrics
 import itertools
 from ncc import LOGGER
@@ -30,13 +31,13 @@ EVAL_BLEU_ORDER = 4
 
 
 def load_langpair_dataset(
-        data_path, split,
-        src, src_dict,
-        tgt, tgt_dict,
-        combine, dataset_impl, upsample_primary,
-        left_pad_source, left_pad_target, max_source_positions,
-        max_target_positions, prepend_bos=False, load_alignments=False,
-        truncate_source=False, append_source_id=False,
+    data_path, split,
+    src, src_dict,
+    tgt, tgt_dict,
+    combine, dataset_impl, upsample_primary,
+    left_pad_source, left_pad_target, max_source_positions,
+    max_target_positions, prepend_bos=False, load_alignments=False,
+    truncate_source=False, append_source_id=False,
 ):
     def split_exists(split, src, data_path):
         filename = os.path.join(data_path, '{}.{}'.format(split, src))  # -{}.{} , tgt, lang
@@ -169,8 +170,8 @@ class SummarizationTask(FairseqTask):
 
     @classmethod
     def build_dictionary(
-            cls, filenames, tokenize_func=tokenize_string,
-            workers=1, threshold=-1, nwords=-1, padding_factor=8
+        cls, filenames, tokenize_func=tokenize_string,
+        workers=1, threshold=-1, nwords=-1, padding_factor=8
     ):
         """Build the dictionary
 
@@ -242,7 +243,7 @@ class SummarizationTask(FairseqTask):
             # The gen_args parameters have been set in the yml file
             # gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
             # self.sequence_generator = self.build_generator(Namespace(**gen_args))
-            self.sequence_generator = self.build_generator(args)
+            self.sequence_generator = self.build_generator([model], args)
         return model
 
     def valid_step(self, sample, model, criterion):
