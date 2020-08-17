@@ -85,8 +85,8 @@ distributed_training:
 
 
 task:
-#  data: ~/.ncc/202008/summarization/data-raw/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
-  data: ~/.ncc/202008/summarization/data-mmap/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+#  data: ~/.ncc/multi/summarization/data-raw/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/multi/summarization/data-mmap/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 
   # for summarization
   source_lang: code_tokens
@@ -100,7 +100,7 @@ task:
   truncate_source: 0 #', action='store_true', default=False, help='truncate source to max-source-positions'
 
   # options for reporting BLEU during validation
-  eval_bleu: 0 #action='store_true', help='evaluation with BLEU scores'
+  eval_bleu: 1 #action='store_true', help='evaluation with BLEU scores'
   eval_bleu_detok: space #', type=str, default="space", help='detokenizer before computing BLEU (e.g., "moses"); required if using --eval-bleu; use "space" to disable detokenization; see fairseq.data.encoders for other options'
   eval_bleu_detok_args: ~ #', type=str, metavar='JSON', help='args for building the tokenizer, if needed'
   eval_tokenized_bleu: 0 #', action='store_true', default=False, help='if setting, we compute tokenized BLEU instead of sacrebleu'
@@ -108,7 +108,7 @@ task:
   eval_bleu_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
   eval_bleu_print_samples: 0 #', action='store_true', help='print sample generations during validation'
 
-#
+  append_eos_to_target: 1 # default=True, append eos to the end of target sentence for summarization task
   num_sample: 200 # we sample {num_sample} sub-paths from all code path-modality data
 
 
@@ -142,7 +142,7 @@ model:
   decoder_dropout_out: 0.2 #', type=float, metavar='D', help='dropout probability for decoder output'
   # network: decoder
 #  attn_type: ~ # ~, general, dot, mlp, intra
-#  attn_unit: 512 # （固定，不要调）
+#  attn_multit: 512 # （固定，不要调）
 #  self_attn_size: 50 # （固定，不要调）
   #  intra_attn_eps: 1e-12
   pointer: False # pointer-generator, True, False
@@ -154,13 +154,13 @@ model:
 
 
 optimization:
-  max_epoch: 100 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
+  max_epoch: 0 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
   max_update: 0 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
   clip_norm: 25 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
     - 1
   lr: # '--learning-rate', default='0.25', type=eval_str_list, metavar='LR_1,LR_2,...,LR_N', help='learning rate for the first N epochs; all epochs >N using LR_N (note: this may be interpreted differently depending on --lr-scheduler)'
-    - 0.005
+    - 0.001
   min_lr: -1 # default=-1, type=float, metavar='LR', help='stop training when the learning rate reaches this minimum'
   use_bmuf: 1 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
 
@@ -205,13 +205,13 @@ checkpoint:
   keep_last_epochs: -1 # type=int, default=-1, metavar='N', help='keep last N epoch checkpoints'
   keep_best_checkpoints: -1 # type=int, default=-1, metavar='N', help='keep best N checkpoints based on scores'
   no_save: 0 # action='store_true', help='don\'t save models or checkpoints'
-  no_epoch_checkpoints: 0 # action='store_true', help='only store last and best checkpoints'
+  no_epoch_checkpoints: 1 # action='store_true', help='only store last and best checkpoints'
   no_last_checkpoints: 0 # action='store_true', help='don\'t store last checkpoints'
   no_save_optimizer_state: ~ # action='store_true', help='don\'t save optimizer-state as part of checkpoint'
   best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
   patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
-  save_dir: ~/.ncc/202008/summarization/data-mmap/ruby/seq2seq/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
+  save_dir: ~/.ncc/multi/summarization/data-mmap/ruby/seq2seq/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
   model_name_or_path: ~ # default=None, type=str, help="The model checkpoint for weights initialization. Leave None if you want to train a model from scratch.",
   cache_dir: ~ # default=None, type=str, help="Optional directory to store the pre-trained models downloaded from s3 (instead of the default one)",
@@ -223,7 +223,7 @@ checkpoint:
 
 
 eval:
-  path: ~/.ncc/202008/summarization/data-mmap/ruby/seq2seq/checkpoints/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  path: ~/.ncc/multi/summarization/data-mmap/ruby/seq2seq/checkpoints/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
   quiet: 1 # ', action='store_true', help='only print final scores'
   results_path: ~ # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'
