@@ -337,6 +337,7 @@ def cli_main():
 if __name__ == '__main__':
     """
     device: v100 - RAM 16GB
-    nohup python -m run.summarization.lstm2lstm.train -l ruby > run/summarization/lstm2lstm/ruby.log 2>&1 &
+    nohup python -m run.summarization.lstm2lstm.train -l ruby > run/summarization/lstm2lstm/ruby.multi.log 2>&1 &
+    nohup python -m run.summarization.lstm2lstm.train -l ruby > run/summarization/lstm2lstm/ruby.uni.log 2>&1 &
     """
     cli_main()
