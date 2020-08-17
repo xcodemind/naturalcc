@@ -41,6 +41,8 @@ class SacrebleuScorer(object):
     >>> bleu_metric.add_string(ref='The dog bit the man.', pred='The dog bit the man.') # 100.00000000000004
     >>> bleu_metric.add_string(ref='The dog had bit the man.', pred='The dog bit the man.') # 51.15078115793242
     >>> bleu_score = bleu_metric.score() # avg: 75.35497352995401
+    >>> bleu_score
+    75.35497352995401
 
     References:
     >>> import sacrebleu
@@ -48,6 +50,7 @@ class SacrebleuScorer(object):
     >>> sys = ['The dog bit the man.']
     >>> bleu = sacrebleu.corpus_bleu(sys, refs)
     >>> bleu.score # 100.00000000000004
+    100.00000000000004
     """
 
     def __init__(self):
