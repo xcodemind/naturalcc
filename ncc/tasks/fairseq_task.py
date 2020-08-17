@@ -255,7 +255,7 @@ class FairseqTask(object):
         self, models, args,
         seq_gen_cls=None, extra_gen_cls_kwargs=None
     ):
-        if getattr(args['eval'], "score_reference", False):
+        if args['eval']['score_reference']:
             from ncc.eval.sequence_scorer import SequenceScorer
 
             return SequenceScorer(
@@ -269,13 +269,13 @@ class FairseqTask(object):
         )
 
         # Choose search strategy. Defaults to Beam Search.
-        sampling = getattr(args['eval'], "sampling", False)
-        sampling_topk = getattr(args['eval'], "sampling_topk", -1)
-        sampling_topp = getattr(args['eval'], "sampling_topp", -1.0)
-        diverse_beam_groups = getattr(args['eval'], "diverse_beam_groups", -1)
-        diverse_beam_strength = getattr(args['eval'], "diverse_beam_strength", 0.5)
-        match_source_len = getattr(args['eval'], "match_source_len", False)
-        diversity_rate = getattr(args['eval'], "diversity_rate", -1)
+        sampling = args['eval']['sampling']  # getattr(args, "sampling", False)
+        sampling_topk = args['eval']['sampling_topk']  # getattr(args, "sampling_topk", -1)
+        sampling_topp = args['eval']['sampling_topp']  # getattr(args, "sampling_topp", -1.0)
+        diverse_beam_groups = args['eval']['diverse_beam_groups']  # getattr(args, "diverse_beam_groups", -1)
+        diverse_beam_strength = args['eval']['diverse_beam_strength']  # getattr(args, "diverse_beam_strength", 0.5)
+        match_source_len = args['eval']['match_source_len']  # getattr(args, "match_source_len", False)
+        diversity_rate = args['eval']['diversity_rate']  # getattr(args, "diversity_rate", -1)
         if (
             sum(
                 int(cond)
@@ -327,16 +327,16 @@ class FairseqTask(object):
         return seq_gen_cls(
             models,
             self.target_dictionary,
-            beam_size=getattr(args['eval'], "beam", 5),
-            max_len_a=getattr(args['eval'], "max_len_a", 0),
-            max_len_b=getattr(args['eval'], "max_len_b", 200),
-            min_len=getattr(args['eval'], "min_len", 1),
-            normalize_scores=(not getattr(args['eval'], "unnormalized", False)),
-            len_penalty=getattr(args['eval'], "lenpen", 1),
-            unk_penalty=getattr(args['eval'], "unkpen", 0),
-            temperature=getattr(args['eval'], "temperature", 1.0),
-            match_source_len=getattr(args['eval'], "match_source_len", False),
-            no_repeat_ngram_size=getattr(args['eval'], "no_repeat_ngram_size", 0),
+            beam_size=args['eval']['beam'],  # getattr(args, "beam", 5),
+            max_len_a=args['eval']['max_len_a'],  # getattr(args, "max_len_a", 0),
+            max_len_b=args['eval']['max_len_b'],  # getattr(args, "max_len_b", 200),
+            min_len=args['eval']['min_len'],  # getattr(args, "min_len", 1),
+            normalize_scores=(not args['eval']['unnormalized']),  # (not getattr(args, "unnormalized", False)),
+            len_penalty=args['eval']['lenpen'],  # getattr(args, "lenpen", 1),
+            unk_penalty=args['eval']['unkpen'],  # getattr(args, "unkpen", 0),
+            temperature=args['eval']['temperature'],  # getattr(args, "temperature", 1.0),
+            match_source_len=args['eval']['match_source_len'],  # getattr(args, "match_source_len", False),
+            no_repeat_ngram_size=args['eval']['no_repeat_ngram_size'],  # getattr(args, "no_repeat_ngram_size", 0),
             search_strategy=search_strategy,
             **extra_gen_cls_kwargs,
         )
