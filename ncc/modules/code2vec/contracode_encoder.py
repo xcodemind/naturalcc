@@ -93,7 +93,7 @@ class CodeEncoderLSTM(FairseqEncoder):
 
         self.config = {k: v for k, v in locals().items() if k != "self"}
         self.embed_tokens = nn.Embedding(num_embeddings, embed_dim)
-        # self.pos_encoder = PositionalEncoding(embed_dim, dropout, max_len=9000)
+        self.pos_encoder = PositionalEncoding(embed_dim, dropout, max_len=9000)
 
         # Currently using 2 layers of LSTM
         print(f"CodeEncoderLSTM: Creating BiLSTM with {num_layers} layers, {embed_dim} hidden and input size")
@@ -103,10 +103,10 @@ class CodeEncoderLSTM(FairseqEncoder):
         if project:
             if project == "sequence_mean" or project == "sequence_mean_nonpad":
                 project_in = 2 * hidden_size
-                self.project_layer = nn.Sequential(nn.Linear(project_in, hidden_size), nn.ReLU(), nn.Linear(embed_dim, hidden_size))
+                self.project_layer = nn.Sequential(nn.Linear(project_in, hidden_size), nn.ReLU(), nn.Linear(embed_dim, 128)) # 218->hidden_size
             elif project == "hidden":
                 project_in = num_layers * 2 * hidden_size
-                self.project_layer = nn.Sequential(nn.Linear(project_in, hidden_size), nn.ReLU(), nn.Linear(embed_dim, hidden_size))
+                self.project_layer = nn.Sequential(nn.Linear(project_in, hidden_size), nn.ReLU(), nn.Linear(embed_dim, 128))
             # elif project == "hidden_identity":
             #     pass
             else:
@@ -115,22 +115,23 @@ class CodeEncoderLSTM(FairseqEncoder):
 
     def forward(self, src_tokens, src_lengths, no_project_override=False):
         self.lstm.flatten_parameters()
-        B, T = src_tokens.size(0), src_tokens.size(1)
+        # B, T = src_tokens.size(0), src_tokens.size(1)
         src_emb = self.embed_tokens(src_tokens).transpose(0, 1) * math.sqrt(self.config["hidden_size"])
-        # src_emb = self.pos_encoder(src_emb)
+        src_emb = self.pos_encoder(src_emb)
 
         # Compute sequence lengths and pack src_emb
         packed_x = torch.nn.utils.rnn.pack_padded_sequence(src_emb, src_lengths, enforce_sorted=False)
+
         packed_outs, (final_hiddens, final_cells) = self.lstm(packed_x)  # TxBxD
         x, _ = torch.nn.utils.rnn.pad_packed_sequence(packed_outs)
 
         encoder_padding_mask = src_tokens.eq(self.padding_idx).t()
 
-        if x.size(0) != T:
-            print("WARNING: unexpected size of encoder output: out.shape=", x.shape, "x.shape=", src_tokens.shape,
-                  "src_emb.shape=", src_emb.shape)
-            print("lengths.max()=", src_lengths.max())
-            print("lengths.min()=", src_lengths.min())
+        # if x.size(0) != T:
+        #     print("WARNING: unexpected size of encoder output: out.shape=", x.shape, "x.shape=", src_tokens.shape,
+        #           "src_emb.shape=", src_emb.shape)
+        #     print("lengths.max()=", src_lengths.max())
+        #     print("lengths.min()=", src_lengths.min())
 
 
         if not no_project_override and self.config["project"]:

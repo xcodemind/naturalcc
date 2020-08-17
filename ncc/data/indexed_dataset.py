@@ -88,7 +88,7 @@ def make_dataset(path, impl, modality='text', fix_lua_indexing=False, dictionary
         elif modality in ['tok', 'code_tokens', 'docstring_tokens']:
             return IndexedTokenDataset(path, dictionary)
         elif modality == 'javascript_augmented':
-            return IndexedJavascriptAugmentedDataset(path, dictionary)
+            return IndexedJavascriptAugmentedDataset(path, dictionary, append_eos=False)
         else:
             assert dictionary is not None
             return IndexedRawTextDataset(path, dictionary)
@@ -596,7 +596,7 @@ class IndexedTokenDataset(FairseqDataset):
 
 
 class IndexedJavascriptAugmentedDataset(FairseqDataset):
-    def __init__(self, path, dictionary, append_eos=True, reverse_order=False):
+    def __init__(self, path, dictionary, append_eos=False, reverse_order=False):
         self.examples_list = []
         self.lines = []
         self.sizes = []
@@ -605,50 +605,20 @@ class IndexedJavascriptAugmentedDataset(FairseqDataset):
         self.read_data(path, dictionary)
         self.size = len(self.examples_list)
 
-    def read_data(self, path, dictionary):
-        import gzip
-        import pickle
-        if path.endswith(".gz"):
-            with gzip.open(path, "rb") as f:
-                examples = pickle.load(f)
-        elif path.endswith(".pickle"):
-            with open(path, 'rb') as f:
-                examples = pickle.load(f)
-        else:
-            raise NotImplementedError
-        for example in examples:
-            programs = []
-            for program in example:
-                program = normalize_program(program)
-                program = dictionary.encode_tok(
-                            program, add_if_not_exist=False,
-                            append_eos=self.append_eos, reverse_order=self.reverse_order,
-                        ).long()
-                programs.append(program)
-            self.sizes.append(len(programs[0]))
-            self.examples_list.append(programs)
-        self.sizes = np.array(self.sizes)
-                # # Encode as ids with sentencepiece
-                # if self.subword_regularization_alpha:
-                #     # using subword regularization: https://arxiv.org/pdf/1804.10959.pdf
-                #     # NOTE: what is the second argument here (-1)?
-                #     program = self.sp.SampleEncodeAsIds(program, -1, self.subword_regularization_alpha)
-                # else:
-                #     # using the best decoding
-                #     program = self.sp.EncodeAsIds(program)
-                #
-                # return torch.LongTensor([self.bos_id] + program[: (self.max_length - 2)] + [self.eos_id])
-        # with open(path, 'r', encoding='utf-8') as f:
-        #     for line in f:
-        #         line = ujson.loads(line)
-        #         self.lines.append(line)
-        #         tokens = dictionary.encode_tok(
-        #             line, add_if_not_exist=False,
-        #             append_eos=self.append_eos, reverse_order=self.reverse_order,
-        #         ).long()
-        #         self.examples_list.append(tokens)
-        #         self.sizes.append(len(tokens))
-        # self.sizes = np.array(self.sizes)
+    def read_data(self, path, dictionary, max_source_positions=1024):
+        with open(path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = ujson.loads(line)
+                programs = []
+                for program in line:
+                    # TODO
+                    program = [dictionary.bos_word] + program[: max_source_positions-2] + [dictionary.eos_word]
+                    program = dictionary.encode_line(program, line_tokenizer=None, add_if_not_exist=False,
+                                                  append_eos=self.append_eos, reverse_order=self.reverse_order).long()
+                    programs.append(program)
+
+                self.examples_list.append(programs)
+                self.sizes.append(len(programs[0]))
 
     def check_index(self, i):
         if i < 0 or i >= self.size:

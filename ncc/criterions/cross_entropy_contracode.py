@@ -3,15 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import math
-
 import torch.nn.functional as F
 
-# from fairseq import metrics, utils
 from ncc.logging import metrics
-from ncc.utils import utils
 from ncc.criterions import FairseqCriterion, register_criterion
-import numpy as np
 
 
 @register_criterion('cross_entropy_contracode')
@@ -32,17 +27,13 @@ class CrossEntropyContraCodeCriterion(FairseqCriterion):
         net_output = model(**sample['net_input'])
         output, target = net_output
         loss = F.cross_entropy(output, target, reduction='sum' if reduce else 'none')
+        sample_size = sample['id'].size(0)
         logging_output = {
             'loss': loss.data,
+            # 'ntokens': sample['ntokens'],
+            # 'nsentences': sample['target'].size(0),
+            'sample_size': sample_size,
         }
-        # loss, _ = self.compute_loss(model, net_output, sample, reduce=reduce)
-        sample_size = sample['id'].size(0)
-        # logging_output = {
-        #     'loss': loss.data,
-        #     'ntokens': sample['ntokens'],
-        #     'nsentences': sample['target'].size(0),
-        #     'sample_size': sample_size,
-        # }
         return loss, sample_size, logging_output
 
     # def compute_loss(self, model, net_output, sample, reduce=True):

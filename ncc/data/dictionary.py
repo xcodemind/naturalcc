@@ -33,7 +33,7 @@ class Dictionary(object):
         extra_special_symbols=None,
         # attr: str = None,  # special attribute may need extra_special_symbols
     ):
-        self.unk_word, self.pad_word, self.eos_word = unk, pad, eos
+        self.bos_word, self.unk_word, self.pad_word, self.eos_word = bos, unk, pad, eos
         self.symbols = []
         self.count = []
         self.indices = {}
@@ -410,6 +410,10 @@ class Dictionary(object):
         reverse_order=False,
     ):
         words = line_tokenizer(line) if line_tokenizer is not None else line
+        # if isinstance(line_tokenizer, xxs):
+        #     words = line_tokenizer(line)
+        # else:
+        #     words = line_tokenizer(line)
         if reverse_order:
             words = list(reversed(words))
         nwords = len(words)

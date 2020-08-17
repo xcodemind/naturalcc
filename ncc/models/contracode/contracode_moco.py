@@ -41,15 +41,12 @@ class ContraCodeMoCo(FairseqMoCoModel):
         self.K = args['model']['moco_num_keys']
         self.m = args['model']['moco_momentum']
         self.T = args['model']['moco_temperature']
-        # # We follow BERT's random weight initialization
-        # self.apply(init_bert_params)
 
-        # self.classification_heads = nn.ModuleDict()
         for param_q, param_k in zip(self.encoder_q.parameters(), self.encoder_k.parameters()):
             param_k.data.copy_(param_q.data)  # initialize
             param_k.requires_grad = False  # not update by gradient
 
-        self.register_buffer("queue", torch.randn(args['model']['encoder_hidden_size_q'], self.K))
+        self.register_buffer("queue", torch.randn(128, self.K)) #args['model']['encoder_hidden_size_q']
         self.queue = nn.functional.normalize(self.queue, dim=0)
         self.register_buffer("queue_ptr", torch.zeros(1, dtype=torch.long))
 
@@ -61,13 +58,9 @@ class ContraCodeMoCo(FairseqMoCoModel):
         # make sure all arguments are present
         # base_architecture(args)
 
-        # if not hasattr(args, 'max_positions'):
         if 'max_positions' not in args['model']:
             args['model']['max_positions'] = args['task']['tokens_per_sample']
 
-        # encoder_params = {}
-        # q_encoder = cls.make_encoder(args, task.source_dictionary)
-        # k_encoder = cls.make_encoder(args, task.source_dictionary)
         if args['model']['encoder_type'] == "transformer":
             pass
 
@@ -80,7 +73,7 @@ class ContraCodeMoCo(FairseqMoCoModel):
                 num_layers=args['model']['encoder_layers_q'],
                 # dropout=dropout,
                 # padding_idx=padding_idx,
-                project='hidden' # 'hidden'
+                project='hidden'
             )
 
             encoder_k = CodeEncoderLSTM(args, dictionary=task.source_dictionary,
@@ -91,44 +84,10 @@ class ContraCodeMoCo(FairseqMoCoModel):
                                         num_layers=args['model']['encoder_layers_k'],
                                         # dropout=dropout,
                                         # padding_idx=padding_idx,
-                                        project='hidden'  #
+                                        project='hidden'
                                         )
 
         return cls(args, encoder_q, encoder_k)
-
-    # def make_encoder(self, args, dictionary): #, d_model, d_rep, pad_id=None, encoder_type="transformer", lstm_project_mode="hidden", n_encoder_layers=6, dropout=0.1, **kwargs
-    #     if args['model']['encoder_type'] == "transformer":
-    #         # return CodeEncoder(dictionary, project=True, pad_id=pad_id, d_model=d_model, d_rep=d_rep,
-    #         #                    n_encoder_layers=n_encoder_layers, **kwargs)
-    #         pass
-    #     elif args['model']['encoder_type'] == "lstm":
-    #         return CodeEncoderLSTM(args, dictionary=dictionary,
-    #             # n_tokens=n_tokens,
-    #             embed_dim=args['model']['encoder_embed_dim'],
-    #             hidden_size=args['model']['encoder_hidden_size'],
-    #             d_rep=d_rep,
-    #             n_encoder_layers=n_encoder_layers,
-    #             # dropout=dropout,
-    #             padding_idx=padding_idx,
-    #             project=lstm_project_mode
-    #         )
-
-        # def __init__(
-        #         self,
-        #         dictionary,
-        #         # Deeptyper set d_model to 200
-        #         embed_dim=512,
-        #         hidden_size=512,
-        #         d_rep=256,
-        #         num_layers=2,
-        #         dropout=0.1,
-        #         padding_idx=None,
-        #         project=False,
-        #         max_source_positions=DEFAULT_MAX_SOURCE_POSITIONS
-        #
-        # ):
-        # else:
-        #     raise ValueError
 
     @torch.no_grad()
     def _momentum_update_key_encoder(self):
@@ -218,30 +177,6 @@ class ContraCodeMoCo(FairseqMoCoModel):
             x = self.classification_heads[classification_head_name](x)
         return x, extra
 
-    # def register_classification_head(self, name, num_classes=None, inner_dim=None, **kwargs):
-    #     """Register a classification head."""
-    #     if name in self.classification_heads:
-    #         prev_num_classes = self.classification_heads[name].out_proj.out_features
-    #         prev_inner_dim = self.classification_heads[name].dense.out_features
-    #         if num_classes != prev_num_classes or inner_dim != prev_inner_dim:
-    #             LOGGER.warning(
-    #                 're-registering head "{}" with num_classes {} (prev: {}) '
-    #                 'and inner_dim {} (prev: {})'.format(
-    #                     name, num_classes, prev_num_classes, inner_dim, prev_inner_dim
-    #                 )
-    #             )
-    #     self.classification_heads[name] = RobertaClassificationHead(
-    #         self.args['model']['encoder_embed_dim'],
-    #         inner_dim or self.args['model']['encoder_embed_dim'],
-    #         num_classes,
-    #         self.args['task']['pooler_activation_fn'],
-    #         self.args['model']['pooler_dropout'],
-    #     )
-    #
-    # @property
-    # def supported_targets(self):
-    #     return {'self'}
-
     @classmethod
     def from_pretrained(cls, model_name_or_path, checkpoint_file='model.pt', data_name_or_path='.', bpe='gpt2',
                         **kwargs):
@@ -257,103 +192,6 @@ class ContraCodeMoCo(FairseqMoCoModel):
         )
         return RobertaHubInterface(x['args'], x['task'], x['models'][0])
 
-    # def upgrade_state_dict_named(self, state_dict, name):
-    #     super().upgrade_state_dict_named(state_dict, name)
-    # 
-    #     prefix = name + '.' if name != '' else ''
-    #     current_head_names = [] if not hasattr(self, 'classification_heads') else \
-    #         self.classification_heads.keys()
-    # 
-    #     # Handle new classification heads present in the state dict.
-    #     keys_to_delete = []
-    #     for k in state_dict.keys():
-    #         if not k.startswith(prefix + 'classification_heads.'):
-    #             continue
-    # 
-    #         head_name = k[len(prefix + 'classification_heads.'):].split('.')[0]
-    #         num_classes = state_dict[prefix + 'classification_heads.' + head_name + '.out_proj.weight'].size(0)
-    #         inner_dim = state_dict[prefix + 'classification_heads.' + head_name + '.dense.weight'].size(0)
-    # 
-    #         # if getattr(self.args, 'load_checkpoint_heads', False):
-    #         if 'load_checkpoint_heads' in self.args['model']:
-    #             if head_name not in current_head_names:
-    #                 self.register_classification_head(head_name, num_classes, inner_dim)
-    #         else:
-    #             if head_name not in current_head_names:
-    #                 LOGGER.warning(
-    #                     'deleting classification head ({}) from checkpoint '
-    #                     'not present in current model: {}'.format(head_name, k)
-    #                 )
-    #                 keys_to_delete.append(k)
-    #             elif (
-    #                     num_classes != self.classification_heads[head_name].out_proj.out_features
-    #                     or inner_dim != self.classification_heads[head_name].dense.out_features
-    #             ):
-    #                 LOGGER.warning(
-    #                     'deleting classification head ({}) from checkpoint '
-    #                     'with different dimensions than current model: {}'.format(head_name, k)
-    #                 )
-    #                 keys_to_delete.append(k)
-    #     for k in keys_to_delete:
-    #         del state_dict[k]
-    # 
-    #     # Copy any newly-added classification heads into the state dict
-    #     # with their current weights.
-    #     if hasattr(self, 'classification_heads'):
-    #         cur_state = self.classification_heads.state_dict()
-    #         for k, v in cur_state.items():
-    #             if prefix + 'classification_heads.' + k not in state_dict:
-    #                 LOGGER.info('Overwriting ' + prefix + 'classification_heads.' + k)
-    #                 state_dict[prefix + 'classification_heads.' + k] = v
-    # 
-    # def upgrade_state_dict_named_for_summarization(self, state_dict, name):
-    #     super().upgrade_state_dict_named(state_dict, name)
-    # 
-    #     prefix = name + '.' if name != '' else ''
-    #     current_head_names = [] if not hasattr(self, 'classification_heads') else \
-    #         self.classification_heads.keys()
-    # 
-    #     # Handle new classification heads present in the state dict.
-    #     keys_to_delete = []
-    #     for k in state_dict.keys():
-    #         if not k.startswith(prefix + 'classification_heads.'):
-    #             continue
-    # 
-    #         head_name = k[len(prefix + 'classification_heads.'):].split('.')[0]
-    #         num_classes = state_dict[prefix + 'classification_heads.' + head_name + '.out_proj.weight'].size(0)
-    #         inner_dim = state_dict[prefix + 'classification_heads.' + head_name + '.dense.weight'].size(0)
-    # 
-    #         # if getattr(self.args, 'load_checkpoint_heads', False):
-    #         if 'load_checkpoint_heads' in self.args['model']:
-    #             if head_name not in current_head_names:
-    #                 self.register_classification_head(head_name, num_classes, inner_dim)
-    #         else:
-    #             if head_name not in current_head_names:
-    #                 LOGGER.warning(
-    #                     'deleting classification head ({}) from checkpoint '
-    #                     'not present in current model: {}'.format(head_name, k)
-    #                 )
-    #                 keys_to_delete.append(k)
-    #             elif (
-    #                     num_classes != self.classification_heads[head_name].out_proj.out_features
-    #                     or inner_dim != self.classification_heads[head_name].dense.out_features
-    #             ):
-    #                 LOGGER.warning(
-    #                     'deleting classification head ({}) from checkpoint '
-    #                     'with different dimensions than current model: {}'.format(head_name, k)
-    #                 )
-    #                 keys_to_delete.append(k)
-    #     for k in keys_to_delete:
-    #         del state_dict[k]
-    # 
-    #     # Copy any newly-added classification heads into the state dict
-    #     # with their current weights.
-    #     if hasattr(self, 'classification_heads'):
-    #         cur_state = self.classification_heads.state_dict()
-    #         for k, v in cur_state.items():
-    #             if prefix + 'classification_heads.' + k not in state_dict:
-    #                 LOGGER.info('Overwriting ' + prefix + 'classification_heads.' + k)
-    #                 state_dict[prefix + 'classification_heads.' + k] = v
 
 @torch.no_grad()
 def concat_all_gather(tensor):

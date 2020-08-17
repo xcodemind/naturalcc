@@ -17,6 +17,9 @@ from ncc.logging import metrics, progress_bar
 from ncc.utils import checkpoint_utils, distributed_utils
 from ncc.trainer.fair_trainer import Trainer
 from ncc.data import constants
+import numpy as np
+import random
+
 
 if __name__ == '__main__':
     Argues = namedtuple('Argues', 'yaml')
@@ -35,6 +38,20 @@ if __name__ == '__main__':
     args = load_yaml(yaml_file)
     LOGGER.info(args)
 
+    torch.manual_seed(args['common']['seed'])
+    np.random.seed(args['common']['seed'])
+    random.seed(args['common']['seed'])
+
+    task = tasks.setup_task(args)  # task.tokenizer
+    model = task.build_model(args)  # , config
+    criterion = task.build_criterion(args)
+    LOGGER.info(model)
+    LOGGER.info('model {}, criterion {}'.format(args['model']['arch'], criterion.__class__.__name__))
+    LOGGER.info('num. model params: {} (num. trained: {})'.format(
+        sum(p.numel() for p in model.parameters()),
+        sum(p.numel() for p in model.parameters() if p.requires_grad),
+    ))
+
     data_path = os.path.expanduser('~/.ncc/augmented_javascript/contracode/data-raw')
     split = 'test'
     # src_modalities = ['path'] # , 'code'
@@ -42,8 +59,9 @@ if __name__ == '__main__':
     # tgt = 'docstring'
     # tgt_dict = None
     combine = False
-
-    src_dict = FairseqTask.load_dictionary(os.path.join(data_path, 'csnjs_8k_9995p_unigram_url.dict.txt'))
+    src_dict = task.source_dictionary
+    # sp = task.sp
+    # src_dict = task.load_dictionary(os.path.join(data_path, 'csnjs_8k_9995p_unigram_url.dict.txt'))
 
     # src_dict = FairseqTask.load_dictionary(
     #     os.path.join(data_path, 'dict.{}.txt'.format(args['task']['source_lang'])))  # args['task']['source_lang']
@@ -51,7 +69,7 @@ if __name__ == '__main__':
     # src_dict.add_symbol(constants.S_SEP)
     # src_dict.add_symbol(constants.S2S_SEP)
     # src_dict.add_symbol(constants.CLS)
-    src_dict.add_symbol(constants.MASK)
+    # src_dict.add_symbol(constants.MASK)
 
     # tgt_dict.add_symbol(constants.S2S_BOS)
     # tgt_dict.add_symbol(constants.T_MASK)
@@ -73,36 +91,71 @@ if __name__ == '__main__':
     #     load_alignments=args['task']['load_alignments'],
     #     truncate_source=args['task']['truncate_source'],
     # )
-    epoch = 1
-    dataset = load_augmented_code_dataset(args, epoch, data_path, split, src_dict, combine)
-
-
-    data_item = dataset.__getitem__(0)
-    print('data_item: ', data_item)
-    # sys.exit()
-    samples = []
-    for i in range(100):
-        print('i: ', i)
-        data_item = dataset.__getitem__(i)
-        samples.append(data_item)
-    # print('samples: ', samples)
-    # sys.exit()
-    # sys.exit()
-    task = tasks.setup_task(args)  # task.tokenizer
-    model = task.build_model(args)  # , config
-    criterion = task.build_criterion(args)
-    LOGGER.info(model)
-    LOGGER.info('model {}, criterion {}'.format(args['model']['arch'], criterion.__class__.__name__))
-    LOGGER.info('num. model params: {} (num. trained: {})'.format(
-        sum(p.numel() for p in model.parameters()),
-        sum(p.numel() for p in model.parameters() if p.requires_grad),
-    ))
-
     # Build trainer
     trainer = Trainer(args, task, model, criterion)
     # indices = dataset.ordered_indices()
     #
     # sys.exit()
+
+    epoch = 1
+    dataset = load_augmented_code_dataset(args, epoch, data_path, split, src_dict, combine)
+
+    data_item = dataset.__getitem__(4)
+    print('data_item: ', data_item)
+    # exit()
+    samples_0 = []
+    for i in [0, 1, 2, 3]:#range(100): [4,5,6,7], [8,9,10,11]
+        print('i: ', i)
+        data_item = dataset.__getitem__(i)
+        samples_0.append(data_item)
+    batch_0 = collate(
+        samples_0, src_dict=src_dict, program_mode='contrastive',
+        left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
+        # input_feeding=dataset.input_feeding,
+    )
+    log_output = trainer.train_step([batch_0])
+    print('log_output: ', log_output)
+    # ====
+    samples_1 = []
+    for i in [4, 5, 6, 7]:  # range(100): [4,5,6,7], [8,9,10,11]
+        print('i: ', i)
+        data_item = dataset.__getitem__(i)
+        samples_1.append(data_item)
+    batch_1 = collate(
+        samples_1, src_dict=src_dict, program_mode='contrastive',
+        left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
+        # input_feeding=dataset.input_feeding,
+    )
+    log_output = trainer.train_step([batch_1])
+    print('log_output: ', log_output)
+    # ======
+    samples_2 = []
+    for i in [8, 9, 10, 11]:  # range(100): [4,5,6,7], [8,9,10,11]
+        print('i: ', i)
+        data_item = dataset.__getitem__(i)
+        samples_2.append(data_item)
+    batch_2 = collate(
+        samples_2, src_dict=src_dict, program_mode='contrastive',
+        left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
+        # input_feeding=dataset.input_feeding,
+    )
+    log_output = trainer.train_step([batch_2])
+    print('log_output: ', log_output)
+    # =====
+    samples_3 = []
+    for i in [12, 13, 14, 15]:  # range(100): [4,5,6,7], [8,9,10,11]
+        print('i: ', i)
+        data_item = dataset.__getitem__(i)
+        samples_3.append(data_item)
+    batch_3 = collate(
+        samples_3, src_dict=src_dict, program_mode='contrastive',
+        left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
+        # input_feeding=dataset.input_feeding,
+    )
+    log_output = trainer.train_step([batch_3])
+    print('log_output: ', log_output)
+    exit()
+
 
     dataloader = torch.utils.data.DataLoader(
         dataset,
@@ -111,12 +164,8 @@ if __name__ == '__main__':
         num_workers=1  # args['dataset']['num_workers'],
     )
 
-    batch = collate(
-        samples, src_dict=src_dict, program_mode='contrastive',
-        left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
-        # input_feeding=dataset.input_feeding,
-    )
 
+    # exit()
     # batch = collate(
     #     samples, src_dict, tgt_dict,
     #     left_pad_source=dataset.left_pad_source, left_pad_target=dataset.left_pad_target,
@@ -125,8 +174,7 @@ if __name__ == '__main__':
     # # torch.cuda.set_device(0)
     # # batch.cuda()
     # # model.cuda()
-    print(batch)
-    # exit()
+    # print(batch)
     # # model(*batch)
     # # 'src_tokens': input_ids,
     # # 'segment_labels': segment_ids,
@@ -135,9 +183,10 @@ if __name__ == '__main__':
     # model(batch['net_input']['src_tokens'], batch['net_input']['segment_labels'], batch['net_input']['attention_mask'])
     # sys.exit()
 
-    data_iter = iter(dataloader)
-    batch_data = data_iter.__next__()
-    print('batch_data: ', batch_data)
+    # data_iter = iter(dataloader)
+    # batch_data = data_iter.__next__()
+    # batch_data = data_iter.__next__()
+    # print('batch_data: ', batch_data)
     # exit()
     epoch_itr = task.get_batch_iterator(
         dataset=dataset,
@@ -183,7 +232,10 @@ if __name__ == '__main__':
         default_log_format=('tqdm' if not args['common']['no_progress_bar'] else 'simple'),
     )
 
+    # log_output = trainer.train_step([batch])
+    # print('log_output: ', log_output)
     for samples in progress:
-        print('samples: ')
+        print('samples: ', samples)
+        # exit()
         log_output = trainer.train_step(samples)
         print('log_output: ', log_output)

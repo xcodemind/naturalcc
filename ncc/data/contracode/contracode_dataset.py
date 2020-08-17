@@ -6,10 +6,7 @@
 import numpy as np
 import torch
 from ncc.data.fairseq_dataset import FairseqDataset
-from ncc import LOGGER
-import re
 from torch.nn.utils.rnn import pad_sequence
-
 
 
 def collate(samples, src_dict,  program_mode='contrastive', left_pad_source=True, left_pad_target=False):
@@ -52,50 +49,8 @@ def collate(samples, src_dict,  program_mode='contrastive', left_pad_source=True
             'lengths_q': lengths_q,
             'lengths_k': lengths_k,
         },
-        # 'target': masked_ids,
-        # 'ntokens': masked_weights.sum().item(),
-        # 'nsentences': 2,
-        # 'sample_size': masked_ids.size(0),
     }
     return example
-
-    # return X, lengths, None
-    #
-    # # src_tokens = torch.LongTensor([s['src_tokens'] for s in samples])
-    # src_tokens, doc_pad_mask, src_sent_ends = create_src_tok_batch(samples, src_dict.index(constants.S_SEP), src_dict.eos(), src_dict.pad())
-    # doc_pos_tok = torch.LongTensor(doc_pad_mask.size()).fill_(src_dict.index(constants.S_SEP))
-    # doc_pos_tok[doc_pad_mask] = src_dict.pad()
-    #
-    # segment_labels = torch.LongTensor([s['segment_labels'] for s in samples])
-    # # attention_mask_unilm = torch.stack([s['attention_mask_unilm'] for s in samples])
-    # # mask_qkv = []
-    # # for s in samples:
-    # #     if s['mask_qkv']:
-    # #         mask_qkv.append(s['mask_qkv'])
-    # #     else:
-    # #         mask_qkv.append(None)
-    # # mask_qkv = torch.LongTensor([s['mask_qkv'] for s in samples])
-    # masked_ids = torch.LongTensor([s['masked_ids'] for s in samples])
-    # # masked_pos = torch.LongTensor([s['masked_pos'] for s in samples])
-    # masked_weights = torch.LongTensor([s['masked_weights'] for s in samples])
-    #
-    # example = {
-    #     'net_input': {
-    #         'src_tokens': src_tokens,
-    #         'src_sent_ends': src_sent_ends,
-    #         'doc_pad_mask': doc_pad_mask,
-    #         'doc_pos_tok': doc_pos_tok,
-    #         'segment_labels': segment_labels,
-    #         # 'attention_mask_unilm': attention_mask_unilm,
-    #         # 'masked_pos': masked_pos,
-    #         # 'mask_qkv': mask_qkv
-    #     },
-    #     'target': masked_ids,
-    #     'ntokens': masked_weights.sum().item(),
-    #     'nsentences': 2,
-    #     'sample_size': masked_ids.size(0),
-    # }
-    # return example
 
 
 class ContraCodeDataset(FairseqDataset):
@@ -140,15 +95,6 @@ class ContraCodeDataset(FairseqDataset):
             remove_eos_from_source=False, append_eos_to_target=False,
             align_dataset=None,
             append_bos=False, eos=None,
-            # s2s_special_token=False,
-            # pos_shift=False,
-            # max_pred=50,
-            # mask_source_words=False,
-            # skipgram_prb=0.0,
-            # skipgram_size=0.0,
-            # max_len=512,
-            # mask_prob=0.15,
-            # num_qkv=0,
     ):
         self.src = src
         self.src_sizes = np.array(src_sizes)
@@ -159,16 +105,10 @@ class ContraCodeDataset(FairseqDataset):
         self.left_pad_target = left_pad_target
         self.max_source_positions = max_source_positions
         self.max_target_positions = max_target_positions
-        # self.max_len = max_len
-        # self._tril_matrix = torch.tril(torch.ones((max_len, max_len), dtype=torch.long))
-
         self.shuffle = shuffle
         # self.input_feeding = input_feeding
         self.remove_eos_from_source = remove_eos_from_source
         self.append_eos_to_target = append_eos_to_target
-        # self.align_dataset = align_dataset
-        # if self.align_dataset is not None:
-        #     assert self.tgt_sizes is not None, "Both source and target needed when alignments are provided"
         self.append_bos = append_bos
         self.eos = (eos if eos is not None else src_dict.eos())
 
@@ -204,57 +144,6 @@ class ContraCodeDataset(FairseqDataset):
             raise ValueError(f"Invalid program mode {self.program_mode}")
 
         return example
-
-        # # => tensor([1 3 54 654]), self.src.lines[index]=>str('▁Returns ▁a ▁hash ▁in ▁the ...')
-        # src_item = self.src[index]
-        #
-        # # Append EOS to end of tgt sentence if it does not have an EOS
-        # # and remove EOS from end of src sentence if it exists.
-        # # This is useful when we use existing datasets for opposite directions
-        # #   i.e., when we want to use tgt_dataset as src_dataset and vice versa
-        # if self.append_eos_to_target:
-        #     eos = self.tgt_dict.eos() if self.tgt_dict else self.src_dict.eos()
-        #     if self.tgt and self.tgt[index][-1] != eos:
-        #         tgt_item = torch.cat([self.tgt[index], torch.LongTensor([eos])])
-        #
-        # if self.append_bos:
-        #     bos = self.tgt_dict.bos() if self.tgt_dict else self.src_dict.bos()
-        #     if self.tgt and self.tgt[index][0] != bos:
-        #         tgt_item = torch.cat([torch.LongTensor([bos]), self.tgt[index]])
-        #
-        #     bos = self.src_dict.bos()
-        #     if self.src[index][-1] != bos:
-        #         src_item = torch.cat([torch.LongTensor([bos]), self.src[index]])
-        #
-        # if self.remove_eos_from_source:
-        #     eos = self.src_dict.eos()
-        #     if self.src[index][-1] == eos:
-        #         src_item = self.src[index][:-1]
-
-        # example = {
-        #     'src_tokens': input_ids,  # list
-        #     'segment_labels': segment_ids,  # list
-        #     # 'attention_mask_unilm': input_mask,  # LongTensor
-        #     # 'mask_qkv': mask_qkv,  # list
-        #     'masked_ids': masked_ids,  # list
-        #     # 'masked_pos': masked_pos,  # list
-        #     'masked_weights': masked_weights,  # list
-        # }
-        # return example
-
-    # def program2tensor(self, program):
-    #     program = normalize_program(program)
-    #
-    #     # Encode as ids with sentencepiece
-    #     if self.subword_regularization_alpha:
-    #         # using subword regularization: https://arxiv.org/pdf/1804.10959.pdf
-    #         # NOTE: what is the second argument here (-1)?
-    #         program = self.sp.SampleEncodeAsIds(program, -1, self.subword_regularization_alpha)
-    #     else:
-    #         # using the best decoding
-    #         program = self.sp.EncodeAsIds(program)
-    #
-    #     return torch.LongTensor([self.bos_id] + program[: (self.max_length - 2)] + [self.eos_id])
 
     def __len__(self):
         return len(self.src)
@@ -316,7 +205,7 @@ class ContraCodeDataset(FairseqDataset):
             indices = np.arange(len(self))
         # if self.tgt_sizes is not None:
         #     indices = indices[np.argsort(self.tgt_sizes[indices], kind='mergesort')]
-        return indices[np.argsort(self.src_sizes[indices], kind='mergesort')]
+        return indices #[np.argsort(self.src_sizes[indices], kind='mergesort')] # TODO
 
     @property
     def supports_prefetch(self):
@@ -327,7 +216,3 @@ class ContraCodeDataset(FairseqDataset):
 
     def prefetch(self, indices):
         self.src.prefetch(indices)
-        # if self.tgt is not None:
-        #     self.tgt.prefetch(indices)
-        # if self.align_dataset is not None:
-        #     self.align_dataset.prefetch(indices)
