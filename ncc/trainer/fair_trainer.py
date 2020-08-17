@@ -68,6 +68,29 @@ class Trainer(object):
 
         metrics.log_start_time("wall", priority=790, round=0)
 
+    def reinitialize(self):
+        """Reinitialize the Trainer, typically after model params change."""
+        self._lr_scheduler = None
+        self._optimizer = None
+        self._wrapped_criterion = None
+        self._wrapped_model = None
+
+    @property
+    def data_parallel_world_size(self):
+        return self.args.distributed_world_size
+
+    @property
+    def data_parallel_process_group(self):
+        return None
+
+    @property
+    def data_parallel_rank(self):
+        return self.args.distributed_rank
+
+    @property
+    def is_data_parallel_master(self):
+        return distributed_utils.is_master(self.args)
+
     @property
     def criterion(self):
         if self._wrapped_criterion is None:
@@ -86,8 +109,8 @@ class Trainer(object):
     @property
     def model(self):
         if self._wrapped_model is None:
-            if self.args['distributed_training']['distributed_world_size'] > 1 and not self.args['optimization'][
-                'use_bmuf']:
+            if self.args['distributed_training']['distributed_world_size'] > 1 and \
+                not self.args['optimization']['use_bmuf']:
                 self._wrapped_model = models.DistributedFairseqModel(
                     self.args, self._model
                 )
@@ -369,8 +392,9 @@ class Trainer(object):
                 num = self.args['distributed_training']['distributed_world_size'] if self._sync_stats() else 1
                 self.optimizer.multiply_grads(num / sample_size)
 
-            # clip grads
-            grad_norm = self.optimizer.clip_grad_norm(self.args['optimization']['clip_norm'])
+            with torch.autograd.profiler.record_function("clip-grads"):
+                # clip grads
+                grad_norm = self.clip_grad_norm(self.args['optimization']['clip_norm'])
 
             # check that grad norms are consistent across workers
             if not self.args['optimization']['use_bmuf']:
@@ -420,6 +444,9 @@ class Trainer(object):
         metrics.log_stop_time("train_wall")
 
         return logging_output
+
+    def clip_grad_norm(self, clip_norm):
+        return self.optimizer.clip_grad_norm(clip_norm)
 
     @metrics.aggregate("valid")
     def valid_step(self, sample, raise_oom=False):
@@ -686,11 +713,32 @@ class Trainer(object):
         if self._grad_norm_buf is not None:
             self._grad_norm_buf.zero_()
             self._grad_norm_buf[self.args['distributed_training']['distributed_rank']] = grad_norm
-            distributed_utils.all_reduce(self._grad_norm_buf)
-            if not (self._grad_norm_buf == self._grad_norm_buf[0]).all():
+            distributed_utils.all_reduce(
+                self._grad_norm_buf,
+                group=self.data_parallel_process_group
+            )
+
+            def is_consistent(tensor):
+                max_abs_diff = torch.max(torch.abs(tensor - tensor[0]))
+                return (
+                    not torch.isfinite(tensor).any()
+                    or (max_abs_diff / (tensor[0] + 1e-6) < 1e-6).all()
+                )
+
+            if not is_consistent(self._grad_norm_buf):
+                pretty_detail = "\n".join(
+                    "rank {:3d} = {:.8f}".format(r, n)
+                    for r, n in enumerate(self._grad_norm_buf.tolist())
+                )
+                error_detail = "grad_norm across the workers:\n{}\n".format(pretty_detail)
                 raise RuntimeError(
                     "Fatal error: gradients are inconsistent between workers. "
-                    "Try --ddp-backend=no_c10d."
+                    "Try --ddp-backend=no_c10d. "
+                    "Or are you mixing up different generation of GPUs in training?"
+                    + "\n"
+                    + "-" * 80
+                    + "\n{}\n".format(error_detail)
+                    + "-" * 80
                 )
 
     def _reduce_and_log_stats(self, logging_outputs, sample_size, grad_norm=None):

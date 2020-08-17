@@ -26,29 +26,29 @@ def DistributedFairseqModel(args, model):
     """
     # determine which DDP class to extend
     assert isinstance(model, nn.Module)
-    if args.ddp_backend == 'c10d':
+    if args['distributed_training']['ddp_backend'] == 'c10d':
         ddp_class = nn.parallel.DistributedDataParallel
         init_kwargs = dict(
             module=model,
-            device_ids=[args.device_id],
-            output_device=args.device_id,
-            broadcast_buffers=args.broadcast_buffers,
-            bucket_cap_mb=args.bucket_cap_mb,
+            device_ids=[args['distributed_training']['device_id']],
+            output_device=args['distributed_training']['device_id'],
+            broadcast_buffers=args['distributed_training']['broadcast_buffers'],
+            bucket_cap_mb=args['distributed_training']['bucket_cap_mb'],
         )
         # Maintain backward compatibility
         if 'check_reduction' in inspect.getargspec(ddp_class)[0]:
             init_kwargs['check_reduction'] = True
         if 'find_unused_parameters' in inspect.getargspec(ddp_class)[0]:
-            init_kwargs['find_unused_parameters'] = args.find_unused_parameters
-    elif args.ddp_backend == 'no_c10d':
+            init_kwargs['find_unused_parameters'] = args['distributed_training']['find_unused_parameters']
+    elif args['distributed_training']['ddp_backend'] == 'no_c10d':
         ddp_class = LegacyDistributedDataParallel
         init_kwargs = dict(
             module=model,
-            world_size=args.distributed_world_size,
+            world_size=args['distributed_training']['distributed_world_size'],
             buffer_size=2 ** 28,
         )
     else:
-        raise ValueError('Unknown --ddp-backend: ' + args.ddp_backend)
+        raise ValueError('Unknown --ddp-backend: ' + args['distributed_training']['ddp_backend'])
 
     class _DistributedFairseqModel(ddp_class):
         """Extend DistributedDataParallel to check for missing

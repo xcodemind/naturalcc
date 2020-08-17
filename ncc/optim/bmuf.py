@@ -24,14 +24,15 @@ class FairseqBMUF(FairseqOptimizer):
         super().__init__(args)
         self._optimizer = optimizer
         self._num_updates = 0
-        self.sync_iter = self.args.global_sync_iter
-        self.block_momentum = self.args.block_momentum
-        self.block_lr = self.args.block_lr
+        self.sync_iter = self.args['distributed_training']['global_sync_iter']
+        self.block_momentum = self.args['distributed_training']['block_momentum']
+        self.block_lr = self.args['distributed_training']['block_lr']
         self._reset_local_data()
-        self.warmup_iteration = self.args.warmup_iterations
-        self.use_nbm = self.args.use_nbm
+        self.warmup_iteration = self.args['distributed_training']['warmup_iterations']
+        self.use_nbm = self.args['distributed_training']['use_nbm']
         self.initial_state = self._optimizer.state_dict()
-        self.average_sync = self.args.average_sync
+        self.average_sync = self.args['distributed_training']['average_sync']
+        self.world_size = self.args['distributed_training']['distributed_world_size']
 
     @staticmethod
     def add_args(parser):
@@ -103,13 +104,15 @@ class FairseqBMUF(FairseqOptimizer):
         self._optimizer.average_params()
 
     def _block_sync(self):
-        # Update the global model using local models from all GPUs
-        # (Step-1) Calculate grad between previously synced model and
-        # currrent local model
+        if self.world_size <= 1:
+            return
+            # Update the global model using local models from all GPUs
+            # (Step-1) Calculate grad between previously synced model and
+            # currrent local model
         if self.block_momentum != 0:
             self._calc_grad()
 
-        # (Step-2) Average gradient from all GPUs
+            # (Step-2) Average gradient from all GPUs
         self._avg_grad_from_all_gpus()
 
         # (Step-3) Calculate global momentum and update the global model
@@ -135,7 +138,9 @@ class FairseqBMUF(FairseqOptimizer):
         return False
 
     def _warmup_sync(self, root_rank=0):
-        # Broadcast the local model to all gpus
+        if self.world_size <= 1:
+            return
+            # Broadcast the local model to all gpus
         for param in self.params:
             dist.broadcast(param.data, src=root_rank)
 

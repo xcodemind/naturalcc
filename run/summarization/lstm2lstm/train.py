@@ -57,8 +57,6 @@ def train(args, trainer, task, epoch_itr):
     valid_subsets = args['dataset']['valid_subset'].split(',')
     max_update = args['optimization']['max_update'] or math.inf
     for samples in progress:
-        valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
-
         with metrics.aggregate('train_inner'):
             log_output = trainer.train_step(samples)
             if log_output is None:  # OOM, overflow, ...

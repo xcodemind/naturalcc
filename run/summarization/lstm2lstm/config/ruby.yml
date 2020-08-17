@@ -26,7 +26,7 @@ common:
 #  all_gather_list_size: 16384 # default=16384, type=int, help='number of bytes reserved for gathering stats from workers'
   task: summarization # multi-modalities task
 
-  seed: 1 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
+  seed: 666 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
   cpu: 0 # action='store_true', help='use CPU instead of CUDA'
   fp16: 0 # action='store_true', help='use FP16'
   fp16_opt_level: '01' # type=str, default="O1", help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']. See details at https://nvidia.github.io/apex/amp.html",
@@ -61,7 +61,7 @@ dataset:
 #  per_gpu_eval_batch_size: 4 # default=4, type=int, help="Batch size per GPU/CPU for evaluation."
 
 distributed_training:
-  distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
+  distributed_world_size: 4 # default=max(1, torch.cuda.device_count()
   distributed_rank: 0 # default=0, type=int, help='rank of the current worker'
   distributed_backend: nccl # default='nccl', type=str, help='distributed backend'
   distributed_init_method: ~ # default=None, type=str,help='typically tcp://hostname:port that will be used to establish initial connetion'
@@ -78,6 +78,11 @@ distributed_training:
   global_sync_iter: 50 # default=50, type=int, help="Iteration for syncing global model",
   warmup_iterations: 500 # default=500, type=int, help="warmup iterations for model to broadcast",
   local_rank: -1 # type=int, default=-1, help="For distributed training: local_rank"
+  block_momentum: 0.875 # default=0.875, type=float, help="block momentum for bmuf",
+  block_lr: 1 # default=1, type=float, help="block learning rate for bmuf"
+  use_nbm: 0 # default=False, action="store_true", help="Specify whether you want to use classical BM / Nesterov BM",
+  average_sync: 0 # default=False, action="store_true", help="Specify whether you want to average the local momentum after each sync",
+
 
 task:
 #  data: ~/.ncc/202008/summarization/data-raw/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
@@ -161,7 +166,7 @@ optimization:
   lr: # '--learning-rate', default='0.25', type=eval_str_list, metavar='LR_1,LR_2,...,LR_N', help='learning rate for the first N epochs; all epochs >N using LR_N (note: this may be interpreted differently depending on --lr-scheduler)'
     - 0.001
   min_lr: -1 # default=-1, type=float, metavar='LR', help='stop training when the learning rate reaches this minimum'
-  use_bmuf: 0 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
+  use_bmuf: 1 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
 
   force_anneal: 0 # '--fa', type=int, metavar='N', help='force annealing at specified epoch'
   warmup_updates: 0 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
