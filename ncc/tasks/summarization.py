@@ -124,7 +124,7 @@ def load_langpair_dataset(
         left_pad_target=left_pad_target,
         max_source_positions=max_source_positions,
         max_target_positions=max_target_positions,
-        align_dataset=align_dataset, eos=eos
+        align_dataset=align_dataset, eos=eos,
     )
 
 

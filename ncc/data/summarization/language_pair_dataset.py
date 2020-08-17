@@ -9,9 +9,7 @@ import torch
 from ncc.data.tools import data_utils
 from ncc.data.fairseq_dataset import FairseqDataset
 
-
 logger = logging.getLogger(__name__)
-
 
 
 def collate(
@@ -159,7 +157,7 @@ class LanguagePairDataset(FairseqDataset):
         shuffle=True, input_feeding=True,
         remove_eos_from_source=False, append_eos_to_target=False,
         align_dataset=None,
-        append_bos=False, eos=None
+        append_bos=False, eos=None,
     ):
         if tgt_dict is not None:
             assert src_dict.pad() == tgt_dict.pad()

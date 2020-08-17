@@ -100,13 +100,13 @@ task:
   truncate_source: 0 #', action='store_true', default=False, help='truncate source to max-source-positions'
 
   # options for reporting BLEU during validation
-  eval_bleu: 1 #action='store_true', help='evaluation with BLEU scores'
+  eval_bleu: 0 #action='store_true', help='evaluation with BLEU scores'
   eval_bleu_detok: space #', type=str, default="space", help='detokenizer before computing BLEU (e.g., "moses"); required if using --eval-bleu; use "space" to disable detokenization; see fairseq.data.encoders for other options'
   eval_bleu_detok_args: ~ #', type=str, metavar='JSON', help='args for building the tokenizer, if needed'
   eval_tokenized_bleu: 0 #', action='store_true', default=False, help='if setting, we compute tokenized BLEU instead of sacrebleu'
   eval_bleu_remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE before computing BLEU'
   eval_bleu_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
-  eval_bleu_print_samples: 1 #', action='store_true', help='print sample generations during validation'
+  eval_bleu_print_samples: 0 #', action='store_true', help='print sample generations during validation'
 
 #
   num_sample: 200 # we sample {num_sample} sub-paths from all code path-modality data
@@ -160,7 +160,7 @@ optimization:
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
     - 1
   lr: # '--learning-rate', default='0.25', type=eval_str_list, metavar='LR_1,LR_2,...,LR_N', help='learning rate for the first N epochs; all epochs >N using LR_N (note: this may be interpreted differently depending on --lr-scheduler)'
-    - 0.001
+    - 0.005
   min_lr: -1 # default=-1, type=float, metavar='LR', help='stop training when the learning rate reaches this minimum'
   use_bmuf: 1 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
 
