@@ -5,6 +5,8 @@ from .hi_transformer_summarization import HiTransformerSummarizationModel
 from .transformer import TransformerModel
 from .transformer_summarization_ft import TransformerFtModel
 from .transformer_from_roberta import TransformerFromRobertaModel
+from .codenn import CodeNNModel
+from .deepcom import DeepComModel
 
 __all__ = [
     'LSTMModel', 'MM2SeqModel',
@@ -13,4 +15,6 @@ __all__ = [
     'TransformerFtModel',
     'TransformerFromRobertaModel',
     'Code2Seq',
+    'CodeNNModel',
+    'DeepComModel',
 ]
