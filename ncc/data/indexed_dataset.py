@@ -85,7 +85,7 @@ def make_dataset(path, impl, modality='text', fix_lua_indexing=False, dictionary
             return IndexedRawNodeIdDataset(path, dictionary)
         elif modality == 'dfs':
             return IndexedDFSASTDataset(path, dictionary, append_eos=False)
-        elif modality in ['tok', 'code_tokens', 'docstring_tokens']:
+        elif modality in ['tok', 'code', 'code_tokens', 'docstring_tokens']:
             return IndexedTokenDataset(path, dictionary)
         elif modality == 'javascript_augmented':
             return IndexedJavascriptAugmentedDataset(path, dictionary, append_eos=False)

@@ -1,21 +1,26 @@
 # -*- coding: utf-8 -*-
 import os
-import ujson
 from typing import Dict, Tuple, List, Sequence
 from glob import glob
 import gzip, json, jsonlines
 import itertools
-
-import math
-# from dataset import *
 from . import constants
 from collections import Counter
-
-from copy import deepcopy
+from ncc import LOGGER
 import re
 
-
 # Such methods are widely used. Therefore, we define them ahead of other functions
+
+_newline_regex = re.compile(r"\n")
+_whitespace_regex = re.compile(r"[ \t\n]+")
+
+
+def normalize_program(fn: str):
+    if not isinstance(fn, (str, bytes)):
+        LOGGER.error(f"normalize_program got non-str: {type(fn)}, {fn}")
+    fn = _newline_regex.sub(r" [EOL]", fn)
+    fn = _whitespace_regex.sub(" ", fn)
+    return fn
 
 
 def get_child_nodes(node: Dict) -> Tuple[List, List]:
