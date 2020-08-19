@@ -6,23 +6,17 @@
 """
 Data pre-processing: build vocabularies and binarize training data.
 """
-
-import itertools
-import shutil
-from typing import Dict, List
-from ncc.utils import (
-    utils, tokenizer
-)
+from typing import Dict
 import os
 from multiprocessing import Pool
-from collections import (namedtuple, OrderedDict, Counter)
+from collections import (namedtuple, Counter)
 from ncc.data import (Dictionary, indexed_dataset)
 from ncc.utils.util_file import load_yaml
 from ncc import tasks
 from ncc.data.tools.binarizer import Binarizer
-
+from dataset.csn.utils.util import normalize_program
 import sentencepiece as spm
-
+import ujson
 from ncc import LOGGER
 
 
@@ -45,40 +39,6 @@ def main(args):
     LOGGER.info('mkdir for {} task'.format(args['preprocess']['task']))
     os.makedirs(args['preprocess']['destdir'], exist_ok=True)
 
-    def load_bpe_vocab(args):
-        """Build vocabulary (dictionary) for source and target domain"""
-        LOGGER.info('Load BPE vocabularies...')
-        # ref: https://github.com/google/sentencepiece/blob/master/python/sentencepiece_python_module_example.ipynb
-        # makes segmenter instance and loads the model file (codesearchnet.model)
-        bpe_dict_filename = args['preprocess']['srcdict'] + '.model'
-
-        if args['preprocess']['dataset_impl'] == 'mmap':
-            # copy (*.model) and (*.vocab) to mmap directory
-            shutil.copy(args['preprocess']['srcdict'] + '.model', args['preprocess']['destdir'])
-            shutil.copy(args['preprocess']['srcdict'] + '.vocab', args['preprocess']['destdir'])
-            # copy (*.dict.txt) for model training. (*.dict.txt) contains same tokens of BPE dictionary
-            # but it has been transformed for ncc.Dictionary class usage while training
-            shutil.copy(args['preprocess']['srcdict'] + '.dict.txt', args['preprocess']['destdir'])
-
-        bpe_dict_filename = os.path.join(args['preprocess']['destdir'], os.path.basename(bpe_dict_filename))
-        sp = spm.SentencePieceProcessor()
-        sp.load(bpe_dict_filename)
-
-        src_dicts = OrderedDict()
-        for modality in args['preprocess']['source_lang']:
-            src_dicts[modality] = sp
-
-        if args['preprocess']['target_lang'] is None or args['preprocess']['only_source']:
-            tgt_dict = None
-        else:
-            tgt_dict = sp
-
-        return src_dicts, tgt_dict
-
-    # 1. build vocabulary from bpe directory
-    src_dicts, tgt_dict = load_bpe_vocab(args)
-
-    # 2. ***************build dataset********************
     def file_name(prefix, lang):
         fname = prefix
         if lang is not None:
@@ -88,6 +48,66 @@ def main(args):
     def dest_path(prefix, lang):
         return os.path.join(args['preprocess']['destdir'], file_name(prefix, lang))
 
+    def dict_path(lang):
+        return dest_path("dict", lang) + ".txt"
+
+    target = not args['preprocess']['only_source']
+
+    # 1. build vocabulary from bpe directory
+    if not args['preprocess']['srcdict'] and os.path.exists(dict_path(args['preprocess']['source_lang'])):
+        raise FileExistsError(dict_path(args['preprocess']['source_lang']))
+    if target and not args['preprocess']['tgtdict'] and os.path.exists(dict_path(args['preprocess']['target_lang'])):
+        raise FileExistsError(dict_path(args['preprocess']['target_lang']))
+
+    if args['preprocess']['joined_dictionary']:
+        assert not args['preprocess']['srcdict'] or not args['preprocess']['tgtdict'], \
+            "cannot use both --srcdict and --tgtdict with --joined-dictionary"
+        if args['preprocess']['srcdict']:
+            src_dict = task.load_dictionary(args['preprocess']['srcdict'])
+        elif args['preprocess']['tgtdict']:
+            src_dict = task.load_dictionary(args['preprocess']['tgtdict'])
+        else:
+            LOGGER.error('Please run sentencepiece to generate the model and vocab files first.')
+            exit()
+
+        tgt_dict = src_dict
+
+        # Load sentencepiece (sp) module
+        if args['preprocess']['src_sp']:
+            src_sp = spm.SentencePieceProcessor()
+            src_sp.load(args['preprocess']['src_sp'])
+        elif args['preprocess']['tgt_sp']:
+            src_sp = spm.SentencePieceProcessor()
+            src_sp.load(args['preprocess']['tgt_sp'])
+        else:
+            LOGGER.error('Please assign the sentencepiece model path.')
+            exit()
+        tgt_sp = src_sp
+
+    else:
+        if args['preprocess']['srcdict'] and args['preprocess']['src_sp']:
+            src_dict = task.load_dictionary(args['preprocess']['srcdict'])
+            src_sp = spm.SentencePieceProcessor()
+            src_sp.load(args['preprocess']['src_sp'])
+        else:
+            LOGGER.error('Please run sentencepiece to generate the model and vocab files first.')
+            exit()
+
+        if target:
+            if args['preprocess']['tgtdict'] and args['preprocess']['tgt_sp']:
+                tgt_dict = task.load_dictionary(args['preprocess']['tgtdict'])
+                tgt_sp = spm.SentencePieceProcessor()
+                tgt_sp.load(args['preprocess']['tgt_sp'])
+            else:
+                # assert args['preprocess']['trainpref'], "--trainpref must be set if --tgtdict is not specified"
+                # tgt_dict = build_dictionary([train_path(args['preprocess']['target_lang'])], tgt=True)
+                LOGGER.error('Please run sentencepiece to generate the model and vocab files first.')
+                exit()
+        else:
+            tgt_dict = None
+            tgt_sp = None
+    # exit()
+    # 2. ***************build dataset********************
     def make_binary_dataset(dict: Dictionary, input_file, output_file,
                             attr: str, num_workers: int):
         """make binary dataset"""
@@ -154,37 +174,37 @@ def main(args):
             )
         )
 
-    def make_dataset(vocab, input_prefix, output_prefix, lang, num_workers=1):
-        if args['preprocess']['dataset_impl'] == "raw":
-            # because data from bpe is directly save in data-raw, no need to process
-            ...
+    def make_dataset(vocab, sp, input_prefix, output_prefix, lang, num_workers=1):
+        if args['preprocess']['dataset_impl'] == 'raw':
+            with open(file_name(input_prefix, lang), 'rb') as input_file, open(dest_path(output_prefix, lang), 'w', encoding="utf-8") as output_file:
+                for line in input_file.readlines()[0: 100]:  # TODO only for debug
+                    line = ujson.loads(line)
+                    line = normalize_program(line)
+                    line = sp.EncodeAsPieces(line)
+                    output_file.write(ujson.dumps(line) + '\n')
         else:
             in_file = file_name(input_prefix, lang)
             out_file = dest_path(output_prefix, lang)
             os.makedirs(os.path.dirname(out_file), exist_ok=True)
             make_binary_dataset(vocab, in_file, out_file, lang, num_workers)
 
-    def make_all(lang, vocab):
+    def make_all(lang, vocab, sp):
         if args['preprocess']['trainpref']:
-            make_dataset(vocab, args['preprocess']['trainpref'], "train", lang,
+            make_dataset(vocab, sp, args['preprocess']['trainpref'], "train", lang,
                          num_workers=args['preprocess']['workers'])
         if args['preprocess']['validpref']:
             for k, validpref in enumerate(args['preprocess']['validpref'].split(",")):
                 outprefix = "valid{}".format(k) if k > 0 else "valid"
-                make_dataset(vocab, validpref, outprefix, lang, num_workers=args['preprocess']['workers'])
+                make_dataset(vocab, sp, validpref, outprefix, lang, num_workers=args['preprocess']['workers'])
         if args['preprocess']['testpref']:
             for k, testpref in enumerate(args['preprocess']['testpref'].split(",")):
                 outprefix = "test{}".format(k) if k > 0 else "test"
-                make_dataset(vocab, testpref, outprefix, lang, num_workers=args['preprocess']['workers'])
+                make_dataset(vocab, sp, testpref, outprefix, lang, num_workers=args['preprocess']['workers'])
 
-    def build_dataset(args: Dict, src_dicts: Dict[str, Dictionary], tgt_dict: Dictionary):
-        """build dataset for modal"""
-        for modality, src_dict in src_dicts.items():
-            LOGGER.info('Building dataset for {}'.format(modality))
-            make_all(modality, src_dict)
-
-    # 2. build dataset
-    build_dataset(args, src_dicts, tgt_dict)
+    # # 2. build dataset
+    make_all(args['preprocess']['source_lang'], src_dict, src_sp)
+    if target:
+        make_all(args['preprocess']['target_lang'], tgt_dict, tgt_sp)
 
 
 def cli_main():

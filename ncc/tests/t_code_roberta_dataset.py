@@ -17,6 +17,10 @@ from ncc.logging import metrics, progress_bar
 from ncc.utils import checkpoint_utils, distributed_utils
 from ncc.trainer.fair_trainer import Trainer
 from ncc.data import constants
+import numpy as np
+import random
+from ncc.utils.file_utils import remove_files
+
 
 if __name__ == '__main__':
     Argues = namedtuple('Argues', 'yaml')
@@ -35,23 +39,55 @@ if __name__ == '__main__':
     args = load_yaml(yaml_file)
     LOGGER.info(args)
 
-    data_path = os.path.expanduser('~/.ncc/CodeSearchNet/codebert/data-mmap/ruby/code')
-    split = 'test'
+    # torch.manual_seed(args['common']['seed'])
+    # np.random.seed(args['common']['seed'])
+    # random.seed(args['common']['seed'])
+
+    # 0. Initialize CUDA and distributed training
+    if torch.cuda.is_available() and not args['common']['cpu']:
+        torch.cuda.set_device(args['distributed_training']['device_id'])
+    np.random.seed(args['common']['seed'])
+    torch.manual_seed(args['common']['seed'])
+    init_distributed = False
+    if init_distributed:
+        args['distributed_training']['distributed_rank'] = distributed_utils.distributed_init(args)
+
+    # Verify checkpoint directory
+    if distributed_utils.is_master(args):
+        save_dir = args['checkpoint']['save_dir']
+        checkpoint_utils.verify_checkpoint_directory(save_dir)
+        remove_files(save_dir, 'pt')
+
+    # Print args
+    LOGGER.info(args)
+
+    task = tasks.setup_task(args)  # task.tokenizer
+    model = task.build_model(args)  # , config
+    criterion = task.build_criterion(args)
+    LOGGER.info(model)
+    LOGGER.info('model {}, criterion {}'.format(args['model']['arch'], criterion.__class__.__name__))
+    LOGGER.info('num. model params: {} (num. trained: {})'.format(
+        sum(p.numel() for p in model.parameters()),
+        sum(p.numel() for p in model.parameters() if p.requires_grad),
+    ))
+
+    data_path = os.path.expanduser('~/.ncc/CodeSearchNet/codebert/data-raw/ruby/code')
+    split = 'train'
     # src_modalities = ['path'] # , 'code'
     # src_dicts = None
     # tgt = 'docstring'
     # tgt_dict = None
-    combine = False
+    # combine = True
 
-    src_dict = FairseqTask.load_dictionary(os.path.join(data_path, 'codesearchnet.dict.txt'))
-
+    # src_dict = FairseqTask.load_dictionary(args['dataset']['srcdict'])
+    src_dict = task.source_dictionary
     # src_dict = FairseqTask.load_dictionary(
     #     os.path.join(data_path, 'dict.{}.txt'.format(args['task']['source_lang'])))  # args['task']['source_lang']
 
     # src_dict.add_symbol(constants.S_SEP)
     # src_dict.add_symbol(constants.S2S_SEP)
     # src_dict.add_symbol(constants.CLS)
-    src_dict.add_symbol(constants.MASK)
+    # src_dict.add_symbol(constants.MASK)
 
     # tgt_dict.add_symbol(constants.S2S_BOS)
     # tgt_dict.add_symbol(constants.T_MASK)
@@ -73,33 +109,30 @@ if __name__ == '__main__':
     #     load_alignments=args['task']['load_alignments'],
     #     truncate_source=args['task']['truncate_source'],
     # )
-    epoch = 1
-    dataset = load_masked_code_dataset_roberta(args, epoch, data_path, split, src_dict,
-                                                            combine)
+    # Build trainer
+    trainer = Trainer(args, task, model, criterion)
 
-    data_item = dataset.__getitem__(76)
+    epoch = 1
+    dataset = load_masked_code_dataset_roberta(args, epoch, data_path, split, src_dict, False)
+    # dataset = load_masked_code_dataset_roberta(args, epoch, data_path, split, task.source_dictionary, combine)
+
+    # self.datasets[split] = load_masked_code_dataset_roberta(args, epoch, data_path, split, src_dict,
+    #                                                         combine)
+
+    data_item = dataset.__getitem__(0)
     print('data_item: ', data_item)
-    # sys.exit()
-    samples = []
-    for i in range(100):
-        print('i: ', i)
-        data_item = dataset.__getitem__(i)
-        samples.append(data_item)
+    # exit()
+    # samples = []
+    # for i in range(100):
+    #     print('i: ', i)
+    #     data_item = dataset.__getitem__(i)
+    #     samples.append(data_item)
     # print('samples: ', samples)
     # sys.exit()
     # sys.exit()
-    task = tasks.setup_task(args)  # task.tokenizer
-    model = task.build_model(args)  # , config
-    criterion = task.build_criterion(args)
-    LOGGER.info(model)
-    LOGGER.info('model {}, criterion {}'.format(args['model']['arch'], criterion.__class__.__name__))
-    LOGGER.info('num. model params: {} (num. trained: {})'.format(
-        sum(p.numel() for p in model.parameters()),
-        sum(p.numel() for p in model.parameters() if p.requires_grad),
-    ))
 
-    # Build trainer
-    trainer = Trainer(args, task, model, criterion)
+
+
     # indices = dataset.ordered_indices()
     #
     # sys.exit()
@@ -126,6 +159,8 @@ if __name__ == '__main__':
     # # model.cuda()
     # print(batch)
     # # sys.exit()
+    # extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer, combine=False)
+
     # # model(*batch)
     # # 'src_tokens': input_ids,
     # # 'segment_labels': segment_ids,
@@ -136,21 +171,47 @@ if __name__ == '__main__':
 
     # data_iter = iter(dataloader)
     # batch_data = data_iter.__next__()
+    # print('batch_data: ', batch_data)
 
     epoch_itr = task.get_batch_iterator(
         dataset=dataset,
         max_tokens=args['dataset']['max_tokens'],
         max_sentences=args['dataset']['max_sentences'],
-        max_positions=None,  # args['task']['max_source_positions'],
+        max_positions=args['task']['max_source_positions'],
         ignore_invalid_inputs=True,
         required_batch_size_multiple=args['dataset']['required_batch_size_multiple'],
         seed=args['common']['seed'],
         num_shards=1,
         shard_id=0,
-        num_workers=args['dataset']['num_workers'],
-        epoch=1,
+        num_workers=0,#args['dataset']['num_workers'],
+        # epoch=0,
     )
-
+    # batch_data = epoch_itr.__next__()
+    # print('batch_data: ', batch_data)
+    # exit()
+    # epoch = 1
+    # task.load_dataset(
+    #             args['dataset']['train_subset'],
+    #             epoch=1,
+    #             combine=combine,
+    #             data_selector=None,
+    #         )
+    # epoch_itr = task.get_batch_iterator(
+    #     dataset=dataset, #task.dataset(args['dataset']['train_subset']), #=self.task.dataset(self.args['dataset']['train_subset']),
+    #     max_tokens=args['dataset']['max_tokens'],
+    #     max_sentences=args['dataset']['max_sentences'],
+    #     max_positions=512,
+    #     ignore_invalid_inputs=True,
+    #     required_batch_size_multiple=args['dataset']['required_batch_size_multiple'],
+    #     seed=args['common']['seed'],
+    #     num_shards=1, #args['distributed_training']['distributed_world_size'] if shard_batch_itr else 1,
+    #     shard_id=0, #self.args['distributed_training']['distributed_rank'] if shard_batch_itr else 0,
+    #     num_workers=args['dataset']['num_workers'],
+    #     epoch=epoch,
+    # )
+    # epoch_itr = trainer.get_train_iterator(
+    #     epoch=1, load_dataset=True
+    # )
     # itr = epoch_itr.next_epoch_itr(
     #     fix_batches_to_gpus=args['distributed_training']['fix_batches_to_gpus'],
     #     shuffle=(epoch_itr.next_epoch_idx > args['dataset']['curriculum']),
@@ -160,15 +221,41 @@ if __name__ == '__main__':
     #     print('i: ', i)
     #     print('obj: ', obj)
 
+    # itr = epoch_itr.next_epoch_itr(
+    #     fix_batches_to_gpus=args['distributed_training']['fix_batches_to_gpus'],
+    #     shuffle=(epoch_itr.next_epoch_idx > args['dataset']['curriculum']),
+    # )
+    # update_freq = (
+    #     args['optimization']['update_freq'][epoch_itr.epoch - 1]
+    #     if epoch_itr.epoch <= len(args['optimization']['update_freq'])
+    #     else args['optimization']['update_freq'][-1]
+    # )
+    # itr = iterators.GroupedIterator(itr, update_freq)
+    # progress = progress_bar.progress_bar(
+    #     itr,
+    #     log_format=args['common']['log_format'],
+    #     log_interval=args['common']['log_interval'],
+    #     epoch=epoch_itr.epoch,
+    #     tensorboard_logdir=(
+    #         args['common']['tensorboard_logdir'] if distributed_utils.is_master(args) else None
+    #     ),
+    #     default_log_format=('tqdm' if not args['common']['no_progress_bar'] else 'simple'),
+    # )
     itr = epoch_itr.next_epoch_itr(
         fix_batches_to_gpus=args['distributed_training']['fix_batches_to_gpus'],
         shuffle=(epoch_itr.next_epoch_idx > args['dataset']['curriculum']),
     )
+    for i, obj in enumerate(itr):
+        print('i: ', i)
+        print('obj: ', obj)
+        exit()
+    exit()
     update_freq = (
         args['optimization']['update_freq'][epoch_itr.epoch - 1]
         if epoch_itr.epoch <= len(args['optimization']['update_freq'])
         else args['optimization']['update_freq'][-1]
     )
+    update_freq = 1
     itr = iterators.GroupedIterator(itr, update_freq)
     progress = progress_bar.progress_bar(
         itr,
@@ -181,7 +268,13 @@ if __name__ == '__main__':
         default_log_format=('tqdm' if not args['common']['no_progress_bar'] else 'simple'),
     )
 
+    # task specific setup per epoch
+    task.begin_epoch(epoch_itr.epoch, trainer.get_model())
+
     for samples in progress:
-        print('samples: ')
+        print('samples: ', samples)
+        exit()
         log_output = trainer.train_step(samples)
+        if log_output is None:  # OOM, overflow, ...
+            continue
         print('log_output: ', log_output)
