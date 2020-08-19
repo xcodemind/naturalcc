@@ -5,6 +5,7 @@ import gzip
 import ujson
 import argparse
 import itertools
+import shutil
 from glob import glob
 from multiprocessing import Pool, cpu_count
 
@@ -66,6 +67,12 @@ def flatten(raw_dir, lang, flatten_dir, attrs, num_cores=None):
 def merge_attr_files(flatten_dir, lang, attrs):
     """shell cat"""
 
+    def _merge_files(src_files, tgt_file):
+        with open(tgt_file, 'w') as writer:
+            for src_fl in src_files:
+                with open(src_fl, 'r') as reader:
+                    shutil.copyfileobj(reader, writer)
+
     def _get_file_idx(filename):
         filename = os.path.split(filename)[-1]
         idx = int(filename[:str.rfind(filename, '.json')])
@@ -78,10 +85,7 @@ def merge_attr_files(flatten_dir, lang, attrs):
             attr_files = sorted(attr_files, key=_get_file_idx)
             assert len(attr_files) > 0, RuntimeError('Attribute files({}) do not exist.'.format(attr_files))
             dest_file = os.path.join(_flatten_dir, lang, '{}.{}'.format(mode, attr))
-            cmd = 'cat {} > {}'.format(' '.join(attr_files), dest_file)
-            LOGGER.info(cmd)
-            # run cat
-            os.system(cmd)
+            _merge_files(attr_files, dest_file)
 
 
 if __name__ == '__main__':
