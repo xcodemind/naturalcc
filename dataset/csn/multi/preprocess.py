@@ -16,10 +16,11 @@ import ujson
 import itertools
 import logging
 import shutil
+from dgl.data.utils import save_graphs
 from collections import namedtuple
 from multiprocessing import Pool, cpu_count
 from ncc.utils.mp_ppool import PPool
-from ncc.utils.util_graph import (build_graph, tree2graph)
+from ncc.utils import util_graph
 
 from ncc import tasks
 from collections import (
@@ -54,6 +55,33 @@ def binarize(args: Dict, filename: str, dict: Dictionary, in_file: str, attr: st
                              append_eos=append_eos, offset=offset, end=end)
     ds.finalize('{}.idx'.format(in_file))
     return res
+
+
+def safe_readline(f):
+    pos = f.tell()
+    while True:
+        try:
+            return f.readline()
+        except UnicodeDecodeError:
+            pos -= 1
+            f.seek(pos)  # search where this character begins
+
+
+def binarize_dgl(args: Dict, filename: str, dict: Dictionary, in_file: str, offset: int, end: int):
+    """binarize function for multi-processing"""
+    graphes = []
+    with open(filename, "r", encoding="utf-8") as reader:
+        reader.seek(offset)
+        # next(f) breaks f.tell(), hence readline() must be used
+        line = safe_readline(reader)
+        while line:
+            if end > 0 and reader.tell() > end:
+                break
+            ast = ujson.loads(line)
+            graph = util_graph.tree2dgl(ast, dict)
+            graphes.append(graph)
+            line = reader.readline()
+    save_graphs(in_file + '.bin', graphes)
 
 
 def main(args):
@@ -223,26 +251,28 @@ def main(args):
             )
         )
 
-    # def make_graph_binary_dataset(dict: Dictionary, input_file, output_file):
-    #     import torch
-    #     import dgl
-    #     from dgl.data.graph_serialize import GraphData
-    #     from dgl.data.utils import save_graphs
-    #     from tqdm import tqdm
-    #     from sys import getsizeof
-    #
-    #     graph_batch, ids = [], []
-    #     with open(input_file, 'r') as reader:
-    #         num_lines = sum(1 for _ in reader)
-    #         reader.seek(0)
-    #         for idx, line in tqdm(enumerate(reader), total=num_lines):
-    #             ast = ujson.loads(line)
-    #             graph = tree2graph(ast, dict)
-    #             graph = GraphData.create(graph)
-    #             graph_batch.append(graph)
-    #             ids.append(idx)
-    #     graph_labels = {"glabel": torch.IntTensor(ids)}
-    #     save_graphs(output_file + '.mmap', graph_batch, graph_labels)
+    def make_graph_bin_dataset(dict: Dictionary, input_file, output_file, num_workers):
+        offsets = Binarizer.find_offsets(input_file, num_workers)
+        if num_workers > 1:
+            # p1-pN -> (1 bin-txt, 1 idx), (N bin-txt, N idx)
+            pool = Pool(processes=num_workers)
+            for worker_id in range(num_workers):
+                prefix = "{}{}".format(output_file, worker_id)
+                pool.apply_async(
+                    binarize_dgl,
+                    (
+                        args,
+                        input_file,
+                        dict,
+                        prefix,
+                        offsets[worker_id],
+                        offsets[worker_id + 1]
+                    ),
+                )
+            pool.close()
+        else:
+            prefix = "{}0".format(output_file)
+            binarize_dgl(args, input_file, dict, prefix, 0, -1)
 
     def make_dataset(vocab, input_prefix, output_prefix, lang, modality, num_workers=1):
         in_file = file_name(input_prefix, modality)
@@ -252,7 +282,10 @@ def main(args):
             logger.info('Copying {} into {}'.format(in_file, out_file))
             shutil.copy(src=in_file, dst=out_file)
         else:
-            make_binary_dataset(vocab, in_file, out_file, modality, num_workers)
+            if modality == 'binary_ast':
+                make_graph_bin_dataset(vocab, in_file, out_file, num_workers)
+            else:
+                make_binary_dataset(vocab, in_file, out_file, modality, num_workers)
 
     def make_all(modality, vocab, lang, data_prefs):
         num_workers = min(args['preprocess']['workers'], cpu_count())
