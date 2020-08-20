@@ -6,39 +6,23 @@
 """
 Data pre-processing: build vocabularies and binarize training data.
 """
-from typing import Dict, List
-
-import argparse
-
+from typing import Dict
 import os
-import re
 import ujson
-import itertools
-import logging
 import shutil
 from collections import namedtuple
-from multiprocessing import Pool, cpu_count
-from ncc.utils.mp_ppool import PPool
+from multiprocessing import Pool
 from ncc.utils.util_graph import (build_graph, tree2graph)
-
 from ncc import tasks
-from collections import (
-    Counter,
-    OrderedDict,
-)
+from collections import Counter
 from ncc.data import (
     Dictionary,
-    constants,
     indexed_dataset,
 )
 from ncc.data.tools.binarizer import Binarizer
-from ncc.utils import (
-    utils, tokenizer
-)
+from ncc.utils import tokenizer
 from ncc.utils.util_file import load_yaml
 from ncc import LOGGER
-
-logger = logging.getLogger(__name__)
 
 
 def binarize(args: Dict, filename: str, dict: Dictionary, in_file: str, attr: str,
@@ -64,6 +48,18 @@ def main(args):
     def train_path(lang):
         return "{}{}".format(args['preprocess']['trainpref'], ("." + lang) if lang else "")
 
+    def file_name(prefix, lang):
+        fname = prefix
+        if lang is not None:
+            fname += ".{lang}".format(lang=lang)
+        return fname
+
+    def dest_path(prefix, lang):
+        return os.path.join(args['preprocess']['destdir'], file_name(prefix, lang))
+
+    def dict_path(lang):
+        return dest_path("dict", lang) + ".txt"
+
     def build_dictionary(filenames, modality, src=False, tgt=False):
         assert src ^ tgt
         if modality in ['bin_ast']:
@@ -80,74 +76,58 @@ def main(args):
             padding_factor=args['preprocess']['padding_factor'],
         )
 
-    def build_vocab_dict(args):
-        """Build vocabulary (dictionary) for source and target domain"""
-        LOGGER.info('Build vocabularies...')
-        # task = tasks.get_task(args['preprocess']['task'])
-        src_dicts = OrderedDict()
-
-        if args['preprocess']['joined_dictionary']:
-            modalities = args['preprocess']['source_lang'] + [args['preprocess']['target_lang']]
-            modalities = sorted(list(itertools.filterfalse(lambda modality: modality is None, modalities)))
-            joined_dictionary_filename = os.path.join(args['preprocess']['destdir'],
-                                                      '{}.dict.txt'.format('_'.join(modalities)))
-            if os.path.exists(joined_dictionary_filename):
-                LOGGER.info('Loading joint dict from {}'.format(joined_dictionary_filename))
-                joined_dictionary = Dictionary.load_json(joined_dictionary_filename)
-            else:
-                joined_dictionary = build_dictionary(
-                    [train_path(modality) for modality in modalities], modalities, src=True
-                )
-                LOGGER.info('Saving joint dict at {}'.format(joined_dictionary_filename))
-                joined_dictionary.save_json(joined_dictionary_filename)
-
-            for modality in modalities:
-                src_dicts[modality] = joined_dictionary
-            tgt_dict = joined_dictionary
-        else:
-            # src dict
-            for modality in args['preprocess']['source_lang']:
-                modality_dict_filename = os.path.join(args['preprocess']['destdir'], '{}.dict.json'.format(modality))
-                if os.path.exists(modality_dict_filename):
-                    LOGGER.info('Loading {} dict from {}'.format(modality, modality_dict_filename))
-                    src_dicts[modality] = Dictionary.load_json(modality_dict_filename)
-                else:
-                    src_dicts[modality] = build_dictionary([train_path(modality)], modality, src=True)
-                    LOGGER.info('Saving {} dict at {}'.format(modality, modality_dict_filename))
-                    src_dicts[modality].save_json(modality_dict_filename)
-            # tgt dict
-            if args['preprocess']['target_lang']:
-                modality_dict_filename = os.path.join(args['preprocess']['destdir'],
-                                                      '{}.dict.json'.format(args['preprocess']['target_lang']))
-                if os.path.exists(modality_dict_filename):
-                    LOGGER.info('Loading {} dict from {}'.format(modality, modality_dict_filename))
-                    tgt_dict = Dictionary.load_json(modality_dict_filename)
-                else:
-                    tgt_dict = build_dictionary([train_path(args['preprocess']['target_lang'])], modality, tgt=True)
-                    LOGGER.info('Saving {} dict at {}'.format(modality, modality_dict_filename))
-                    tgt_dict.save_json(modality_dict_filename)
-            else:
-                tgt_dict = None
-
-        return src_dicts, tgt_dict
-
     # 1. build vocabulary
-    src_dicts, tgt_dict = build_vocab_dict(args)
+    LOGGER.info('Build vocabularies...')
+    target = not args['preprocess']['only_source']
 
+    # if not args['preprocess']['srcdict'] and os.path.exists(dict_path(args['preprocess']['source_lang'])):
+    #     raise FileExistsError(dict_path(args['preprocess']['source_lang']))
+    # if target and not args['preprocess']['tgtdict'] and os.path.exists(dict_path(args['preprocess']['target_lang'])):
+    #     raise FileExistsError(dict_path(args['preprocess']['target_lang']))
+
+    if args['preprocess']['joined_dictionary']:
+        assert not args['preprocess']['srcdict'] or not args['preprocess']['tgtdict'], \
+            "cannot use both --srcdict and --tgtdict with --joined-dictionary"
+
+        if args['preprocess']['srcdict']:
+            src_dict = task.load_dictionary(args['preprocess']['srcdict'])
+        elif args['preprocess']['tgtdict']:
+            src_dict = task.load_dictionary(args['preprocess']['tgtdict'])
+        else:
+            assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
+            src_dict = build_dictionary(
+                {train_path(lang) for lang in [args['preprocess']['source_lang'], args['preprocess']['target_lang']]},
+                args['preprocess']['source_lang'], src=True
+            )
+        tgt_dict = src_dict
+    else:
+        if args['preprocess']['srcdict']:
+            src_dict = task.load_dictionary(args['preprocess']['srcdict'])
+        else:
+            assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
+            src_dict = build_dictionary([train_path(args['preprocess']['source_lang'])],
+                                        args['preprocess']['source_lang'], src=True)
+
+        if target:
+            if args['preprocess']['tgtdict']:
+                tgt_dict = task.load_dictionary(args['preprocess']['tgtdict'])
+            else:
+                assert args['preprocess']['trainpref'], "--trainpref must be set if --tgtdict is not specified"
+                tgt_dict = build_dictionary([train_path(args['preprocess']['target_lang'])],
+                                            args['preprocess']['target_lang'], tgt=True)
+        else:
+            tgt_dict = None
+
+    src_dict.save(dict_path(args['preprocess']['source_lang']))
+    if target and tgt_dict is not None:
+        tgt_dict.save(dict_path(args['preprocess']['target_lang']))
+
+    # exit()
     # 2. ***************build dataset********************
-    def file_name(prefix, lang):
-        fname = prefix
-        if lang is not None:
-            fname += ".{lang}".format(lang=lang)
-        return fname
-
-    def dest_path(prefix, lang):
-        return os.path.join(args['preprocess']['destdir'], file_name(prefix, lang))
-
-    def make_binary_dataset(dict: Dictionary, input_file, output_file,
+    def make_binary_dataset(vocab: Dictionary, input_file, output_file,
                             attr: str, num_workers: int):
         """make binary dataset"""
-        LOGGER.info("[{}] Dictionary: {} types".format(attr, len(dict) - 1))
+        LOGGER.info("[{}] Dictionary: {} types".format(attr, len(vocab) - 1))
         n_seq_tok = [0, 0]
         replaced = Counter()  # save un-recorded tokens
 
@@ -171,7 +151,7 @@ def main(args):
                     (
                         args,
                         input_file,
-                        dict,
+                        vocab,
                         prefix,
                         attr,
                         offsets[worker_id],
@@ -186,7 +166,7 @@ def main(args):
         ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(dict))
         merge_result(
             Binarizer.binarize(
-                input_file, dict, lambda t: ds.add_item(t),
+                input_file, vocab, lambda t: ds.add_item(t),
                 tokenize=tokenizer.tokenize_list, offset=0, end=offsets[1], append_eos=False,
             )
         )
@@ -209,11 +189,11 @@ def main(args):
                 n_seq_tok[0],
                 n_seq_tok[1],
                 100 * sum(replaced.values()) / n_seq_tok[1],
-                dict.unk_word,
+                vocab.unk_word,
             )
         )
 
-    def make_graph_binary_dataset(dict: Dictionary, input_file, output_file):
+    def make_graph_binary_dataset(vocab: Dictionary, input_file, output_file):
         import torch
         import dgl
         from dgl.data.graph_serialize import GraphData
@@ -227,7 +207,7 @@ def main(args):
             reader.seek(0)
             for idx, line in tqdm(enumerate(reader), total=num_lines):
                 ast = ujson.loads(line)
-                graph = tree2graph(ast, dict)
+                graph = tree2graph(ast, vocab)
                 graph = GraphData.create(graph)
                 graph_batch.append(graph)
                 ids.append(idx)
@@ -239,7 +219,7 @@ def main(args):
             in_file = file_name(input_prefix, lang)
             out_dir = args['preprocess']['destdir']
             os.makedirs(out_dir, exist_ok=True)
-            logger.info('Copying {} into {}'.format(in_file, out_dir))
+            LOGGER.info('Copying {} into {}'.format(in_file, out_dir))
             shutil.copy(src=in_file, dst=args['preprocess']['destdir'])
         else:
             in_file = file_name(input_prefix, lang)
@@ -260,21 +240,16 @@ def main(args):
                 outprefix = "test{}".format(k) if k > 0 else "test"
                 make_dataset(vocab, testpref, outprefix, lang, num_workers=args['preprocess']['workers'])
 
-    def build_dataset(args: Dict, src_dicts: Dict[str, Dictionary], tgt_dict: Dictionary):
-        """build dataset for modal"""
-        for modality, src_dict in src_dicts.items():
-            LOGGER.info('Building dataset for {}'.format(modality))
-            make_all(modality, src_dict)
-
-    # 2. build dataset
-    build_dataset(args, src_dicts, tgt_dict)
+    make_all(args['preprocess']['source_lang'], src_dict)
+    if target:
+        make_all(args['preprocess']['target_lang'], tgt_dict)
 
 
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')
     args_ = Argues('preprocess.yml')  # train_sl
     LOGGER.info(args_)
-    yaml_file = os.path.join(os.path.dirname(__file__), args_.yaml)
+    yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)
