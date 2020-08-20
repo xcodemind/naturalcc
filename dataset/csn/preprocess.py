@@ -280,15 +280,15 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         "--attrs", "-a",
-        default=['raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'binary_ast', 'traversal'], type=list,
-        # default=['binary_ast',], type=str, nargs='+',
-        help="attrs: raw_ast, ...",
+        default=['raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'binary_ast', 'traversal'],
+        type=str, nargs='+', help="attrs: raw_ast, ...",
     )
     parser.add_argument(
         "--cores", "-c", default=cpu_count(), type=int, help="cpu cores for flatten raw data attributes",
     )
     args = parser.parse_args()
     print(args)
+    exit()
 
     """
     a mapping to generate new attributes of code snippet.
