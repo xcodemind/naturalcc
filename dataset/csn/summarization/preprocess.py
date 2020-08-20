@@ -195,11 +195,9 @@ def main(args):
 
     def make_graph_binary_dataset(vocab: Dictionary, input_file, output_file):
         import torch
-        import dgl
         from dgl.data.graph_serialize import GraphData
         from dgl.data.utils import save_graphs
         from tqdm import tqdm
-        from sys import getsizeof
 
         graph_batch, ids = [], []
         with open(input_file, 'r') as reader:
@@ -207,7 +205,7 @@ def main(args):
             reader.seek(0)
             for idx, line in tqdm(enumerate(reader), total=num_lines):
                 ast = ujson.loads(line)
-                graph = tree2graph(ast, vocab)
+                graph = tree2dgl(ast, dict)
                 graph = GraphData.create(graph)
                 graph_batch.append(graph)
                 ids.append(idx)

@@ -1,21 +1,25 @@
-## Raw Data to Model Input
-> All the running commands here should be executed in the root of project folder (the path of your `naturalcodev3`).
-For example, in my environment I will stay at `/data/wanyao/Dropbox/ghproj-titan/naturalcodev3`.
+# CodeSearchNet dataset
 
-#### Step1: ```prepare.py``` to download dataset and Tree-Sitter libraries. <br>
+**we recommend to run this repository on linux/macOS**
 
+### step 1. download CSN raw dataset (```~/.ncc/raw```) and parse files (```~/.ncc/libs```), and unzip them. 
 ```
-python -m dataset.csn.prepare
-```
-
-#### Step 2: ```flatten.py``` to flatten important attributes of raw CodeSearchNet dataset. <br>
-
-```
-python -m dataset.csn.flatten
+python -m dataset.csn.download -l [language] -d [raw data directory] -b [library directory]
 ```
 
-#### Step 3: ```preprocess.py``` to generate new attributes of flatten data. Need to update. <br>
+### step 2. flatten attributes of code snippets into different files. For instance, flatten ruby's code_tokens into 
+```train/valid/test.code_tokens```.
+```
+python -m dataset.csn.flatten -l [language] -d [raw data directory] -f [flatten data directory] -a [data attributes] -c [cpu cores]
+```
 
+### step 3(optional). extract features of data attributes. For instance, AST, binary-AST etc. of code.
 ```
-python -m dataset.csn.preprocess
+python -m dataset.csn.feature_extract -l [language] -f [flatten data directory] -s [parse file] -a [data attributes] -c [cpu cores]
 ```
+ 
+### step 4. filter data containing invalid attributes.
+```
+python -m dataset.csn.filter -l [language] -f [flatten data directory] -r [refined data directory] -a [data attributes]
+```
+
