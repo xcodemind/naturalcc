@@ -11,8 +11,6 @@ common:
   log_interval: 100 # type=int, default=100, metavar='N', help='log progress every N batches (when progress bar is disabled)'
   log_format: simple # default=None, help='log format to use', choices=['json', 'none', 'simple', 'tqdm']
   tensorboard_logdir: '' # default='', help='path to save logs for tensorboard, should match --logdir of running tensorboard (default: no tensorboard logging)'
-#  seed: 42 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
-#  cpu: 0 # action='store_true', help='use CPU instead of CUDA'
 #  fp16_fair: 1 # action='store_true', help='use FP16'
   memory_efficient_fp16: 0 # action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
   fp16_no_flatten_grads: 0 # action='store_true', help='don\'t flatten FP16 grads tensor'
@@ -26,7 +24,7 @@ common:
 #  all_gather_list_size: 16384 # default=16384, type=int, help='number of bytes reserved for gathering stats from workers'
   task: summarization # multi-modalities task
 
-  seed: 666 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
+  seed: 1 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
   cpu: 0 # action='store_true', help='use CPU instead of CUDA'
   fp16: 0 # action='store_true', help='use FP16'
   fp16_opt_level: '01' # type=str, default="O1", help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']. See details at https://nvidia.github.io/apex/amp.html",
