@@ -16,7 +16,7 @@ RAW_DIR = os.path.join(_CODE_NN_ROOT_DIR, 'raw', LANGUAGE)
 os.makedirs(RAW_DIR, exist_ok=True)
 FLATTEN_DIR = os.path.join(_CODE_NN_ROOT_DIR, 'flatten', LANGUAGE)
 os.makedirs(FLATTEN_DIR, exist_ok=True)
-LIB_DIR = os.path.join(_CODE_NN_ROOT_DIR, 'lib', LANGUAGE)
+LIB_DIR = os.path.join(_CODE_NN_ROOT_DIR, 'libs', LANGUAGE)
 os.makedirs(LIB_DIR, exist_ok=True)
 
 

@@ -12,7 +12,7 @@ import ujson
 import shutil
 from collections import namedtuple
 from multiprocessing import Pool
-from ncc.utils.util_graph import (build_graph, tree2graph)
+from ncc.utils.util_graph import (build_graph, tree2dgl)
 from ncc import tasks
 from collections import Counter
 from ncc.data import (
@@ -60,9 +60,10 @@ def main(args):
     def dict_path(lang):
         return dest_path("codeserchnet", lang) + ".dict.txt"
 
+
     def build_dictionary(filenames, modality, src=False, tgt=False):
         assert src ^ tgt
-        if modality in ['bin_ast']:
+        if modality in ['binary_ast']:
             tokenize_func = tokenizer.tokenize_tree
         elif modality in ['code_tokens', 'docstring_tokens', 'sbt', 'sbtao', 'path']:
             tokenize_func = tokenizer.tokenize_list
@@ -123,7 +124,6 @@ def main(args):
     if target and tgt_dict is not None:
         tgt_dict.save_json(dict_path(args['preprocess']['target_lang']))
 
-    # exit()
     # 2. ***************build dataset********************
     def make_binary_dataset(vocab: Dictionary, input_file, output_file,
                             attr: str, num_workers: int):
@@ -164,7 +164,7 @@ def main(args):
         # process 1th file, if multi-processing available. If not, process all file
         # p0 -> 0,end
         ds_file = '{}.mmap'.format(output_file)
-        ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(dict))
+        ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(vocab))
         merge_result(
             Binarizer.binarize(
                 input_file, vocab, lambda t: ds.add_item(t),
