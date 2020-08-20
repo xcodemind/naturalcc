@@ -106,7 +106,8 @@ if __name__ == '__main__':
     parser.add_argument(
         "--attrs", "-a",
         default=['code', 'code_tokens', 'docstring', 'docstring_tokens', 'func_name', 'original_string'],
-        type=list, help="attrs: code, code_tokens, docstring, docstring_tokens, func_name, original_string, index",
+        type=str, nargs='+',
+        help="attrs: code, code_tokens, docstring, docstring_tokens, func_name, original_string, index",
     )
     parser.add_argument(
         "--cores", "-c", default=cpu_count(), type=int, help="cpu cores for flatten raw data attributes",
