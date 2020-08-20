@@ -41,6 +41,16 @@ class NBOWEncoder(FairseqEncoder):
             'encoder_padding_mask': encoder_padding_mask if encoder_padding_mask.any() else None
         }
 
+    def reorder_encoder_out(self, encoder_out, new_order):
+        encoder_out['encoder_out'] = tuple(
+            eo.index_select(0, new_order)
+            for eo in encoder_out['encoder_out']
+        )
+        if encoder_out['encoder_padding_mask'] is not None:
+            encoder_out['encoder_padding_mask'] = \
+                encoder_out['encoder_padding_mask'].index_select(0, new_order)
+        return encoder_out
+
     def max_positions(self):
         """Maximum input length supported by the encoder."""
         return self.max_source_positions
@@ -140,7 +150,6 @@ class LSTMDecoder(FairseqIncrementalDecoder):
 
         # get outputs from encoder
         encoder_outs = encoder_out[0]
-        src_len = encoder_outs.size(0)
 
         # embed tokens
         x = self.embed_tokens(prev_output_tokens)
