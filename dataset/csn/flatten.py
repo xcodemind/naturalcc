@@ -95,7 +95,7 @@ if __name__ == '__main__':
     """
     parser = argparse.ArgumentParser(description="Download CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        "--language", "-l", default=LANGUAGES, type=list, help="languages constain [{}]".format(LANGUAGES),
+        "--language", "-l", default=LANGUAGES, type=str, nargs='+', help="languages constain [{}]".format(LANGUAGES),
     )
     parser.add_argument(
         "--dataset_dir", "-d", default=RAW_DATA_DIR, type=str, help="raw dataset download directory",
