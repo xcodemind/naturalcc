@@ -102,6 +102,7 @@ model:
   dropout: 0.1 # type=float, metavar='D', help='dropout probability'
   attention_dropout: 0.1 # type=float, metavar='D', help='dropout probability for attention weights'
   activation_dropout: 0.0 # '--relu-dropout', type=float, metavar='D', help='dropout probability after activation in FFN.'
+  relu_dropout: 0.0 # '--relu-dropout', type=float, metavar='D', help='dropout probability after activation in FFN.'
   encoder_embed_path: 0 # type=str, metavar='STR', help='path to pre-trained encoder embedding'
   encoder_embed_dim: 768 # type=int, metavar='N', help='encoder embedding dimension'
   encoder_ffn_embed_dim: 3072 # type=int, metavar='N', help='encoder embedding dimension for FFN'
@@ -130,6 +131,9 @@ model:
   decoder_layers_to_keep: ~ # default=None, help='which layers to *keep* when pruning as a comma-separated list'
   layernorm_embedding: 0 # action='store_true', help='add layernorm to embedding'
   no_scale_embedding: 0 # action='store_true', help='if True, dont scale embeddings'
+
+  max_source_positions: 1024
+  max_target_positions: 1024
 
 optimization:
   max_epoch: 0 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
