@@ -58,8 +58,7 @@ def main(args):
         return os.path.join(args['preprocess']['destdir'], file_name(prefix, lang))
 
     def dict_path(lang):
-        return dest_path("codeserchnet", lang) + ".dict.txt"
-
+        return dest_path(lang, "dict") + ".json"
 
     def build_dictionary(filenames, modality, src=False, tgt=False):
         assert src ^ tgt
