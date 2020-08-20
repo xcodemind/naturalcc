@@ -25,17 +25,6 @@ class PolynomialDecaySchedule(FairseqLRScheduler):
         self.power = args['optimization']['power']
         self.optimizer.set_lr(self.warmup_factor * self.lr)
 
-    # @staticmethod
-    # def add_args(parser):
-    #     """Add arguments to the parser for this LR scheduler."""
-    #     parser.add_argument('--force-anneal', '--fa', type=int, metavar='N',
-    #                         help='force annealing at specified epoch')
-    #     parser.add_argument('--warmup-updates', default=0, type=int, metavar='N',
-    #                         help='warmup the learning rate linearly for the first N updates')
-    #     parser.add_argument('--end-learning-rate', default=0.0, type=float)
-    #     parser.add_argument('--power', default=1.0, type=float)
-    #     parser.add_argument('--total-num-update', default=1000000, type=int)
-
     def get_next_lr(self, epoch):
         lrs = self.args['optimization']['lr']
         if self.args['optimization']['force_anneal'] is None or epoch < self.args['optimization']['force_anneal']:
@@ -55,7 +44,8 @@ class PolynomialDecaySchedule(FairseqLRScheduler):
 
     def step_update(self, num_updates):
         """Update the learning rate after each update."""
-        if self.args['optimization']['warmup_updates'] > 0 and num_updates <= self.args['optimization']['warmup_updates']:
+        if self.args['optimization']['warmup_updates'] > 0 and \
+            num_updates <= self.args['optimization']['warmup_updates']:
             self.warmup_factor = num_updates / float(self.args['optimization']['warmup_updates'])
             lr = self.warmup_factor * self.lr
         elif num_updates >= self.total_num_update:
