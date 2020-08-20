@@ -24,12 +24,15 @@ def build_graph(tree_dict, dictionary, tree_leaf_subtoken=1, DGLGraph_PAD_WORD=-
             child_ids = tree[idx]['children']
             if nid is None:
                 nx_graph.add_node(0, x=[DGLGraph_PAD_WORD] * MAX_SUB_TOKEN_LEN, y=int(idx), mask=0)
+                # print('node={}, x={}, y={}, mask={}'.format(0, [DGLGraph_PAD_WORD] * MAX_SUB_TOKEN_LEN, int(idx), 0))
                 nid = 0
             for idx in child_ids:
                 cid = nx_graph.number_of_nodes()
                 y_value = int(idx)
                 if not isinstance(tree[str(idx)]['children'][1], list):  # non-leaf node
                     nx_graph.add_node(cid, x=[DGLGraph_PAD_WORD] * MAX_SUB_TOKEN_LEN, y=y_value, mask=0)
+                    # print(
+                    #     'node={}, x={}, y={}, mask={}'.format(cid, [DGLGraph_PAD_WORD] * MAX_SUB_TOKEN_LEN, y_value, 0))
                     _build(cid, str(idx), tree)
                 else:  # leaf node
                     if tree_leaf_subtoken:
@@ -37,7 +40,9 @@ def build_graph(tree_dict, dictionary, tree_leaf_subtoken=1, DGLGraph_PAD_WORD=-
                     else:
                         word_index = [dictionary.index(tree[idx]['children'][0])]
                     nx_graph.add_node(cid, x=word_index, y=y_value, mask=1)
+                    # print('node={}, x={}, y={}, mask={}'.format(cid, word_index, y_value, 1))
                 nx_graph.add_edge(cid, nid)  # 因为用的 DiGraph，所以这里添加的edge应该是cid指向nid，而nid是root节点的方向，cid是叶子节点的方向
+                # print('edge={}->{}'.format(cid, nid))
         else:  # leaf node
             if tree_leaf_subtoken:
                 word_index = [dictionary.index(subtoken) for subtoken in tree[idx]['children'][-1]]
@@ -48,9 +53,11 @@ def build_graph(tree_dict, dictionary, tree_leaf_subtoken=1, DGLGraph_PAD_WORD=-
             else:
                 cid = nx_graph.number_of_nodes()
             nx_graph.add_node(cid, x=word_index, y=int(idx), mask=1)
+            # print('node={}, x={}, y={}, mask={}'.format(cid, word_index, int(idx), 1))
 
             if nid is not None:
                 nx_graph.add_edge(cid, nid)  # 因为用的 DiGraph，所以这里添加的edge应该是cid指向nid，而nid是root节点的方向，cid是叶子节点的方向
+                # print('edge={}->{}'.format(cid, nid))
 
     _build(None, '0', tree_dict)
     dgl_graph = dgl.DGLGraph()
@@ -60,7 +67,7 @@ def build_graph(tree_dict, dictionary, tree_leaf_subtoken=1, DGLGraph_PAD_WORD=-
     return dgl_graph
 
 
-def tree2graph(tree_dict, dictionary, DGLGraph_PAD_WORD=-1):
+def tree2dgl(tree_dict, dictionary, DGLGraph_PAD_WORD=-1):
     """
     if _subtoken == True, it means that we tokenize leaf node info into sub-tokens
         e.g. ["sub_token", ["sub", "token", <PAD>, <PAD>, <PAD>]]
@@ -118,7 +125,74 @@ def tree2graph(tree_dict, dictionary, DGLGraph_PAD_WORD=-1):
         node = tree_dict[idx]
         if node['parent'] is not None:
             dgl_graph.add_edges(int(idx), int(node['parent']))
+            # print('edge={}->{}'.format(int(idx), int(node['parent'])))
 
+    return dgl_graph
+
+
+def tree2nx2dgl(tree_dict, dictionary, DGLGraph_PAD_WORD=-1):
+    """
+    if _subtoken == True, it means that we tokenize leaf node info into sub-tokens
+        e.g. ["sub_token", ["sub", "token", <PAD>, <PAD>, <PAD>]]
+    else, no tokenization. e.g. ["sub_token"]
+    """
+    _subtoken = False
+    for node in tree_dict.values():
+        if isinstance(node['children'][1], list):
+            _subtoken = True
+            break
+
+    def nonleaf_node_info():
+        if _subtoken:
+            return [DGLGraph_PAD_WORD] * MAX_SUB_TOKEN_LEN
+        else:
+            return [DGLGraph_PAD_WORD]
+
+    def token2idx(node_info):
+        """
+        node info => indices
+        if _subtoken == True, ["sub_token", ["sub", "token", <PAD>, <PAD>, <PAD>]] => index(["sub", "token", <PAD>, <PAD>, <PAD>])
+        else, ["sub_token"] => index(["sub_token"])
+        """
+        if _subtoken:
+            return [dictionary.index(subtoken) for subtoken in node_info[-1]]
+        else:
+            return [dictionary.index(node_info[0])]
+
+    """
+    how to build DGL graph?
+    node: 
+        x: node info (if it's non-leaf nodes, padded with [-1, ...]),
+        y: current node idx
+        mask: if leaf node, mask=1; else, mask=0
+        * if current node is the root node,
+    edge: child => parent 
+    """
+
+    nx_graph = nx.DiGraph()
+    ids = sorted(tree_dict.keys(), key=int)
+
+    for idx in ids:
+        node = tree_dict[idx]
+
+        nx_graph.add_node(
+            int(idx),
+            x=token2idx(tree_dict[idx]['children']) if isinstance(tree_dict[idx]['children'][1], list) \
+                else nonleaf_node_info(),
+            y=int(idx),
+            mask=int(isinstance(tree_dict[idx]['children'][1], list))
+        )
+        # print('node={}, x={}, y={}, mask={}'.format(
+        #     idx, token2idx(tree_dict[idx]['children']) if isinstance(tree_dict[idx]['children'][1], list) \
+        #         else nonleaf_node_info(), int(idx), int(isinstance(tree_dict[idx]['children'][1], list))))
+        if node['parent'] is not None:
+            nx_graph.add_edge(int(idx), int(node['parent']))
+            # print('edge={}->{}'.format(int(idx), int(node['parent'])))
+
+    dgl_graph = dgl.DGLGraph()
+
+    dgl_graph.from_networkx(nx_graph, node_attrs=['x', 'y', 'mask'])
+    assert len(tree_dict) == dgl_graph.number_of_nodes(), Exception('build dgl tree error')
     return dgl_graph
 
 
@@ -145,7 +219,7 @@ if __name__ == '__main__':
     from ncc.tasks.summarization import SummarizationTask
 
     dict = SummarizationTask.load_dictionary(
-        filename='/home/yang/.ncc/CodeSearchNet/summarization/data-raw/ruby/bin_ast.dict.json'
+        filename='/home/yang/.ncc/multi/summarization/data-mmap/ruby/binary_ast.dict.json'
     )
 
     bin_ast = {
@@ -218,6 +292,5 @@ if __name__ == '__main__':
         "46": {"type": "end_keyword", "parent": 36,
                "children": ["end", ["end", "<pad>", "<pad>", "<pad>", "<pad>"]]}}
     nx2dgl_graph = build_graph(bin_ast, dict)
-    dgl_graph = tree2graph(bin_ast, dict)
-
-    assert nx2dgl_graph == dgl_graph
+    dgl_graph = tree2dgl(bin_ast, dict)
+    dgl_graph
