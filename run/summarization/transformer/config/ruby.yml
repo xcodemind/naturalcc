@@ -78,11 +78,10 @@ distributed_training:
   local_rank: -1 # type=int, default=-1, help="For distributed training: local_rank"
 
 task:
-#  data: ~/.ncc/202008/summarization/data-raw/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
-  data: ~/.ncc/202008/summarization/data-mmap/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/CodeSearchNet/summarization/data-mmap/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 
   # for summarization
-  source_lang: traversal
+  source_lang: code_tokens
   target_lang: docstring_tokens
   load_alignments: 0 #', action='store_true', help='load the binarized alignments'
   left_pad_source: 1 #', default='True', type=str, metavar='BOOL', help='pad the source on the left'
@@ -101,6 +100,7 @@ task:
   eval_bleu_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
   eval_bleu_print_samples: 0 #', action='store_true', help='print sample generations during validation'
 
+  append_eos_to_target: 0
 
 model:
   arch: transformer_summarization
@@ -111,7 +111,7 @@ model:
   activation_dropout: 0.0 # '--relu-dropout', type=float, metavar='D', help='dropout probability after activation in FFN.'
   relu_dropout: 0.0 # '--relu-dropout', type=float, metavar='D', help='dropout probability after activation in FFN.'
   encoder_embed_path: 0 # type=str, metavar='STR', help='path to pre-trained encoder embedding'
-  encoder_embed_dim: 512 # type=int, metavar='N', help='encoder embedding dimension'
+  encoder_embed_dim: 256 # type=int, metavar='N', help='encoder embedding dimension'
   encoder_ffn_embed_dim: 1024 # type=int, metavar='N', help='encoder embedding dimension for FFN'
   encoder_layers: 2 # 12 type=int, metavar='N', help='num encoder layers'
   encoder_attention_heads: 8 # 12 type=int, metavar='N', help='num encoder attention heads'
@@ -119,9 +119,9 @@ model:
   encoder_learned_pos: 0 # action='store_true', help='use learned positional embeddings in the encoder'
 
   decoder_embed_path: '' # type=str, metavar='STR', help='path to pre-trained decoder embedding'
-  decoder_embed_dim: 512 # ', type=int, metavar='N', help='decoder embedding dimension'
-  decoder_output_dim: 512 # ', type=int, metavar='N', help='decoder output dimension')
-  decoder_input_dim: 512 # ', type=int, metavar='N', help='decoder input dimension')
+  decoder_embed_dim: 256 # ', type=int, metavar='N', help='decoder embedding dimension'
+  decoder_output_dim: 256 # ', type=int, metavar='N', help='decoder output dimension')
+  decoder_input_dim: 256 # ', type=int, metavar='N', help='decoder input dimension')
   decoder_ffn_embed_dim: 1024 # type=int, metavar='N', help='decoder embedding dimension for FFN'
   decoder_layers: 2 # type=int, metavar='N', help='num decoder layers'
   decoder_attention_heads: 8 # ', type=int, metavar='N', help='num decoder attention heads')
@@ -168,7 +168,7 @@ model:
 
 optimization:
   max_epoch: 0 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
-  max_update: 1250000 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
+  max_update: 0 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
   clip_norm: 25 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
     - 1
@@ -177,13 +177,11 @@ optimization:
   min_lr: -1 # default=-1, type=float, metavar='LR', help='stop training when the learning rate reaches this minimum'
   use_bmuf: 0 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
 
-  force_anneal: 0 # '--fa', type=int, metavar='N', help='force annealing at specified epoch'
+  force_anneal: ~ # \'--fa', type=int, metavar='N', help='force annealing at specified epoch'
   warmup_updates: 10000 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
   end_learning_rate: 0.0 # default=0.0, type=float
   power: 1.0 # default=1.0, type=float
   total_num_update: 1000000 # default=1000000, type=int
-
-
 
 #  for cross entropy
   sentence_avg: ~ # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'
@@ -198,7 +196,7 @@ optimization:
 #    infonce: 0 # action='store_true', help='if set, uses cross entropy instead of binary cross entropy (i.e. InfoNCE loss)'
 #    loss_weights: '' # type=str, default=None, help='weights for additional loss terms (not first one)'
 #    log_keys: '' # type=str, default=None, help='output keys to log'
-#  learning_rate: 1e-4 # default=1e-4, type=float, help="The initial learning rate for Adam."
+  learning_rate: 1e-4 # default=1e-4, type=float, help="The initial learning rate for Adam."
   weight_decay: 0.0 # default=0.0, type=float, help="Weight decay if we apply some."
   adam_epsilon: 1e-8 # default=1e-8, type=float, help="Epsilon for Adam optimizer."
   max_grad_norm: 1.0 # default=1.0, type=float, help="Max gradient norm."
@@ -227,7 +225,7 @@ checkpoint:
   best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
   patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
-  save_dir: ~/.ncc/202008/summarization/data-mmap/ruby/transformer/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
+  save_dir: ~/.ncc/CodeSearchNet/summarization/data-mmap/ruby/transformer/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
   model_name_or_path: ~ # default=None, type=str, help="The model checkpoint for weights initialization. Leave None if you want to train a model from scratch.",
   cache_dir: ~ # default=None, type=str, help="Optional directory to store the pre-trained models downloaded from s3 (instead of the default one)",

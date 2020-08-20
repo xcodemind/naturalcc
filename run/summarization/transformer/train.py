@@ -82,7 +82,6 @@ def train(args, trainer, task, epoch_itr):
         if num_updates >= max_update:
             break
 
-
     # log end-of-epoch stats
     stats = get_training_stats(metrics.get_smoothed_values('train'))
     progress.print(stats, tag='train', step=num_updates)
@@ -133,7 +132,6 @@ def validate(args, trainer, task, epoch_itr, subsets):
         with metrics.aggregate(new_root=True) as agg:
             for sample in progress:
                 trainer.valid_step(sample)
-                break # TODO: only for debug
 
         # log validation stats
         stats = get_valid_stats(args, trainer, agg.get_smoothed_values())
@@ -183,7 +181,8 @@ def should_stop_early(args, valid_loss):
     else:
         should_stop_early.num_runs += 1
         if should_stop_early.num_runs >= args['checkpoint']['patience']:
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(args['checkpoint']['patience']))
+            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
+                args['checkpoint']['patience']))
 
         return should_stop_early.num_runs >= args['checkpoint']['patience']
 
@@ -267,12 +266,13 @@ def single_main(args, init_distributed=False):
 
         # early stop
         if should_stop_early(args, valid_losses[0]):
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(args['checkpoint']['patience']))
+            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
+                args['checkpoint']['patience']))
             break
 
         epoch_itr = trainer.get_train_iterator(
             epoch_itr.next_epoch_idx,
-            combine=False, # TODO to be checked
+            combine=False,  # TODO to be checked
             # sharded data: get train iterator for next epoch
             load_dataset=(os.pathsep in args['task']['data']),
         )

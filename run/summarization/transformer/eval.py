@@ -15,11 +15,14 @@ import torch
 from ncc import LOGGER
 from ncc import tasks
 from ncc.eval import bleu_scorer
+from ncc.eval import rouge_scorer
 from ncc.utils import checkpoint_utils
 from ncc.logging import progress_bar
 from ncc.utils import utils
 from ncc.utils.util_file import load_yaml
 from ncc.logging.meters import StopwatchMeter, TimeMeter
+from collections import OrderedDict
+from tqdm import tqdm
 
 
 def main(args):
@@ -83,7 +86,7 @@ def _main(args, output_file):
     itr = task.get_batch_iterator(
         dataset=task.dataset(args['dataset']['gen_subset']),
         max_tokens=args['dataset']['max_tokens'],
-        max_sentences=args['dataset']['max_sentences'],
+        max_sentences=args['eval']['max_sentences'],
         max_positions=utils.resolve_max_positions(
             task.max_positions(),
             *[model.max_positions() for model in models]
@@ -103,17 +106,25 @@ def _main(args, output_file):
 
     # Initialize generator
     gen_timer = StopwatchMeter()
-    generator = task.build_generator(args)
+    generator = task.build_generator(models, args)
 
     # Generate and compute BLEU score
+    scorer = OrderedDict()
     if args['eval']['sacrebleu']:
-        scorer = bleu_scorer.SacrebleuScorer()
+        scorer['bleu'] = bleu_scorer.SacrebleuScorer()
+    elif args['eval']['nltk_bleu']:
+        scorer['bleu'] = bleu_scorer.NLTKBleuScorer()
     else:
-        scorer = bleu_scorer.Scorer(tgt_dict.pad(), tgt_dict.eos(), tgt_dict.unk())
+        scorer['bleu'] = bleu_scorer.Scorer(tgt_dict.pad(), tgt_dict.eos(), tgt_dict.unk())
+    # Generate and compute BLEU score
+    if args['eval']['rouge']:
+        scorer['rouge'] = rouge_scorer.RougeScorer()
     num_sentences = 0
     has_target = True
     wps_meter = TimeMeter()
+    # for sample in tqdm(progress, total=len(progress)):
     for sample in progress:
+        torch.cuda.empty_cache()
         sample = utils.move_to_cuda(sample) if use_cuda else sample
         if 'net_input' not in sample:
             continue
@@ -165,6 +176,10 @@ def _main(args, output_file):
                     remove_bpe=args['eval']['remove_bpe'],
                 )
 
+                if hypo_str == '.':
+                    # rouge cannot handle hypo'.'
+                    continue
+
                 if not args['eval']['quiet']:
                     score = hypo['score'] / math.log(2)  # convert to base 2
                     print('H-{}\t{}\t{}'.format(sample_id, score, hypo_str), file=output_file)
@@ -201,25 +216,32 @@ def _main(args, output_file):
 
                 # Score only the top hypothesis
                 if has_target and j == 0:
+                    # print('Ref>> {}'.format(target_str), file=output_file)
+                    # print('Hyp>> {}'.format(hypo_str), file=output_file)
                     if align_dict is not None or args['eval']['remove_bpe'] is not None:
                         # Convert back to tokens for evaluation with unk replacement and/or without BPE
                         target_tokens = tgt_dict.encode_line(target_str, add_if_not_exist=True)
-                    if hasattr(scorer, 'add_string'):
-                        scorer.add_string(target_str, hypo_str)
-                    else:
-                        scorer.add(target_tokens, hypo_tokens)
+                    for metric in scorer:
+                        if hasattr(scorer[metric], 'add_string'):
+                            scorer[metric].add_string(target_str, hypo_str)
+                        else:
+                            scorer[metric].add(target_tokens, hypo_tokens)
 
         wps_meter.update(num_generated_tokens)
         progress.log({'wps': round(wps_meter.avg)})
         num_sentences += sample['nsentences']
 
-        break
-
     LOGGER.info('NOTE: hypothesis and token scores are output in base 2')
     LOGGER.info('Translated {} sentences ({} tokens) in {:.1f}s ({:.2f} sentences/s, {:.2f} tokens/s)'.format(
         num_sentences, gen_timer.n, gen_timer.sum, num_sentences / gen_timer.sum, 1. / gen_timer.avg))
     if has_target:
-        LOGGER.info('Generate {} with beam={}: {}'.format(args['dataset']['gen_subset'], args['eval']['beam'], scorer.result_string()))
+        LOGGER.info('Generate {} with beam={}: {}'.format(
+            args['dataset']['gen_subset'], args['eval']['beam'],
+            {
+                '\n{}:\n{}'.format(str.upper(metric), value.score())
+                for metric, value in scorer.items()
+            }
+        ))
 
     return scorer
 
@@ -236,4 +258,23 @@ def cli_main():
 
 
 if __name__ == '__main__':
+    """
+    device: v100 - RAM 16GB
+    nohup python -m run.summarization.lstm2lstm.eval > run/summarization/lstm2lstm/ruby.eval.multi.log 2>&1 &
+    
+    train:
+    
+    
+    test:
+    ROUGE:
+        {'rouge-1': {'f': 0.1, 'p': 0.13, 'r': 0.1}, 'rouge-2': {'f': 0.02, 'p': 0.03, 'r': 0.02}, 'rouge-l': {'f': 0.1, 'p': 0.13, 'r': 0.1}}
+    BLEU:
+        {'BLEU-1': 10.29, 'BLEU-2': 4.13, 'BLEU-3': 2.17, 'BLEU-4': 1.35}
+    
+    valid:
+    ROUGE:
+        {'rouge-1': {'f': 0.12, 'p': 0.15, 'r': 0.12}, 'rouge-2': {'f': 0.02, 'p': 0.03, 'r': 0.02}, 'rouge-l': {'f': 0.12, 'p': 0.15, 'r': 0.11}}
+    BLEU:
+        {'BLEU-1': 11.15, 'BLEU-2': 4.09, 'BLEU-3': 2.01, 'BLEU-4': 1.24}
+    """
     cli_main()
