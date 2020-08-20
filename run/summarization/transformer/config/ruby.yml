@@ -1,7 +1,7 @@
 #registry
 criterion: cross_entropy
 optimizer: 'adam'
-lr_scheduler: 'fixed'
+lr_scheduler: 'polynomial_decay'
 tokenizer: ~ # default=None
 bpe: ~ # default=None
 
@@ -113,8 +113,8 @@ model:
   encoder_embed_path: 0 # type=str, metavar='STR', help='path to pre-trained encoder embedding'
   encoder_embed_dim: 512 # type=int, metavar='N', help='encoder embedding dimension'
   encoder_ffn_embed_dim: 1024 # type=int, metavar='N', help='encoder embedding dimension for FFN'
-  encoder_layers: 6 # 12 type=int, metavar='N', help='num encoder layers'
-  encoder_attention_heads: 4 # 12 type=int, metavar='N', help='num encoder attention heads'
+  encoder_layers: 2 # 12 type=int, metavar='N', help='num encoder layers'
+  encoder_attention_heads: 8 # 12 type=int, metavar='N', help='num encoder attention heads'
   encoder_normalize_before: 0 # action='store_true', help='apply layernorm before each encoder block'
   encoder_learned_pos: 0 # action='store_true', help='use learned positional embeddings in the encoder'
 
@@ -123,8 +123,8 @@ model:
   decoder_output_dim: 512 # ', type=int, metavar='N', help='decoder output dimension')
   decoder_input_dim: 512 # ', type=int, metavar='N', help='decoder input dimension')
   decoder_ffn_embed_dim: 1024 # type=int, metavar='N', help='decoder embedding dimension for FFN'
-  decoder_layers: 6 # type=int, metavar='N', help='num decoder layers'
-  decoder_attention_heads: 4 # ', type=int, metavar='N', help='num decoder attention heads')
+  decoder_layers: 2 # type=int, metavar='N', help='num decoder layers'
+  decoder_attention_heads: 8 # ', type=int, metavar='N', help='num decoder attention heads')
   decoder_normalize_before: 0 # ', action='store_true', help='apply layernorm before each decoder block')
   no_decoder_final_norm: 0 # ', action='store_true', help='don\'t add an extra layernorm after the last decoder block')
   adaptive_softmax_cutoff: ~ # metavar='EXPR', help='comma separated list of adaptive softmax cutoff points. Must be used with adaptive_loss criterion'
@@ -178,8 +178,11 @@ optimization:
   use_bmuf: 0 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
 
   force_anneal: 0 # '--fa', type=int, metavar='N', help='force annealing at specified epoch'
-  warmup_updates: 0 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
-  lr_shrink: 0.95
+  warmup_updates: 10000 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
+  end_learning_rate: 0.0 # default=0.0, type=float
+  power: 1.0 # default=1.0, type=float
+  total_num_update: 1000000 # default=1000000, type=int
+
 
 
 #  for cross entropy
