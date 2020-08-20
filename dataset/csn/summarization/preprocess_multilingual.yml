@@ -1,0 +1,80 @@
+preprocess:
+  no_progress_bar: 0 # action='store_true', help='disable progress bar'
+  log_interval: 100
+  log_format: ~ # ', default=None, help='log format to use', choices=['json', 'none', 'simple', 'tqdm']
+  tensorboard_logdir: '' # metavar='DIR', default='', help='path to save logs for tensorboard, should match --logdir of running tensorboard (default: no tensorboard logging)'
+  seed: 1 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
+  cpu: 0 # ', action='store_true', help='use CPU instead of CUDA'
+  fp16: 0 # ', action='store_true', help='use FP16'
+  memory_efficient_fp16: 0 # ', action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
+  fp16_no_refine_grads: 0 #', action='store_true', help='don\'t refine FP16 grads tensor'
+  fp16_init_scale: 128 #', default=2 ** 7, type=int, help='default FP16 loss scale'
+  fp16_scale_window: ~ #', type=int, help='number of updates before increasing loss scale'
+  fp16_scale_tolerance: 0.0 #', default=0.0, type=float, help='pct of updates that can overflow before decreasing the loss scale'
+  min_loss_scale: 1e-4 #', default=1e-4, type=float, metavar='D', help='minimum FP16 loss scale, after which training is stopped'
+  threshold_loss_scale: ~ #', type=float, help='threshold FP16 loss scale from below'
+  user_dir: ~ #, default=None, help='path to a python module containing custom extensions (tasks and/or architectures)'
+  empty_cache_freq: 0 #', default=0, type=int, help='how often to clear the PyTorch CUDA cache (0 to disable)'
+  all_gather_list_size: 16384 #', default=16384, type=int, help='number of bytes reserved for gathering stats from workers'
+
+  task: summarization # task', metavar='TASK', default="translation", choices=TASK_REGISTRY.keys(), help='task'
+  source_lang:
+    # list, ujson.loads
+    - code_tokens
+    - docstring_tokens
+#    - sbt
+#    - sbtao
+#    # path and path.terminals
+#    - path
+#    - path.terminals
+#    - binary_ast # traverse ast's leaf node info
+#    - traversal
+  target_lang: ~ #", default=None, metavar="TARGET", help="target language"
+  # ~ path for dataset default. e.g.  for CodeSearchNet, ~/refine = ~/.ncc/CodeSearchNet/refine
+  dataprefs:
+    ruby:
+      trainpref: ~/.ncc/CodeSearchNet/refine/ruby/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/CodeSearchNet/refine/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/CodeSearchNet/refine/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+#    go:
+#      trainpref: ~/.ncc/CodeSearchNet/refine/go/train #", metavar="FP", default=None, help="train file prefix"
+#      validpref: ~/.ncc/CodeSearchNet/refine/go/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+#      testpref:  ~/.ncc/CodeSearchNet/refine/go/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+#    java:
+#      trainpref: ~/.ncc/CodeSearchNet/refine/java/train #", metavar="FP", default=None, help="train file prefix"
+#      validpref: ~/.ncc/CodeSearchNet/refine/java/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+#      testpref:  ~/.ncc/CodeSearchNet/refine/java/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+#    javascript:
+#      trainpref: ~/.ncc/CodeSearchNet/refine/javascript/train #", metavar="FP", default=None, help="train file prefix"
+#      validpref: ~/.ncc/CodeSearchNet/refine/javascript/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+#      testpref:  ~/.ncc/CodeSearchNet/refine/javascript/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+#    python:
+#      trainpref: ~/.ncc/CodeSearchNet/refine/python/train #", metavar="FP", default=None, help="train file prefix"
+#      validpref: ~/.ncc/CodeSearchNet/refine/python/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+#      testpref:  ~/.ncc/CodeSearchNet/refine/python/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+#    php:
+#      trainpref: ~/.ncc/CodeSearchNet/refine/php/train #", metavar="FP", default=None, help="train file prefix"
+#      validpref: ~/.ncc/CodeSearchNet/refine/php/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+#      testpref:  ~/.ncc/CodeSearchNet/refine/php/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+#    csharp:
+#      trainpref: ~/.ncc/codenn/refine/csharp/train #", metavar="FP", default=None, help="train file prefix"
+#      validpref: ~/.ncc/codenn/refine/csharp/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+#      testpref:  ~/.ncc/codenn/refine/csharp/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+
+  dataset_impl: mmap #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
+  destdir: ~/.ncc/multi/summarization/ #", metavar="DIR", default="data-bin", help="destination dir"
+  # word frequency
+  thresholdtgt: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
+  thresholdsrc: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
+  # word number
+  #  nwordstgt: -1 #", metavar="N", default=-1, type=int, help="number of target words to retain"
+  #  nwordssrc: -1 #", metavar="N", default=-1, type=int, help="number of source words to retain"
+  nwordstgt: 50000 #", metavar="N", default=-1, type=int, help="number of target words to retain"
+  nwordssrc: 50000 #", metavar="N", default=-1, type=int, help="number of source words to retain"
+  alignfile: ~ #", metavar="ALIGN", default=None, help="an alignment file (optional)"
+
+  joined_dictionary: 0 # ", action="store_true", help="Generate joined dictionary"
+  only_source: 0 # ", action="store_true", help="Only process the source language"
+  padding_factor: 8 #", metavar="N", default=8, type=int, help="Pad dictionary size to be multiple of N"
+  workers: 1 # ", metavar="N", default=1, type=int, help="number of parallel workers"
+  inserted: 0
