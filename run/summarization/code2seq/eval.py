@@ -3,332 +3,372 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-"""
-Train a new model on one or across multiple GPUs.
-"""
 
+"""
+Evaluate the perplexity of a trained language model.
+"""
 import os
-import math
-import random
-import numpy as np
+import sys
 from collections import namedtuple
+import math
 import torch
 from ncc import LOGGER
 from ncc import tasks
-from ncc.logging import meters
-from ncc.trainer.fair_trainer import Trainer
-from ncc.utils import checkpoint_utils, distributed_utils
-from ncc.utils.util_file import load_yaml
-from ncc.logging import metrics, progress_bar
+from ncc.eval import bleu_scorer
+from ncc.utils import checkpoint_utils
+from ncc.logging import progress_bar
 from ncc.utils import utils
-from ncc.utils.file_utils import remove_files
-from ncc.data import iterators
+from ncc.utils.util_file import load_yaml
+from ncc.logging.meters import StopwatchMeter, TimeMeter
+
+import torch.nn.functional as F
 
 
-@metrics.aggregate('train')
-def train(args, trainer, task, epoch_itr):
-    """Train the model for one epoch."""
-    # Initialize data iterator
-    itr = epoch_itr.next_epoch_itr(
-        fix_batches_to_gpus=args['distributed_training']['fix_batches_to_gpus'],
-        shuffle=(epoch_itr.next_epoch_idx > args['dataset']['curriculum']),
-    )
-    update_freq = (
-        args['optimization']['update_freq'][epoch_itr.epoch - 1]
-        if epoch_itr.epoch <= len(args['optimization']['update_freq'])
-        else args['optimization']['update_freq'][-1]
-    )
-    itr = iterators.GroupedIterator(itr, update_freq)
-    progress = progress_bar.progress_bar(
-        itr,
-        log_format=args['common']['log_format'],
-        log_interval=args['common']['log_interval'],
-        epoch=epoch_itr.epoch,
-        tensorboard_logdir=(
-            args['common']['tensorboard_logdir'] if distributed_utils.is_master(args) else None
-        ),
-        default_log_format=('tqdm' if not args['common']['no_progress_bar'] else 'simple'),
-    )
+def sample_beam(args, sample, tgt_dict, model):
+    batch_size = len(sample['id'])
+    DEVICE = sample['target'].device
+    input = torch.LongTensor([batch_size, 1]).fill_(tgt_dict.eos()).to(DEVICE)
 
-    # task specific setup per epoch
-    task.begin_epoch(epoch_itr.epoch, trainer.get_model())
+    # print('sample_beam')
+    beam_size = args['eval']['beam']
+    seq_length = 20
+    seq_all = input.new_zeros(batch_size, seq_length, beam_size).long()
+    seq = input.new_zeros(batch_size, seq_length).long()
+    seqLogprobs = input.new_zeros(batch_size, seq_length).long()
 
-    valid_subsets = args['dataset']['valid_subset'].split(',')
-    max_update = args['optimization']['max_update'] or math.inf
-    for samples in progress:
-        with metrics.aggregate('train_inner'):
-            log_output = trainer.train_step(samples)
-            if log_output is None:  # OOM, overflow, ...
-                continue
+    hidden_state = model.encoder(**sample['net_input'])['encoder_out'][1:]
+    hidden_state=[]
 
-        # log mid-epoch stats
-        num_updates = trainer.get_num_updates()
-        if num_updates % args['common']['log_interval'] == 0:
-            stats = get_training_stats(metrics.get_smoothed_values('train_inner'))
-            progress.log(stats, tag='train_inner', step=num_updates)
+    hidden_size = hidden_state.size(-1)
+    # lets process every image independently for now, for simplicity
+    done_beams = [[] for _ in range(batch_size)]
+    # print('done_beams: ', done_beams)
+    for k in range(batch_size):
+        # copy the hidden state for beam_size time.
+        state = []
+        for state_tmp in hidden_state:
+            state.append(state_tmp[:, k, :].reshape(1, 1, -1).expand(1, beam_size, hidden_size).clone())
+        # print('state: ')
+        # print(state)
+        state = tuple(state)
+        beam_seq = input.new_zeros(seq_length, beam_size).long()
+        # print('beam_seq: ', beam_seq.type(), beam_seq.size())
+        # print(beam_seq)
+        beam_seq_logprobs = input.new_zeros(seq_length, beam_size).long()
+        # print('beam_seq_logprobs: ', beam_seq_logprobs.type(), beam_seq_logprobs.size())
+        # print(beam_seq_logprobs)
+        beam_logprobs_sum = input.new_zeros(beam_size)  # running sum of logprobs for each beam
+        # print('beam_logprobs_sum: ', beam_logprobs_sum.type(), beam_logprobs_sum.size())
+        for t in range(seq_length + 1):
+            # print('step-t: ', t)
+            if t == 0:  # input <bos>
+                it = input.resize_(1, beam_size).fill_(BOS)  # .data
+                xt = self.wemb(it.detach())
+            else:
+                """perform a beam merge. that is,
+                for every previous beam we now many new possibilities to branch out
+                we need to resort our beams to maintain the loop invariant of keeping
+                the top beam_size most likely sequences."""
+                logprobsf = logprobs.float().cpu()  # lets go to CPU for more efficiency in indexing operations
+                ys, ix = torch.sort(logprobsf, 1,
+                                    True)  # sorted array of logprobs along each previous beam (last true = descending)
+                candidates = []
+                cols = min(beam_size, ys.size(1))
+                rows = beam_size
+                if t == 1:  # at first time step only the first beam is active
+                    rows = 1
+                for cc in range(cols):  # for each column (word, essentially)
+                    for qq in range(rows):  # for each beam expansion
+                        # compute logprob of expanding beam q with word in (sorted) position c
+                        local_logprob = ys[qq, cc]
+                        if beam_seq[t - 2, qq] == self.embed_size:  # self.opt.ninp:
+                            local_logprob.data.fill_(-9999)
+                        # print('local_logprob: ', local_logprob.type(), local_logprob.size())
+                        # print(local_logprob)
+                        # print('beam_logprobs_sum[qq]: ', beam_logprobs_sum[qq].type(), beam_logprobs_sum[qq].size())
+                        # print(beam_logprobs_sum[qq])
+                        candidate_logprob = beam_logprobs_sum[qq] + local_logprob
+                        candidates.append({'c': ix.data[qq, cc], 'q': qq, 'p': candidate_logprob.item(),
+                                           'r': local_logprob.item()})
 
-            # reset epoch-level meters
-            metrics.reset_meters('train_inner')
+                candidates = sorted(candidates, key=lambda x: -x['p'])
+                # print('candidates: ', candidates)
+                # construct new beams
+                new_state = [_.clone() for _ in state]
+                # print('new_state: ')
+                # print(new_state)
+                if t > 1:
+                    # well need these as reference when we fork beams around
+                    beam_seq_prev = beam_seq[:t - 1].clone()
+                    beam_seq_logprobs_prev = beam_seq_logprobs[:t - 1].clone()
+                for vix in range(beam_size):
+                    v = candidates[vix]
+                    # fork beam index q into index vix
+                    if t > 1:
+                        beam_seq[:t - 1, vix] = beam_seq_prev[:, v['q']]
+                        beam_seq_logprobs[:t - 1, vix] = beam_seq_logprobs_prev[:, v['q']]
 
-        if (
-            not args['dataset']['disable_validation']
-            and args['checkpoint']['save_interval_updates'] > 0
-            and num_updates % args['checkpoint']['save_interval_updates'] == 0
-            and num_updates > 0
-        ):
-            valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
-            checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, valid_losses[0])
+                    # rearrange recurrent states
+                    for state_ix in range(len(new_state)):
+                        # copy over state in previous beam q to new beam at vix
+                        new_state[state_ix][0, vix] = state[state_ix][0, v['q']]  # dimension one is time step
 
-        if num_updates >= max_update:
-            break
+                    # append new end terminal at the end of this beam
+                    beam_seq[t - 1, vix] = v['c']  # c'th word is the continuation
+                    beam_seq_logprobs[t - 1, vix] = v['r']  # the raw logprob here
+                    beam_logprobs_sum[vix] = v['p']  # the new (sum) logprob along this beam
 
-    # log end-of-epoch stats
-    stats = get_training_stats(metrics.get_smoothed_values('train'))
-    progress.print(stats, tag='train', step=num_updates)
+                    if v['c'] == self.opt.ninp or t == seq_length:
+                        # END token special case here, or we reached the end.
+                        # add the beam to a set of done beams
+                        done_beams[k].append({'seq': beam_seq[:, vix].clone(),
+                                              'logps': beam_seq_logprobs[:, vix].clone(),
+                                              'p': beam_logprobs_sum[vix]
+                                              })
 
-    # reset epoch-level meters
-    metrics.reset_meters('train')
+                # encode as vectors
+                it = beam_seq[t - 1].reshape(1, -1)
+                xt = self.wemb(it.cuda())
 
+            if t >= 1:
+                state = new_state
 
-def validate(args, trainer, task, epoch_itr, subsets):
-    """Evaluate the model on the validation set(s) and return the losses."""
+            output, state = self.rnn(xt, hidden=state)
 
-    if args['dataset']['fixed_validation_seed'] is not None:
-        # set fixed seed for every validation
-        utils.set_torch_seed(args['dataset']['fixed_validation_seed'])
+            output = F.dropout(output, self.dropout, training=self.training)
+            decoded = self.generate_linear(output.reshape(output.size(0) * output.size(1), output.size(2)))
+            logprobs = F.log_softmax(decoded, dim=1)  # self.beta *
 
-    valid_losses = []
-    for subset in subsets:
-        # Initialize data iterator
-        itr = task.get_batch_iterator(
-            dataset=task.dataset(subset),
-            max_tokens=args['dataset']['max_tokens_valid'],
-            max_sentences=args['dataset']['max_sentences_valid'],
-            max_positions=utils.resolve_max_positions(
-                task.max_positions(),
-                trainer.get_model().max_positions(),
-            ),
-            ignore_invalid_inputs=args['dataset']['skip_invalid_size_inputs_valid_test'],
-            required_batch_size_multiple=args['dataset']['required_batch_size_multiple'],
-            seed=args['common']['seed'],
-            num_shards=args['distributed_training']['distributed_world_size'],
-            shard_id=args['distributed_training']['distributed_rank'],
-            num_workers=args['dataset']['num_workers'],
-        ).next_epoch_itr(shuffle=False)
-        progress = progress_bar.progress_bar(
-            itr,
-            log_format=args['common']['log_format'],
-            log_interval=args['common']['log_interval'],
-            epoch=epoch_itr.epoch,
-            prefix=f"valid on '{subset}' subset",
-            tensorboard_logdir=(
-                args['common']['tensorboard_logdir'] if distributed_utils.is_master(args) else None
-            ),
-            default_log_format=('tqdm' if not args['common']['no_progress_bar'] else 'simple'),
-        )
+        done_beams[k] = sorted(done_beams[k], key=lambda x: -x['p'])
+        seq[:, k] = done_beams[k][0]['seq']  # the first beam has highest cumulative score
+        seqLogprobs[:, k] = done_beams[k][0]['logps']
+        for ii in range(beam_size):
+            seq_all[:, k, ii] = done_beams[k][ii]['seq']
 
-        # create a new root metrics aggregator so validation metrics
-        # don't pollute other aggregators (e.g., train meters)
-        with metrics.aggregate(new_root=True) as agg:
-            for sample in progress:
-                trainer.valid_step(sample)
-                # break  # TODO: only for debug
-
-        # log validation stats
-        stats = get_valid_stats(args, trainer, agg.get_smoothed_values())
-        progress.print(stats, tag=subset, step=trainer.get_num_updates())
-
-        valid_losses.append(stats[args['checkpoint']['best_checkpoint_metric']])
-
-    return valid_losses
-
-
-def get_valid_stats(args, trainer, stats):
-    if 'nll_loss' in stats and 'ppl' not in stats:
-        stats['ppl'] = utils.get_perplexity(stats['nll_loss'])
-    stats['num_updates'] = trainer.get_num_updates()
-    if hasattr(checkpoint_utils.save_checkpoint, 'best'):
-        key = 'best_{0}'.format(args['checkpoint']['best_checkpoint_metric'])
-        best_function = max if args['checkpoint']['maximize_best_checkpoint_metric'] else min
-        stats[key] = best_function(
-            checkpoint_utils.save_checkpoint.best,
-            stats[args['checkpoint']['best_checkpoint_metric']],
-        )
-    return stats
+    # return the samples and their log likelihoods
+    return seq.transpose(0, 1), seqLogprobs.transpose(0, 1)
 
 
-def get_training_stats(stats):
-    if 'nll_loss' in stats and 'ppl' not in stats:
-        stats['ppl'] = utils.get_perplexity(stats['nll_loss'])
-    stats['wall'] = round(metrics.get_meter('default', 'wall').elapsed_time, 0)
-    return stats
+def main(args):
+    assert args['eval']['path'] is not None, '--path required for generation!'
+    assert not args['eval']['sampling'] or args['eval']['nbest'] == args['eval']['beam'], \
+        '--sampling requires --nbest to be equal to --beam'
+    assert args['eval']['replace_unk'] is None or args['dataset']['dataset_impl'] == 'raw', \
+        '--replace-unk requires a raw text dataset (--dataset-impl=raw)'
 
-
-def should_stop_early(args, valid_loss):
-    # skip check if no validation was done in the current epoch
-    if valid_loss is None:
-        return False
-    if args['checkpoint']['patience'] <= 0:
-        return False
-
-    def is_better(a, b):
-        return a > b if args['checkpoint']['maximize_best_checkpoint_metric'] else a < b
-
-    prev_best = getattr(should_stop_early, 'best', None)
-    if prev_best is None or is_better(valid_loss, prev_best):
-        should_stop_early.best = valid_loss
-        should_stop_early.num_runs = 0
-        return False
+    if args['eval']['results_path'] is not None:
+        os.makedirs(args['eval']['results_path'], exist_ok=True)
+        output_path = os.path.join(args['eval']['results_path'], 'generate-{}.txt'.format(args['eval']['gen_subset']))
+        with open(output_path, 'w', buffering=1) as h:
+            return _main(args, h)
     else:
-        should_stop_early.num_runs += 1
-        if should_stop_early.num_runs >= args['checkpoint']['patience']:
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
-                args['checkpoint']['patience']))
-
-        return should_stop_early.num_runs >= args['checkpoint']['patience']
+        return _main(args, sys.stdout)
 
 
-def single_main(args, init_distributed=False):
-    assert args['dataset']['max_tokens'] is not None or args['dataset']['max_sentences'] is not None, \
-        'Must specify batch size either with --max-tokens or --max-sentences'
-    metrics.reset()
-
-    # 0. Initialize CUDA and distributed training
-    if torch.cuda.is_available() and not args['common']['cpu']:
-        torch.cuda.set_device(args['distributed_training']['device_id'])
-    np.random.seed(args['common']['seed'])
-    torch.manual_seed(args['common']['seed'])
-    if init_distributed:
-        args['distributed_training']['distributed_rank'] = distributed_utils.distributed_init(args)
-
-    # Verify checkpoint directory
-    if distributed_utils.is_master(args):
-        save_dir = args['checkpoint']['save_dir']
-        checkpoint_utils.verify_checkpoint_directory(save_dir)
-        remove_files(save_dir, 'pt')
-
-    # Print args
+def _main(args, output_file):
+    if args['dataset']['max_tokens'] is None and args['dataset']['max_sentences'] is None:
+        args['dataset']['max_tokens'] = 12000
     LOGGER.info(args)
 
-    # 1. Setup task, e.g., translation, language modeling, etc.
+    use_cuda = torch.cuda.is_available() and not args['common']['cpu']
+
+    # Load dataset splits
     task = tasks.setup_task(args)
+    task.load_dataset(args['dataset']['gen_subset'])
 
-    # 2. Load valid dataset (we load training data below, based on the latest checkpoint)
-    for valid_sub_split in args['dataset']['valid_subset'].split(','):
-        task.load_dataset(valid_sub_split, combine=False, epoch=1)
+    # Set dictionaries
+    try:
+        src_dict = getattr(task, 'source_dictionary', None)
+    except NotImplementedError:
+        src_dict = None
+    tgt_dict = task.target_dictionary
 
-    # 3. Build model and criterion
-    model = task.build_model(args)
-    criterion = task.build_criterion(args)
-    LOGGER.info(model)
-    LOGGER.info('model {}, criterion {}'.format(args['model']['arch'], criterion.__class__.__name__))
-    LOGGER.info('num. model params: {} (num. trained: {})'.format(
-        sum(p.numel() for p in model.parameters()),
-        sum(p.numel() for p in model.parameters() if p.requires_grad),
-    ))
+    # Load ensemble
+    LOGGER.info('loading model(s) from {}'.format(args['eval']['path']))
+    models, _model_args = checkpoint_utils.load_model_ensemble(
+        utils.split_paths(args['eval']['path']),
+        arg_overrides=eval(args['eval']['model_overrides']),
+        task=task,
+    )
 
-    # 4. Build trainer
-    trainer = Trainer(args, task, model, criterion)
-    LOGGER.info('training on {} GPUs'.format(args['distributed_training']['distributed_world_size']))
-    LOGGER.info('max tokens per GPU = {} and max sentences per GPU = {}'.format(
-        args['dataset']['max_tokens'],
-        args['dataset']['max_sentences'],
-    ))
-
-    # 5. Load the latest checkpoint if one is available and restore the corresponding train iterator
-    extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer, combine=False)
-
-    # 6. Train until the learning rate gets too small
-    max_epoch = args['optimization']['max_epoch'] or math.inf
-    max_update = args['optimization']['max_update'] or math.inf
-    lr = trainer.get_lr()
-    train_meter = meters.StopwatchMeter()
-    train_meter.start()
-    valid_subsets = args['dataset']['valid_subset'].split(',')
-    while (
-        lr > args['optimization']['min_lr']
-        and epoch_itr.next_epoch_idx <= max_epoch
-        and trainer.get_num_updates() < max_update
-    ):
-        # train for one epoch
-        # train(args, trainer, task, epoch_itr)
-
-        if not args['dataset']['disable_validation'] and epoch_itr.epoch % args['dataset']['validate_interval'] == 0:
-            valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
-        else:
-            valid_losses = [None]
-
-        # only use first validation loss to update the learning rate
-        lr = trainer.lr_step(epoch_itr.epoch, valid_losses[0])
-
-        # save checkpoint
-        if epoch_itr.epoch % args['checkpoint']['save_interval'] == 0:
-            checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, valid_losses[0])
-
-        # early stop
-        if should_stop_early(args, valid_losses[0]):
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
-                args['checkpoint']['patience']))
-            break
-
-        epoch_itr = trainer.get_train_iterator(
-            epoch_itr.next_epoch_idx,
-            combine=False,  # TODO to be checked
-            # sharded data: get train iterator for next epoch
-            load_dataset=(os.pathsep in args['task']['data']),
+    # Optimize ensemble for generation
+    for model in models:
+        model.make_generation_fast_(
+            beamable_mm_beam_size=None if args['eval']['no_beamable_mm'] else args['eval']['beam'],
+            need_attn=args['eval']['print_alignment'],
         )
+        if _model_args['common']['fp16']:
+            model.half()
+        if use_cuda:
+            model.cuda()
 
-    train_meter.stop()
-    LOGGER.info('done training in {:.1f} seconds'.format(train_meter.sum))
+    # Load alignment dictionary for unknown word replacement
+    # (None if no unknown word replacement, empty if no path to align dictionary)
+    align_dict = utils.load_align_dict(args['eval']['replace_unk'])
 
+    # Load dataset (possibly sharded)
+    itr = task.get_batch_iterator(
+        dataset=task.dataset(args['dataset']['gen_subset']),
+        max_tokens=args['dataset']['max_tokens'],
+        max_sentences=args['dataset']['max_sentences'],
+        max_positions=utils.resolve_max_positions(
+            task.max_positions(),
+            *[model.max_positions() for model in models]
+        ),
+        ignore_invalid_inputs=_model_args['dataset']['skip_invalid_size_inputs_valid_test'],
+        required_batch_size_multiple=_model_args['dataset']['required_batch_size_multiple'],
+        # num_shards=_model_args['dataset']['num_shards'],
+        # shard_id=_model_args['dataset']['shard_id'],
+        num_workers=_model_args['dataset']['num_workers'],
+    ).next_epoch_itr(shuffle=False)
+    progress = progress_bar.progress_bar(
+        itr,
+        log_format=_model_args['common']['log_format'],
+        log_interval=_model_args['common']['log_interval'],
+        default_log_format=('tqdm' if not _model_args['common']['no_progress_bar'] else 'none'),
+    )
 
-def distributed_main(i, args, start_rank=0):
-    args['distributed_training']['device_id'] = i
-    if args['distributed_training']['distributed_rank'] is None:  # torch.multiprocessing.spawn
-        args['distributed_training']['distributed_rank'] = start_rank + i
-    single_main(args, init_distributed=True)
+    # Initialize generator
+    gen_timer = StopwatchMeter()
+    generator = task.build_generator(args)
+
+    from ncc.eval import search
+    search.BeamSearch(tgt_dict)
+
+    # Generate and compute BLEU score
+    if args['eval']['sacrebleu']:
+        scorer = bleu_scorer.SacrebleuScorer()
+    else:
+        scorer = bleu_scorer.Scorer(tgt_dict.pad(), tgt_dict.eos(), tgt_dict.unk())
+    num_sentences = 0
+    has_target = True
+    wps_meter = TimeMeter()
+
+    model = models[0]
+    for sample in progress:
+        sample = utils.move_to_cuda(sample) if use_cuda else sample
+        if 'net_input' not in sample:
+            continue
+
+        prefix_tokens = None
+        if args['eval']['prefix_size'] > 0:
+            prefix_tokens = sample['target'][:, :args['eval']['prefix_size']]
+
+        sample_beam(args, sample, tgt_dict, model)
+
+        gen_timer.start()
+        hypos = task.inference_step(generator, models, sample, prefix_tokens)
+        num_generated_tokens = sum(len(h[0]['tokens']) for h in hypos)
+        gen_timer.stop(num_generated_tokens)
+
+        for i, sample_id in enumerate(sample['id'].tolist()):
+            has_target = sample['target'] is not None
+
+            # Remove padding
+            src_tokens = utils.strip_pad(sample['net_input']['src_tokens'][i, :], tgt_dict.pad())
+            target_tokens = None
+            if has_target:
+                target_tokens = utils.strip_pad(sample['target'][i, :], tgt_dict.pad()).int().cpu()
+
+            # Either retrieve the original sentences or regenerate them from tokens.
+            if align_dict is not None:
+                src_str = task.dataset(args['dataset']['gen_subset']).src.get_original_text(sample_id)
+                target_str = task.dataset(args['dataset']['gen_subset']).tgt.get_original_text(sample_id)
+            else:
+                if src_dict is not None:
+                    src_str = src_dict.string(src_tokens, args['eval']['remove_bpe'])
+                else:
+                    src_str = ""
+                if has_target:
+                    target_str = tgt_dict.string(target_tokens, args['eval']['remove_bpe'], escape_unk=True)
+
+            if not args['eval']['quiet']:
+                if src_dict is not None:
+                    print('S-{}\t{}'.format(sample_id, src_str), file=output_file)
+                if has_target:
+                    print('T-{}\t{}'.format(sample_id, target_str), file=output_file)
+
+            # Process top predictions
+            for j, hypo in enumerate(hypos[i][:args['eval']['nbest']]):
+                hypo_tokens, hypo_str, alignment = utils.post_process_prediction(
+                    hypo_tokens=hypo['tokens'].int().cpu(),
+                    src_str=src_str,
+                    alignment=hypo['alignment'],
+                    align_dict=align_dict,
+                    tgt_dict=tgt_dict,
+                    remove_bpe=args['eval']['remove_bpe'],
+                )
+
+                if not args['eval']['quiet']:
+                    score = hypo['score'] / math.log(2)  # convert to base 2
+                    print('H-{}\t{}\t{}'.format(sample_id, score, hypo_str), file=output_file)
+                    print('P-{}\t{}'.format(
+                        sample_id,
+                        ' '.join(map(
+                            lambda x: '{:.4f}'.format(x),
+                            # convert from base e to base 2
+                            hypo['positional_scores'].div_(math.log(2)).tolist(),
+                        ))
+                    ), file=output_file)
+
+                    if args['eval']['print_alignment']:
+                        print('A-{}\t{}'.format(
+                            sample_id,
+                            ' '.join(['{}-{}'.format(src_idx, tgt_idx) for src_idx, tgt_idx in alignment])
+                        ), file=output_file)
+
+                    if args['eval']['print_step']:
+                        print('I-{}\t{}'.format(sample_id, hypo['steps']), file=output_file)
+
+                    # if getattr(args, 'retain_iter_history', False):
+                    if args['eval']['retain_iter_history']:
+                        for step, h in enumerate(hypo['history']):
+                            _, h_str, _ = utils.post_process_prediction(
+                                hypo_tokens=h['tokens'].int().cpu(),
+                                src_str=src_str,
+                                alignment=None,
+                                align_dict=None,
+                                tgt_dict=tgt_dict,
+                                remove_bpe=None,
+                            )
+                            print('E-{}_{}\t{}'.format(sample_id, step, h_str), file=output_file)
+
+                # Score only the top hypothesis
+                if has_target and j == 0:
+                    if align_dict is not None or args['eval']['remove_bpe'] is not None:
+                        # Convert back to tokens for evaluation with unk replacement and/or without BPE
+                        target_tokens = tgt_dict.encode_line(target_str, add_if_not_exist=True)
+                    if hasattr(scorer, 'add_string'):
+                        scorer.add_string(target_str, hypo_str)
+                    else:
+                        scorer.add(target_tokens, hypo_tokens)
+
+        wps_meter.update(num_generated_tokens)
+        progress.log({'wps': round(wps_meter.avg)})
+        num_sentences += sample['nsentences']
+
+        break
+
+    LOGGER.info('NOTE: hypothesis and token scores are output in base 2')
+    LOGGER.info('Translated {} sentences ({} tokens) in {:.1f}s ({:.2f} sentences/s, {:.2f} tokens/s)'.format(
+        num_sentences, gen_timer.n, gen_timer.sum, num_sentences / gen_timer.sum, 1. / gen_timer.avg))
+    if has_target:
+        LOGGER.info('Generate {} with beam={}: {}'.format(args['dataset']['gen_subset'], args['eval']['beam'],
+                                                          scorer.result_string()))
+
+    return scorer
 
 
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('ruby.yml')
+    args_ = Argues('ruby.yml')  # train_sl
     LOGGER.info(args_)
     yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)
-
-    if args['distributed_training']['distributed_init_method'] is None:
-        distributed_utils.infer_init_method(args)
-
-    if args['distributed_training']['distributed_init_method'] is not None:
-        # distributed training
-        if torch.cuda.device_count() > 1 and not args['distributed_training']['distributed_no_spawn']:
-            start_rank = args['distributed_training']['distributed_rank']
-            args['distributed_training']['distributed_rank'] = None  # assign automatically
-            torch.multiprocessing.spawn(
-                fn=distributed_main,
-                args=(args, start_rank),
-                nprocs=torch.cuda.device_count(),
-            )
-        else:
-            distributed_main(args['distributed_training']['device_id'], args)
-    elif args['distributed_training']['distributed_world_size'] > 1:
-        # fallback for single node with multiple GPUs
-        assert args['distributed_training']['distributed_world_size'] <= torch.cuda.device_count()
-        port = random.randint(10000, 20000)
-        args['distributed_training']['distributed_init_method'] = 'tcp://localhost:{port}'.format(port=port)
-        args['distributed_training']['distributed_rank'] = None  # set based on device id
-        torch.multiprocessing.spawn(
-            fn=distributed_main,
-            args=(args,),
-            nprocs=args['distributed_training']['distributed_world_size'],
-        )
-    else:
-        LOGGER.info('single GPU training...')
-        single_main(args)
+    main(args)
 
 
 if __name__ == '__main__':
-    """nohup python -m run.summarization.code2seq.train > run/summarization/code2seq/ruby.log 2>&1 &"""
     cli_main()

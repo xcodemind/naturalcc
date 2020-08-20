@@ -8,7 +8,7 @@ bpe: ~ # default=None
 ##################### default args #####################
 common:
   no_progress_bar: 0 # action='store_true', help='disable progress bar'
-  log_interval: 500 # type=int, default=100, metavar='N', help='log progress every N batches (when progress bar is disabled)'
+  log_interval: 100 # type=int, default=100, metavar='N', help='log progress every N batches (when progress bar is disabled)'
   log_format: simple # default=None, help='log format to use', choices=['json', 'none', 'simple', 'tqdm']
   tensorboard_logdir: '' # default='', help='path to save logs for tensorboard, should match --logdir of running tensorboard (default: no tensorboard logging)'
 #  seed: 42 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
@@ -37,7 +37,7 @@ dataset:
   num_workers: 1 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
   skip_invalid_size_inputs_valid_test: 1 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
-  max_sentences: 8 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  max_sentences: 16 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
 #  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
   dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
@@ -85,7 +85,7 @@ distributed_training:
 
 
 task:
-  data: ~/.ncc/multi/summarization/data-mmap/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/CodeSearchNet/summarization/data-mmap/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 
   # for summarization
   source_lang: code_tokens
@@ -94,7 +94,7 @@ task:
   left_pad_source: 1 #', default='True', type=str, metavar='BOOL', help='pad the source on the left'
   left_pad_target: 0 #', default='False', tydecoder_out_embed_dimpe=str, metavar='BOOL', help='pad the target on the left'
   max_source_positions: ~ #', default=1024, type=int, metavar='N', help='max number of tokens in the source sequence'
-  max_target_positions: ~ #', default=1024, type=int, metavar='N', help='max number of tokens in the target sequence'
+  max_target_positions: 100 #', default=1024, type=int, metavar='N', help='max number of tokens in the target sequence'
   upsample_primary: 1 #', default=1, type=int, help='amount to upsample primary dataset'
   truncate_source: 0 #', action='store_true', default=False, help='truncate source to max-source-positions'
 
@@ -106,9 +106,7 @@ task:
   eval_bleu_remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE before computing BLEU'
   eval_bleu_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
   eval_bleu_print_samples: 0 #', action='store_true', help='print sample generations during validation'
-
   append_eos_to_target: 1 # default=True, append eos to the end of target sentence for summarization task
-  num_sample: 200 # we sample {num_sample} sub-paths from all code path-modality data
 
 
 model:
@@ -141,11 +139,11 @@ model:
 #  dropout: 0.2 # （固定，不要调）dropout
 #  decoder_input_feed: False # （固定，不要调）True, False
   max_source_positions: ~
-  max_target_positions: 50
+  max_target_positions: ~
 
 
 optimization:
-  max_epoch: 0 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
+  max_epoch: 1 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
   max_update: 0 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
   clip_norm: 25 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
@@ -202,7 +200,7 @@ checkpoint:
   best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
   patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
-  save_dir: ~/.ncc/multi/summarization/data-mmap/ruby/codenn/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
+  save_dir: ~/.ncc/CodeSearchNet/summarization/data-mmap/ruby/codenn/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
   model_name_or_path: ~ # default=None, type=str, help="The model checkpoint for weights initialization. Leave None if you want to train a model from scratch.",
   cache_dir: ~ # default=None, type=str, help="Optional directory to store the pre-trained models downloaded from s3 (instead of the default one)",
@@ -214,13 +212,13 @@ checkpoint:
 
 
 eval:
-  path: ~/.ncc/multi/summarization/data-mmap/ruby/codenn/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  path: ~/.ncc/CodeSearchNet/summarization/data-mmap/ruby/codenn/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
   quiet: 1 # ', action='store_true', help='only print final scores'
   results_path: ~ # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'
   model_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override model args at generation '
 
-  max_sentences: 64 # evaluation batch size, because while evaluation, it will not cost much ram, we can increase the batch size
+  max_sentences: 256 # evaluation batch size, because while evaluation, it will not cost much ram, we can increase the batch size
   beam: 5 # ', default=5, type=int, metavar='N', help='beam size')
   nbest: 1 # ', default=1, type=int, metavar='N', help='number of hypotheses to output')
   max_len_a: 0 #', default=0, type=float, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))
