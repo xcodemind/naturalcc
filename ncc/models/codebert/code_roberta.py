@@ -20,8 +20,11 @@ from ncc.modules.seq2seq.fairseq_decoder import FairseqDecoder
 from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.roberta.transformer_sentence_encoder import init_bert_params
 from ncc.modules.roberta.transformer_sentence_encoder import TransformerSentenceEncoder
+from ncc.modules.code2vec.transformer_encoder import TransformerEncoder
+from ncc.modules.embedding import Embedding
 from ncc.models.hub_interface import RobertaHubInterface
 from ncc import LOGGER
+DEFAULT_MAX_SOURCE_POSITIONS = 1e5
 
 
 @register_model('code_roberta')
@@ -269,28 +272,46 @@ class RobertaEncoder(FairseqDecoder):
         # RoBERTa is a sentence encoder model, so users will intuitively trim
         # encoder layers. However, the implementation uses the fairseq decoder,
         # so we fix here.
-        if args['model']['encoder_layers_to_keep']:
-            args['model']['encoder_layers'] = len(args['model']['encoder_layers_to_keep'].split(","))
-            args['model']['decoder_layers_to_keep'] = args['model']['encoder_layers_to_keep']
-            args['model']['encoder_layers_to_keep'] = None
+        # if args['model']['encoder_layers_to_keep']:
+        #     args['model']['encoder_layers'] = len(args['model']['encoder_layers_to_keep'].split(","))
+        #     args['model']['decoder_layers_to_keep'] = args['model']['encoder_layers_to_keep']
+        #     args['model']['encoder_layers_to_keep'] = None
 
-        self.sentence_encoder = TransformerSentenceEncoder(
-            padding_idx=dictionary.pad(),
-            vocab_size=len(dictionary),
-            num_encoder_layers=args['model']['encoder_layers'],
-            embedding_dim=args['model']['encoder_embed_dim'],
-            ffn_embedding_dim=args['model']['encoder_ffn_embed_dim'],
-            num_attention_heads=args['model']['encoder_attention_heads'],
-            dropout=args['model']['dropout'],
-            attention_dropout=args['model']['attention_dropout'],
-            activation_dropout=args['model']['activation_dropout'],
-            layerdrop=args['model']['encoder_layerdrop'],
-            max_seq_len=args['model']['max_positions'],
-            num_segments=0,
-            encoder_normalize_before=True,
-            apply_bert_init=True,
-            activation_fn=args['model']['activation_fn'],
+        # self.sentence_encoder = TransformerSentenceEncoder(
+        #     padding_idx=dictionary.pad(),
+        #     vocab_size=len(dictionary),
+        #     num_encoder_layers=args['model']['encoder_layers'],
+        #     embedding_dim=args['model']['encoder_embed_dim'],
+        #     ffn_embedding_dim=args['model']['encoder_ffn_embed_dim'],
+        #     num_attention_heads=args['model']['encoder_attention_heads'],
+        #     dropout=args['model']['dropout'],
+        #     attention_dropout=args['model']['attention_dropout'],
+        #     activation_dropout=args['model']['activation_dropout'],
+        #     layerdrop=args['model']['encoder_layerdrop'],
+        #     max_seq_len=args['model']['max_positions'],
+        #     num_segments=0,
+        #     encoder_normalize_before=True,
+        #     apply_bert_init=True,
+        #     activation_fn=args['model']['activation_fn'],
+        # )
+        if args['model']['max_source_positions'] is None:
+            args['model']['max_source_positions'] = DEFAULT_MAX_SOURCE_POSITIONS
+
+        def build_embedding(dictionary, embed_dim, path=None):
+            num_embeddings = len(dictionary)
+            padding_idx = dictionary.pad()
+            emb = Embedding(num_embeddings, embed_dim, padding_idx)
+            # if provided, load from preloaded dictionaries
+            if path:
+                embed_dict = utils.parse_embedding(path)
+                utils.load_embedding(embed_dict, dictionary, emb)
+            return emb
+
+        embed_tokens = build_embedding(
+            dictionary, args['model']['encoder_embed_dim'], args['model']['encoder_embed_path']
         )
+
+        self.sentence_encoder = TransformerSentenceEncoder(args, dictionary, embed_tokens, num_segments=0)
         self.lm_head = RobertaLMHead(
             embed_dim=args['model']['encoder_embed_dim'],
             output_dim=len(dictionary),

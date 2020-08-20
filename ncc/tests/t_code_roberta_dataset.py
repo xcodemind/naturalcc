@@ -241,21 +241,22 @@ if __name__ == '__main__':
     #     ),
     #     default_log_format=('tqdm' if not args['common']['no_progress_bar'] else 'simple'),
     # )
+
     itr = epoch_itr.next_epoch_itr(
         fix_batches_to_gpus=args['distributed_training']['fix_batches_to_gpus'],
         shuffle=(epoch_itr.next_epoch_idx > args['dataset']['curriculum']),
     )
-    for i, obj in enumerate(itr):
-        print('i: ', i)
-        print('obj: ', obj)
-        exit()
-    exit()
+    # for i, obj in enumerate(itr):
+    #     print('i: ', i)
+    #     print('obj: ', obj)
+    #     exit()
+    # exit()
+
     update_freq = (
         args['optimization']['update_freq'][epoch_itr.epoch - 1]
         if epoch_itr.epoch <= len(args['optimization']['update_freq'])
         else args['optimization']['update_freq'][-1]
     )
-    update_freq = 1
     itr = iterators.GroupedIterator(itr, update_freq)
     progress = progress_bar.progress_bar(
         itr,
@@ -273,7 +274,7 @@ if __name__ == '__main__':
 
     for samples in progress:
         print('samples: ', samples)
-        exit()
+        # exit()
         log_output = trainer.train_step(samples)
         if log_output is None:  # OOM, overflow, ...
             continue

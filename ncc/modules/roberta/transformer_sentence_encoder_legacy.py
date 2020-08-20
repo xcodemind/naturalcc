@@ -2,31 +2,15 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-import sys
 from typing import Optional, Tuple
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from ncc.modules.roberta.layer_norm import LayerNorm
-from ncc.modules.attention.unilm_multihead_attention import UnilmMultiheadAttention
+from ncc.modules.attention.multihead_attention import MultiheadAttention
 from ncc.modules.roberta.positional_embedding import PositionalEmbedding
-from ncc.modules.codebert.unilm_transformer_sentence_encoder_layer import UnilmTransformerSentenceEncoderLayer
 from ncc.modules.roberta.transformer_sentence_encoder_layer import TransformerSentenceEncoderLayer
 import random
-from ncc.data import constants
-
-
-def get_sent_end_repr(src_emb, sent_ends):
-    bsz, nsent = sent_ends.size()
-    assert bsz == src_emb.size(0)
-    seqlen = src_emb.size(1)
-    offset = torch.linspace(0, (bsz-1)*seqlen, bsz).type(sent_ends.type())
-    sent_ends_abs = sent_ends + offset.view(-1, 1)
-    sent_ends_repr = src_emb.contiguous().view(bsz*seqlen, -1)[sent_ends_abs]
-    sent_ends_repr = sent_ends_repr.view(bsz, nsent, -1)
-
-    return sent_ends_repr
 
 
 def init_bert_params(module):
@@ -51,13 +35,13 @@ def init_bert_params(module):
         module.weight.data.normal_(mean=0.0, std=0.02)
         if module.padding_idx is not None:
             module.weight.data[module.padding_idx].zero_()
-    if isinstance(module, UnilmMultiheadAttention):
+    if isinstance(module, MultiheadAttention):
         module.q_proj.weight.data.normal_(mean=0.0, std=0.02)
         module.k_proj.weight.data.normal_(mean=0.0, std=0.02)
         module.v_proj.weight.data.normal_(mean=0.0, std=0.02)
 
 
-class HiUnilmTransformerSentenceEncoder(nn.Module):
+class TransformerSentenceEncoder(nn.Module):
     """
     Implementation for a Bi-directional Transformer based Sentence Encoder used
     in BERT/XLM style pre-trained models.
@@ -82,32 +66,32 @@ class HiUnilmTransformerSentenceEncoder(nn.Module):
     """
 
     def __init__(
-        self,
-        padding_idx: int,
-        vocab_size: int,
-        num_encoder_layers: int = 6,
-        embedding_dim: int = 768,
-        ffn_embedding_dim: int = 3072,
-        num_attention_heads: int = 8,
-        dropout: float = 0.1,
-        attention_dropout: float = 0.1,
-        activation_dropout: float = 0.1,
-        layerdrop : float = 0.0,
-        max_seq_len: int = 256,
-        num_segments: int = 2,
-        use_position_embeddings: bool = True,
-        offset_positions_by_padding: bool = True,
-        encoder_normalize_before: bool = False,
-        apply_bert_init: bool = False,
-        activation_fn: str = "relu",
-        learned_pos_embedding: bool = True,
-        add_bias_kv: bool = False,
-        add_zero_attn: bool = False,
-        embed_scale: float = None,
-        freeze_embeddings: bool = False,
-        n_trans_layers_to_freeze: int = 0,
-        export: bool = False,
-        traceable: bool = False,
+            self,
+            padding_idx: int,
+            vocab_size: int,
+            num_encoder_layers: int = 6,
+            embedding_dim: int = 768,
+            ffn_embedding_dim: int = 3072,
+            num_attention_heads: int = 8,
+            dropout: float = 0.1,
+            attention_dropout: float = 0.1,
+            activation_dropout: float = 0.1,
+            layerdrop: float = 0.0,
+            max_seq_len: int = 256,
+            num_segments: int = 2,
+            use_position_embeddings: bool = True,
+            offset_positions_by_padding: bool = True,
+            encoder_normalize_before: bool = False,
+            apply_bert_init: bool = False,
+            activation_fn: str = "relu",
+            learned_pos_embedding: bool = True,
+            add_bias_kv: bool = False,
+            add_zero_attn: bool = False,
+            embed_scale: float = None,
+            freeze_embeddings: bool = False,
+            n_trans_layers_to_freeze: int = 0,
+            export: bool = False,
+            traceable: bool = False,
     ) -> None:
 
         super().__init__()
@@ -145,27 +129,7 @@ class HiUnilmTransformerSentenceEncoder(nn.Module):
             else None
         )
 
-        # this layers is for path representation (path-level)
         self.layers = nn.ModuleList(
-            [
-                UnilmTransformerSentenceEncoderLayer(
-                    embedding_dim=self.embedding_dim,
-                    ffn_embedding_dim=ffn_embedding_dim,
-                    num_attention_heads=num_attention_heads,
-                    dropout=self.dropout,
-                    attention_dropout=attention_dropout,
-                    activation_dropout=activation_dropout,
-                    activation_fn=activation_fn,
-                    add_bias_kv=add_bias_kv,
-                    add_zero_attn=add_zero_attn,
-                    export=export,
-                )
-                for _ in range(num_encoder_layers)
-            ]
-        )
-
-        # this layers is for the whole AST representation (ast-level/documment-level)
-        self.doc_layers = nn.ModuleList(
             [
                 TransformerSentenceEncoderLayer(
                     embedding_dim=self.embedding_dim,
@@ -209,28 +173,24 @@ class HiUnilmTransformerSentenceEncoder(nn.Module):
     def forward(
             self,
             tokens: torch.Tensor,
-            src_sent_ends, doc_pad_mask, doc_pos_tok,
             segment_labels: torch.Tensor = None,
-            attention_mask=None,
             last_state_only: bool = False,
             positions: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-
-        attention_mask = (1 - attention_mask) * (-constants.INF)
 
         # compute padding mask. This is needed for multi-head attention
         padding_mask = tokens.eq(self.padding_idx)
         if not self.traceable and not padding_mask.any():
             padding_mask = None
 
-        # TODO: extend padding mask
-
-        # token/position/segment embedding
         x = self.embed_tokens(tokens)
+
         if self.embed_scale is not None:
             x *= self.embed_scale
+
         if self.embed_positions is not None:
             x += self.embed_positions(tokens, positions=positions)
+
         if self.segment_embeddings is not None and segment_labels is not None:
             x += self.segment_embeddings(segment_labels)
 
@@ -243,6 +203,9 @@ class HiUnilmTransformerSentenceEncoder(nn.Module):
         if padding_mask is not None:
             x *= 1 - padding_mask.unsqueeze(-1).type_as(x)
 
+        # B x T x C -> T x B x C
+        x = x.transpose(0, 1)
+
         inner_states = []
         if not last_state_only:
             inner_states.append(x)
@@ -251,33 +214,16 @@ class HiUnilmTransformerSentenceEncoder(nn.Module):
             # add LayerDrop (see https://arxiv.org/abs/1909.11556 for description)
             dropout_probability = random.uniform(0, 1)
             if not self.training or (dropout_probability > self.layerdrop):
-                x, _ = layer(x, attn_mask=attention_mask)
-                # x, _ = layer(x, self_attn_mask_unilm=attention_mask_unilm, self_attn_padding_mask=padding_mask, mask_qkv=None, segment_labels=None)
+                x, _ = layer(x, self_attn_padding_mask=padding_mask)
                 if not last_state_only:
                     inner_states.append(x)
 
-        # sentence_rep = x[0, :, :]
-        # sentence_rep = x[-1, :, :]  # last symbol of each sentence should be EOS/SEP
-
-
-        # TODO: ast layer transformer
-        # sent_repr = sentence_rep
-        sent_repr = get_sent_end_repr(x, src_sent_ends)
-        # print('sent_repr', sent_repr.size())
-        # sent_repr = sent_repr + doc_pos
-        # print('sent_repr after', sent_repr.size())
-        # n_sent x bsz x C
-        sent_repr = sent_repr.transpose(0, 1)  # TODO
-        for doc_layer in self.doc_layers:
-            # add LayerDrop (see https://arxiv.org/abs/1909.11556 for description)
-            dropout_probability = random.uniform(0, 1)
-            if not self.training or (dropout_probability > self.layerdrop):
-                sent_repr, _ = doc_layer(sent_repr, self_attn_mask=doc_pad_mask)
+        sentence_rep = x[0, :, :]  # <CLS> presentation
 
         if last_state_only:
             inner_states = [x]
 
         if self.traceable:
-            return torch.stack(inner_states), sent_repr
+            return torch.stack(inner_states), sentence_rep
         else:
-            return inner_states, sent_repr
+            return inner_states, sentence_rep

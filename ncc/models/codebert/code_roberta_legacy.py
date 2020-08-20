@@ -18,14 +18,14 @@ from ncc.models import (
 )
 from ncc.modules.seq2seq.fairseq_decoder import FairseqDecoder
 from ncc.modules.roberta.layer_norm import LayerNorm
-from ncc.modules.codebert.unilm_transformer_sentence_encoder import init_bert_params
-from ncc.modules.codebert.hi_unilm_transformer_sentence_encoder import HiUnilmTransformerSentenceEncoder
+from ncc.modules.roberta.transformer_sentence_encoder import init_bert_params
+from ncc.modules.roberta.transformer_sentence_encoder import TransformerSentenceEncoder
 from ncc.models.hub_interface import RobertaHubInterface
 from ncc import LOGGER
 
 
-@register_model('hi_code_docstring_unilm')
-class HiCodeDocstringUnilmModel(FairseqLanguageModel):
+@register_model('code_roberta_legacy')
+class CodeRobertaModel(FairseqLanguageModel):
 
     @classmethod
     def hub_models(cls):
@@ -59,7 +59,7 @@ class HiCodeDocstringUnilmModel(FairseqLanguageModel):
         encoder = RobertaEncoder(args, task.source_dictionary)
         return cls(args, encoder)
 
-    def forward_(self, src_tokens, features_only=False, return_all_hiddens=False, classification_head_name=None,
+    def forward(self, src_tokens, features_only=False, return_all_hiddens=False, classification_head_name=None,
                  **kwargs):
         if classification_head_name is not None:
             features_only = True
@@ -68,21 +68,6 @@ class HiCodeDocstringUnilmModel(FairseqLanguageModel):
 
         if classification_head_name is not None:
             x = self.classification_heads[classification_head_name](x)
-        return x, extra
-
-    # 'src_tokens': src_tokens,
-    # 'src_sent_ends': src_sent_ends,
-    # 'doc_pad_mask': doc_pad_mask,
-    # 'doc_pos_tok': doc_pos_tok,
-    # 'segment_labels': segment_labels,
-    # 'attention_mask_unilm': attention_mask_unilm,
-    # 'masked_pos': masked_pos,
-    def forward(self, src_tokens, src_sent_ends, doc_pad_mask, doc_pos_tok, segment_labels, attention_mask_unilm,
-                mask_qkv=None, **kwargs):
-        print('forward...')
-        x, extra = self.decoder(src_tokens, src_sent_ends, doc_pad_mask, doc_pos_tok, segment_labels, attention_mask_unilm,
-                                                      output_all_encoded_layers=False, mask_qkv=mask_qkv, **kwargs)
-
         return x, extra
 
     def register_classification_head(self, name, num_classes=None, inner_dim=None, **kwargs):
@@ -173,6 +158,54 @@ class HiCodeDocstringUnilmModel(FairseqLanguageModel):
                     LOGGER.info('Overwriting ' + prefix + 'classification_heads.' + k)
                     state_dict[prefix + 'classification_heads.' + k] = v
 
+    def upgrade_state_dict_named_for_summarization(self, state_dict, name):
+        super().upgrade_state_dict_named(state_dict, name)
+
+        prefix = name + '.' if name != '' else ''
+        current_head_names = [] if not hasattr(self, 'classification_heads') else \
+            self.classification_heads.keys()
+
+        # Handle new classification heads present in the state dict.
+        keys_to_delete = []
+        for k in state_dict.keys():
+            if not k.startswith(prefix + 'classification_heads.'):
+                continue
+
+            head_name = k[len(prefix + 'classification_heads.'):].split('.')[0]
+            num_classes = state_dict[prefix + 'classification_heads.' + head_name + '.out_proj.weight'].size(0)
+            inner_dim = state_dict[prefix + 'classification_heads.' + head_name + '.dense.weight'].size(0)
+
+            # if getattr(self.args, 'load_checkpoint_heads', False):
+            if 'load_checkpoint_heads' in self.args['model']:
+                if head_name not in current_head_names:
+                    self.register_classification_head(head_name, num_classes, inner_dim)
+            else:
+                if head_name not in current_head_names:
+                    LOGGER.warning(
+                        'deleting classification head ({}) from checkpoint '
+                        'not present in current model: {}'.format(head_name, k)
+                    )
+                    keys_to_delete.append(k)
+                elif (
+                        num_classes != self.classification_heads[head_name].out_proj.out_features
+                        or inner_dim != self.classification_heads[head_name].dense.out_features
+                ):
+                    LOGGER.warning(
+                        'deleting classification head ({}) from checkpoint '
+                        'with different dimensions than current model: {}'.format(head_name, k)
+                    )
+                    keys_to_delete.append(k)
+        for k in keys_to_delete:
+            del state_dict[k]
+
+        # Copy any newly-added classification heads into the state dict
+        # with their current weights.
+        if hasattr(self, 'classification_heads'):
+            cur_state = self.classification_heads.state_dict()
+            for k, v in cur_state.items():
+                if prefix + 'classification_heads.' + k not in state_dict:
+                    LOGGER.info('Overwriting ' + prefix + 'classification_heads.' + k)
+                    state_dict[prefix + 'classification_heads.' + k] = v
 
 class RobertaLMHead(nn.Module):
     """Head for masked language modeling."""
@@ -191,15 +224,8 @@ class RobertaLMHead(nn.Module):
     def forward(self, features, masked_tokens=None, **kwargs):
         # Only project the unmasked tokens while training,
         # saves both memory and computation
-        # from ipdb import set_trace
-        # set_trace()
         if masked_tokens is not None:
-            new_masked_tokens = masked_tokens.unsqueeze(-1).expand(-1, -1, features.size(-1))
-            _pad_tensor = torch.zeros(features.size(0), features.size(1) - new_masked_tokens.size(1),
-                                      features.size(-1)).bool()
-            new_masked_tokens = torch.cat([new_masked_tokens, _pad_tensor], dim=1)
-            # features = features[masked_tokens, :]
-            features = features * new_masked_tokens.float()
+            features = features[masked_tokens, :]
 
         x = self.dense(features)
         x = self.activation_fn(x)
@@ -248,7 +274,7 @@ class RobertaEncoder(FairseqDecoder):
             args['model']['decoder_layers_to_keep'] = args['model']['encoder_layers_to_keep']
             args['model']['encoder_layers_to_keep'] = None
 
-        self.sentence_encoder = HiUnilmTransformerSentenceEncoder(
+        self.sentence_encoder = TransformerSentenceEncoder(
             padding_idx=dictionary.pad(),
             vocab_size=len(dictionary),
             num_encoder_layers=args['model']['encoder_layers'],
@@ -272,8 +298,7 @@ class RobertaEncoder(FairseqDecoder):
             weight=self.sentence_encoder.embed_tokens.weight,
         )
 
-    def forward(self, src_tokens, src_sent_ends, doc_pad_mask, doc_pos_tok, segment_labels, attention_mask_unilm, features_only=False, return_all_hiddens=False,
-                masked_tokens=None, **unused):
+    def forward(self, src_tokens, features_only=False, return_all_hiddens=False, masked_tokens=None, **unused):
         """
         Args:
             src_tokens (LongTensor): input tokens of shape `(batch, src_len)`
@@ -290,15 +315,14 @@ class RobertaEncoder(FairseqDecoder):
                   is a list of hidden states. Note that the hidden
                   states have shape `(src_len, batch, vocab)`.
         """
-        x, extra = self.extract_features(src_tokens, src_sent_ends, doc_pad_mask, doc_pos_tok, segment_labels, attention_mask_unilm,
-                                         return_all_hiddens=return_all_hiddens)
+        x, extra = self.extract_features(src_tokens, return_all_hiddens=return_all_hiddens)
         if not features_only:
             x = self.output_layer(x, masked_tokens=masked_tokens)
         return x, extra
 
-    def extract_features(self, src_tokens, src_sent_ends, doc_pad_mask, doc_pos_tok, segment_labels, attention_mask_unilm, return_all_hiddens=False, **unused):
+    def extract_features(self, src_tokens, return_all_hiddens=False, **unused):
         inner_states, _ = self.sentence_encoder(
-            src_tokens, src_sent_ends, doc_pad_mask, doc_pos_tok, segment_labels, attention_mask_unilm,
+            src_tokens,
             last_state_only=not return_all_hiddens,
         )
         features = inner_states[-1].transpose(0, 1)  # T x B x C -> B x T x C
