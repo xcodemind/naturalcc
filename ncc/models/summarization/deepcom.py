@@ -111,7 +111,7 @@ class LSTMEncoder(FairseqEncoder):
             final_hiddens = combine_bidir(final_hiddens)
             final_cells = combine_bidir(final_cells)
 
-        encoder_padding_mask = src_tokens.eq(self.padding_idx).t()
+        encoder_padding_mask = src_tokens.eq(self.padding_idx)
 
         return {
             'encoder_out': (x, final_hiddens, final_cells),

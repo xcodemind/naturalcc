@@ -134,19 +134,10 @@ def validate(args, trainer, task, epoch_itr, subsets):
         with metrics.aggregate(new_root=True) as agg:
             for sample in progress:
                 trainer.valid_step(sample)
-                break  # TODO: only for debug
 
         # log validation stats
         stats = get_valid_stats(args, trainer, agg.get_smoothed_values())
         progress.print(stats, tag=subset, step=trainer.get_num_updates())
-
-        # TODO save expert bleu into json
-        bleu_dict = {'{}_{}_{}'.format('_'.join(args['task']['programming_langs']),
-                                       args['task']['source_lang'], args['task']['target_lang']): stats['bleu']}
-        output_path = os.path.join(args['task']['data'], '{}_expert_bleu_{}_{}.json'.format(
-            '_'.join(args['task']['programming_langs']), args['task']['source_lang'], args['task']['target_lang'])
-                                   )
-        json.dump(bleu_dict, open(output_path, 'w'))
 
         valid_losses.append(stats[args['checkpoint']['best_checkpoint_metric']])
 
@@ -223,9 +214,9 @@ def single_main(args, init_distributed=False):
     # 1. Setup task, e.g., translation, language modeling, etc.
     task = tasks.setup_task(args)
 
-    # # 2. Load valid dataset (we load training data below, based on the latest checkpoint)
-    # for valid_sub_split in args['dataset']['valid_subset'].split(','):
-    #     task.load_dataset(valid_sub_split, combine=False, epoch=1)
+    # 2. Load valid dataset (we load training data below, based on the latest checkpoint)
+    for valid_sub_split in args['dataset']['valid_subset'].split(','):
+        task.load_dataset(valid_sub_split, combine=False, epoch=1)
 
     # 3. Build model and criterion
     model = task.build_model(args)
