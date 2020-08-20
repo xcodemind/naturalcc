@@ -40,7 +40,7 @@ dataset:
   max_sentences: 8 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
 #  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
-  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
+  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
   train_subset: train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
   valid_subset: valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
   validate_interval: 1 # type=int, default=1, metavar='N', help='validate every N epochs'
@@ -61,7 +61,7 @@ dataset:
 #  per_gpu_eval_batch_size: 4 # default=4, type=int, help="Batch size per GPU/CPU for evaluation."
 
 distributed_training:
-  distributed_world_size: 4 # default=max(1, torch.cuda.device_count()
+  distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
   distributed_rank: 0 # default=0, type=int, help='rank of the current worker'
   distributed_backend: nccl # default='nccl', type=str, help='distributed backend'
   distributed_init_method: ~ # default=None, type=str,help='typically tcp://hostname:port that will be used to establish initial connetion'
@@ -86,7 +86,7 @@ distributed_training:
 
 task:
 #  data: ~/.ncc/multi/summarization/data-raw/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
-  data: ~/.ncc/multi/summarization/data-mmap/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/CodeSearchNet/summarization/data-raw/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 
   # for summarization
   source_lang: code_tokens
@@ -141,14 +141,7 @@ model:
   decoder_dropout_in: 0.1 #' type=float, metavar='D', help='dropout probability for decoder input embedding'
   decoder_dropout_out: 0.2 #', type=float, metavar='D', help='dropout probability for decoder output'
   # network: decoder
-#  attn_type: ~ # ~, general, dot, mlp, intra
-#  attn_multit: 512 # （固定，不要调）
-#  self_attn_size: 50 # （固定，不要调）
-  #  intra_attn_eps: 1e-12
   pointer: False # pointer-generator, True, False
-#  max_predict_length: 60 # （固定，不要调）max generation length for decoder
-#  dropout: 0.2 # （固定，不要调）dropout
-#  decoder_input_feed: False # （固定，不要调）True, False
   max_source_positions: ~
   max_target_positions: 50
 
@@ -211,7 +204,7 @@ checkpoint:
   best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
   patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
-  save_dir: ~/.ncc/multi/summarization/data-mmap/ruby/seq2seq/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
+  save_dir: ~/.ncc/CodeSearchNet/summarization/data-raw/ruby/seq2seq/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
   model_name_or_path: ~ # default=None, type=str, help="The model checkpoint for weights initialization. Leave None if you want to train a model from scratch.",
   cache_dir: ~ # default=None, type=str, help="Optional directory to store the pre-trained models downloaded from s3 (instead of the default one)",
@@ -223,7 +216,7 @@ checkpoint:
 
 
 eval:
-  path: ~/.ncc/multi/summarization/data-mmap/ruby/seq2seq/checkpoints/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  path: ~/.ncc/CodeSearchNet/summarization/data-raw/ruby/seq2seq/checkpoints/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
   quiet: 1 # ', action='store_true', help='only print final scores'
   results_path: ~ # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'
