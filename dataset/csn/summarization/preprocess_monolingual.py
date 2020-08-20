@@ -19,7 +19,7 @@ import shutil
 from collections import namedtuple
 from multiprocessing import Pool, cpu_count
 from ncc.utils.mp_ppool import PPool
-from ncc.utils.util_graph import (build_graph, tree2graph)
+from ncc.utils.util_graph import (build_graph, tree2dgl)
 
 from ncc import tasks
 from collections import (
@@ -215,11 +215,9 @@ def main(args):
 
     def make_graph_binary_dataset(dict: Dictionary, input_file, output_file):
         import torch
-        import dgl
         from dgl.data.graph_serialize import GraphData
         from dgl.data.utils import save_graphs
         from tqdm import tqdm
-        from sys import getsizeof
 
         graph_batch, ids = [], []
         with open(input_file, 'r') as reader:
@@ -227,7 +225,7 @@ def main(args):
             reader.seek(0)
             for idx, line in tqdm(enumerate(reader), total=num_lines):
                 ast = ujson.loads(line)
-                graph = tree2graph(ast, dict)
+                graph = tree2dgl(ast, dict)
                 graph = GraphData.create(graph)
                 graph_batch.append(graph)
                 ids.append(idx)
