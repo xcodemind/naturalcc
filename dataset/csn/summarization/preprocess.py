@@ -58,7 +58,7 @@ def main(args):
         return os.path.join(args['preprocess']['destdir'], file_name(prefix, lang))
 
     def dict_path(lang):
-        return dest_path("dict", lang) + ".json"
+        return dest_path(lang, "dict") + ".json"
 
     def build_dictionary(filenames, modality, src=False, tgt=False):
         assert src ^ tgt
@@ -118,9 +118,9 @@ def main(args):
         else:
             tgt_dict = None
 
-    src_dict.save(dict_path(args['preprocess']['source_lang']))
+    src_dict.save_json(dict_path(args['preprocess']['source_lang']))
     if target and tgt_dict is not None:
-        tgt_dict.save(dict_path(args['preprocess']['target_lang']))
+        tgt_dict.save_json(dict_path(args['preprocess']['target_lang']))
 
     # 2. ***************build dataset********************
     def make_binary_dataset(vocab: Dictionary, input_file, output_file,
