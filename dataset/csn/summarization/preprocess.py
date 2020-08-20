@@ -118,6 +118,7 @@ def main(args):
         else:
             tgt_dict = None
 
+    LOGGER.info('dict_path: {}'.format(dict_path(args['preprocess']['source_lang'])))
     src_dict.save_json(dict_path(args['preprocess']['source_lang']))
     if target and tgt_dict is not None:
         tgt_dict.save_json(dict_path(args['preprocess']['target_lang']))
