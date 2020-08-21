@@ -2,14 +2,11 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
-import logging
 import numpy as np
 import torch
 from ncc.data.tools import data_utils
 from ncc.data.fairseq_dataset import FairseqDataset
-
-logger = logging.getLogger(__name__)
+from ncc import LOGGER
 
 
 def collate(
@@ -29,7 +26,7 @@ def collate(
         if alignment is None or len(alignment) == 0:
             return False
         if alignment[:, 0].max().item() >= src_len - 1 or alignment[:, 1].max().item() >= tgt_len - 1:
-            logger.warning("alignment size mismatch found, skipping alignment!")
+            LOGGER.warning("alignment size mismatch found, skipping alignment!")
             return False
         return True
 
@@ -274,8 +271,8 @@ class LanguagePairDataset(FairseqDataset):
         else:
             indices = np.arange(len(self))
         if self.tgt_sizes is not None:
-            indices = indices[np.argsort(self.tgt_sizes[indices], kind='mergesort')]
-        return indices[np.argsort(self.src_sizes[indices], kind='mergesort')]
+            indices = indices[np.argsort(self.tgt_sizes[indices], kind='mergesort')]# TODO: debug
+        return indices[np.argsort(self.src_sizes[indices], kind='mergesort')] # TODO: debug
 
     @property
     def supports_prefetch(self):

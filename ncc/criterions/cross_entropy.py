@@ -4,10 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import math
-
 import torch.nn.functional as F
-
-# from fairseq import metrics, utils
 from ncc.logging import metrics
 from ncc.utils import utils
 from ncc.criterions import FairseqCriterion, register_criterion

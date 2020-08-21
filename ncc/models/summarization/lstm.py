@@ -1,5 +1,3 @@
-import torch
-import torch.nn as nn
 from ncc.models.fairseq_model import FairseqEncoderDecoderModel
 from ncc.modules.embedding import Embedding
 from ncc.modules.code2vec.lstm_encoder import LSTMEncoder
@@ -25,8 +23,6 @@ class LSTMModel(FairseqEncoderDecoderModel):
         if args['model']['encoder_layers'] != args['model']['decoder_layers']:
             raise ValueError('--encoder-layers must match --decoder-layers')
 
-        # max_source_positions = getattr(args, 'max_source_positions', DEFAULT_MAX_SOURCE_POSITIONS)
-        # max_target_positions = getattr(args, 'max_target_positions', DEFAULT_MAX_TARGET_POSITIONS)
         max_source_positions = args['model']['max_source_positions'] if args['model'][
             'max_source_positions'] else DEFAULT_MAX_SOURCE_POSITIONS
         max_target_positions = args['model']['max_target_positions'] if args['model'][

@@ -121,9 +121,7 @@ class LSTMDecoder(FairseqIncrementalDecoder):
         )
         return self.output_layer(x), attn_scores
 
-    def extract_features(
-        self, prev_output_tokens, encoder_out, incremental_state=None
-    ):
+    def extract_features(self, prev_output_tokens, encoder_out, incremental_state=None):
         """
         Similar to *forward* but only return features.
         """
