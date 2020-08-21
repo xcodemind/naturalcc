@@ -29,6 +29,7 @@ class RougeScorer(object):
         self.hyps.extend(hyps)
 
     def score(self, avg=True):
+        assert len(self.hyps) == len(self.refs) and len(self.refs) > 0
         performance = self.rouge.get_scores(hyps=self.hyps, refs=self.refs, avg=avg)
         return {
             name: {avg_name: round(avg_value, self._precision) for avg_name, avg_value in value.items()}
