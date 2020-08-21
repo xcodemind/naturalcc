@@ -59,7 +59,7 @@ dataset:
 #  per_gpu_eval_batch_size: 4 # default=4, type=int, help="Batch size per GPU/CPU for evaluation."
 
 distributed_training:
-  distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
+  distributed_world_size: 2 # default=max(1, torch.cuda.device_count()
   distributed_rank: 0 # default=0, type=int, help='rank of the current worker'
   distributed_backend: nccl # default='nccl', type=str, help='distributed backend'
   distributed_init_method: ~ # default=None, type=str,help='typically tcp://hostname:port that will be used to establish initial connetion'
