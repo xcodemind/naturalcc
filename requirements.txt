@@ -13,3 +13,4 @@ tree_sitter
 jsonlines
 sentencepiece
 dgl
+rouge
