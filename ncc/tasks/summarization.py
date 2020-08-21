@@ -232,6 +232,25 @@ class SummarizationTask(FairseqTask):
             # gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
             # self.sequence_generator = self.build_generator(Namespace(**gen_args))
             self.sequence_generator = self.build_generator([model], args)
+        if args['task']['eval_rouge']:
+            assert args['task']['eval_rouge_detok'] is not None, (
+                '--eval-rouge-detok is required if using --eval-rouge; '
+                'try --eval-rouge-detok=moses (or --eval-rouge-detok=space '
+                'to disable detokenization, e.g., when using sentencepiece)'
+            )
+            # detok_args = json.loads(getattr(args, 'eval_rouge_detok_args', '{}') or '{}')
+            detok_args = json.loads(
+                args['task']['eval_rouge_detok_args'] if args['task']['eval_rouge_detok_args'] else '{}')
+            self.tokenizer = encoders.build_tokenizer(
+                dict(
+                    tokenizer=args['task']['eval_rouge_detok'] if args['task']['eval_rouge_detok'] else None,
+                    # getattr(args, 'eval_rouge_detok', None),
+                    **detok_args
+                ))
+            # The gen_args parameters have been set in the yml file
+            # gen_args = json.loads(getattr(args, 'eval_rouge_args', '{}') or '{}')
+            # self.sequence_generator = self.build_generator(Namespace(**gen_args))
+            self.rouge_sequence_generator = self.build_generator([model], args)
         return model
 
     def valid_step(self, sample, model, criterion):
@@ -246,6 +265,8 @@ class SummarizationTask(FairseqTask):
             for i in range(EVAL_BLEU_ORDER):
                 logging_output['_bleu_counts_' + str(i)] = bleu.counts[i]
                 logging_output['_bleu_totals_' + str(i)] = bleu.totals[i]
+        if self.args['task']['eval_rouge']:
+            logging_output['_rouge'] = self._inference_with_rouge(self.rouge_sequence_generator, sample, model)
         return loss, sample_size, logging_output
 
     def reduce_metrics(self, logging_outputs, criterion):
@@ -285,6 +306,19 @@ class SummarizationTask(FairseqTask):
                     return round(bleu.score, 2)
 
                 metrics.log_derived('bleu', compute_bleu)
+        if self.args['task']['eval_rouge']:
+
+            if '_rouge' in logging_outputs[0]:
+                metrics.log_scalar('_rouge_f',
+                                   sum(log['_rouge'][self.args['task']['eval_rouge_type']]['f'] \
+                                       for log in logging_outputs) / len(logging_outputs)
+                                   )
+
+                def compute_rouge(meters):
+                    if '_rouge_f' in meters:
+                        return round(meters['_rouge_f'].avg, 2)
+
+                metrics.log_derived(self.args['task']['eval_rouge_type'], compute_rouge)
 
     def max_positions(self):
         """Return the max sentence length allowed by the task."""
@@ -330,3 +364,32 @@ class SummarizationTask(FairseqTask):
             return sacrebleu.corpus_bleu(hyps, [refs], tokenize='none')
         else:
             return sacrebleu.corpus_bleu(hyps, [refs])
+
+    def _inference_with_rouge(self, generator, sample, model):
+        from rouge import Rouge
+
+        def decode(toks, escape_unk=False):
+            s = self.tgt_dict.string(
+                toks.int().cpu(),
+                self.args['task']['eval_rouge_remove_bpe'],
+                escape_unk=escape_unk,
+            )
+            if self.tokenizer:
+                s = self.tokenizer.decode(s)
+            return s
+
+        gen_out = self.inference_step(generator, [model], sample, None)
+        hyps, refs = [], []
+        for i in range(len(gen_out)):
+            hyps.append(decode(gen_out[i][0]['tokens']))
+            refs.append(decode(
+                utils.strip_pad(sample['target'][i], self.tgt_dict.pad()),
+                escape_unk=True,  # don't count <unk> as matches to the hypo
+            ))
+        if self.args['task']['eval_rouge_print_samples']:
+            LOGGER.info('example hypothesis: ' + hyps[0])
+            LOGGER.info('example reference: ' + refs[0])
+        # tokenize = sacrebleu.DEFAULT_TOKENIZER if not self.args['task']['eval_tokenized_bleu'] else 'none'
+        # return sacrebleu.corpus_bleu(hyps, [refs], tokenize=tokenize)
+        rouge_scores = Rouge().get_scores(hyps, refs, avg=True)
+        return rouge_scores
