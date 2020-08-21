@@ -77,10 +77,6 @@ def load_langpair_dataset(
         if tgt_dataset is not None:
             tgt_datasets.append(tgt_dataset)
 
-        # LOGGER.info('{} {} {}-{} {} examples'.format(
-        #     data_path, split_k, src, tgt, len(src_datasets[-1])
-        # ))
-
         if not combine:
             break
 
@@ -111,11 +107,11 @@ def load_langpair_dataset(
             tgt_dataset = AppendTokenDataset(tgt_dataset, tgt_dict.index('[{}]'.format(tgt)))
         eos = tgt_dict.index('[{}]'.format(tgt))
 
-    align_dataset = None
-    if load_alignments:
-        align_path = os.path.join(data_path, '{}.align.{}-{}'.format(split, src, tgt))
-        if indexed_dataset.dataset_exists(align_path, impl=dataset_impl):
-            align_dataset = data_utils.load_indexed_dataset(align_path, None, dataset_impl)
+    # align_dataset = None
+    # if load_alignments:
+    #     align_path = os.path.join(data_path, '{}.align.{}-{}'.format(split, src, tgt))
+    #     if indexed_dataset.dataset_exists(align_path, impl=dataset_impl):
+    #         align_dataset = data_utils.load_indexed_dataset(align_path, None, dataset_impl)
 
     tgt_dataset_sizes = tgt_dataset.sizes if tgt_dataset is not None else None
     return LanguagePairDataset(
@@ -125,8 +121,10 @@ def load_langpair_dataset(
         left_pad_target=left_pad_target,
         max_source_positions=max_source_positions,
         max_target_positions=max_target_positions,
-        align_dataset=align_dataset, eos=eos,
+        align_dataset=None, eos=eos,
+        remove_eos_from_source=True,
         append_eos_to_target=append_eos_to_target,
+        shuffle=False, #TODO: shuffle=True
     )
 
 
@@ -136,9 +134,6 @@ class SummarizationTask(FairseqTask):
         super().__init__(args)
         self.src_dict = src_dict
         self.tgt_dict = tgt_dict
-        # add mask token
-        self.mask_idx = self.src_dict.add_symbol('<mask>')
-        self.mask_idx = self.tgt_dict.add_symbol('<mask>')
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -147,18 +142,8 @@ class SummarizationTask(FairseqTask):
         Args:
             args (argparse.Namespace): parsed command-line arguments
         """
-        # options.eval_bool
-        args['task']['left_pad_source'] = bool(args['task']['left_pad_source'])
-        args['task']['left_pad_target'] = bool(args['task']['left_pad_target'])
-
         paths = utils.split_paths(args['task']['data'])
         assert len(paths) > 0
-        # find language pair automatically
-        if args['task']['source_lang'] is None or args['task']['target_lang'] is None:
-            args['task']['source_lang'], args['task']['target_lang'] = data_utils.infer_language_pair(paths[0])
-        if args['task']['source_lang'] is None or args['task']['target_lang'] is None:
-            raise Exception('Could not infer language pair, please provide it explicitly')
-
         # load dictionaries
         src_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['source_lang'])))
         tgt_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['target_lang'])))
