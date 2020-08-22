@@ -100,18 +100,9 @@ class LSTMEncoder(FairseqEncoder):
         # unpack outputs and apply dropout
         x, _ = nn.utils.rnn.pad_packed_sequence(packed_outs, padding_value=self.padding_idx)
         x = F.dropout(x, p=self.dropout_out, training=self.training)
-        x = x.transpose(0, 1)
-        assert list(x.size()) == [bsz, seqlen, self.output_units]
+        assert list(x.size()) == [seqlen, bsz, self.output_units], (x.size())
 
-        if self.bidirectional:
-            def combine_bidir(outs):
-                out = outs.view(self.num_layers, 2, bsz, -1).transpose(1, 2).contiguous()
-                return out.view(self.num_layers, bsz, -1)
-
-            final_hiddens = combine_bidir(final_hiddens)
-            final_cells = combine_bidir(final_cells)
-
-        encoder_padding_mask = src_tokens.eq(self.padding_idx)
+        encoder_padding_mask = src_tokens.eq(self.padding_idx).t()
 
         return {
             'encoder_out': (x, final_hiddens, final_cells),
@@ -171,19 +162,23 @@ class LSTMDecoder(FairseqIncrementalDecoder):
 
     def attention(self, hidden, encoder_out, encoder_mask):
         """
-        hidden: [batch_size, hidden_size]
-        encoder_out: [batch_size, src_len, hidden_size]
-        encoder_mask: [batch_size, src_len]
+        hidden: [batch_size, hidden_size] 80, 512
+        encoder_out: [batch_size, src_len, hidden_size] 16, 80, 512
+        encoder_mask: [src_len, batch_size] 80, 16
         """
         # influence of src_hidden(j) over tgt_hidden_i
-        a_ij = torch.bmm(encoder_out, hidden.unsqueeze(dim=-1)).squeeze(dim=-1)  # [batch_size, src_len]
+        # assert hidden.size(0) == encoder_out.size(0), \
+        #     ('hidden', hidden.size(), 'encoder_out', encoder_out.size(), 'encoder_mask', encoder_mask.size())
+        # print(('hidden', hidden.size(), 'encoder_out', encoder_out.size(), 'encoder_mask', encoder_mask.size()))
+        a_ij = torch.bmm(encoder_out.transpose(0, 1), hidden.unsqueeze(dim=-1)).squeeze(dim=-1)  # [batch_size, src_len]
+        # print(a_ij.size(), encoder_mask.size())
         if encoder_mask is None:
             a_ij_softmax = a_ij.softmax(dim=-1)
         else:
-            a_ij_softmax = a_ij.masked_fill(encoder_mask, float('-inf')).softmax(dim=-1)
+            a_ij_softmax = a_ij.masked_fill(encoder_mask.t(), float('-inf')).softmax(dim=-1)
         a_ij_softmax = a_ij_softmax.unsqueeze(dim=1)  # [batch_size, 1, src_len]
         # [batch_size, 1, src_len] x [batch_size, src_len, hidden_size] => [batch_size, 1, hidden_size]
-        t_i = torch.bmm(a_ij_softmax, encoder_out).squeeze(dim=1)
+        t_i = torch.bmm(a_ij_softmax, encoder_out.transpose(0, 1)).squeeze(dim=1)
         return t_i
 
     def forward(self, prev_output_tokens, encoder_out=None, incremental_state=None, **kwargs):
@@ -198,16 +193,23 @@ class LSTMDecoder(FairseqIncrementalDecoder):
         """
         Similar to *forward* but only return features.
         """
-        encoder_padding_mask = encoder_out.get('encoder_padding_mask', None)
-        encoder_out = encoder_out.get('encoder_out', None)
+        if encoder_out is not None:
+            encoder_padding_mask = encoder_out['encoder_padding_mask']
+            encoder_out = encoder_out['encoder_out']
+        else:
+            encoder_padding_mask = None
+            encoder_out = None
 
         if incremental_state is not None:
             prev_output_tokens = prev_output_tokens[:, -1:]
-        bsz, tgt_len = prev_output_tokens.size()
+        bsz, seqlen = prev_output_tokens.size()
 
         # get outputs from encoder
-        encoder_outs = encoder_out[0]
-        src_len = encoder_outs.size(0)
+        if encoder_out is not None:
+            encoder_outs, encoder_hiddens, encoder_cells = encoder_out[:3]
+            srclen = encoder_outs.size(0)
+        else:
+            srclen = None
 
         # embed tokens
         x = self.embed_tokens(prev_output_tokens)
@@ -222,7 +224,7 @@ class LSTMDecoder(FairseqIncrementalDecoder):
         prev_cells = [x.new_zeros(bsz, self.hidden_size) for i in range(num_layers)]
 
         outs = []
-        for j in range(tgt_len):
+        for j in range(seqlen):
             input = x[j]
 
             for i, rnn in enumerate(self.layers):
@@ -237,7 +239,8 @@ class LSTMDecoder(FairseqIncrementalDecoder):
                 prev_cells[i] = cell
 
             # apply attention using the last layer's hidden state
-            attn_out = self.attention(hidden, encoder_outs, encoder_padding_mask)
+            attn_out = self.attention(prev_hiddens[-1], encoder_outs, encoder_padding_mask)
+
             attn_out = F.dropout(attn_out, p=self.dropout_out, training=self.training)
 
             # save final output
