@@ -4,13 +4,13 @@ preprocess:
     # list, ujson.loads
     - code_tokens
     - docstring_tokens
-#    - sbt
-#    - sbtao
-#    # path and path.terminals
-#    - path
-#    - path.terminals
+    - sbt
+    - sbtao
+    # path and path.terminals
+    - path
+    - path.terminals
 #    - binary_ast # traverse ast's leaf node info
-#    - traversal
+    - traversal
   target_lang: ~ #", default=None, metavar="TARGET", help="target language"
   # ~ path for dataset default. e.g.  for CodeSearchNet, ~/filter = ~/.ncc/CodeSearchNet/filter
   dataprefs:
@@ -58,4 +58,4 @@ preprocess:
   joined_dictionary: 0 # ", action="store_true", help="Generate joined dictionary"
   only_source: 0 # ", action="store_true", help="Only process the source language"
   padding_factor: 8 #", metavar="N", default=8, type=int, help="Pad dictionary size to be multiple of N"
-  workers: 11 # ", metavar="N", default=1, type=int, help="number of parallel workers"
+  workers: 24 # ", metavar="N", default=1, type=int, help="number of parallel workers"

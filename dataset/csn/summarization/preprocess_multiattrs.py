@@ -65,8 +65,10 @@ def main(args):
         assert src ^ tgt
         if modality in ['binary_ast']:
             tokenize_func = tokenizer.tokenize_tree
-        elif modality in ['code_tokens', 'docstring_tokens', 'sbt', 'sbtao', 'path']:
+        elif modality in ['code_tokens', 'docstring_tokens', 'sbt', 'sbtao', 'path', 'path.terminals', 'traversal']:
             tokenize_func = tokenizer.tokenize_list
+        else:
+            raise NotImplementedError("{}".format(modality))
 
         return task.build_dictionary(
             filenames,
@@ -210,10 +212,15 @@ def main(args):
 
 
 def cli_main():
-    Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('preprocess_multiattrs.yml')  # train_sl
-    LOGGER.info(args_)
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
+    parser.add_argument(
+        "--language", "-l", default='ruby', type=str, help="load {language}.yml for train",
+    )
+    args = parser.parse_args()
+    LOGGER.info(args)
+    yaml_file = os.path.join(os.path.dirname(__file__), 'config', 'preprocess_multiattrs_{}.yml'.format(args.language))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)
@@ -221,4 +228,10 @@ def cli_main():
 
 
 if __name__ == "__main__":
+    """
+    nohup python -m dataset.csn.summarization.preprocess_multiattrs -l ruby > log  2>&1 &
+    nohup python -m dataset.csn.summarization.preprocess_multiattrs -l go > go.log  2>&1 &
+    nohup python -m dataset.csn.summarization.preprocess_multiattrs -l java > java.log  2>&1 &
+    nohup python -m dataset.csn.summarization.preprocess_multiattrs -l javascript > javascript.log  2>&1 &
+    """
     cli_main()

@@ -323,4 +323,7 @@ def cli_main():
 
 
 if __name__ == "__main__":
+    """
+    nohup python -m dataset.csn.summarization.preprocess_multilingual > log 2>&1 &
+    """
     cli_main()
