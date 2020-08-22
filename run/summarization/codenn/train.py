@@ -291,10 +291,16 @@ def distributed_main(i, args, start_rank=0):
 
 
 def cli_main():
-    Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('ruby.yml')
-    LOGGER.info(args_)
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
+    parser.add_argument(
+        "--language", "-l", default='ruby', type=str, help="load {language}.yml for train",
+    )
+    args = parser.parse_args()
+    # Argues = namedtuple('Argues', 'yaml')
+    # args_ = Argues('ruby.yml')
+    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.language))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)
@@ -331,7 +337,4 @@ def cli_main():
 
 
 if __name__ == '__main__':
-    """
-    nohup python -m run.summarization.codenn.train > run/summarization/codenn/ruby.multi.log 2>&1 &
-    """
     cli_main()
