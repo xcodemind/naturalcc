@@ -4,10 +4,10 @@ preprocess:
     - code_tokens
     - docstring_tokens
     - sbt
-  # ~ path for dataset default. e.g.  for CodeSearchNet, ~/flatten = ~/.ncc/CodeSearchNet/flatten
-  trainpref: ~/.ncc/CodeSearchNet/flatten/ruby/train #", metavar="FP", default=None, help="train file prefix"
-  validpref: ~/.ncc/CodeSearchNet/flatten/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-  testpref:  ~/.ncc/CodeSearchNet/flatten/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  # ~ path for dataset default. e.g.  for CodeSearchNet, ~/filter = ~/.ncc/CodeSearchNet/filter
+  trainpref: ~/.ncc/CodeSearchNet/filter/ruby/train #", metavar="FP", default=None, help="train file prefix"
+  validpref: ~/.ncc/CodeSearchNet/filter/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+  testpref:  ~/.ncc/CodeSearchNet/filter/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
   align_suffix: ~ # ", metavar="FP", default=None, help="alignment file suffix"
 #  destdir: ~/.ncc/CodeSearchNet/summarization/data-raw/ruby/ #", metavar="DIR", default="data-bin", help="destination dir"

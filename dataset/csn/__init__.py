@@ -6,6 +6,7 @@ RAW_DATA_DIR = '~/.ncc/{}/raw'.format(DATASET_NAME)
 LIBS_DIR = '~/.ncc/{}/libs'.format(DATASET_NAME)
 FLATTEN_DIR = '~/.ncc/{}/flatten'.format(DATASET_NAME)
 REFINE_DIR = '~/.ncc/{}/refine'.format(DATASET_NAME)
+FILTER_DIR = '~/.ncc/{}/filter'.format(DATASET_NAME)
 
 LANGUAGES = ['ruby', 'python', 'java', 'go', 'php', 'javascript']
 MODES = ['train', 'valid', 'test']

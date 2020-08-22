@@ -12,36 +12,36 @@ preprocess:
 #    - binary_ast # traverse ast's leaf node info
 #    - traversal
   target_lang: ~ #", default=None, metavar="TARGET", help="target language"
-  # ~ path for dataset default. e.g.  for CodeSearchNet, ~/refine = ~/.ncc/CodeSearchNet/refine
+  # ~ path for dataset default. e.g.  for CodeSearchNet, ~/filter = ~/.ncc/CodeSearchNet/filter
   dataprefs:
     ruby:
-      trainpref: ~/.ncc/CodeSearchNet/refine/ruby/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/refine/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/refine/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/CodeSearchNet/filter/ruby/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/CodeSearchNet/filter/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/CodeSearchNet/filter/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     go:
-      trainpref: ~/.ncc/CodeSearchNet/refine/go/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/refine/go/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/refine/go/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/CodeSearchNet/filter/go/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/CodeSearchNet/filter/go/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/CodeSearchNet/filter/go/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     java:
-      trainpref: ~/.ncc/CodeSearchNet/refine/java/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/refine/java/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/refine/java/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/CodeSearchNet/filter/java/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/CodeSearchNet/filter/java/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/CodeSearchNet/filter/java/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     javascript:
-      trainpref: ~/.ncc/CodeSearchNet/refine/javascript/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/refine/javascript/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/refine/javascript/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/CodeSearchNet/filter/javascript/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/CodeSearchNet/filter/javascript/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/CodeSearchNet/filter/javascript/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     python:
-      trainpref: ~/.ncc/CodeSearchNet/refine/python/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/refine/python/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/refine/python/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/CodeSearchNet/filter/python/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/CodeSearchNet/filter/python/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/CodeSearchNet/filter/python/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     php:
-      trainpref: ~/.ncc/CodeSearchNet/refine/php/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/refine/php/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/refine/php/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/CodeSearchNet/filter/php/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/CodeSearchNet/filter/php/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/CodeSearchNet/filter/php/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     csharp:
-      trainpref: ~/.ncc/codenn/refine/csharp/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/codenn/refine/csharp/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/codenn/refine/csharp/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/codenn/filter/csharp/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/codenn/filter/csharp/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/codenn/filter/csharp/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
   dataset_impl: mmap #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
   destdir: ~/.ncc/kd/summarization/ #", metavar="DIR", default="data-bin", help="destination dir"

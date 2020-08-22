@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 import ujson
 import random
 import argparse
@@ -12,7 +13,7 @@ from dataset.csn import PATH_NUM, MAX_SUB_TOKEN_LEN, MODES
 try:
     from dataset.csn import (
         LANGUAGES, MODES,
-        RAW_DATA_DIR, LIBS_DIR, FLATTEN_DIR,
+        RAW_DATA_DIR, LIBS_DIR, REFINE_DIR, FLATTEN_DIR,
         LOGGER,
     )
     from dataset.csn.parser._parser import CodeParser
@@ -20,7 +21,7 @@ try:
 except ImportError:
     from . import (
         LANGUAGES, MODES,
-        RAW_DATA_DIR, LIBS_DIR, FLATTEN_DIR,
+        RAW_DATA_DIR, LIBS_DIR, REFINE_DIR, FLATTEN_DIR,
         LOGGER,
     )
     from dataset.csn.parser._parser import CodeParser
@@ -53,6 +54,65 @@ def safe_readline(f):
 
 
 class AttrFns:
+    @staticmethod
+    def code_tokens_fn(filename, dest_filename, idx, start=0, end=-1, *args):
+        """code => raw_ast"""
+        kwargs = args[0][0]  # canot feed dict parameters in multi-processing
+
+        dest_filename = dest_filename + str(idx)
+        os.makedirs(os.path.dirname(dest_filename), exist_ok=True)
+        with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
+            reader.seek(start)
+            line = safe_readline(reader)
+            while line:
+                if end > 0 and reader.tell() > end:
+                    break
+                code_tokens = ujson.loads(line)
+                if code_tokens:
+                    # filter comment in code_tokens, eg. //***\n /* */\n
+                    code_tokens = [token for token in code_tokens
+                                   if not (str.startswith(token, '//') or str.startswith(token, '#') or \
+                                           (str.startswith(token, '/*') and str.endswith(token, '*/')))
+                                   ]
+
+                    if not all(str.isascii(token) for token in code_tokens):
+                        code_tokens = None
+                    if code_tokens is None or len(code_tokens) < 1:
+                        code_tokens = None
+                else:
+                    code_tokens = None
+
+                print(ujson.dumps(code_tokens, ensure_ascii=False), file=writer)
+                line = safe_readline(reader)
+
+    @staticmethod
+    def docstring_tokens_fn(filename, dest_filename, idx, start=0, end=-1, *args):
+        """code => raw_ast"""
+        kwargs = args[0][0]  # canot feed dict parameters in multi-processing
+
+        dest_filename = dest_filename + str(idx)
+        os.makedirs(os.path.dirname(dest_filename), exist_ok=True)
+        with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
+            reader.seek(start)
+            line = safe_readline(reader)
+            while line:
+                if end > 0 and reader.tell() > end:
+                    break
+                docstring_tokens = ujson.loads(line)
+                if docstring_tokens:
+                    docstring_tokens = [
+                        token for token in docstring_tokens \
+                        if not (re.match(r'[\-|\*|\=|\~]{2,}', token) or re.match(r'<.*?>', token))
+                    ]
+                    if not all(str.isascii(token) for token in docstring_tokens):
+                        docstring_tokens = None
+                    if (docstring_tokens is None) or not (3 < len(docstring_tokens) <= 50):
+                        docstring_tokens = None
+                else:
+                    docstring_tokens = None
+                print(ujson.dumps(docstring_tokens, ensure_ascii=False), file=writer)
+                line = safe_readline(reader)
+
     @staticmethod
     def raw_ast_fn(filename, dest_filename, idx, start=0, end=-1, *args):
         """code => raw_ast"""
@@ -273,14 +333,20 @@ if __name__ == '__main__':
         "--language", "-l", default=LANGUAGES, type=str, nargs='+', help="languages constain [{}]".format(LANGUAGES),
     )
     parser.add_argument(
-        "--flatten_dir", "-f", default=FLATTEN_DIR, type=str, help="data directory of flatten attribute",
+        "--flatten_dir", "-f", default=FLATTEN_DIR, type=str, help="data directory of flatten attribute(load)",
+    )
+    parser.add_argument(
+        "--refine_dir", "-r", default=REFINE_DIR, type=str, help="data directory of refine attribute(save)",
     )
     parser.add_argument(
         "--so_dir", "-s", default=LIBS_DIR, type=str, help="library directory of so file",
     )
     parser.add_argument(
         "--attrs", "-a",
-        default=['raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'binary_ast', 'traversal'],
+        default=[
+            'code_tokens', 'docstring_tokens',
+            'raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'binary_ast', 'traversal',
+        ],
         type=str, nargs='+', help="attrs: raw_ast, ...",
     )
     parser.add_argument(
@@ -302,6 +368,8 @@ if __name__ == '__main__':
     """
 
     dest_raw_attrs = {
+        'code_tokens': 'code_tokens',
+        'docstring_tokens': 'docstring_tokens',
         'raw_ast': 'code',
         'ast': 'raw_ast',
         'path': 'ast',
@@ -315,7 +383,7 @@ if __name__ == '__main__':
         for tgt_attr in args.attrs:
             src_attr = dest_raw_attrs[tgt_attr]
             src_filename = os.path.join(args.flatten_dir, lang, '{}.{}'.format(mode, src_attr))
-            tgt_filename = os.path.join(args.flatten_dir, lang, '{}.{}'.format(mode, tgt_attr))
+            tgt_filename = os.path.join(args.refine_dir, lang, '{}.{}'.format(mode, tgt_attr))
             LOGGER.info('Generating {}'.format(tgt_filename))
             process(src_filename, tgt_filename, num_workers=args.cores,
                     lang=lang, so_dir=args.so_dir)

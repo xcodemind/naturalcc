@@ -12,7 +12,7 @@ from dataset.csn import PATH_NUM, MAX_SUB_TOKEN_LEN, MODES
 try:
     from dataset.csn import (
         LANGUAGES, MODES,
-        RAW_DATA_DIR, LIBS_DIR, FLATTEN_DIR, REFINE_DIR,
+        RAW_DATA_DIR, LIBS_DIR, REFINE_DIR, FILTER_DIR,
         LOGGER,
     )
     from dataset.csn.parser._parser import CodeParser
@@ -20,7 +20,7 @@ try:
 except ImportError:
     from . import (
         LANGUAGES, MODES,
-        RAW_DATA_DIR, LIBS_DIR, FLATTEN_DIR, REFINE_DIR,
+        RAW_DATA_DIR, LIBS_DIR, REFINE_DIR, FILTER_DIR,
         LOGGER,
     )
     from dataset.csn.parser._parser import CodeParser
@@ -58,10 +58,10 @@ if __name__ == '__main__':
         "--language", "-l", default=LANGUAGES, type=str, nargs='+', help="languages constain [{}]".format(LANGUAGES),
     )
     parser.add_argument(
-        "--flatten_dir", "-f", default=FLATTEN_DIR, type=str, help="data directory of flatten attributes",
+        "--refine_dir", "-r", default=REFINE_DIR, type=str, help="refine directory from flatten attributes",
     )
     parser.add_argument(
-        "--refine_dir", "-r", default=REFINE_DIR, type=str, help="refine directory from flatten attributes",
+        "--filter_dir", "-f", default=FILTER_DIR, type=str, help="data directory of flatten attributes",
     )
     parser.add_argument(
         "--attrs", "-a",
@@ -73,8 +73,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     print(args)
 
-    args.flatten_dir = os.path.expanduser(args.flatten_dir)
     args.refine_dir = os.path.expanduser(args.refine_dir)
+    args.filter_dir = os.path.expanduser(args.filter_dir)
     NONE_LINE = 'null\n'
 
 
@@ -82,9 +82,9 @@ if __name__ == '__main__':
         LOGGER.info('Filtering {}'.format(attrs))
         readers, writers = {}, {}
         for attr in attrs:
-            readers[attr] = open(os.path.join(args.flatten_dir, lang, '{}.{}'.format(mode, attr)), 'r',
+            readers[attr] = open(os.path.join(args.refine_dir, lang, '{}.{}'.format(mode, attr)), 'r',
                                  encoding='UTF-8')
-            dst_dir = os.path.join(args.refine_dir, lang)
+            dst_dir = os.path.join(args.filter_dir, lang)
             os.makedirs(dst_dir, exist_ok=True)
             writers[attr] = open(os.path.join(dst_dir, '{}.{}'.format(mode, attr)), 'w')
 
@@ -108,8 +108,10 @@ if __name__ == '__main__':
             return data_info, drop
 
         end = os.fstat(readers[attrs[0]].fileno()).st_size
+        count = 0
         while readers[attrs[0]].tell() < end:
             data_info, drop = _read_attrs_lines()
+            count += 1
             if not drop:
                 for idx, attr in enumerate(attrs):
                     if attr == 'path.terminals':
