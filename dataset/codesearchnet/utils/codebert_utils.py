@@ -320,24 +320,6 @@ def combine_special_symbols(tokens: List, special_symbols: Optional[Set]) -> Lis
     return new_tokens
 
 
-def build_model(file: str, model_name: str, vocab_size: int, special_symbols: Optional[Set] = None,
-                overwrite: bool = False):
-    os.makedirs(os.path.dirname(model_name), exist_ok=True)
-    if os.path.exists('{}.model'.format(model_name)) and os.path.exists('{}.vocab'.format(model_name)) \
-        and not overwrite:
-        return
-    params = '--input={} --model_prefix={} --hard_vocab_limit=false'.format(','.join(file), model_name)
-    if special_symbols is not None:
-        # PAD, EOS, UNK, BOS is automatically added into Dictionary building, so narrow vocab_size
-        vocab_size -= len(special_symbols & DICTIONARY_CONTAINED)
-        params += ' --user_defined_symbols={}'.format(','.join(special_symbols))
-    params += ' --vocab_size={}'.format(vocab_size)
-
-    LOGGER.info(params)
-    spm.SentencePieceTrainer.train(params)
-
-    vocab2dict(vocab_file='{}.vocab'.format(model_name))
-
 
 class WordpieceEncoder(object):
 
