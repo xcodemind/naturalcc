@@ -145,8 +145,8 @@ model:
   decoder_dropout_out: 0.2 #', type=float, metavar='D', help='dropout probability for decoder output'
   # network: decoder
 #  pointer: False # pointer-generator, True, False
-  max_source_positions: 256
-  max_target_positions: 128
+  max_source_positions: ~
+  max_target_positions: ~
 
 
 optimization:
