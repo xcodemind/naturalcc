@@ -330,6 +330,6 @@ def cli_main():
 
 if __name__ == '__main__':
     """
-    nohup python -m run.summarization.transformer.train > run/summarization/transformer/ruby.txt 2>&1 &
+    nohup python -m run.summarization.transformer.train > run/summarization/transformer/ruby.log 2>&1 &
     """
     cli_main()
