@@ -23,7 +23,6 @@ from ncc.logging import metrics, progress_bar
 from ncc.utils import utils
 from ncc.utils.file_utils import remove_files
 from ncc.data import iterators
-import argparse
 
 
 @metrics.aggregate('train')
@@ -290,14 +289,15 @@ def distributed_main(i, args, start_rank=0):
 
 
 def cli_main():
-    # Argues = namedtuple('Argues', 'yaml')
-    # args_ = Argues('ruby.yml')
+    import argparse
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
         "--language", "-l", default='ruby', type=str, help="load {language}.yml for train",
     )
     args = parser.parse_args()
+    # Argues = namedtuple('Argues', 'yaml')
+    # args_ = Argues('ruby.yml')
     yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.language))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
@@ -335,8 +335,4 @@ def cli_main():
 
 
 if __name__ == '__main__':
-    """
-    device: v100 - RAM 16GB
-    nohup python -m run.summarization.lstm2lstm.train -l ruby > run/summarization/lstm2lstm/ruby.multi.log 2>&1 &
-    """
     cli_main()
