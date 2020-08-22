@@ -55,6 +55,40 @@ def safe_readline(f):
 
 class AttrFns:
     @staticmethod
+    def code_fn(filename, dest_filename, idx, start=0, end=-1, *args):
+        """code => raw_ast"""
+        kwargs = args[0][0]  # canot feed dict parameters in multi-processing
+
+        dest_filename = dest_filename + str(idx)
+        os.makedirs(os.path.dirname(dest_filename), exist_ok=True)
+        with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
+            reader.seek(start)
+            line = safe_readline(reader)
+            while line:
+                if end > 0 and reader.tell() > end:
+                    break
+                code = ujson.loads(line)
+                print(ujson.dumps(code, ensure_ascii=False), file=writer)
+                line = safe_readline(reader)
+
+    @staticmethod
+    def docstring_fn(filename, dest_filename, idx, start=0, end=-1, *args):
+        """code => raw_ast"""
+        kwargs = args[0][0]  # canot feed dict parameters in multi-processing
+
+        dest_filename = dest_filename + str(idx)
+        os.makedirs(os.path.dirname(dest_filename), exist_ok=True)
+        with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
+            reader.seek(start)
+            line = safe_readline(reader)
+            while line:
+                if end > 0 and reader.tell() > end:
+                    break
+                docstring = ujson.loads(line)
+                print(ujson.dumps(docstring, ensure_ascii=False), file=writer)
+                line = safe_readline(reader)
+
+    @staticmethod
     def code_tokens_fn(filename, dest_filename, idx, start=0, end=-1, *args):
         """code => raw_ast"""
         kwargs = args[0][0]  # canot feed dict parameters in multi-processing
@@ -344,6 +378,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "--attrs", "-a",
         default=[
+            'code', 'docstring',
             'code_tokens', 'docstring_tokens',
             'raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'binary_ast', 'traversal',
         ],
@@ -368,6 +403,8 @@ if __name__ == '__main__':
     """
 
     dest_raw_attrs = {
+        'code': 'code',
+        'docstring': 'docstring',
         'code_tokens': 'code_tokens',
         'docstring_tokens': 'docstring_tokens',
         'raw_ast': 'code',
@@ -382,7 +419,10 @@ if __name__ == '__main__':
     for lang, mode in itertools.product(args.language, MODES):
         for tgt_attr in args.attrs:
             src_attr = dest_raw_attrs[tgt_attr]
-            src_filename = os.path.join(args.flatten_dir, lang, '{}.{}'.format(mode, src_attr))
+            if src_attr in ['code', 'docstring', 'code_tokens', 'docstring_tokens', ]:
+                src_filename = os.path.join(args.flatten_dir, lang, '{}.{}'.format(mode, src_attr))
+            else:
+                src_filename = os.path.join(args.refine_dir, lang, '{}.{}'.format(mode, src_attr))
             tgt_filename = os.path.join(args.refine_dir, lang, '{}.{}'.format(mode, tgt_attr))
             LOGGER.info('Generating {}'.format(tgt_filename))
             process(src_filename, tgt_filename, num_workers=args.cores,

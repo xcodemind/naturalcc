@@ -67,7 +67,7 @@ if __name__ == '__main__':
         "--attrs", "-a",
         default=['code', 'code_tokens', 'docstring', 'docstring_tokens',
                  'raw_ast', 'ast', 'path', 'path.terminals', 'sbt', 'sbtao', 'binary_ast', 'traversal'],
-        # default=['code_tokens', 'docstring_tokens', ],
+        # default=['code_tokens', 'docstring_tokens', 'sbt', ],
         type=str, nargs='+', help="attrs: raw_ast, ...",
     )
     args = parser.parse_args()
