@@ -21,7 +21,7 @@ common:
   fp16_scale_tolerance: 0.0 # default=0.0, type=float, help='pct of updates that can overflow before decreasing the loss scale'
   min_loss_scale: 1e-4 # default=1e-4, type=float, metavar='D', help='minimum FP16 loss scale, after which training is stopped'
   threshold_loss_scale: ~ # type=float, help='threshold FP16 loss scale from below'
-#  user_dir: ~ # default=None, help='path to a python module containing custom extensions (tasks and/or architectures)'
+#  user_dir: ~ # default=None, help='path to a javascript module containing custom extensions (tasks and/or architectures)'
   empty_cache_freq: 0 # type=int, help='how often to clear the PyTorch CUDA cache (0 to disable)'
 #  all_gather_list_size: 16384 # default=16384, type=int, help='number of bytes reserved for gathering stats from workers'
   task: summarization # multi-modalities task
@@ -85,7 +85,7 @@ distributed_training:
 
 
 task:
-  data: ~/.ncc/CodeSearchNet/summarization/data-mmap/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/CodeSearchNet/summarization/data-mmap/javascript # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 
   # for summarization
   source_lang: sbt
@@ -206,7 +206,7 @@ checkpoint:
   best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
   patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
-  save_dir: ~/.ncc/CodeSearchNet/summarization/data-mmap/ruby/deepcom/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
+  save_dir: ~/.ncc/CodeSearchNet/summarization/data-mmap/javascript/deepcom/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
   model_name_or_path: ~ # default=None, type=str, help="The model checkpoint for weights initialization. Leave None if you want to train a model from scratch.",
   cache_dir: ~ # default=None, type=str, help="Optional directory to store the pre-trained models downloaded from s3 (instead of the default one)",
@@ -218,7 +218,7 @@ checkpoint:
 
 
 eval:
-  path: ~/.ncc/CodeSearchNet/summarization/data-mmap/ruby/deepcom/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  path: ~/.ncc/CodeSearchNet/summarization/data-mmap/javascript/deepcom/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
   quiet: 1 # ', action='store_true', help='only print final scores'
   results_path: ~ # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'
