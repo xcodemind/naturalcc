@@ -265,8 +265,8 @@ class SummarizationTask(FairseqTask):
             for i in range(EVAL_BLEU_ORDER):
                 logging_output['_bleu_counts_' + str(i)] = bleu.counts[i]
                 logging_output['_bleu_totals_' + str(i)] = bleu.totals[i]
-        if self.args['task']['eval_rouge']:
-            logging_output['_rouge'] = self._inference_with_rouge(self.rouge_sequence_generator, sample, model)
+        # if self.args['task']['eval_rouge']:
+        #     logging_output['_rouge'] = self._inference_with_rouge(self.rouge_sequence_generator, sample, model)
         return loss, sample_size, logging_output
 
     def reduce_metrics(self, logging_outputs, criterion):
@@ -306,19 +306,19 @@ class SummarizationTask(FairseqTask):
                     return round(bleu.score, 2)
 
                 metrics.log_derived('bleu', compute_bleu)
-        if self.args['task']['eval_rouge']:
-
-            if '_rouge' in logging_outputs[0]:
-                metrics.log_scalar('_rouge_f',
-                                   sum(log['_rouge'][self.args['task']['eval_rouge_type']]['f'] \
-                                       for log in logging_outputs) / len(logging_outputs)
-                                   )
-
-                def compute_rouge(meters):
-                    if '_rouge_f' in meters:
-                        return round(meters['_rouge_f'].avg, 2)
-
-                metrics.log_derived(self.args['task']['eval_rouge_type'], compute_rouge)
+        # if self.args['task']['eval_rouge']:
+        #
+        #     if '_rouge' in logging_outputs[0]:
+        #         metrics.log_scalar('_rouge_f',
+        #                            sum(log['_rouge'][self.args['task']['eval_rouge_type']]['f'] \
+        #                                for log in logging_outputs) / len(logging_outputs)
+        #                            )
+        #
+        #         def compute_rouge(meters):
+        #             if '_rouge_f' in meters:
+        #                 return round(meters['_rouge_f'].avg, 2)
+        #
+        #         metrics.log_derived(self.args['task']['eval_rouge_type'], compute_rouge)
 
     def max_positions(self):
         """Return the max sentence length allowed by the task."""
