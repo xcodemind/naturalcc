@@ -24,7 +24,9 @@ sys.path:  ['/data/wanyao/Dropbox/ghproj-titan/naturalcode/src', '/home/wanyao/a
 
 Cython error
 如果提示 "pip install --editable"，说明cython/cpp文件没有编译，需要在v3根目录运行
+所有奇怪的cuda错误，都是这个导致。
 "python setup.py build_ext --inplace"
+建议在单卡环境上编译
 
 -----------------------------------------
 
