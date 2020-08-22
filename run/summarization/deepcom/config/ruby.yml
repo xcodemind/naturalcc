@@ -151,11 +151,11 @@ model:
 optimization:
   max_epoch: 100 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
   max_update: 0 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
-  clip_norm: 5 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
+  clip_norm: 25 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
     - 1
   lr: # '--learning-rate', default='0.25', type=eval_str_list, metavar='LR_1,LR_2,...,LR_N', help='learning rate for the first N epochs; all epochs >N using LR_N (note: this may be interpreted differently depending on --lr-scheduler)'
-    - 0.5
+    - 0.001
   min_lr: -1 # default=-1, type=float, metavar='LR', help='stop training when the learning rate reaches this minimum'
   use_bmuf: 1 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
 

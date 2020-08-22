@@ -329,7 +329,4 @@ def cli_main():
 
 
 if __name__ == '__main__':
-    """
-    nohup python -m run.summarization.code2seq.train > run/summarization/code2seq/ruby.log 2>&1 &
-    """
     cli_main()
