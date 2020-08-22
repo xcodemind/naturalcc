@@ -13,7 +13,6 @@ from ncc.modules.roberta.sinusoidal_positional_embedding import SinusoidalPositi
 from ncc.utils import utils
 from collections import OrderedDict
 
-
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
 
 
@@ -54,7 +53,8 @@ class TransformerEncoder(FairseqEncoder):
             else None
         )
 
-        self.layer_wise_attention = args['model']['layer_wise_attention'] # getattr(args, "layer_wise_attention", False)
+        self.layer_wise_attention = args['model'][
+            'layer_wise_attention']  # getattr(args, "layer_wise_attention", False)
 
         self.layers = nn.ModuleList([])
         self.layers.extend(
@@ -66,7 +66,7 @@ class TransformerEncoder(FairseqEncoder):
             self.layer_norm = LayerNorm(embed_dim)
         else:
             self.layer_norm = None
-        if args['model']['layernorm_embedding']: # getattr(args, "layernorm_embedding", False):
+        if args['model']['layernorm_embedding']:  # getattr(args, "layernorm_embedding", False):
             self.layernorm_embedding = LayerNorm(embed_dim)
         else:
             self.layernorm_embedding = None
@@ -74,6 +74,10 @@ class TransformerEncoder(FairseqEncoder):
     def forward_embedding(self, src_tokens):
         # embed tokens and positions
         x = embed = self.embed_scale * self.embed_tokens(src_tokens)
+        # if self.lng_embed is not None:
+        #     x += self.lng_embed(lng[:, 0:1])
+        #     if not self.args.decoder_lng_embed:
+        #         x += self.lng_embed(lng[:, 1:2] + self.lng_len)
         if self.embed_positions is not None:
             x = embed + self.embed_positions(src_tokens)
         if self.layernorm_embedding is not None:
@@ -119,6 +123,8 @@ class TransformerEncoder(FairseqEncoder):
 
         # compute padding mask
         encoder_padding_mask = src_tokens.eq(self.padding_idx)
+        if not encoder_padding_mask.any():
+            encoder_padding_mask = None
 
         encoder_states = [] if return_all_hiddens else None
 

@@ -65,8 +65,10 @@ class TransformerDecoder(FairseqIncrementalDecoder):
             else None
         )
 
-        self.cross_self_attention = args['model']['cross_self_attention'] # getattr(args, "cross_self_attention", False)
-        self.layer_wise_attention = args['model']['layer_wise_attention'] # getattr(args, "layer_wise_attention", False)
+        self.cross_self_attention = args['model'][
+            'cross_self_attention']  # getattr(args, "cross_self_attention", False)
+        self.layer_wise_attention = args['model'][
+            'layer_wise_attention']  # getattr(args, "layer_wise_attention", False)
 
         self.layers = nn.ModuleList([])
         self.layers.extend(
@@ -89,7 +91,8 @@ class TransformerDecoder(FairseqIncrementalDecoder):
             self.adaptive_softmax = AdaptiveSoftmax(
                 len(dictionary),
                 self.output_embed_dim,
-                args['model']['adaptive_softmax_cutoff'],   # options.eval_str_list(args.adaptive_softmax_cutoff, type=int),
+                args['model']['adaptive_softmax_cutoff'],
+                # options.eval_str_list(args.adaptive_softmax_cutoff, type=int),
                 dropout=args['model']['adaptive_softmax_dropout'],
                 adaptive_inputs=embed_tokens if args['model']['tie_adaptive_weights'] else None,
                 factor=args['model']['adaptive_softmax_factor'],
@@ -103,7 +106,8 @@ class TransformerDecoder(FairseqIncrementalDecoder):
             )
             nn.init.normal_(self.embed_out, mean=0, std=self.output_embed_dim ** -0.5)
 
-        if args['model']['decoder_normalize_before'] and not args['model']['no_decoder_final_norm']:  # getattr(args, "no_decoder_final_norm", False)
+        if args['model']['decoder_normalize_before'] and not args['model'][
+            'no_decoder_final_norm']:  # getattr(args, "no_decoder_final_norm", False)
             self.layer_norm = LayerNorm(embed_dim)
         else:
             self.layer_norm = None
@@ -197,6 +201,10 @@ class TransformerDecoder(FairseqIncrementalDecoder):
 
         # embed tokens and positions
         x = self.embed_scale * self.embed_tokens(prev_output_tokens)
+        """
+        if self.lng_embed is not None and self.args.decoder_lng_embed:
+        x += self.lng_embed(encoder_out['lng'][:, 1:2])
+        """
 
         if self.project_in_dim is not None:
             x = self.project_in_dim(x)
