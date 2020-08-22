@@ -94,7 +94,7 @@ task:
   max_source_positions: ~ #', default=1024, type=int, metavar='N', help='max number of tokens in the source sequence'
   max_target_positions: 100 #', default=1024, type=int, metavar='N', help='max number of tokens in the target sequence'
   upsample_primary: 1 #', default=1, type=int, help='amount to upsample primary dataset'
-  truncate_source: 1 #', action='store_true', default=False, help='truncate source to max-source-positions'
+  truncate_source: 0 #', action='store_true', default=False, help='truncate source to max-source-positions'
   append_eos_to_target: 1 # default=True, append eos to the end of target sentence for summarization task
 
   # options for reporting BLEU during validation
