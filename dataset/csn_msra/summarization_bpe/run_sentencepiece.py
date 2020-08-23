@@ -54,12 +54,12 @@ if __name__ == "__main__":
     parser.add_argument("--format", type=str, default='piece', help='id(num)/piece(str)')
     parser.add_argument("--vocab-size", type=int, default=50000, help='token dictionary size')
     parser.add_argument("--src-dir", type=str,
-                        default='~/.ncc/CodeSearchNet/flatten',
+                        default='~/.ncc/CodeSearchNet_MSRA/flatten',
                         help='source data')
     parser.add_argument("--language", type=str, help='sentencepiece tokenizer for language')
     # parser.add_argument("--corpus_modalities", type=list, help='sentencepiece tokenizer for modalities')
     parser.add_argument("--tgt-dir", type=str,
-                        default='~/.ncc/CodeSearchNet/codebert/',
+                        default='~/.ncc/CodeSearchNet_MSRA/summarization/',
                         help='save dir for sentencepiece bpe models or save files')
     # parser.add_argument("--bpe-dir", type=str, default='wordpiece_bpe', help='wordpiece_bpe modal save direction')
     parser.add_argument("--model-type", type=str, default='unigram', help='source data')
@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
     # 1. make corpus
     make_corpus(input_files, corpus_file, corpus_modalities)
-    special_symbols = ['[CLS]', '[SEP]', '[MASK]', '[EOL]', '[URL]'] # get_special_symbols(args)
+    special_symbols = ['[EOL]']  # get_special_symbols(args) , '[CLS]', '[SEP]', '[URL]', '[MASK]'
     # 2. spm_train
     corpus_file = ','.join(corpus_file.values())
     model_prefix = os.path.join(args.tgt_dir, args.language, '{}_{}'.format(args.model_prefix, args.language))

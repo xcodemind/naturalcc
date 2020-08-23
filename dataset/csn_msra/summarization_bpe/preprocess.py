@@ -177,7 +177,7 @@ def main(args):
     def make_dataset(vocab, sp, input_prefix, output_prefix, lang, num_workers=1):
         if args['preprocess']['dataset_impl'] == 'raw':
             with open(file_name(input_prefix, lang), 'rb') as input_file, open(dest_path(output_prefix, lang), 'w', encoding="utf-8") as output_file:
-                for line in input_file.readlines()[0: 100]:  # TODO only for debug
+                for line in input_file.readlines(): #[0: 100]:  # TODO only for debug
                     line = ujson.loads(line)
                     line = normalize_program(line)
                     line = sp.EncodeAsPieces(line)
@@ -209,7 +209,7 @@ def main(args):
 
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('preprocess_codebert.yml')  # train_sl
+    args_ = Argues('preprocess.yml')  # train_sl
     LOGGER.info(args_)
     yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
