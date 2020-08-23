@@ -768,3 +768,49 @@ class Trainer(object):
                 if key_to_delete in logging_output:
                     del logging_output[key_to_delete]
             return logging_output
+
+    def test_bleu_step(self, sample, bleu_scorers, print_to_file=None):
+        with torch.no_grad():
+            self.model.eval()
+            sample = self._prepare_sample(sample)
+            if sample is not None:
+                self.test_bleu(sample, bleu_scorers, print_to_file)
+
+    def test_bleu(self, sample, bleu_scorers, print_to_file=None):
+        if sample is None:
+            return
+
+        beam = self.args.beam
+        with torch.no_grad():
+            while True:
+                try:
+                    hypos = self._translator.generate({
+                        'src_tokens': sample['net_input']['src_tokens'],
+                        'src_lengths': sample['net_input']['src_lengths'],
+                        'lng': sample['net_input'].get('lng', None)
+                    }, beam)
+                    break
+                except RuntimeError as e:
+                    if 'out of memory' in str(e) and beam >= 3:
+                        beam = beam - 1
+                        print('| WARNING: ran out of memory, reduce beam size to %d' % beam)
+                    else:
+                        raise e
+
+            assert len(sample['target']) == len(hypos)
+            for dataset_id, tgt, hypo in zip(
+                list(sample['dataset_id']) if 'dataset_id' in sample else list(torch.LongTensor([0] * len(hypos))),
+                list(sample['target']),
+                hypos
+            ):
+                dict = deepcopy(self.task.target_dictionary)
+                target_str = dict.string(tgt.int().cpu(), '@@ ', escape_unk=True)
+                target_tokens = tokenizer.Tokenizer.tokenize(
+                    target_str, dict, add_if_not_exist=True)
+                hypo_str = dict.string(hypo[0]['tokens'].int().cpu(), '@@ ')
+                hypo_tokens = tokenizer.Tokenizer.tokenize(
+                    hypo_str, dict, add_if_not_exist=True)
+                bleu_scorer_ = bleu_scorers[dataset_id.item()]
+                bleu_scorer_.add(target_tokens, hypo_tokens)
+                if print_to_file is not None:
+                    print_to_file(dataset_id.item(), target_str, hypo_str)
