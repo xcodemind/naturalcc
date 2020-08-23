@@ -1,5 +1,5 @@
 #registry
-criterion: distill_label_smoothed_cross_entropy #label_smoothed_cross_entropy, distill_label_smoothed_cross_entropy
+criterion: label_smoothed_cross_entropy
 optimizer: 'adam'
 lr_scheduler: 'polynomial_decay'
 tokenizer: ~ # default=None
@@ -9,12 +9,12 @@ bpe: ~ # default=None
 common:
 #  device: 0 # GPU device. if None, as CPU
   no_progress_bar: 0 # action='store_true', help='disable progress bar'
-  log_interval: 100 # type=int, default=100, metavar='N', help='log progress every N batches (when progress bar is disabled)'
+  log_interval: 300 # type=int, default=100, metavar='N', help='log progress every N batches (when progress bar is disabled)'
   log_format: simple # default=None, help='log format to use', choices=['json', 'none', 'simple', 'tqdm']
   tensorboard_logdir: '' # default='', help='path to save logs for tensorboard, should match --logdir of running tensorboard (default: no tensorboard logging)'
   seed: 42 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
   cpu: 0 # action='store_true', help='use CPU instead of CUDA'
-  fp16: 1 # action='store_true', help='use FP16'
+  fp16: 0 # action='store_true', help='use FP16'
   fp16_opt_level: '01' # type=str, default="O1", help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']. See details at https://nvidia.github.io/apex/amp.html",
   memory_efficient_fp16: 0 # action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
   fp16_no_flatten_grads: 0 # action='store_true', help='don\'t flatten FP16 grads tensor'
@@ -37,9 +37,9 @@ dataset:
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
   max_sentences: 4 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
-  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
+  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
   train_subset: train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
-  valid_subset: train # valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
+  valid_subset: valid # valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
   validate_interval: 1 # type=int, default=1, metavar='N', help='validate every N epochs'
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
   disable_validation: 0 # action='store_true',help='disable validation'
@@ -70,15 +70,16 @@ distributed_training:
   local_rank: -1 # type=int, default=-1, help="For distributed training: local_rank"
 
 task:
-  data: ~/.ncc/CodeSearchNet/base/data-raw/ # /tmp/pycharm_project_629/data-bin help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/kd/summarization/data-mmap/ # /tmp/pycharm_project_629/data-bin help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
   programming_langs:
-    - ruby_debug
+    - ruby
 #    - java
 #    - javascript
 #    - python
 #    - php
 #    - go
+#    - csharp
   # for summarization
   source_lang: code_tokens
   target_lang: docstring_tokens
@@ -88,11 +89,11 @@ task:
   max_source_positions: 1024 #', default=1024, type=int, metavar='N', help='max number of tokens in the source sequence'
   max_target_positions: 1024 #', default=1024, type=int, metavar='N', help='max number of tokens in the target sequence'
   upsample_primary: 1 #', default=1, type=int, help='amount to upsample primary dataset'
-  truncate_source: 0 #', action='store_true', default=False, help='truncate source to max-source-positions'
+  truncate_source: 1 #', action='store_true', default=False, help='truncate source to max-source-positions'
   add_bos_token: 0 # ', action='store_true', help='prepend beginning of sentence token (<s>)'
 
   # options for reporting BLEU during validation
-  eval_bleu: 1 #action='store_true', help='evaluation with BLEU scores'
+  eval_bleu: 0 #action='store_true', help='evaluation with BLEU scores'
   eval_bleu_detok: space #', type=str, default="space", help='detokenizer before computing BLEU (e.g., "moses"); required if using --eval-bleu; use "space" to disable detokenization; see fairseq.data.encoders for other options'
   eval_bleu_detok_args: ~ #', type=str, metavar='JSON', help='args for building the tokenizer, if needed'
   eval_tokenized_bleu: 0 #', action='store_true', default=False, help='if setting, we compute tokenized BLEU instead of sacrebleu'
@@ -102,7 +103,7 @@ task:
 
 kd:
   distill_topk: 8
-  is_distill: True # False, True
+  is_distill: False # False for training teacher networks, True for distill teacher networks to student network
   universal: 1 # ', action='store_true')
 
 model:
@@ -114,19 +115,19 @@ model:
   activation_dropout: 0.0 # '--relu-dropout', type=float, metavar='D', help='dropout probability after activation in FFN.'
   relu_dropout: 0.0 # '--relu-dropout', type=float, metavar='D', help='dropout probability after activation in FFN.'
   encoder_embed_path: 0 # type=str, metavar='STR', help='path to pre-trained encoder embedding'
-  encoder_embed_dim: 512 # type=int, metavar='N', help='encoder embedding dimension'
+  encoder_embed_dim: 256 # type=int, metavar='N', help='encoder embedding dimension'
   encoder_ffn_embed_dim: 1024 # type=int, metavar='N', help='encoder embedding dimension for FFN'
-  encoder_layers: 6 # 12 type=int, metavar='N', help='num encoder layers'
+  encoder_layers: 2 # 12 type=int, metavar='N', help='num encoder layers'
   encoder_attention_heads: 4 # 12 type=int, metavar='N', help='num encoder attention heads'
   encoder_normalize_before: 0 # action='store_true', help='apply layernorm before each encoder block'
   encoder_learned_pos: 0 # action='store_true', help='use learned positional embeddings in the encoder'
 
   decoder_embed_path: '' # type=str, metavar='STR', help='path to pre-trained decoder embedding'
-  decoder_embed_dim: 512 # ', type=int, metavar='N', help='decoder embedding dimension'
-  decoder_output_dim: 512 # ', type=int, metavar='N', help='decoder output dimension')
-  decoder_input_dim: 512 # ', type=int, metavar='N', help='decoder input dimension')
+  decoder_embed_dim: 256 # ', type=int, metavar='N', help='decoder embedding dimension'
+  decoder_output_dim: 256 # ', type=int, metavar='N', help='decoder output dimension')
+  decoder_input_dim: 256 # ', type=int, metavar='N', help='decoder input dimension')
   decoder_ffn_embed_dim: 1024 # type=int, metavar='N', help='decoder embedding dimension for FFN'
-  decoder_layers: 6 # type=int, metavar='N', help='num decoder layers'
+  decoder_layers: 2 # type=int, metavar='N', help='num decoder layers'
   decoder_attention_heads: 4 # ', type=int, metavar='N', help='num decoder attention heads')
   decoder_normalize_before: 0 # ', action='store_true', help='apply layernorm before each decoder block')
   no_decoder_final_norm: 0 # ', action='store_true', help='don\'t add an extra layernorm after the last decoder block')
@@ -171,13 +172,13 @@ model:
 
 
 optimization:
-  max_epoch: 1 # 500 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
-  max_update: 12500 # 12500 #=====12500 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
+  max_epoch: 0 # 500 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
+  max_update: 1 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
   clip_norm: 25 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
     - 1
   lr: # '--learning-rate', default='0.25', type=eval_str_list, metavar='LR_1,LR_2,...,LR_N', help='learning rate for the first N epochs; all epochs >N using LR_N (note: this may be interpreted differently depending on --lr-scheduler)'
-    - 0.0005
+    - 0.001
   min_lr: -1 # default=-1, type=float, metavar='LR', help='stop training when the learning rate reaches this minimum'
   use_bmuf: 0 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
 #
@@ -210,7 +211,7 @@ optimization:
   alpha_strategy: fix # ', default='fix', choices=['fix', 'threshold', 'adaptive'])
 
 checkpoint:
-  save_dir: ~/.ncc/CodeSearchNet/summarization/transformer/checkpoints # default='checkpoints', help='path to save checkpoints'
+  save_dir: ~/.ncc/kd/summarization/data-mmap/ruby/transformer/checkpoints # default='checkpoints', help='path to save checkpoints'
   restore_file: checkpoint_last.pt # default='checkpoint_last.pt', help='filename from which to load checkpoint (default: <save-dir>/checkpoint_last.pt'
   reset_dataloader: ~ # action='store_true', help='if set, does not reload dataloader state from the checkpoint'
   reset_lr_scheduler: ~ # action='store_true', help='if set, does not load lr scheduler state from the checkpoint'
@@ -226,7 +227,7 @@ checkpoint:
   no_epoch_checkpoints: 0 # action='store_true', help='only store last and best checkpoints'
   no_last_checkpoints: 0 # action='store_true', help='don\'t store last checkpoints'
   no_save_optimizer_state: ~ # action='store_true', help='don\'t save optimizer-state as part of checkpoint'
-  best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
+  best_checkpoint_metric: bleu # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
   patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
@@ -241,7 +242,7 @@ checkpoint:
   save_output: 1 # ', action='store_true')
 
 eval:
-  path: ~/.ncc/CodeSearchNet/summarization/transformer/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  path: ~/.ncc/kd/summarization/transformer/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
   quiet: 1 # ', action='store_true', help='only print final scores'
   results_path: ~ # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'
@@ -250,7 +251,7 @@ eval:
   beam: 5 # ', default=5, type=int, metavar='N', help='beam size')
   nbest: 1 # ', default=1, type=int, metavar='N', help='number of hypotheses to output')
   max_len_a: 0 #', default=0, type=float, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))
-  max_len_b: 200 #', default=200, type=int, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))
+  max_len_b: 50 #', default=200, type=int, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))
   min_len: 1 # ', default=1, type=float, metavar='N', help=('minimum generation length'))
   match_source_len: 0 #', default=False, action='store_true', help=('generations should match the source length'))
   no_early_stop: 0 # ', action='store_true', help='deprecated')

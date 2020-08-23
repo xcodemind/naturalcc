@@ -52,14 +52,16 @@ def load_langpair_dataset(
     lng_borders = [0]
 
     for ds_idx, program_lang in enumerate(programming_langs):
-        data_path = os.path.join(data_path, program_lang)
+        lang_data_path = os.path.join(data_path, program_lang)
 
         split_k = split
         # infer langcode
-        if split_exists(split_k, src, data_path):
-            prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , src, tgt
-        elif split_exists(split_k, tgt, data_path):
-            prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , tgt, src
+        if split_exists(split_k, src, lang_data_path):
+            prefix = os.path.join(lang_data_path, '{}.'.format(split_k))  # {}-{}. , src, tgt
+        elif split_exists(split_k, tgt, lang_data_path):
+            prefix = os.path.join(lang_data_path, '{}.'.format(split_k))  # {}-{}. , tgt, src
+        else:
+            raise NotImplementedError('No data in {}'.format(lang_data_path))
 
         src_dataset = data_utils.load_indexed_dataset(prefix + src, src, src_dict, dataset_impl)
         if truncate_source:
@@ -82,36 +84,32 @@ def load_langpair_dataset(
             dataset_ids.append(ds_idx)
 
         if is_distill:
-            path = '{}_{}_{}_topk_idx'.format(data_path, src, tgt)
+            path = '{}_{}_{}_topk_idx'.format(lang_data_path, src, tgt)
             topk_idxs.append(TeacherOutputDataset(path))
-            path = '{}_{}_{}_topk_prob'.format(data_path, src, tgt)
+            path = '{}_{}_{}_topk_prob'.format(lang_data_path, src, tgt)
             topk_probs.append(TeacherOutputDataset(path))
-            expert_bleu = '{}_expert_bleu_{}_{}.json'.format(data_path, src, tgt)
+            expert_bleu = '{}_expert_bleu_{}_{}.json'.format(lang_data_path, src, tgt)
             expert_bleu = json.load(open(expert_bleu))
             expert_scores.append(expert_bleu[f"{program_lang}_{src}_{tgt}"])
 
-        if not combine:
-            break
-
     assert len(src_datasets) == len(tgt_datasets) or len(tgt_datasets) == 0
 
-    if len(src_datasets) == 1:
-        src_dataset = src_datasets[0]
-        tgt_dataset = tgt_datasets[0] if len(tgt_datasets) > 0 else None
+    sample_ratios = [1] * len(src_datasets)
+    sample_ratios[0] = upsample_primary
+    src_dataset = ConcatDataset(src_datasets, sample_ratios)
+    if len(tgt_datasets) > 0:
+        tgt_dataset = ConcatDataset(tgt_datasets, sample_ratios)
     else:
-        sample_ratios = [1] * len(src_datasets)
-        sample_ratios[0] = upsample_primary
-        src_dataset = ConcatDataset(src_datasets, sample_ratios)
-        if len(tgt_datasets) > 0:
-            tgt_dataset = ConcatDataset(tgt_datasets, sample_ratios)
-        else:
-            tgt_dataset = None
+        tgt_dataset = None
 
     if is_distill:
         topk_idx_dataset = ConcatDataset(topk_idxs)
         topk_probs_dataset = ConcatDataset(topk_probs)
         assert len(topk_probs_dataset) == len(src_dataset), (len(topk_probs_dataset), len(src_dataset))
         assert len(topk_idx_dataset) == len(src_dataset)
+    else:
+        topk_idx_dataset = None
+        topk_probs_dataset = None
 
     if prepend_bos:
         assert hasattr(src_dict, "bos_index") and hasattr(tgt_dict, "bos_index")
@@ -125,7 +123,7 @@ def load_langpair_dataset(
         args,
         src_dataset, src_dataset.sizes, src_dict,
         tgt_dataset, tgt_dataset_sizes, tgt_dict,
-        dataset_ids=dataset_ids, lng_borders=lng_borders,
+        dataset_ids=dataset_ids, lng_borders=lng_borders, dataset_names=programming_langs,
         left_pad_source=left_pad_source,
         left_pad_target=left_pad_target,
         max_source_positions=max_source_positions,
@@ -159,9 +157,8 @@ class UniversalSummarizationTask(FairseqTask):
         super().__init__(args)
         self.src_dict = src_dict
         self.tgt_dict = tgt_dict
-        all_lngs = json.load(open(os.path.join(args['task']['data'], 'all_lngs.json')))
-        self.id2lng = all_lngs
-        self.lng2id = {v: k for k, v in enumerate(all_lngs)}
+        self.id2lng = sorted(['java', 'python', 'ruby', 'php', 'go', 'javascript', 'csharp'])
+        self.lng2id = {v: k for k, v in enumerate(self.id2lng)}
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -200,9 +197,6 @@ class UniversalSummarizationTask(FairseqTask):
         Args:
             split (str): name of the split (e.g., train, valid, test)
         """
-
-        # def indexed_dataset(path, dictionary):
-        #     return IndexedCachedDataset(path, fix_lua_indexing=True)
 
         paths = utils.split_paths(self.args['task']['data'])
         assert len(paths) > 0
@@ -244,7 +238,7 @@ class UniversalSummarizationTask(FairseqTask):
             # The gen_args parameters have been set in the yml file
             # gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
             # self.sequence_generator = self.build_generator(Namespace(**gen_args))
-            self.sequence_generator = self.build_generator(args)
+            self.sequence_generator = self.build_generator([model], args)
         return model
 
     def valid_step(self, sample, model, criterion):

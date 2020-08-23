@@ -60,7 +60,7 @@ class TeacherOutputDataset(IndexedCachedDataset):
 
     @staticmethod
     def save_bin(prefix, data_list, dtype=np.float):
-        bin_path = prefix + '.bin'
+        bin_path = prefix + '.mmap'
         idx_path = prefix + '.idx'
         builder = TeacherOutputDatasetBuilder(bin_path, dtype)
         for d in data_list:
@@ -90,7 +90,7 @@ class TeacherOutputDataset(IndexedCachedDataset):
 def gen_outputs(args, task, trainer):
     trainer.model.eval()
     itr = task.get_batch_iterator(
-        dataset=task.dataset('train'),
+        dataset=task.dataset('valid'),
         max_tokens=args['dataset']['max_tokens'],
         max_sentences=args['dataset']['max_sentences_valid'],
         max_positions=utils.resolve_max_positions(
@@ -104,7 +104,7 @@ def gen_outputs(args, task, trainer):
         shard_id=args['distributed_training']['distributed_rank'],
     ).next_epoch_itr(shuffle=False)
 
-    outputs = [None for _ in range(len(task.dataset('train')))]
+    outputs = [None for _ in range(len(task.dataset('valid')))]
     for sample in tqdm(itr, mininterval=5):
         with torch.no_grad():
             if sample is None or len(sample) == 0:
@@ -129,16 +129,21 @@ def gen_outputs(args, task, trainer):
 def save_expert_outputs(args, task, trainer):
     print("| Start saving expert outputs..")
     expert_outputs = gen_outputs(args, task, trainer)
-    output_path = os.path.join(args['checkpoint']['save_dir'], 'train_output.json.{}'.format(args['distributed_training']['distributed_rank']))
+    output_path = os.path.join(args['checkpoint']['save_dir'],
+                               'train_output.json.{}'.format(args['distributed_training']['distributed_rank']))
     json.dump(expert_outputs, open(output_path, 'w'))
     # distributed_utils.barrier(args, 'save_expert_outputs')
     if distributed_utils.is_master(args):
         expert_outputs_ = []
-        # val_bleu_path1 = os.path.join(args['checkpoint']['save_dir'], 'val_bleu.json')
-        # val_bleu_path2 = os.path.join(args['task']['data'], 'expert_bleu_{}_{}_{}.json'.format(
-        #     '_'.join(args['task']['programming_langs']), args['task']['source_lang'], args['task']['target_lang'])
-        # )
-        # os.system('cp {} {}'.format(val_bleu_path1, val_bleu_path2))
+        # copy valid bleu result
+        val_bleu_path1 = os.path.join(args['checkpoint']['save_dir'], 'val_bleu.json')
+        val_bleu_path2 = os.path.join(
+            args['task']['data'],
+            'expert_bleu_{}_{}_{}.json'.format('_'.join(args['task']['programming_langs']),
+                                               args['task']['source_lang'],
+                                               args['task']['target_lang'])
+        )
+        os.system('cp {} {}'.format(val_bleu_path1, val_bleu_path2))
 
         for i in range(args['distributed_training']['distributed_world_size']):
             output_path = os.path.join(args['checkpoint']['save_dir'], 'train_output.json.{}'.format(i))
@@ -157,91 +162,14 @@ def save_expert_outputs(args, task, trainer):
 
         path = os.path.join(args['task']['data'], '{}_{}_{}_topk_idx'.format(
             '_'.join(args['task']['programming_langs']), args['task']['source_lang'], args['task']['target_lang'])
-        )
+                            )
         TeacherOutputDataset.save_bin(path, [o[0] for o in expert_outputs], np.int32)
 
         path = os.path.join(args['task']['data'], '{}_{}_{}_topk_prob'.format(
             '_'.join(args['task']['programming_langs']), args['task']['source_lang'], args['task']['target_lang'])
-        )
+                            )
         TeacherOutputDataset.save_bin(path, [o[1] for o in expert_outputs], np.float)
 
     print("| Save expert@{}_{}_{}".format(
         '_'.join(args['task']['programming_langs']), args['task']['source_lang'], args['task']['target_lang'])
     )
-
-# def save_master_outputs(args, task, trainer, version, dev_scores, force_save=False):
-#     assert dev_scores is not None
-#     master_outputs = None
-#
-#     try:
-#         with open(os.path.join(args.fed_path, 'all_{}'.format(args.target_lang), FED_VERSION_FN)) as f:
-#             old_version_data = json.load(f)
-#     except:
-#         old_version_data = None
-#
-#     dataset = task.dataset('train')
-#     division = dataset.src_cumsum + [len(dataset)]
-#     version_path = os.path.join(args.save_dir, FED_VERSION_FN)
-#     version_data = {
-#         'version': version,
-#     }
-#
-#     for lng_idx, lng in enumerate(dataset.fed_lngs):
-#         start, end = division[lng_idx], division[lng_idx + 1]
-#         if force_save or old_version_data is None or dev_scores['bleu_{}'.format(lng)] > old_version_data[
-#             'bleu_{}'.format(lng)]:
-#             output_path = os.path.join(args.save_dir, 'train_output.{}.json.{}'.format(lng, args.distributed_rank))
-#             if master_outputs is None:
-#                 master_outputs = gen_outputs(args, task, trainer)
-#             json.dump(master_outputs[start:end], open(output_path, 'w'))
-#             version_data['bleu_{}'.format(lng)] = dev_scores['bleu_{}'.format(lng)]
-#         else:
-#             version_data['bleu_{}'.format(lng)] = old_version_data['bleu_{}'.format(lng)]
-#
-#     if distributed_utils.is_master(args):
-#         with open(version_path, 'w') as f:
-#             json.dump(version_data, f)
-#         print("| Save master, data:{}".format(json.dumps(version_data)))
-#
-#
-# def load_master_outputs(args, score, old_master_version=None, old_master_outputs=None):
-#     assert score is not None
-#     master_outputs = old_master_outputs
-#     master_version = old_master_version
-#
-#     files = glob.glob(os.path.join(args.fed_path, 'all_{}'.format(args.target_lang),
-#                                    'train_output.{}.*.*'.format(args.source_lang)))
-#     if len(files) == 0:
-#         files = glob.glob(os.path.join(args.fed_path, 'train_output.{}.*.*'.format(args.source_lang)))
-#         if len(files) == 0:
-#             print("| Master not found.")
-#             return master_version, master_outputs
-#
-#     try:
-#         version_fn = os.path.join(args.fed_path, 'all_{}'.format(args.target_lang), FED_VERSION_FN)
-#         if not os.path.exists(version_fn):
-#             version_fn = os.path.join(args.fed_path, FED_VERSION_FN)
-#         with open(version_fn) as f:
-#             version_data = json.load(f)
-#         version = version_data['version']
-#
-#         if old_master_version is not None and old_master_outputs is not None:
-#             if version <= old_master_version:
-#                 print("| Master has not updated yet.")
-#                 return master_version, master_outputs
-#     except FileNotFoundError:
-#         print("| Master version not found.")
-#         return master_version, master_outputs
-#
-#     outputs = []
-#     for f in files:
-#         outputs.append(json.load(open(f, 'r')))
-#     outputs_flatten = [None for _ in range(len(outputs[0]))]
-#     for i in range(len(outputs[0])):
-#         for j in range(len(files)):
-#             if outputs[j][i] is not None:
-#                 outputs_flatten[i] = outputs[j][i]
-#                 break
-#         assert outputs_flatten[i] is not None
-#     print("| Load master@{}.".format(version))
-#     return version, outputs_flatten

@@ -769,26 +769,26 @@ class Trainer(object):
                     del logging_output[key_to_delete]
             return logging_output
 
-    def test_bleu_step(self, sample, bleu_scorers, print_to_file=None):
+    def test_bleu_step(self, generator, sample, bleu_scorers, print_to_file=None):
         with torch.no_grad():
             self.model.eval()
             sample = self._prepare_sample(sample)
             if sample is not None:
-                self.test_bleu(sample, bleu_scorers, print_to_file)
+                self.test_bleu(generator, sample, bleu_scorers, print_to_file)
 
-    def test_bleu(self, sample, bleu_scorers, print_to_file=None):
+    def test_bleu(self, generator, sample, bleu_scorers, print_to_file=None):
         if sample is None:
             return
 
-        beam = self.args.beam
+        beam = self.args['eval']['beam']
         with torch.no_grad():
             while True:
                 try:
-                    hypos = self._translator.generate({
-                        'src_tokens': sample['net_input']['src_tokens'],
-                        'src_lengths': sample['net_input']['src_lengths'],
-                        'lng': sample['net_input'].get('lng', None)
-                    }, beam)
+                    hypos = generator.generate(
+                        {'src_tokens': sample['net_input']['src_tokens'],
+                         'src_lengths': sample['net_input']['src_lengths'], },
+                        beam
+                    )
                     break
                 except RuntimeError as e:
                     if 'out of memory' in str(e) and beam >= 3:
@@ -803,14 +803,18 @@ class Trainer(object):
                 list(sample['target']),
                 hypos
             ):
-                dict = deepcopy(self.task.target_dictionary)
-                target_str = dict.string(tgt.int().cpu(), '@@ ', escape_unk=True)
-                target_tokens = tokenizer.Tokenizer.tokenize(
-                    target_str, dict, add_if_not_exist=True)
-                hypo_str = dict.string(hypo[0]['tokens'].int().cpu(), '@@ ')
-                hypo_tokens = tokenizer.Tokenizer.tokenize(
-                    hypo_str, dict, add_if_not_exist=True)
+                # remove BOS/EOS and keep UNK
+                target_tokens = torch.IntTensor(
+                    [
+                        i for i in tgt.tolist()
+                        if not (i in {self.task.tgt_dict.eos(), self.task.tgt_dict.pad(), self.task.tgt_dict.bos()})
+                    ]
+                )
+                hypo_tokens = torch.IntTensor(
+                    [
+                        i for i in hypo[0]['tokens'].tolist()
+                        if not (i in {self.task.tgt_dict.eos(), self.task.tgt_dict.pad(), self.task.tgt_dict.bos()})
+                    ]
+                )
                 bleu_scorer_ = bleu_scorers[dataset_id.item()]
                 bleu_scorer_.add(target_tokens, hypo_tokens)
-                if print_to_file is not None:
-                    print_to_file(dataset_id.item(), target_str, hypo_str)

@@ -125,14 +125,14 @@ class UniversalDataset(FairseqDataset):
     """
 
     def __init__(
-            self, args, src, src_sizes, src_dict, #src_lngs, tgt_lngs,
-            tgt=None, tgt_sizes=None, tgt_dict=None,
-            dataset_ids=None, lng_borders=None, # dataset_names=None,
-            topk_idxs=None, topk_probs=None,
-            left_pad_source=True, left_pad_target=False,
-            max_source_positions=1024, max_target_positions=1024,
-            shuffle=True, input_feeding=True, remove_eos_from_source=False, append_eos_to_target=False,
-            upsampling_max=100000, expert_scores=None, is_train=False
+        self, args, src, src_sizes, src_dict,  # src_lngs, tgt_lngs,
+        tgt=None, tgt_sizes=None, tgt_dict=None,
+        dataset_ids=None, lng_borders=None, dataset_names=None,
+        topk_idxs=None, topk_probs=None,
+        left_pad_source=True, left_pad_target=False,
+        max_source_positions=1024, max_target_positions=1024,
+        shuffle=True, input_feeding=True, remove_eos_from_source=False, append_eos_to_target=False,
+        upsampling_max=100000, expert_scores=None, is_train=False
     ):
         if tgt_dict is not None:
             assert src_dict.pad() == tgt_dict.pad()
@@ -150,7 +150,7 @@ class UniversalDataset(FairseqDataset):
         self.lng_borders = lng_borders if lng_borders is not None else [0, len(src)]
         self.num_dataset = len(self.lng_borders) - 1
         self.dataset_ids = dataset_ids if dataset_ids is not None else [0] * len(src)
-        # self.dataset_names = dataset_names
+        self.dataset_names = dataset_names
 
         self.left_pad_source = left_pad_source
         self.left_pad_target = left_pad_target
@@ -307,10 +307,10 @@ class UniversalDataset(FairseqDataset):
     @property
     def supports_prefetch(self):
         return (
-                hasattr(self.src, 'supports_prefetch')
-                and self.src.supports_prefetch
-                and hasattr(self.tgt, 'supports_prefetch')
-                and self.tgt.supports_prefetch
+            hasattr(self.src, 'supports_prefetch')
+            and self.src.supports_prefetch
+            and hasattr(self.tgt, 'supports_prefetch')
+            and self.tgt.supports_prefetch
         )
 
     def get_alpha(self, ds_id):
