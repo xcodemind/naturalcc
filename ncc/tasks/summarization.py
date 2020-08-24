@@ -124,7 +124,7 @@ def load_langpair_dataset(
         align_dataset=None, eos=eos,
         remove_eos_from_source=True,
         append_eos_to_target=append_eos_to_target,
-        shuffle=True, #TODO debug: shuffle=False
+        shuffle=True,  # TODO debug: shuffle=False
     )
 
 
@@ -231,26 +231,26 @@ class SummarizationTask(FairseqTask):
             # The gen_args parameters have been set in the yml file
             # gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
             # self.sequence_generator = self.build_generator(Namespace(**gen_args))
-            self.sequence_generator = self.build_generator([model], args)
-        if args['task']['eval_rouge']:
-            assert args['task']['eval_rouge_detok'] is not None, (
-                '--eval-rouge-detok is required if using --eval-rouge; '
-                'try --eval-rouge-detok=moses (or --eval-rouge-detok=space '
-                'to disable detokenization, e.g., when using sentencepiece)'
-            )
-            # detok_args = json.loads(getattr(args, 'eval_rouge_detok_args', '{}') or '{}')
-            detok_args = json.loads(
-                args['task']['eval_rouge_detok_args'] if args['task']['eval_rouge_detok_args'] else '{}')
-            self.tokenizer = encoders.build_tokenizer(
-                dict(
-                    tokenizer=args['task']['eval_rouge_detok'] if args['task']['eval_rouge_detok'] else None,
-                    # getattr(args, 'eval_rouge_detok', None),
-                    **detok_args
-                ))
-            # The gen_args parameters have been set in the yml file
-            # gen_args = json.loads(getattr(args, 'eval_rouge_args', '{}') or '{}')
-            # self.sequence_generator = self.build_generator(Namespace(**gen_args))
-            self.rouge_sequence_generator = self.build_generator([model], args)
+            self.sequence_generator = self.build_generator(args)
+        # if args['task']['eval_rouge']:
+        #     assert args['task']['eval_rouge_detok'] is not None, (
+        #         '--eval-rouge-detok is required if using --eval-rouge; '
+        #         'try --eval-rouge-detok=moses (or --eval-rouge-detok=space '
+        #         'to disable detokenization, e.g., when using sentencepiece)'
+        #     )
+        #     # detok_args = json.loads(getattr(args, 'eval_rouge_detok_args', '{}') or '{}')
+        #     detok_args = json.loads(
+        #         args['task']['eval_rouge_detok_args'] if args['task']['eval_rouge_detok_args'] else '{}')
+        #     self.tokenizer = encoders.build_tokenizer(
+        #         dict(
+        #             tokenizer=args['task']['eval_rouge_detok'] if args['task']['eval_rouge_detok'] else None,
+        #             # getattr(args, 'eval_rouge_detok', None),
+        #             **detok_args
+        #         ))
+        #     # The gen_args parameters have been set in the yml file
+        #     # gen_args = json.loads(getattr(args, 'eval_rouge_args', '{}') or '{}')
+        #     # self.sequence_generator = self.build_generator(Namespace(**gen_args))
+        #     self.rouge_sequence_generator = self.build_generator([model], args)
         return model
 
     def valid_step(self, sample, model, criterion):
