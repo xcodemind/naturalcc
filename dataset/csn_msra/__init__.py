@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-DATASET_NAME = 'CodeSearchNet'
+DATASET_NAME = 'csn_icse21'
 RAW_DATA_DIR = '~/.ncc/{}/raw'.format(DATASET_NAME)
 LIBS_DIR = '~/.ncc/{}/libs'.format(DATASET_NAME)
 FLATTEN_DIR = '~/.ncc/{}/flatten'.format(DATASET_NAME)

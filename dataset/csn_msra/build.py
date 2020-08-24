@@ -9,7 +9,7 @@ import shutil
 from tree_sitter import Language
 
 try:
-    from dataset.csn import (
+    from dataset.csn_msra import (
         LANGUAGES, RAW_DATA_DIR, LIBS_DIR,
         LOGGER,
     )
@@ -29,31 +29,6 @@ def download_file(url, local):
     else:
         LOGGER.info('Download {} from {}'.format(local, url))
         wget.download(url=url, out=_local)
-
-
-def unzip_raw_data(raw_dir, lang):
-    """unzip raw data from ~/.ncc/code_search_net/raw to ~/.ncc/code_search_net/raw_unzip"""
-    _raw_dir = os.path.expanduser(raw_dir)
-    LOGGER.info('Extracting raw data({})'.format(raw_dir))
-    src_dst_files = []
-    raw_data_path = os.path.join(_raw_dir, '{}.zip'.format(lang))
-    with zipfile.ZipFile(raw_data_path, 'r') as file_list:
-        for file_info in file_list.filelist:
-            src_file = file_info.filename
-            if str.endswith(src_file, '.jsonl.gz'):
-                # temporarily decompress data at {tmp_dst_file}
-                tmp_dst_file = os.path.join(_raw_dir, lang, os.path.split(src_file)[-1])
-                os.makedirs(os.path.dirname(tmp_dst_file), exist_ok=True)
-                if not os.path.exists(tmp_dst_file):
-                    file_list.extract(src_file, path=_raw_dir)
-                    src_file = os.path.join(_raw_dir, src_file)
-                    src_dst_files.append([src_file, tmp_dst_file])
-    for src_file, dst_file in src_dst_files:
-        dst_file = os.path.join(_raw_dir, lang, os.path.split(src_file)[-1])
-        shutil.move(src=src_file, dst=dst_file)
-    # delete temporary directory, e.g. mv ~/.ncc/data/ruby/final/*.jsonl.gz to ~/.ncc/data/ruby/*.jsonl.gz
-    del_dir = os.path.join(_raw_dir, lang, 'final')
-    shutil.rmtree(del_dir, ignore_errors=True)
 
 
 def build_so(lib_dir, lang):
@@ -85,14 +60,6 @@ if __name__ == '__main__':
         3) to compile Tree-Sitter libraries into *.so file
 
     # ====================================== CodeSearchNet ====================================== #
-    Dataset: raw CodeSearchNet data files of Java/Javascript/PHP/GO/Ruby/Python
-       # language   # URL                                                                       # size
-       java:        https://s3.amazonaws.com/code-search-net/CodeSearchNet/v2/java.zip			1060569153
-       javascript:  https://s3.amazonaws.com/code-search-net/CodeSearchNet/v2/javascript.zip	1664713350
-       php:         https://s3.amazonaws.com/code-search-net/CodeSearchNet/v2/php.zip			851894048
-       go:          https://s3.amazonaws.com/code-search-net/CodeSearchNet/v2/go.zip			487525935
-       ruby:        https://s3.amazonaws.com/code-search-net/CodeSearchNet/v2/ruby.zip			111758028
-       python:      https://s3.amazonaws.com/code-search-net/CodeSearchNet/v2/python.zip		940909997
     Tree-Sitter: AST generation tools, TreeSitter repositories from Github can be updated, therefore their size is capricious
        # language   # URL
        Java:        https://codeload.github.com/tree-sitter/tree-sitter-java/zip/master
@@ -108,22 +75,12 @@ if __name__ == '__main__':
         "--language", "-l", default=LANGUAGES, type=str, nargs='+', help="languages constain [{}]".format(LANGUAGES),
     )
     parser.add_argument(
-        "--dataset_dir", "-d", default=RAW_DATA_DIR, type=str, help="raw dataset download directory",
-    )
-    parser.add_argument(
         "--libs_dir", "-b", default=LIBS_DIR, type=str, help="tree-sitter library directory",
     )
     args = parser.parse_args()
     # print(args)
 
     for lang in args.language:
-        # download raw data from amazon CSN datasets
-        dataset_url = 'https://s3.amazonaws.com/code-search-net/CodeSearchNet/v2/{}.zip'.format(lang)
-        dataset_filename = os.path.join(args.dataset_dir, '{}.zip'.format(lang))
-        download_file(url=dataset_url, local=dataset_filename)
-        # decompress raw data
-        unzip_raw_data(raw_dir=args.dataset_dir, lang=lang)
-
         # download Tree-Sitter AST parser libraries
         lib_url = 'https://codeload.github.com/tree-sitter/tree-sitter-{}/zip/master'.format(lang)
         lib_filename = os.path.join(args.libs_dir, '{}.zip'.format(lang))

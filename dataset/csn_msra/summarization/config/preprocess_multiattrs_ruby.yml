@@ -3,14 +3,18 @@ preprocess:
   source_lang:
     - code_tokens
     - docstring_tokens
-  # ~ path for dataset default. e.g.  for CodeSearchNet, ~/filter = ~/.ncc/CodeSearchNet_MSRA/flatten
-  trainpref: ~/.ncc/CodeSearchNet_MSRA/flatten/ruby/train #", metavar="FP", default=None, help="train file prefix"
-  validpref: ~/.ncc/CodeSearchNet_MSRA/flatten/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-  testpref:  ~/.ncc/CodeSearchNet_MSRA/flatten/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+    - path
+    - path.terminals
+    - sbt
+    - traversal
+  # ~ path for dataset default. e.g.  for CodeSearchNet, ~/filter = ~/.ncc/csn_icse21/filter
+  trainpref: ~/.ncc/csn_icse21/filter/ruby/train #", metavar="FP", default=None, help="train file prefix"
+  validpref: ~/.ncc/csn_icse21/filter/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+  testpref:  ~/.ncc/csn_icse21/filter/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
   align_suffix: ~ # ", metavar="FP", default=None, help="alignment file suffix"
 #  destdir: ~/.ncc/CodeSearchNet/summarization/data-raw/ruby/ #", metavar="DIR", default="data-bin", help="destination dir"
-  destdir: ~/.ncc/CodeSearchNet_MSRA/summarization/data-mmap/ruby #", metavar="DIR", default="data-bin", help="destination dir"
+  destdir: ~/.ncc/csn_icse21/summarization/data-mmap/ruby #", metavar="DIR", default="data-bin", help="destination dir"
   thresholdsrc: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
   srcdict: ~
   #  nwordssrc: -1 #", metavar="N", default=-1, type=int, help="number of source words to retain"

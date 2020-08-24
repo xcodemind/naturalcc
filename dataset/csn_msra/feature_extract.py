@@ -6,25 +6,26 @@ import ujson
 import random
 import argparse
 import itertools
+import shutil
 from multiprocessing import Pool, cpu_count
 from ncc.utils.mp_ppool import PPool, cpu_count
 from dataset.csn import PATH_NUM, MAX_SUB_TOKEN_LEN, MODES
 
 try:
-    from dataset.csn import (
+    from dataset.csn_msra import (
         LANGUAGES, MODES,
         RAW_DATA_DIR, LIBS_DIR, REFINE_DIR, FLATTEN_DIR,
         LOGGER,
     )
-    from dataset.csn.parser._parser import CodeParser
-    from dataset.csn.utils import (util, util_ast, util_path, util_traversal)
+    from dataset.csn_msra.parser._parser import CodeParser
+    from dataset.csn_msra.utils import (util, util_ast, util_path, util_traversal)
 except ImportError:
     from . import (
         LANGUAGES, MODES,
         RAW_DATA_DIR, LIBS_DIR, REFINE_DIR, FLATTEN_DIR,
         LOGGER,
     )
-    from dataset.csn.parser._parser import CodeParser
+    from dataset.csn_msra.parser._parser import CodeParser
     from .utils import (util, util_ast, util_path, util_traversal)
 
 
@@ -54,6 +55,40 @@ def safe_readline(f):
 
 
 class AttrFns:
+    @staticmethod
+    def code_fn(filename, dest_filename, idx, start=0, end=-1, *args):
+        """code => code. has been refined by MSRA"""
+        kwargs = args[0][0]  # canot feed dict parameters in multi-processing
+
+        dest_filename = dest_filename + str(idx)
+        os.makedirs(os.path.dirname(dest_filename), exist_ok=True)
+        with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
+            reader.seek(start)
+            line = safe_readline(reader)
+            while line:
+                if end > 0 and reader.tell() > end:
+                    break
+                docstring = ujson.loads(line)
+                print(ujson.dumps(docstring, ensure_ascii=False), file=writer)
+                line = safe_readline(reader)
+
+    @staticmethod
+    def docstring_fn(filename, dest_filename, idx, start=0, end=-1, *args):
+        """docstring => docstring. has been refined by MSRA"""
+        kwargs = args[0][0]  # canot feed dict parameters in multi-processing
+
+        dest_filename = dest_filename + str(idx)
+        os.makedirs(os.path.dirname(dest_filename), exist_ok=True)
+        with open(filename, "r", encoding="UTF-8") as reader, open(dest_filename, 'w') as writer:
+            reader.seek(start)
+            line = safe_readline(reader)
+            while line:
+                if end > 0 and reader.tell() > end:
+                    break
+                docstring = ujson.loads(line)
+                print(ujson.dumps(docstring, ensure_ascii=False), file=writer)
+                line = safe_readline(reader)
+
     @staticmethod
     def code_tokens_fn(filename, dest_filename, idx, start=0, end=-1, *args):
         """code => raw_ast"""
@@ -344,8 +379,9 @@ if __name__ == '__main__':
     parser.add_argument(
         "--attrs", "-a",
         default=[
+            'code', 'docstring',
             'code_tokens', 'docstring_tokens',
-            'raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'binary_ast', 'traversal',
+            'raw_ast', 'ast', 'path', 'sbt', 'traversal',
         ],
         type=str, nargs='+', help="attrs: raw_ast, ...",
     )
@@ -362,27 +398,28 @@ if __name__ == '__main__':
         "ast" <= "raw_ast",     # ast, saving leaf nodes into "value" nodes and non-leaf nodes into "children" nodes
         "path" <= "ast",        # path, a path from a leaf node to another leaf node 
         "sbt" <= "raw_ast",     # sbt, a depth first traversal path of an AST, tokenize leaf node and padding with <PAD>(for DGL Lib.)
-        "sbtao" <= "sbt'",       # sbtao, an improved depth first traversal path of an AST, tokenize leaf node and padding with <PAD>(for DGL Lib.)
-        "binary_ast" <= "raw_ast", # bin_ast, an sophisticated binary AST, remove nodes with single child, tokenize leaf node and padding with <PAD>(for DGL Lib.)
         "traversal" <= "ast",   #
     """
 
     dest_raw_attrs = {
+        'code': 'code',
+        'docstring': 'docstring',
         'code_tokens': 'code_tokens',
         'docstring_tokens': 'docstring_tokens',
         'raw_ast': 'code',
         'ast': 'raw_ast',
         'path': 'ast',
         'sbt': 'raw_ast',
-        'sbtao': 'raw_ast',
-        'binary_ast': 'raw_ast',
         'traversal': 'ast',
     }
 
     for lang, mode in itertools.product(args.language, MODES):
         for tgt_attr in args.attrs:
             src_attr = dest_raw_attrs[tgt_attr]
-            src_filename = os.path.join(args.flatten_dir, lang, '{}.{}'.format(mode, src_attr))
+            if src_attr in ['code', 'docstring', 'code_tokens', 'docstring_tokens', ]:
+                src_filename = os.path.join(args.flatten_dir, lang, '{}.{}'.format(mode, src_attr))
+            else:
+                src_filename = os.path.join(args.refine_dir, lang, '{}.{}'.format(mode, src_attr))
             tgt_filename = os.path.join(args.refine_dir, lang, '{}.{}'.format(mode, tgt_attr))
             LOGGER.info('Generating {}'.format(tgt_filename))
             process(src_filename, tgt_filename, num_workers=args.cores,

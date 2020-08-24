@@ -10,20 +10,20 @@ from ncc.utils.mp_ppool import PPool, cpu_count
 from dataset.csn import PATH_NUM, MAX_SUB_TOKEN_LEN, MODES
 
 try:
-    from dataset.csn import (
+    from dataset.csn_msra import (
         LANGUAGES, MODES,
         RAW_DATA_DIR, LIBS_DIR, REFINE_DIR, FILTER_DIR,
         LOGGER,
     )
-    from dataset.csn.parser._parser import CodeParser
-    from dataset.csn.utils import (util, util_ast, util_path, util_traversal)
+    from dataset.csn_msra.parser._parser import CodeParser
+    from dataset.csn_msra.utils import (util, util_ast, util_path, util_traversal)
 except ImportError:
     from . import (
         LANGUAGES, MODES,
         RAW_DATA_DIR, LIBS_DIR, REFINE_DIR, FILTER_DIR,
         LOGGER,
     )
-    from dataset.csn.parser._parser import CodeParser
+    from dataset.csn_msra.parser._parser import CodeParser
     from .utils import (util, util_ast, util_path, util_traversal)
 
 
@@ -65,9 +65,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         "--attrs", "-a",
-        default=['code', 'code_tokens', 'docstring', 'docstring_tokens',
-                 'raw_ast', 'ast', 'path', 'path.terminals', 'sbt', 'sbtao', 'binary_ast', 'traversal'],
-        # default=['code_tokens', 'docstring_tokens', ],
+        default=['code', 'code_tokens', 'docstring', 'docstring_tokens', 'path', 'path.terminals', 'sbt', 'traversal'],
         type=str, nargs='+', help="attrs: raw_ast, ...",
     )
     args = parser.parse_args()

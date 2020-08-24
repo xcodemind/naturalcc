@@ -10,7 +10,7 @@ from glob import glob
 from multiprocessing import Pool, cpu_count
 
 try:
-    from dataset.csn import (
+    from dataset.csn_msra import (
         LANGUAGES, MODES,
         RAW_DATA_DIR, LIBS_DIR, FLATTEN_DIR,
         LOGGER,
@@ -51,7 +51,7 @@ def flatten(raw_dir, lang, flatten_dir, attrs, num_cores=None):
         num_cores = cpu_count()
     num_cores = min(num_cores, cpu_count())
 
-    LOGGER.info('Flatten the attributes({}) of {} raw dataset'.format(attrs, lang))
+    LOGGER.info('Flatten the attributes({}) of {} raw dataset at {}'.format(attrs, lang, flatten_dir))
     _raw_dir = os.path.expanduser(raw_dir)
     with Pool(num_cores) as mpool:
         result = [
@@ -71,15 +71,15 @@ if __name__ == '__main__':
         "--language", "-l", default=LANGUAGES, type=str, nargs='+', help="languages constain [{}]".format(LANGUAGES),
     )
     parser.add_argument(
-        "--dataset_dir", "-d", default='~/.ncc/CodeSearchNet_MSRA/raw', type=str, help="raw dataset download directory",
+        "--dataset_dir", "-d", default=RAW_DATA_DIR, type=str, help="raw dataset download directory",
     )
     parser.add_argument(
-        "--flatten_dir", "-f", default='~/.ncc/CodeSearchNet_MSRA/flatten', type=str,
+        "--flatten_dir", "-f", default=FLATTEN_DIR, type=str,
         help="data directory of flatten attribute",
     )
     parser.add_argument(
         "--attrs", "-a",
-        default=['code', 'code_tokens', 'docstring', 'docstring_tokens', 'func_name', 'original_string'],
+        default=['code', 'code_tokens', 'docstring', 'docstring_tokens'],
         type=str, nargs='+',
         help="attrs: code, code_tokens, docstring, docstring_tokens, func_name, original_string, index",
     )

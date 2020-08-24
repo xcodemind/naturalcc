@@ -12,7 +12,7 @@ python -m dataset.csn.filter
 pip install antlr4-python3-runtime==4.5.2
 python -m dataset.codenn.csharp.__main__
 # generate 'raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'binary_ast', 'traversal'
-python -m dataset.csn.preprocess -l csharp -f ~/.ncc/codenn/flatten -s ~/.ncc/codenn/lib
+python -m dataset.csn.feature_extract -l csharp -f ~/.ncc/codenn/flatten -s ~/.ncc/codenn/lib
 # filter null lines
 python -m dataset.csn.filter -l csharp -f ~/.ncc/codenn/flatten -r ~/.ncc/codenn/refine
 
