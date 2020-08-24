@@ -108,10 +108,10 @@ def main(args):
             tgt_sp = None
     # exit()
     # 2. ***************build dataset********************
-    def make_binary_dataset(dict: Dictionary, input_file, output_file,
+    def make_binary_dataset(vocab: Dictionary, sp, input_file, output_file,
                             attr: str, num_workers: int):
         """make binary dataset"""
-        LOGGER.info("[{}] Dictionary: {} types".format(attr, len(dict) - 1))
+        LOGGER.info("[{}] Dictionary: {} types".format(attr, len(vocab) - 1))
         n_seq_tok = [0, 0]
         replaced = Counter()  # save un-recorded tokens
 
@@ -135,7 +135,7 @@ def main(args):
                     (
                         args,
                         input_file,
-                        dict,
+                        vocab,
                         prefix,
                         attr,
                         offsets[worker_id],
@@ -147,10 +147,10 @@ def main(args):
         # process 1th file, if multi-processing available. If not, process all file
         # p0 -> 0,end
         ds_file = '{}.mmap'.format(output_file)
-        ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(dict))
+        ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(vocab))
         merge_result(
             Binarizer.binarize_bpe(
-                input_file, dict, lambda t: ds.add_item(t), offset=0, end=offsets[1]
+                input_file, vocab, sp, lambda t: ds.add_item(t), offset=0, end=offsets[1]
             )
         )
         if num_workers > 1:
@@ -186,7 +186,7 @@ def main(args):
             in_file = file_name(input_prefix, lang)
             out_file = dest_path(output_prefix, lang)
             os.makedirs(os.path.dirname(out_file), exist_ok=True)
-            make_binary_dataset(vocab, in_file, out_file, lang, num_workers)
+            make_binary_dataset(vocab, sp, in_file, out_file, lang, num_workers)
 
     def make_all(lang, vocab, sp):
         if args['preprocess']['trainpref']:

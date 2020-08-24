@@ -97,6 +97,7 @@ class Binarizer:
     def binarize_bpe(
         filename,
         dict,  # BPE Ditionary
+        sp,
         consumer,
         # append_eos=True, # sentencepiece cannot add extra <EOS>
         reverse_order=False,
@@ -114,7 +115,7 @@ class Binarizer:
                 if end > 0 and f.tell() > end:
                     break
 
-                ids = dict.encode_as_ids(line)  # text => ids
+                ids = dict.encode_line(line, line_tokenizer=sp.EncodeAsPieces)  # text => ids
                 if reverse_order:
                     words = list(reversed(words))
                 ids = torch.IntTensor(ids)
