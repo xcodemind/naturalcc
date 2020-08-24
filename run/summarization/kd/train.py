@@ -11,6 +11,8 @@ import os
 import math
 import random
 import numpy as np
+import json
+import collections
 from collections import namedtuple
 import torch
 from ncc import LOGGER
@@ -24,7 +26,8 @@ from ncc.utils import utils
 from ncc.utils.file_utils import remove_files
 from ncc.data import iterators
 from ncc.utils.fed_utils import save_expert_outputs
-import json
+from ncc.eval import bleu_scorer
+from ncc.eval.old_sequence_generator import SequenceGenerator
 
 
 @metrics.aggregate('train')
@@ -84,7 +87,6 @@ def train(args, trainer, task, epoch_itr):
         if num_updates >= max_update:
             break
 
-
     # log end-of-epoch stats
     stats = get_training_stats(metrics.get_smoothed_values('train'))
     progress.print(stats, tag='train', step=num_updates)
@@ -93,7 +95,7 @@ def train(args, trainer, task, epoch_itr):
     metrics.reset_meters('train')
 
 
-def validate(args, trainer, task, epoch_itr, subsets):
+def validate(args, trainer, task, epoch_itr, subsets, test_bleu=True, summary_writer=None):
     """Evaluate the model on the validation set(s) and return the losses."""
 
     if args['dataset']['fixed_validation_seed'] is not None:
@@ -130,27 +132,68 @@ def validate(args, trainer, task, epoch_itr, subsets):
             default_log_format=('tqdm' if not args['common']['no_progress_bar'] else 'simple'),
         )
 
-        # create a new root metrics aggregator so validation metrics
-        # don't pollute other aggregators (e.g., train meters)
+        num_dataset = task.dataset(subset).num_dataset
+        bleu_scorers = [bleu_scorer.Scorer(
+            task.target_dictionary.pad(),
+            task.target_dictionary.eos(),
+            task.target_dictionary.unk()
+        ) for _ in range(num_dataset)] if test_bleu else None
+        sample_size = [0 for _ in range(num_dataset)]
+        bleu_scores = [0 for _ in range(num_dataset)]
+
+        sequence_generator = SequenceGenerator(
+            models=[trainer.model],
+            tgt_dict=trainer.task.tgt_dict,
+            beam_size=args['eval']['beam'],
+            maxlen=args['eval']['max_len_b'],
+        )
+        # disable bleu here because it will be calculated later
         with metrics.aggregate(new_root=True) as agg:
             for sample in progress:
                 trainer.valid_step(sample)
-                break # TODO: only for debug
+                break
 
         # log validation stats
         stats = get_valid_stats(args, trainer, agg.get_smoothed_values())
-        progress.print(stats, tag=subset, step=trainer.get_num_updates())
 
-        # TODO save expert bleu into json
-        bleu_dict = {'{}_{}_{}'.format('_'.join(args['task']['programming_langs']),
-                                       args['task']['source_lang'], args['task']['target_lang']): stats['bleu']}
-        output_path = os.path.join(args['task']['data'], '{}_expert_bleu_{}_{}.json'.format(
-            '_'.join(args['task']['programming_langs']), args['task']['source_lang'], args['task']['target_lang'])
-        )
+        for sample in progress:
+            trainer.test_bleu_step(sequence_generator, sample, bleu_scorers)
+            if 'dataset_id' in sample:
+                for ds_id in range(num_dataset):
+                    sample_size[ds_id] += (sample['dataset_id'] == ds_id).int().sum().item()
+            elif 'id' in sample:
+                sample_size[0] += len(sample['id'])
+            break  # TODO: for debug
+
+        for ds_id in range(num_dataset):
+            try:
+                bleu_scores[ds_id] = bleu_scorers[ds_id].score() * sample_size[ds_id]
+            except Exception as e:
+                bleu_scores[ds_id] = 0
+
+        sample_size = torch.Tensor(sample_size).cuda()
+        bleu_scores = torch.Tensor(bleu_scores).cuda()
+        if args['distributed_training']['distributed_world_size'] > 1:
+            distributed_utils.all_reduce(sample_size)
+            distributed_utils.all_reduce(bleu_scores)
+
+        bleu_dict = {}
+        for ds_id in range(num_dataset):
+            if sample_size[ds_id].item() > 0:
+                name = "bleu_" + task.dataset(subset).dataset_names[ds_id]
+                bleu_dict[name] = stats[name] = bleu_scores[ds_id].item() / sample_size[ds_id].item()
+                try:
+                    train_ds_id = task.dataset('train').dataset_names.index(
+                        task.dataset(subset).dataset_names[ds_id])
+                    task.dataset('train').student_scores[train_ds_id] = bleu_dict[name]
+                except ValueError:
+                    pass
+        output_path = os.path.join(args['checkpoint']['save_dir'], 'val_bleu.json')
         json.dump(bleu_dict, open(output_path, 'w'))
+        stats['bleu'] = str(bleu_dict)  # add bleu scores to stats
 
+        progress.print(stats, tag=subset, step=trainer.get_num_updates())
         valid_losses.append(stats[args['checkpoint']['best_checkpoint_metric']])
-
     return valid_losses
 
 
@@ -193,7 +236,8 @@ def should_stop_early(args, valid_loss):
     else:
         should_stop_early.num_runs += 1
         if should_stop_early.num_runs >= args['checkpoint']['patience']:
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(args['checkpoint']['patience']))
+            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
+                args['checkpoint']['patience']))
 
         return should_stop_early.num_runs >= args['checkpoint']['patience']
 
@@ -277,12 +321,13 @@ def single_main(args, init_distributed=False):
 
         # early stop
         if should_stop_early(args, valid_losses[0]):
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(args['checkpoint']['patience']))
+            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
+                args['checkpoint']['patience']))
             break
 
         epoch_itr = trainer.get_train_iterator(
             epoch_itr.next_epoch_idx,
-            combine=False, # TODO to be checked
+            combine=False,  # TODO to be checked
             # sharded data: get train iterator for next epoch
             load_dataset=(os.pathsep in args['task']['data']),
         )
@@ -302,10 +347,21 @@ def distributed_main(i, args, start_rank=0):
 
 
 def cli_main():
-    Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('ruby.yml')
-    LOGGER.info(args_)
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
+    parser.add_argument(
+        "--language", "-l", default='ruby', type=str, help="load {language}.yml for train",
+    )
+    parser.add_argument(
+        "--train-mode", "-m", default='teacher', type=str, choices=['teacher', 'student', 'finetune'],
+        help="False for training a teacher network on different datasets and generate topk probabilities and indices on datasets" \
+             "True for distill dark knowledge from some teacher networks(implemented by generated topk probabilities and indices)",
+    )
+    args = parser.parse_args()
+    # Argues = namedtuple('Argues', 'yaml')
+    # args_ = Argues('ruby.yml')
+    yaml_file = os.path.join(os.path.dirname(__file__), 'config', args.train_mode, '{}.yml'.format(args.language))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)
@@ -342,5 +398,4 @@ def cli_main():
 
 
 if __name__ == '__main__':
-    """nohup python -m run.completion.seqrnn.main > log.txt 2>&1 &"""
     cli_main()
