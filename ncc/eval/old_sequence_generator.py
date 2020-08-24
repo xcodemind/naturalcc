@@ -10,6 +10,7 @@ import math
 import torch
 
 from ncc.eval import search
+from ncc.data.tools import data_utils
 import ncc.utils.checkpoint_utils as utils
 from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
 
