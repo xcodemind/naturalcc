@@ -106,7 +106,7 @@ def _main(args, output_file):
 
     # Initialize generator
     gen_timer = StopwatchMeter()
-    generator = task.build_generator(models, args)
+    generator = task.build_generator(args)
 
     # Generate and compute BLEU score
     scorer = OrderedDict()
@@ -216,8 +216,8 @@ def _main(args, output_file):
 
                 # Score only the top hypothesis
                 if has_target and j == 0:
-                    print('Ref>> {}'.format(target_str), file=output_file)
-                    print('Hyp>> {}'.format(hypo_str), file=output_file)
+                    # print('Ref>> {}'.format(target_str), file=output_file)
+                    # print('Hyp>> {}'.format(hypo_str), file=output_file)
                     if align_dict is not None or args['eval']['remove_bpe'] is not None:
                         # Convert back to tokens for evaluation with unk replacement and/or without BPE
                         target_tokens = tgt_dict.encode_line(target_str, add_if_not_exist=True)
