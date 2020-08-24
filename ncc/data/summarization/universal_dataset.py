@@ -163,11 +163,6 @@ class UniversalDataset(FairseqDataset):
         self.universal = self.num_dataset > 1 or args['kd']['universal']
         self.dict_len = len(tgt_dict)
 
-        # if self.universal:
-        #     print("| [Universal] dataset init.")
-        # else:
-        #     print("| [bilingual] dataset init.")
-
         # if self.shuffle:
         #     self.lng_max_size = 0
         #     for left, right in zip(self.lng_borders[:-1], self.lng_borders[1:]):
