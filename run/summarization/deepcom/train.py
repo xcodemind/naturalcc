@@ -282,9 +282,6 @@ def single_main(args, init_distributed=False):
     train_meter.stop()
     LOGGER.info('done training in {:.1f} seconds'.format(train_meter.sum))
 
-    if args['checkpoint']['save_output']:
-        save_expert_outputs(args, task, trainer)
-
 
 def distributed_main(i, args, start_rank=0):
     args['distributed_training']['device_id'] = i

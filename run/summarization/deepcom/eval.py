@@ -106,7 +106,7 @@ def _main(args, output_file):
 
     # Initialize generator
     gen_timer = StopwatchMeter()
-    generator = task.build_generator(models, args)
+    generator = task.build_generator(args)
 
     # Generate and compute BLEU score
     scorer = OrderedDict()
