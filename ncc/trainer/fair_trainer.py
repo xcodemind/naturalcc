@@ -818,3 +818,8 @@ class Trainer(object):
                 )
                 bleu_scorer_ = bleu_scorers[dataset_id.item()]
                 bleu_scorer_.add(target_tokens, hypo_tokens)
+
+                if print_to_file:
+                    target_str = self.task.tgt_dict.string(tgt.tolist(), escape_unk=True)
+                    hypo_str = self.task.tgt_dict.string(hypo[0]['tokens'].tolist())
+                    print_to_file(dataset_id.item(), target_str, hypo_str)
