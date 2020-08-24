@@ -143,7 +143,7 @@ model:
 
 
 optimization:
-  max_epoch: 0 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
+  max_epoch: 100 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
   max_update: 0 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
   clip_norm: 25 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
