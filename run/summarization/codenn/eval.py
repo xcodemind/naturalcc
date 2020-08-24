@@ -106,7 +106,7 @@ def _main(args, output_file):
 
     # Initialize generator
     gen_timer = StopwatchMeter()
-    generator = task.build_generator(models, args)
+    generator = task.build_generator(args)
 
     # Generate and compute BLEU score
     scorer = OrderedDict()
@@ -226,6 +226,8 @@ def _main(args, output_file):
                             scorer[metric].add_string(target_str, hypo_str)
                         else:
                             scorer[metric].add(target_tokens, hypo_tokens)
+                # print('T >> {}'.format(target_str))
+                # print('H >> {}'.format(hypo_str))
 
         wps_meter.update(num_generated_tokens)
         progress.log({'wps': round(wps_meter.avg)})
@@ -258,23 +260,4 @@ def cli_main():
 
 
 if __name__ == '__main__':
-    """
-    device: v100 - RAM 16GB
-    nohup python -m run.summarization.lstm2lstm.eval > run/summarization/lstm2lstm/ruby.eval.multi.log 2>&1 &
-    
-    train:
-    
-    
-    test:
-    ROUGE:
-        {'rouge-1': {'f': 0.1, 'p': 0.13, 'r': 0.1}, 'rouge-2': {'f': 0.02, 'p': 0.03, 'r': 0.02}, 'rouge-l': {'f': 0.1, 'p': 0.13, 'r': 0.1}}
-    BLEU:
-        {'BLEU-1': 10.29, 'BLEU-2': 4.13, 'BLEU-3': 2.17, 'BLEU-4': 1.35}
-    
-    valid:
-    ROUGE:
-        {'rouge-1': {'f': 0.12, 'p': 0.15, 'r': 0.12}, 'rouge-2': {'f': 0.02, 'p': 0.03, 'r': 0.02}, 'rouge-l': {'f': 0.12, 'p': 0.15, 'r': 0.11}}
-    BLEU:
-        {'BLEU-1': 11.15, 'BLEU-2': 4.09, 'BLEU-3': 2.01, 'BLEU-4': 1.24}
-    """
     cli_main()
