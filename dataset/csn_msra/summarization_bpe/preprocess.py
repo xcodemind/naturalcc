@@ -20,7 +20,7 @@ import ujson
 from ncc import LOGGER
 
 
-def binarize(args: Dict, filename: str, dict: Dictionary, out_file_prefix: str, attr: str,
+def binarize(args: Dict, filename: str, dict: Dictionary, sp, out_file_prefix: str, attr: str,
              offset: int, end: int):
     """binarize function for multi-processing"""
     ds_file = '{}.mmap'.format(out_file_prefix)
@@ -29,7 +29,7 @@ def binarize(args: Dict, filename: str, dict: Dictionary, out_file_prefix: str, 
     def consumer(tensor):
         ds.add_item(tensor)
 
-    res = Binarizer.binarize_bpe(filename, dict, consumer, offset=offset, end=end)
+    res = Binarizer.binarize_bpe(filename, dict, sp, offset=offset, end=end, consumer=consumer)
     ds.finalize('{}.idx'.format(out_file_prefix))
     return res
 
@@ -106,6 +106,7 @@ def main(args):
         else:
             tgt_dict = None
             tgt_sp = None
+
     # exit()
     # 2. ***************build dataset********************
     def make_binary_dataset(vocab: Dictionary, sp, input_file, output_file,
@@ -136,6 +137,7 @@ def main(args):
                         args,
                         input_file,
                         vocab,
+                        sp,
                         prefix,
                         attr,
                         offsets[worker_id],
@@ -176,8 +178,9 @@ def main(args):
 
     def make_dataset(vocab, sp, input_prefix, output_prefix, lang, num_workers=1):
         if args['preprocess']['dataset_impl'] == 'raw':
-            with open(file_name(input_prefix, lang), 'rb') as input_file, open(dest_path(output_prefix, lang), 'w', encoding="utf-8") as output_file:
-                for line in input_file.readlines(): #[0: 100]:  # TODO only for debug
+            with open(file_name(input_prefix, lang), 'rb') as input_file, open(dest_path(output_prefix, lang), 'w',
+                                                                               encoding="utf-8") as output_file:
+                for line in input_file.readlines():  # [0: 100]:  # TODO only for debug
                     line = ujson.loads(line)
                     line = normalize_program(line)
                     line = sp.EncodeAsPieces(line)
