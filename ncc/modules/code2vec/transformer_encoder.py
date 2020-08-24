@@ -233,7 +233,7 @@ class TransformerEncoder(FairseqEncoder):
         state_dict = self.upgrade_state_dict_named(state_dict, "")
         return state_dict
 
-    def upgrade_state_dict_named(self, state_dict, name):
+    def upgrade_state_dict_named_(self, state_dict, name):
         # "Upgrade a (possibly old) state dict for new versions of fairseq."
         if isinstance(self.embed_positions, SinusoidalPositionalEmbedding):
             weights_key = "{}embed_positions.weight".format(name)
@@ -257,7 +257,7 @@ class TransformerEncoder(FairseqEncoder):
             state_dict[version_key] = torch.Tensor([1])
         return state_dict
 
-    def upgrade_state_dict_named_(self, state_dict, name):
+    def upgrade_state_dict_named(self, state_dict, name):
         # "Upgrade a (possibly old) state dict for new versions of fairseq."
         if isinstance(self.embed_positions, SinusoidalPositionalEmbedding):
             weights_key = "{}.embed_positions.weights".format(name)
