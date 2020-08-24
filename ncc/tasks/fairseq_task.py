@@ -252,7 +252,7 @@ class FairseqTask(object):
         return tokenizer.build_tokenization(args, self)
 
     def build_generator(
-        self, models, args,
+        self, args,
         seq_gen_cls=None, extra_gen_cls_kwargs=None
     ):
         if args['eval']['score_reference']:
@@ -320,12 +320,11 @@ class FairseqTask(object):
 
         if seq_gen_cls is None:
             if getattr(args['eval'], "print_alignment", False):
-                seq_gen_cls = SequenceGeneratorWithAlignment
+                seq_gen_cls = SequenceGeneratorWithAlignment  # TBC
             else:
                 seq_gen_cls = SequenceGenerator
         extra_gen_cls_kwargs = extra_gen_cls_kwargs or {}
         return seq_gen_cls(
-            models,
             self.target_dictionary,
             beam_size=args['eval']['beam'],  # getattr(args, "beam", 5),
             max_len_a=args['eval']['max_len_a'],  # getattr(args, "max_len_a", 0),
