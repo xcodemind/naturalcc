@@ -14,7 +14,7 @@ from ncc.criterions import register_criterion
 @register_criterion('distill_label_smoothed_cross_entropy')
 class DistillLabelSmoothedCrossEntropyCriterion(LabelSmoothedCrossEntropyCriterion):
 
-    def __init__(self, task, sentence_avg, label_smoothing, distill_temp):
+    def __init__(self, task, sentence_avg, label_smoothing=0.1, distill_temp=0.6):
         super().__init__(task, sentence_avg, label_smoothing)
         self.t = distill_temp
 
