@@ -141,15 +141,24 @@ class LSTMDecoder(FairseqIncrementalDecoder):
         """
         Similar to *forward* but only return features.
         """
-        encoder_padding_mask = encoder_out.get('encoder_padding_mask', None)
-        encoder_out = encoder_out.get('encoder_out', None)
+        if encoder_out is not None:
+            encoder_padding_mask = encoder_out['encoder_padding_mask']
+            encoder_out = encoder_out['encoder_out']
+        else:
+            encoder_padding_mask = None
+            encoder_out = None
 
         if incremental_state is not None:
             prev_output_tokens = prev_output_tokens[:, -1:]
-        bsz, tgt_len = prev_output_tokens.size()
+        bsz, seqlen = prev_output_tokens.size()
 
         # get outputs from encoder
-        encoder_outs = encoder_out[0]
+        if encoder_out is not None:
+            # code-nn only has an encoder_outs(word embedding)
+            encoder_outs = encoder_out[0]
+            srclen = encoder_outs.size(1)
+        else:
+            srclen = None
 
         # embed tokens
         x = self.embed_tokens(prev_output_tokens)
@@ -164,7 +173,7 @@ class LSTMDecoder(FairseqIncrementalDecoder):
         prev_cells = [x.new_zeros(bsz, self.hidden_size) for i in range(num_layers)]
 
         outs = []
-        for j in range(tgt_len):
+        for j in range(seqlen):
             input = x[j]
 
             for i, rnn in enumerate(self.layers):
