@@ -90,7 +90,7 @@ class TeacherOutputDataset(IndexedCachedDataset):
 def gen_outputs(args, task, trainer):
     trainer.model.eval()
     itr = task.get_batch_iterator(
-        dataset=task.dataset('valid'),
+        dataset=task.dataset('train'),
         max_tokens=args['dataset']['max_tokens'],
         max_sentences=args['dataset']['max_sentences_valid'],
         max_positions=utils.resolve_max_positions(
@@ -104,7 +104,7 @@ def gen_outputs(args, task, trainer):
         shard_id=args['distributed_training']['distributed_rank'],
     ).next_epoch_itr(shuffle=False)
 
-    outputs = [None for _ in range(len(task.dataset('valid')))]
+    outputs = [None for _ in range(len(task.dataset('train')))]
     for sample in tqdm(itr, mininterval=5):
         with torch.no_grad():
             if sample is None or len(sample) == 0:
