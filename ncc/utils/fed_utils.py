@@ -6,6 +6,7 @@ from tqdm import tqdm
 from ncc.utils import utils, distributed_utils
 import numpy as np
 import ujson as json
+from ncc import LOGGER
 
 from ncc.data.indexed_dataset import IndexedDatasetBuilder, IndexedCachedDataset
 
@@ -170,6 +171,10 @@ def save_expert_outputs(args, task, trainer):
                             )
         TeacherOutputDataset.save_bin(path, [o[1] for o in expert_outputs], np.float)
 
-    print("| Save expert@{}_{}_{}".format(
-        '_'.join(args['task']['programming_langs']), args['task']['source_lang'], args['task']['target_lang'])
-    )
+        LOGGER.info(
+            "| Save expert@{}_{}_{}. Bleu.Json: {}, TopK.Idx/Prob: {}.".format(
+                '_'.join(args['task']['programming_langs']),
+                args['task']['source_lang'], args['task']['target_lang'],
+                val_bleu_path2, path,
+            )
+        )
