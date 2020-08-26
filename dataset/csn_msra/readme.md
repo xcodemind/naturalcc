@@ -28,3 +28,16 @@ python -m dataset.csn_msra.feature_extract -l [language] -f [flatten data direct
 python -m dataset.csn_msra.filter -l [language] -r [refined data directory] -f [filter data directory] -a [data attributes]
 ```
 
+### step 5. finalize dataset. change config/*.yml config 
+generate data-raw dataset
+```
+dataset_impl: raw
+destdir: ~/.ncc/csn_icse21/100k/summarization/data-raw/go
+```
+generate data-mmap dataset
+```
+dataset_impl: mmap
+destdir: ~/.ncc/csn_icse21/100k/summarization/data-mmap/go
+```
+
+
