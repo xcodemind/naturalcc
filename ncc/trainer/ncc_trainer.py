@@ -106,7 +106,7 @@ class Trainer(object):
             epoch=epoch,
         )
 
-    # @metrics.aggregate("train")
+    @metrics.aggregate("train")
     def train_step(self, samples, raise_oom=False):
         """Do forward, backward and parameter update."""
         # self._set_seed()
@@ -114,9 +114,9 @@ class Trainer(object):
         # torch.manual_seed(seed)
         # if self.cuda:
         #     torch.cuda.manual_seed(seed)
-        self.model.train()
-        self.criterion.train()
-        self.zero_grad()
+        # self.model.train()
+        # self.criterion.train()
+        # self.zero_grad()
         # forward and backward pass
         # logging_outputs, sample_size, ooms = [], 0, 0
         for i, sample in enumerate(samples):
@@ -130,11 +130,11 @@ class Trainer(object):
                 update_num=self.get_num_updates(),
                 ignore_grad=False,
             )
-            print('loss: ', loss.item())
+            # print('lossxxx: ', loss.item())
             loss.backward()
             self.optimizer.step()
             self.optimizer.zero_grad()
-
+        return loss.item()
         # if torch.is_tensor(sample_size):
         #     sample_size = sample_size.float()
         # else:
@@ -159,9 +159,9 @@ class Trainer(object):
             _loss, sample_size, logging_output = self.task.valid_step(
                 sample, self.model, self.criterion
             )
-
-    def zero_grad(self):
-        self.optimizer.zero_grad()
+    #
+    # def zero_grad(self):
+    #     self.optimizer.zero_grad()
 
     def lr_step(self, epoch, val_loss=None):
         """Adjust the learning rate at the end of the epoch."""
@@ -197,59 +197,59 @@ class Trainer(object):
         self.lr_step_update()
         metrics.log_scalar("num_updates", self.num_updates, weight=0, priority=200)
 
-    def test_bleu_step(self, generator, sample, bleu_scorers, print_to_file=None):
-        with torch.no_grad():
-            self.model.eval()
-            # sample = self._prepare_sample(sample)
-            if self.cuda:
-                sample = utils.move_to_cuda(sample)
-            if sample is not None:
-                self.test_bleu(generator, sample, bleu_scorers, print_to_file)
-
-    def test_bleu(self, generator, sample, bleu_scorers, print_to_file=None):
-        if sample is None:
-            return
-
-        beam = self.args['eval']['beam']
-        with torch.no_grad():
-            while True:
-                try:
-                    hypos = generator.generate(
-                        {'src_tokens': sample['net_input']['src_tokens'],
-                         'src_lengths': sample['net_input']['src_lengths'], },
-                        beam
-                    )
-                    break
-                except RuntimeError as e:
-                    if 'out of memory' in str(e) and beam >= 3:
-                        beam = beam - 1
-                        print('| WARNING: ran out of memory, reduce beam size to %d' % beam)
-                    else:
-                        raise e
-
-            assert len(sample['target']) == len(hypos)
-            for dataset_id, tgt, hypo in zip(
-                list(sample['dataset_id']) if 'dataset_id' in sample else list(torch.LongTensor([0] * len(hypos))),
-                list(sample['target']),
-                hypos
-            ):
-                # remove BOS/EOS and keep UNK
-                target_tokens = torch.IntTensor(
-                    [
-                        i for i in tgt.tolist()
-                        if not (i in {self.task.tgt_dict.eos(), self.task.tgt_dict.pad(), self.task.tgt_dict.bos()})
-                    ]
-                )
-                hypo_tokens = torch.IntTensor(
-                    [
-                        i for i in hypo[0]['tokens'].tolist()
-                        if not (i in {self.task.tgt_dict.eos(), self.task.tgt_dict.pad(), self.task.tgt_dict.bos()})
-                    ]
-                )
-                bleu_scorer_ = bleu_scorers[dataset_id.item()]
-                bleu_scorer_.add(target_tokens, hypo_tokens)
-
-                if print_to_file:
-                    target_str = self.task.tgt_dict.string(tgt.tolist(), escape_unk=True)
-                    hypo_str = self.task.tgt_dict.string(hypo[0]['tokens'].tolist())
-                    print_to_file(dataset_id.item(), target_str, hypo_str)
+    # def test_bleu_step(self, generator, sample, bleu_scorers, print_to_file=None):
+    #     with torch.no_grad():
+    #         self.model.eval()
+    #         # sample = self._prepare_sample(sample)
+    #         if self.cuda:
+    #             sample = utils.move_to_cuda(sample)
+    #         if sample is not None:
+    #             self.test_bleu(generator, sample, bleu_scorers, print_to_file)
+    #
+    # def test_bleu(self, generator, sample, bleu_scorers, print_to_file=None):
+    #     if sample is None:
+    #         return
+    #
+    #     beam = self.args['eval']['beam']
+    #     with torch.no_grad():
+    #         while True:
+    #             try:
+    #                 hypos = generator.generate(
+    #                     {'src_tokens': sample['net_input']['src_tokens'],
+    #                      'src_lengths': sample['net_input']['src_lengths'], },
+    #                     beam
+    #                 )
+    #                 break
+    #             except RuntimeError as e:
+    #                 if 'out of memory' in str(e) and beam >= 3:
+    #                     beam = beam - 1
+    #                     print('| WARNING: ran out of memory, reduce beam size to %d' % beam)
+    #                 else:
+    #                     raise e
+    #
+    #         assert len(sample['target']) == len(hypos)
+    #         for dataset_id, tgt, hypo in zip(
+    #             list(sample['dataset_id']) if 'dataset_id' in sample else list(torch.LongTensor([0] * len(hypos))),
+    #             list(sample['target']),
+    #             hypos
+    #         ):
+    #             # remove BOS/EOS and keep UNK
+    #             target_tokens = torch.IntTensor(
+    #                 [
+    #                     i for i in tgt.tolist()
+    #                     if not (i in {self.task.tgt_dict.eos(), self.task.tgt_dict.pad(), self.task.tgt_dict.bos()})
+    #                 ]
+    #             )
+    #             hypo_tokens = torch.IntTensor(
+    #                 [
+    #                     i for i in hypo[0]['tokens'].tolist()
+    #                     if not (i in {self.task.tgt_dict.eos(), self.task.tgt_dict.pad(), self.task.tgt_dict.bos()})
+    #                 ]
+    #             )
+    #             bleu_scorer_ = bleu_scorers[dataset_id.item()]
+    #             bleu_scorer_.add(target_tokens, hypo_tokens)
+    #
+    #             if print_to_file:
+    #                 target_str = self.task.tgt_dict.string(tgt.tolist(), escape_unk=True)
+    #                 hypo_str = self.task.tgt_dict.string(hypo[0]['tokens'].tolist())
+    #                 print_to_file(dataset_id.item(), target_str, hypo_str)

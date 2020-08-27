@@ -255,10 +255,68 @@ class SummarizationTask(FairseqTask):
         #     self.rouge_sequence_generator = self.build_generator([model], args)
         return model
 
-    def valid_step(self, sample, model, criterion):
+    def train_step(
+        self, sample, model, criterion, optimizer, update_num, ignore_grad=False
+    ):
+        """
+        Do forward and backward, and return the loss as computed by *criterion*
+        for the given *model* and *sample*.
+
+        Args:
+            sample (dict): the mini-batch. The format is defined by the
+                :class:`~fairseq.data.FairseqDataset`.
+            model (~fairseq.models.BaseFairseqModel): the model
+            criterion (~fairseq.criterions.FairseqCriterion): the criterion
+            optimizer (~fairseq.optim.FairseqOptimizer): the optimizer
+            update_num (int): the current update
+            ignore_grad (bool): multiply loss by 0 if this is set to True
+
+        Returns:
+            tuple:
+                - the loss
+                - the sample size, which is used as the denominator for the
+                  gradient
+                - logging outputs to display while training
+        """
+        model.train()
+        model.set_num_updates(update_num)
+        loss, sample_size, logging_output = criterion(model, sample)
+        if ignore_grad:
+            loss *= 0
+        # optimizer.backward(loss)
+        return loss, sample_size, logging_output
+
+    def valid_step_(self, sample, model, criterion):
         loss, sample_size, logging_output = super().valid_step(sample, model, criterion)
         if self.args['task']['eval_bleu']:
             bleu = self._inference_with_bleu(self.sequence_generator, sample, model)
+            print('bleu(valid_step): ', bleu)
+            logging_output['_bleu_sys_len'] = bleu.sys_len
+            logging_output['_bleu_ref_len'] = bleu.ref_len
+            # we split counts into separate entries so that they can be
+            # summed efficiently across workers using fast-stat-sync
+            assert len(bleu.counts) == EVAL_BLEU_ORDER
+            for i in range(EVAL_BLEU_ORDER):
+                logging_output['_bleu_counts_' + str(i)] = bleu.counts[i]
+                logging_output['_bleu_totals_' + str(i)] = bleu.totals[i]
+        # if self.args['task']['eval_rouge']:
+        #     logging_output['_rouge'] = self._inference_with_rouge(self.rouge_sequence_generator, sample, model)
+        return loss, sample_size, logging_output
+
+    def valid_step(self, sample, model, criterion):
+        loss, sample_size, logging_output = super().valid_step(sample, model, criterion)
+        if self.args['task']['eval_bleu']:
+            bleu = self._inference_with_bleu_wy(self.sequence_generator, sample, model)
+            print('bleu(valid_step): ', bleu)
+            # gen_out = self.generator.generate(model, sample)
+            # hyps, refs = [], []
+            # for i in range(len(gen_out)):
+            #     hyps.append(decode(gen_out[i]))
+            #     refs.append(decode(
+            #         utils.strip_pad(sample['target'][i], self.tgt_dict.pad()),
+            #         escape_unk=True,  # don't count <unk> as matches to the hypo
+            #     ))
+            # bleu = self._inference_with_bleu(self.sequence_generator, sample, model)
             # logging_output['_bleu_sys_len'] = bleu.sys_len
             # logging_output['_bleu_ref_len'] = bleu.ref_len
             # we split counts into separate entries so that they can be
@@ -267,7 +325,7 @@ class SummarizationTask(FairseqTask):
             # for i in range(EVAL_BLEU_ORDER):
             #     logging_output['_bleu_counts_' + str(i)] = bleu.counts[i]
             #     logging_output['_bleu_totals_' + str(i)] = bleu.totals[i]
-            print('bleu: ', bleu)
+            # print('bleu: ', bleu)
         # if self.args['task']['eval_rouge']:
         #     logging_output['_rouge'] = self._inference_with_rouge(self.rouge_sequence_generator, sample, model)
         return loss, sample_size, logging_output
@@ -337,7 +395,7 @@ class SummarizationTask(FairseqTask):
         """Return the target :class:`~fairseq.data.Dictionary`."""
         return self.tgt_dict
 
-    def _inference_with_bleu(self, generator, sample, model):
+    def _inference_with_bleu_wy(self, generator, sample, model):
         import sacrebleu
 
         def decode(toks, escape_unk=False):
@@ -368,10 +426,11 @@ class SummarizationTask(FairseqTask):
         #     return sacrebleu.corpus_bleu(hyps, [refs], tokenize='none')
         # else:
         #     return sacrebleu.corpus_bleu(hyps, [refs])
+
         bleu = 0
         return bleu
 
-    def _inference_with_bleu_bak(self, generator, sample, model):
+    def _inference_with_bleu(self, generator, sample, model):
         import sacrebleu
 
         def decode(toks, escape_unk=False):

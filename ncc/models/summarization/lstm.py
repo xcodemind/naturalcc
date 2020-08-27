@@ -91,6 +91,7 @@ class LSTMModel(FairseqEncoderDecoderModel):
             dropout_in=args['model']['encoder_dropout_in'],
             dropout_out=args['model']['encoder_dropout_out'],
             bidirectional=bool(args['model']['encoder_bidirectional']),
+            left_pad=args['task']['left_pad_source'],
             pretrained_embed=pretrained_encoder_embed,
             max_source_positions=max_source_positions
         )

@@ -198,7 +198,7 @@ class LSTMDecoder(FairseqIncrementalDecoder):
                 out, attn_scores[:, j, :] = self.attention(hidden, encoder_outs, encoder_padding_mask)
             else:
                 out = hidden
-            out = F.dropout(out, p=self.dropout_out, training=self.training)
+            out = F.dropout(out, p=self.dropout_out, training=self.training) # 16x512
 
             # input feeding
             if input_feed is not None:
@@ -388,7 +388,10 @@ class LSTMDecoder(FairseqIncrementalDecoder):
 
         dec_preds = torch.stack(dec_preds, dim=1)
 
-        return dec_preds
+        predssss = []
+        for pred in dec_preds.tolist():
+            predssss.append([{'tokens': torch.Tensor(pred).type_as(dec_preds)}])
+        return predssss
         # # collect outputs across time steps
         # x = torch.cat(outs, dim=0).view(seqlen, bsz, self.hidden_size)
         #

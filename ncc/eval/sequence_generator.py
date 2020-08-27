@@ -74,9 +74,9 @@ class SequenceGenerator(object):
         assert temperature > 0, '--temperature must be greater than 0'
 
         self.search = (
-            search.BeamSearch(tgt_dict) if search_strategy is None \
-                else search_strategy
+            search.BeamSearch(tgt_dict) if search_strategy is None else search_strategy
         )
+
 
     @torch.no_grad()
     def generate(self, models, sample, **kwargs):
@@ -204,10 +204,10 @@ class SequenceGenerator(object):
             tokens_clone = tokens_clone[:, 1:step + 2]  # skip the first index, which is EOS
             assert not tokens_clone.eq(self.eos).any()
             tokens_clone[:, step] = self.eos
-            attn_clone = attn.index_select(0, bbsz_idx)[:, :, 1:step + 2] if attn is not None else None
+            attn_clone = attn.index_select(0, bbsz_idx)[:, :, 1:step+2] if attn is not None else None
 
             # compute scores per token position
-            pos_scores = scores.index_select(0, bbsz_idx)[:, :step + 1]
+            pos_scores = scores.index_select(0, bbsz_idx)[:, :step+1]
             pos_scores[:, step] = eos_scores
             # convert from cumulative to per-position scores
             pos_scores[:, 1:] = pos_scores[:, 1:] - pos_scores[:, :-1]
@@ -276,7 +276,7 @@ class SequenceGenerator(object):
             lprobs, avg_attn_scores = model.forward_decoder(
                 tokens[:, :step + 1], encoder_outs, temperature=self.temperature,
             )
-            # lprobs[lprobs != lprobs] = -math.inf
+            lprobs[lprobs != lprobs] = -math.inf
 
             lprobs[:, self.pad] = -math.inf  # never select pad
             lprobs[:, self.unk] -= self.unk_penalty  # apply unk penalty
@@ -321,11 +321,13 @@ class SequenceGenerator(object):
             if self.no_repeat_ngram_size > 0:
                 # for each beam and batch sentence, generate a list of previous ngrams
                 gen_ngrams = [{} for bbsz_idx in range(bsz * beam_size)]
+                cpu_tokens = tokens.cpu()
                 for bbsz_idx in range(bsz * beam_size):
-                    gen_tokens = tokens[bbsz_idx].tolist()
+                    gen_tokens = cpu_tokens[bbsz_idx].tolist()
                     for ngram in zip(*[gen_tokens[i:] for i in range(self.no_repeat_ngram_size)]):
-                        gen_ngrams[bbsz_idx][tuple(ngram[:-1])] = \
-                            gen_ngrams[bbsz_idx].get(tuple(ngram[:-1]), []) + [ngram[-1]]
+                        if ngram[-1] != self.pad:
+                            gen_ngrams[bbsz_idx][tuple(ngram[:-1])] = \
+                                    gen_ngrams[bbsz_idx].get(tuple(ngram[:-1]), []) + [ngram[-1]]
 
             # Record attention scores
             if type(avg_attn_scores) is list:
@@ -346,17 +348,20 @@ class SequenceGenerator(object):
             if self.no_repeat_ngram_size > 0:
                 def calculate_banned_tokens(bbsz_idx):
                     # before decoding the next token, prevent decoding of ngrams that have already appeared
-                    ngram_index = tuple(tokens[bbsz_idx, step + 2 - self.no_repeat_ngram_size:step + 1].tolist())
-                    return gen_ngrams[bbsz_idx].get(ngram_index, [])
+                    ngram_index = tuple(cpu_tokens[bbsz_idx, step + 2 - self.no_repeat_ngram_size:step + 1].tolist())
+                    banned_tokens_per_sample = gen_ngrams[bbsz_idx].get(ngram_index, [])
+                    banned_tokens_per_sample = [(bbsz_idx, t) for t in banned_tokens_per_sample]
+                    return banned_tokens_per_sample
 
+                banned_tokens = []
                 if step + 2 - self.no_repeat_ngram_size >= 0:
                     # no banned tokens if we haven't generated no_repeat_ngram_size tokens yet
-                    banned_tokens = [calculate_banned_tokens(bbsz_idx) for bbsz_idx in range(bsz * beam_size)]
-                else:
-                    banned_tokens = [[] for bbsz_idx in range(bsz * beam_size)]
+                    for bbsz_idx in range(bsz * beam_size):
+                        banned_tokens.extend(calculate_banned_tokens(bbsz_idx))
 
-                for bbsz_idx in range(bsz * beam_size):
-                    lprobs[bbsz_idx, banned_tokens[bbsz_idx]] = -math.inf
+                if banned_tokens:
+                    banned_tokens = torch.LongTensor(banned_tokens)
+                    lprobs.index_put_(tuple(banned_tokens.t()), lprobs.new_tensor([-math.inf] * len(banned_tokens)))
 
             cand_scores, cand_indices, cand_beams = self.search.step(
                 step,

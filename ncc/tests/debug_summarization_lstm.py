@@ -166,6 +166,23 @@ if __name__ == '__main__':
         num_workers=0,  # args['dataset']['num_workers'],
         # epoch=0,
     )
+    dataloader = torch.utils.data.DataLoader(
+        train_dataset,
+        collate_fn=train_dataset.collater,
+        # batch_sampler=batches[offset:],
+        num_workers=args['dataset']['num_workers'],
+        batch_size=args['dataset']['max_sentences']
+    )
+    pbar = tqdm(dataloader)
+    total_loss = []
+    count = 0
+    for epoch in range(200):
+        for idx, sample in enumerate(pbar):
+            loss = trainer.train_step([sample])
+            total_loss.append(loss)
+            print('avg_loss: ', np.mean(total_loss))
+
+    exit()
 
     updates = 0
     for epoch in range(200):
@@ -218,10 +235,10 @@ if __name__ == '__main__':
 
                 updates += 1
 
-                # if updates % 1 == 0:
-                    # print('log_output: ', log_output)
+            if updates % 100 == 0:
+                # print('log_output: ', log_output)
                 break
-
+        exit()
         # evaluate
         """Run one full official validation. Uses exact spans and same
             exact match/F1 score computation as in the SQuAD script.

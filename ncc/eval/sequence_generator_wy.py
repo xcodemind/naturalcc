@@ -93,9 +93,10 @@ class SequenceGenerator(object):
         # model = EnsembleModel(models)
         # return self._generate(model, sample, **kwargs)
         # encoder_outs = model.encoder(sample)
-
+        # model = models[0]
         encoder_out = model.encoder(sample['net_input']['src_tokens'], src_lengths=sample['net_input']['src_lengths'], **kwargs)
         predicted = model.decoder.generate_sentence(sample['net_input']['prev_output_tokens'], encoder_out=encoder_out, **kwargs)
+
         return predicted
         # decoder_out = model.decoder(
         #     prev_output_tokens, encoder_out=encoder_out, **kwargs
