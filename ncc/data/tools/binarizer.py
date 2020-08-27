@@ -10,6 +10,7 @@ import os
 import torch
 import ujson
 from collections import Counter
+from dataset.csn.utils.util import normalize_program
 
 SPACE_NORMALIZER = re.compile(r"\s+")
 
@@ -114,8 +115,13 @@ class Binarizer:
             while line:
                 if end > 0 and f.tell() > end:
                     break
+                line = ujson.loads(line)
 
-                ids = dict.encode_line(line, line_tokenizer=sp.EncodeAsPieces)  # text => ids
+                # ids = dict.encode_line(line, line_tokenizer=sp.EncodeAsPieces)  # text => ids
+                line = normalize_program(line)
+                # print('line: ', line)
+                ids = sp.EncodeAsIds(line)
+                # print('ids: ', ids)
                 if reverse_order:
                     words = list(reversed(words))
                 ids = torch.IntTensor(ids)

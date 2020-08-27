@@ -230,6 +230,182 @@ class LSTMDecoder(FairseqIncrementalDecoder):
             attn_scores = None
         return x, attn_scores
 
+    def __tens2sent(self,
+                    t,
+                    tgt_dict):
+        words = []
+        for idx, w in enumerate(t):
+            widx = w.item()
+            # if widx < len(tgt_dict):
+            words.append(tgt_dict[widx])
+            # else:
+            #     widx = widx - len(tgt_dict)
+            #     words.append(src_vocabs[idx][widx])
+        return words
+
+    def generate_sentence(self, prev_output_tokens, encoder_out, incremental_state=None):
+        """
+                Similar to *forward* but only return features.
+                """
+        if encoder_out is not None:
+            encoder_padding_mask = encoder_out['encoder_padding_mask']
+            encoder_out = encoder_out['encoder_out']
+        else:
+            encoder_padding_mask = None
+            encoder_out = None
+
+        if incremental_state is not None:
+            prev_output_tokens = prev_output_tokens[:, -1:]
+        bsz, seqlen = prev_output_tokens.size()
+
+        # get outputs from encoder
+        if encoder_out is not None:
+            encoder_outs, encoder_hiddens, encoder_cells = encoder_out[:3]
+            srclen = encoder_outs.size(0)
+        else:
+            srclen = None
+
+        # embed tokens
+        x = self.embed_tokens(prev_output_tokens)
+        x = F.dropout(x, p=self.dropout_in, training=self.training)
+
+        # B x T x C -> T x B x C
+        x = x.transpose(0, 1)
+
+        # initialize previous states (or get from cache during incremental generation)
+        cached_state = utils.get_incremental_state(self, incremental_state, 'cached_state')
+        if cached_state is not None:
+            prev_hiddens, prev_cells, input_feed = cached_state
+        elif encoder_out is not None:
+            # setup recurrent cells
+            num_layers = len(self.layers)
+            prev_hiddens = [encoder_hiddens[i] for i in range(num_layers)]
+            prev_cells = [encoder_cells[i] for i in range(num_layers)]
+            if self.encoder_hidden_proj is not None:
+                prev_hiddens = [self.encoder_hidden_proj(x) for x in prev_hiddens]
+                prev_cells = [self.encoder_cell_proj(x) for x in prev_cells]
+            input_feed = x.new_zeros(bsz, self.hidden_size)
+        else:
+            # setup zero cells, since there is no encoder
+            num_layers = len(self.layers)
+            zero_state = x.new_zeros(bsz, self.hidden_size)
+            prev_hiddens = [zero_state for i in range(num_layers)]
+            prev_cells = [zero_state for i in range(num_layers)]
+            input_feed = None
+
+        assert srclen is not None or self.attention is None, \
+            "attention is not supported if there are no encoder outputs"
+        attn_scores = x.new_zeros(srclen, seqlen, bsz) if self.attention is not None else None
+        # outs = []
+        dec_preds = []
+        # seq, seq_logp_gathered, seq_lprob_sum = torch.zeros(batch_size, seq_length).long().to(device), \
+        #                                         torch.zeros(batch_size, seq_length).to(device), \
+        #                                         torch.zeros(batch_size, seq_length).to(device)
+        # seq = torch.zeros()
+        for j in range(seqlen):
+            # input feeding: concatenate context vector from previous time step
+            if input_feed is not None:
+                input = torch.cat((x[j, :, :], input_feed), dim=1)
+            else:
+                input = x[j]
+
+            for i, rnn in enumerate(self.layers):
+                # recurrent cell
+                hidden, cell = rnn(input, (prev_hiddens[i], prev_cells[i]))
+
+                # hidden state becomes the input to the next layer
+                input = F.dropout(hidden, p=self.dropout_out, training=self.training)
+
+                # save state for next time step
+                prev_hiddens[i] = hidden
+                prev_cells[i] = cell
+
+            # apply attention using the last layer's hidden state
+            if self.attention is not None:
+                out, attn_scores[:, j, :] = self.attention(hidden, encoder_outs, encoder_padding_mask)
+            else:
+                out = hidden
+            out = F.dropout(out, p=self.dropout_out, training=self.training)
+            # input feeding
+            if input_feed is not None:
+                input_feed = out
+
+            decoded = self.fc_out(out)  # (batch_size*comment_dict_size)
+            logprobs = F.log_softmax(decoded, dim=-1)  # (batch_size*comment_dict_size)
+            prob_prev = torch.exp(logprobs)  # (batch_size*comment_dict_size)
+
+            # input feeding
+            if input_feed is not None:
+                input_feed = out
+
+            # save final output
+            # outs.append(out)
+
+            # if choice == 'greedy':
+            #     tgt_prob, tgt = torch.max(prediction, dim=1, keepdim=True)
+            #     log_prob = torch.log(tgt_prob + 1e-20)
+            # elif choice == 'sample':
+            #     tgt, log_prob = self.reinforce.sample(prediction.unsqueeze(1))
+            # else:
+            #     assert False
+
+            sample_max = True
+            if sample_max:
+                sample_logprobs, predicted = torch.max(logprobs, 1)
+                dec_preds.append(predicted.clone())
+                # seq[:, j] = predicted.reshape(-1)
+                # seq_logp_gathered[:, j] = sample_logprobs
+                # seq_logprobs[:, j, :] = logprobs
+            else:
+                predicted = torch.multinomial(prob_prev, 1)  # .to(device)
+                # seq[:, j] = predicted.reshape(-1)
+                # seq_logp_gathered[:, j] = logprobs.gather(1, predicted).reshape(-1)
+                # seq_logprobs[:, j, :] = logprobs
+                dec_preds.append(predicted.clone())
+
+            # dec_log_probs.append(log_prob.squeeze(1))
+            # dec_preds.append(tgt.squeeze(1).clone())
+
+            # if "std" in attns:
+            #     std_attn = f.softmax(attns["std"], dim=-1)
+            #     attentions.append(std_attn.squeeze(1))
+            # if self.copy_attn:
+            #     mask = tgt.gt(len(params['tgt_dict']) - 1)
+            #     copy_info.append(mask.float().squeeze(1))
+
+            words = self.__tens2sent(predicted, self.dictionary)
+
+
+            # words = [self.dictionary[w] for w in words]
+            # words = torch.Tensor(words).type_as(predicted)
+            # predicted_words = words.unsqueeze(1)
+
+            # cache previous states (no-op except during incremental generation)
+            utils.set_incremental_state(
+                self, incremental_state, 'cached_state',
+                (prev_hiddens, prev_cells, input_feed),
+            )
+
+        dec_preds = torch.stack(dec_preds, dim=1)
+
+        return dec_preds
+        # # collect outputs across time steps
+        # x = torch.cat(outs, dim=0).view(seqlen, bsz, self.hidden_size)
+        #
+        # # T x B x C -> B x T x C
+        # x = x.transpose(1, 0)
+        #
+        # if hasattr(self, 'additional_fc') and self.adaptive_softmax is None:
+        #     x = self.additional_fc(x)
+        #     x = F.dropout(x, p=self.dropout_out, training=self.training)
+        #
+        # # # srclen x tgtlen x bsz -> bsz x tgtlen x srclen
+        # # if not self.training and self.need_attn and self.attention is not None:
+        # #     attn_scores = attn_scores.transpose(0, 2)
+        # # else:
+        # #     attn_scores = None
+        # return x, attn_scores
+
     def output_layer(self, x):
         """Project features to the vocabulary size."""
         if self.adaptive_softmax is None:

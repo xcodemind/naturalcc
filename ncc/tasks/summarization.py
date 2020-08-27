@@ -62,7 +62,7 @@ def load_langpair_dataset(
             else:
                 raise FileNotFoundError('Dataset not found: {} ({})'.format(split, data_path))
 
-        src_dataset = data_utils.load_indexed_dataset(prefix + src, src, src_dict, dataset_impl)
+        src_dataset = data_utils.load_indexed_dataset(prefix + src, 'text', src_dict, dataset_impl)
         if truncate_source:
             src_dataset = AppendTokenDataset(
                 TruncateDataset(
@@ -73,7 +73,7 @@ def load_langpair_dataset(
             )
         src_datasets.append(src_dataset)
 
-        tgt_dataset = data_utils.load_indexed_dataset(prefix + tgt, tgt, tgt_dict, dataset_impl)
+        tgt_dataset = data_utils.load_indexed_dataset(prefix + tgt, 'text', tgt_dict, dataset_impl)
         if tgt_dataset is not None:
             tgt_datasets.append(tgt_dataset)
 
@@ -147,6 +147,8 @@ class SummarizationTask(FairseqTask):
         # load dictionaries
         src_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['source_lang'])))
         tgt_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['target_lang'])))
+        # src_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.txt'.format(args['task']['source_lang'])))
+        # tgt_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.txt'.format(args['task']['target_lang'])))
         assert src_dict.pad() == tgt_dict.pad()
         assert src_dict.eos() == tgt_dict.eos()
         assert src_dict.unk() == tgt_dict.unk()
@@ -213,7 +215,7 @@ class SummarizationTask(FairseqTask):
 
     def build_model(self, args):
         model = super().build_model(args)
-        if args['task']['eval_bleu']:
+        if args['task']['eval_bleu'] or args['task']['eval_rouge']:
             assert args['task']['eval_bleu_detok'] is not None, (
                 '--eval-bleu-detok is required if using --eval-bleu; '
                 'try --eval-bleu-detok=moses (or --eval-bleu-detok=space '
@@ -257,14 +259,15 @@ class SummarizationTask(FairseqTask):
         loss, sample_size, logging_output = super().valid_step(sample, model, criterion)
         if self.args['task']['eval_bleu']:
             bleu = self._inference_with_bleu(self.sequence_generator, sample, model)
-            logging_output['_bleu_sys_len'] = bleu.sys_len
-            logging_output['_bleu_ref_len'] = bleu.ref_len
+            # logging_output['_bleu_sys_len'] = bleu.sys_len
+            # logging_output['_bleu_ref_len'] = bleu.ref_len
             # we split counts into separate entries so that they can be
             # summed efficiently across workers using fast-stat-sync
-            assert len(bleu.counts) == EVAL_BLEU_ORDER
-            for i in range(EVAL_BLEU_ORDER):
-                logging_output['_bleu_counts_' + str(i)] = bleu.counts[i]
-                logging_output['_bleu_totals_' + str(i)] = bleu.totals[i]
+            # assert len(bleu.counts) == EVAL_BLEU_ORDER
+            # for i in range(EVAL_BLEU_ORDER):
+            #     logging_output['_bleu_counts_' + str(i)] = bleu.counts[i]
+            #     logging_output['_bleu_totals_' + str(i)] = bleu.totals[i]
+            print('bleu: ', bleu)
         # if self.args['task']['eval_rouge']:
         #     logging_output['_rouge'] = self._inference_with_rouge(self.rouge_sequence_generator, sample, model)
         return loss, sample_size, logging_output
@@ -347,7 +350,42 @@ class SummarizationTask(FairseqTask):
                 s = self.tokenizer.decode(s)
             return s
 
-        gen_out = self.inference_step(generator, [model], sample, None)
+        # gen_out = self.inference_step(generator, [model], sample, None)
+        gen_out = generator.generate(model, sample)
+        hyps, refs = [], []
+        for i in range(len(gen_out)):
+            hyps.append(decode(gen_out[i]))
+            refs.append(decode(
+                utils.strip_pad(sample['target'][i], self.tgt_dict.pad()),
+                escape_unk=True,  # don't count <unk> as matches to the hypo
+            ))
+        if self.args['task']['eval_bleu_print_samples']:
+            LOGGER.info('example hypothesis: ' + hyps[0])
+            LOGGER.info('example reference: ' + refs[0])
+        # tokenize = sacrebleu.DEFAULT_TOKENIZER if not self.args['task']['eval_tokenized_bleu'] else 'none'
+        # return sacrebleu.corpus_bleu(hyps, [refs], tokenize=tokenize)
+        # if self.args['task']['eval_tokenized_bleu']:
+        #     return sacrebleu.corpus_bleu(hyps, [refs], tokenize='none')
+        # else:
+        #     return sacrebleu.corpus_bleu(hyps, [refs])
+        bleu = 0
+        return bleu
+
+    def _inference_with_bleu_bak(self, generator, sample, model):
+        import sacrebleu
+
+        def decode(toks, escape_unk=False):
+            s = self.tgt_dict.string(
+                toks.int().cpu(),
+                self.args['task']['eval_bleu_remove_bpe'],
+                escape_unk=escape_unk,
+            )
+            if self.tokenizer:
+                s = self.tokenizer.decode(s)
+            return s
+
+        # gen_out = self.inference_step(generator, [model], sample, None)
+        gen_out = generator.generate([model], sample)
         hyps, refs = [], []
         for i in range(len(gen_out)):
             hyps.append(decode(gen_out[i][0]['tokens']))
@@ -365,31 +403,31 @@ class SummarizationTask(FairseqTask):
         else:
             return sacrebleu.corpus_bleu(hyps, [refs])
 
-    def _inference_with_rouge(self, generator, sample, model):
-        from rouge import Rouge
-
-        def decode(toks, escape_unk=False):
-            s = self.tgt_dict.string(
-                toks.int().cpu(),
-                self.args['task']['eval_rouge_remove_bpe'],
-                escape_unk=escape_unk,
-            )
-            if self.tokenizer:
-                s = self.tokenizer.decode(s)
-            return s
-
-        gen_out = self.inference_step(generator, [model], sample, None)
-        hyps, refs = [], []
-        for i in range(len(gen_out)):
-            hyps.append(decode(gen_out[i][0]['tokens']))
-            refs.append(decode(
-                utils.strip_pad(sample['target'][i], self.tgt_dict.pad()),
-                escape_unk=True,  # don't count <unk> as matches to the hypo
-            ))
-        if self.args['task']['eval_rouge_print_samples']:
-            LOGGER.info('example hypothesis: ' + hyps[0])
-            LOGGER.info('example reference: ' + refs[0])
-        # tokenize = sacrebleu.DEFAULT_TOKENIZER if not self.args['task']['eval_tokenized_bleu'] else 'none'
-        # return sacrebleu.corpus_bleu(hyps, [refs], tokenize=tokenize)
-        rouge_scores = Rouge().get_scores(hyps, refs, avg=True)
-        return rouge_scores
+    # def _inference_with_rouge(self, generator, sample, model):
+    #     from rouge import Rouge
+    #
+    #     def decode(toks, escape_unk=False):
+    #         s = self.tgt_dict.string(
+    #             toks.int().cpu(),
+    #             self.args['task']['eval_rouge_remove_bpe'],
+    #             escape_unk=escape_unk,
+    #         )
+    #         if self.tokenizer:
+    #             s = self.tokenizer.decode(s)
+    #         return s
+    #
+    #     gen_out = self.inference_step(generator, [model], sample, None)
+    #     hyps, refs = [], []
+    #     for i in range(len(gen_out)):
+    #         hyps.append(decode(gen_out[i][0]['tokens']))
+    #         refs.append(decode(
+    #             utils.strip_pad(sample['target'][i], self.tgt_dict.pad()),
+    #             escape_unk=True,  # don't count <unk> as matches to the hypo
+    #         ))
+    #     if self.args['task']['eval_rouge_print_samples']:
+    #         LOGGER.info('example hypothesis: ' + hyps[0])
+    #         LOGGER.info('example reference: ' + refs[0])
+    #     # tokenize = sacrebleu.DEFAULT_TOKENIZER if not self.args['task']['eval_tokenized_bleu'] else 'none'
+    #     # return sacrebleu.corpus_bleu(hyps, [refs], tokenize=tokenize)
+    #     rouge_scores = Rouge().get_scores(hyps, refs, avg=True)
+    #     return rouge_scores

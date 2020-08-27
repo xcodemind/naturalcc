@@ -271,8 +271,8 @@ class LanguagePairDataset(FairseqDataset):
         else:
             indices = np.arange(len(self))
         if self.tgt_sizes is not None:
-            indices = indices[np.argsort(self.tgt_sizes[indices], kind='mergesort')]# TODO: debug
-        return indices[np.argsort(self.src_sizes[indices], kind='mergesort')] # TODO: debug
+            indices = indices#[np.argsort(self.tgt_sizes[indices], kind='mergesort')]# TODO: debug
+        return indices#[np.argsort(self.src_sizes[indices], kind='mergesort')] # TODO: debug
 
     @property
     def supports_prefetch(self):
