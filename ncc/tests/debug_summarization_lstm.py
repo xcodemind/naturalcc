@@ -237,9 +237,9 @@ if __name__ == '__main__':
 
                 updates += 1
 
-            if updates % 100 == 0:
-                # print('log_output: ', log_output)
-                break
+            # if updates % 100 == 0:
+            #     # print('log_output: ', log_output)
+            #     break
         exit()
         # evaluate
         """Run one full official validation. Uses exact spans and same

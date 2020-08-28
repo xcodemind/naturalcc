@@ -27,19 +27,18 @@ class CrossEntropyCriterion(FairseqCriterion):
         """
         net_output = model(**sample['net_input'])
 
-        # loss, _ = self.compute_loss(model, net_output, sample, reduce=reduce)
-        scores = net_output[0]
-        target = sample['target']
-        ml_loss = F.cross_entropy(scores.view(-1, scores.size(2)), target.view(-1), reduction='none')
-        # print('ml_loss: ', ml_loss)
-        ml_loss = ml_loss.view(*scores.size()[:-1])
-        ml_loss = ml_loss.mul(target.ne(self.padding_idx).float())
-        ml_loss = ml_loss.sum(1) #* kwargs['example_weights']
-        # print('ml_loss-: ', ml_loss)
-        loss = ml_loss.mean()
-        # print('loss: ', loss.item())
-        # loss.backward()
+        loss, _ = self.compute_loss(model, net_output, sample, reduce=reduce)
         sample_size = sample['target'].size(0) if self.sentence_avg else sample['ntokens']
+
+        # scores = net_output[0]
+        # target = sample['target']
+        # ml_loss = F.cross_entropy(scores.view(-1, scores.size(2)), target.view(-1), reduction='none')
+        # ml_loss = ml_loss.view(*scores.size()[:-1])
+        # ml_loss = ml_loss.mul(target.ne(self.padding_idx).float())
+        # ml_loss = ml_loss.sum(1) #* kwargs['example_weights']
+        # loss = ml_loss.mean()
+        # sample_size = sample['target'].size(0) if self.sentence_avg else sample['ntokens']
+
         logging_output = {
             'loss': loss.data,
             'ntokens': sample['ntokens'],
@@ -48,37 +47,37 @@ class CrossEntropyCriterion(FairseqCriterion):
         }
         return loss, sample_size, logging_output
 
-    # def compute_loss(self, model, net_output, sample, reduce=True):
-    #     lprobs = model.get_normalized_probs(net_output, log_probs=True)
-    #     lprobs = lprobs.view(-1, lprobs.size(-1))
-    #     target = model.get_targets(sample, net_output).view(-1)
-    #     loss = F.nll_loss(
-    #         lprobs,
-    #         target,
-    #         ignore_index=self.padding_idx,
-    #         reduction='sum' if reduce else 'none',
-    #     )
-    #     return loss, loss
+    def compute_loss(self, model, net_output, sample, reduce=True):
+        lprobs = model.get_normalized_probs(net_output, log_probs=True)
+        lprobs = lprobs.view(-1, lprobs.size(-1))
+        target = model.get_targets(sample, net_output).view(-1)
+        loss = F.nll_loss(
+            lprobs,
+            target,
+            ignore_index=self.padding_idx,
+            reduction='sum' if reduce else 'none',
+        )
+        return loss, loss
 
-    # @staticmethod
-    # def reduce_metrics(logging_outputs) -> None:
-    #     """Aggregate logging outputs from data parallel training."""
-    #     loss_sum = sum(log.get('loss', 0) for log in logging_outputs)
-    #     ntokens = sum(log.get('ntokens', 0) for log in logging_outputs)
-    #     sample_size = sum(log.get('sample_size', 0) for log in logging_outputs)
-    #
-    #     metrics.log_scalar('loss', loss_sum / sample_size / math.log(2), sample_size, round=3)
-    #     if sample_size != ntokens:
-    #         metrics.log_scalar('nll_loss', loss_sum / ntokens / math.log(2), ntokens, round=3)
-    #         metrics.log_derived('ppl', lambda meters: utils.get_perplexity(meters['nll_loss'].avg))
-    #     else:
-    #         metrics.log_derived('ppl', lambda meters: utils.get_perplexity(meters['loss'].avg))
-    #
-    # @staticmethod
-    # def logging_outputs_can_be_summed() -> bool:
-    #     """
-    #     Whether the logging outputs returned by `forward` can be summed
-    #     across workers prior to calling `reduce_metrics`. Setting this
-    #     to True will improves distributed training speed.
-    #     """
-    #     return True
+    @staticmethod
+    def reduce_metrics(logging_outputs) -> None:
+        """Aggregate logging outputs from data parallel training."""
+        loss_sum = sum(log.get('loss', 0) for log in logging_outputs)
+        ntokens = sum(log.get('ntokens', 0) for log in logging_outputs)
+        sample_size = sum(log.get('sample_size', 0) for log in logging_outputs)
+
+        metrics.log_scalar('loss', loss_sum / sample_size / math.log(2), sample_size, round=3)
+        if sample_size != ntokens:
+            metrics.log_scalar('nll_loss', loss_sum / ntokens / math.log(2), ntokens, round=3)
+            metrics.log_derived('ppl', lambda meters: utils.get_perplexity(meters['nll_loss'].avg))
+        else:
+            metrics.log_derived('ppl', lambda meters: utils.get_perplexity(meters['loss'].avg))
+
+    @staticmethod
+    def logging_outputs_can_be_summed() -> bool:
+        """
+        Whether the logging outputs returned by `forward` can be summed
+        across workers prior to calling `reduce_metrics`. Setting this
+        to True will improves distributed training speed.
+        """
+        return True

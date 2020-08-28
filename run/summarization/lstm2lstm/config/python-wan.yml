@@ -35,7 +35,7 @@ dataset:
   num_workers: 0 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
   skip_invalid_size_inputs_valid_test: 1 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
-  max_sentences: 16 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  max_sentences: 64 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
   dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
 #  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
@@ -45,7 +45,7 @@ dataset:
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
   disable_validation: 0 # action='store_true',help='disable validation'
   max_tokens_valid: ~ # type=int, metavar='N', help='maximum number of tokens in a validation batch (defaults to --max-tokens)'
-  max_sentences_valid: 8 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
+  max_sentences_valid: 32 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
   curriculum: 100 # default=0, type=int, metavar='N', help='don\'t shuffle batches for first N epochs'
   gen_subset: test # default='test', metavar='SPLIT', help='data subset to generate (train, valid, test)'
   num_shards: 1 # default=1, type=int, metavar='N', help='shard generation over N shards'
@@ -106,15 +106,6 @@ task:
   eval_bleu_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
   eval_bleu_print_samples: 0 #', action='store_true', help='print sample generations during validation'
 
-  # rouge
-  eval_rouge: 0
-  eval_rouge_type: rouge-1 # rouge-1, rouge-2, rouge-L
-  eval_rouge_detok: space #', type=str, default="space", help='detokenizer before computing rouge (e.g., "moses"); required if using --eval-rouge; use "space" to disable detokenization; see fairseq.data.encoders for other options'
-  eval_rouge_detok_args: ~ #', type=str, metavar='JSON', help='args for building the tokenizer, if needed'
-  eval_rouge_remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE before computing rouge'
-  eval_rouge_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
-  eval_rouge_print_samples: 0 #', action='store_true', help='print sample generations during validation'
-
 model:
   arch: lstm
   # encoder
@@ -134,7 +125,7 @@ model:
   decoder_hidden_size: 512 #', type=int, metavar='N', help='decoder hidden size'
   decoder_layers: 1 #', type=int, metavar='N', help='number of decoder layers'
   decoder_out_embed_dim: 512
-  decoder_attention: 0 #', type=str, metavar='BOOL', help='decoder attention'
+  decoder_attention: 1 #', type=str, metavar='BOOL', help='decoder attention'
   adaptive_softmax_cutoff: ~ #', metavar='EXPR', help='comma separated list of adaptive softmax cutoff points. Must be used with adaptive_loss criterion'
   share_decoder_input_output_embed: 0 #', default=False, action='store_true', help='share decoder input and output embeddings'
   share_all_embeddings: 0 #', default=False, action='store_true', help='share encoder, decoder and output embeddings (requires shared dictionary and embed dim)'
@@ -166,7 +157,7 @@ optimization:
 
 
 #  for cross entropy
-  sentence_avg: ~ # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'
+  sentence_avg: 1 # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'
 
   adam:
     adam_betas: '(0.9, 0.999)' # default='(0.9, 0.999)', metavar='B', help='betas for Adam optimizer'

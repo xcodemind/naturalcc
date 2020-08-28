@@ -156,10 +156,10 @@ class Trainer(object):
                 sample = utils.move_to_cuda(sample)
 
             # _loss, sample_size, logging_output
-            hyps, refs, ids = self.task.valid_step(
+            predictions, loss, sample_size, logging_output = self.task.valid_step(
                 sample, self.model, self.criterion
             )
-        return hyps, refs, ids
+        return predictions, loss, sample_size, logging_output
     # def zero_grad(self):
     #     self.optimizer.zero_grad()
 

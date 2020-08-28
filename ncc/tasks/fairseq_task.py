@@ -252,7 +252,7 @@ class FairseqTask(object):
         return tokenizer.build_tokenization(args, self)
 
     def build_generator(self, args, extra_gen_cls_kwargs=None):
-        from ncc.eval.sequence_generator_wy import SequenceGenerator
+        from ncc.eval.sequence_generator import SequenceGenerator
 
         return SequenceGenerator(
             self.target_dictionary,
@@ -270,7 +270,7 @@ class FairseqTask(object):
             # **extra_gen_cls_kwargs,
         )
 
-    def build_generator_(
+    def build_generator_fair(
         self, args,
         seq_gen_cls=None, extra_gen_cls_kwargs=None
     ):
@@ -282,7 +282,7 @@ class FairseqTask(object):
                 compute_alignment=getattr(args['eval'], "print_alignment", False),
             )
 
-        from ncc.eval.sequence_generator import (
+        from ncc.eval.sequence_generator_fair import (
             SequenceGenerator,
             SequenceGeneratorWithAlignment,
         )

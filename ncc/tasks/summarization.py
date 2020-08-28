@@ -26,7 +26,7 @@ from ncc.data.summarization.language_pair_dataset import LanguagePairDataset
 from ncc.data.summarization.path_dataset import PathDataset
 from ncc.data.summarization.bin_ast_dataset import BinaryASTDataset
 from ncc.utils.tokenizer import tokenize_string
-
+from ncc.eval import eval_utils
 EVAL_BLEU_ORDER = 4
 
 
@@ -234,25 +234,7 @@ class SummarizationTask(FairseqTask):
             # gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
             # self.sequence_generator = self.build_generator(Namespace(**gen_args))
             self.sequence_generator = self.build_generator(args)
-        # if args['task']['eval_rouge']:
-        #     assert args['task']['eval_rouge_detok'] is not None, (
-        #         '--eval-rouge-detok is required if using --eval-rouge; '
-        #         'try --eval-rouge-detok=moses (or --eval-rouge-detok=space '
-        #         'to disable detokenization, e.g., when using sentencepiece)'
-        #     )
-        #     # detok_args = json.loads(getattr(args, 'eval_rouge_detok_args', '{}') or '{}')
-        #     detok_args = json.loads(
-        #         args['task']['eval_rouge_detok_args'] if args['task']['eval_rouge_detok_args'] else '{}')
-        #     self.tokenizer = encoders.build_tokenizer(
-        #         dict(
-        #             tokenizer=args['task']['eval_rouge_detok'] if args['task']['eval_rouge_detok'] else None,
-        #             # getattr(args, 'eval_rouge_detok', None),
-        #             **detok_args
-        #         ))
-        #     # The gen_args parameters have been set in the yml file
-        #     # gen_args = json.loads(getattr(args, 'eval_rouge_args', '{}') or '{}')
-        #     # self.sequence_generator = self.build_generator(Namespace(**gen_args))
-        #     self.rouge_sequence_generator = self.build_generator([model], args)
+
         return model
 
     def train_step(
@@ -283,7 +265,7 @@ class SummarizationTask(FairseqTask):
         loss, sample_size, logging_output = criterion(model, sample)
         if ignore_grad:
             loss *= 0
-        # optimizer.backward(loss)
+        optimizer.backward(loss)
         return loss, sample_size, logging_output
 
     # def valid_step_(self, sample, model, criterion):
@@ -321,15 +303,18 @@ class SummarizationTask(FairseqTask):
         ids = sample['id'].tolist()
         hyps, refs = [], []
         for i in range(len(gen_out)):
-            # hypo = gen_out[i][0]['tokens']
-            # hyps.append(decode(hypo[:hypo.index(self.tgt_dict.eos())]))
             hyps.append(decode(gen_out[i][0]['tokens']))
-
             refs.append(decode(
                 utils.strip_pad(sample['target'][i], self.tgt_dict.pad()),
                 escape_unk=True,  # don't count <unk> as matches to the hypo
             ))
-        return hyps, refs, ids
+
+        bleu, rouge_l, meteor = self._inference_score(hyps, refs, ids)
+        logging_output['bleu'] = bleu
+        logging_output['rouge_l'] = rouge_l
+        logging_output['meteor'] = meteor
+
+        return loss, sample_size, logging_output
         # if self.args['task']['eval_bleu_print_samples']:
         #     LOGGER.info('example hypothesis: ' + hyps[0])
         #     LOGGER.info('example reference: ' + refs[0])
@@ -362,40 +347,46 @@ class SummarizationTask(FairseqTask):
     def reduce_metrics(self, logging_outputs, criterion):
         super().reduce_metrics(logging_outputs, criterion)
         if self.args['task']['eval_bleu']:
-
             def sum_logs(key):
                 return sum(log.get(key, 0) for log in logging_outputs)
 
-            counts, totals = [], []
-            for i in range(EVAL_BLEU_ORDER):
-                counts.append(sum_logs('_bleu_counts_' + str(i)))
-                totals.append(sum_logs('_bleu_totals_' + str(i)))
+            metrics.log_scalar('bleu', sum_logs('bleu'))
 
-            if max(totals) > 0:
-                # log counts as numpy arrays -- log_scalar will sum them correctly
-                metrics.log_scalar('_bleu_counts', np.array(counts))
-                metrics.log_scalar('_bleu_totals', np.array(totals))
-                metrics.log_scalar('_bleu_sys_len', sum_logs('_bleu_sys_len'))
-                metrics.log_scalar('_bleu_ref_len', sum_logs('_bleu_ref_len'))
+            # counts, totals = [], []
+            # for i in range(EVAL_BLEU_ORDER):
+            #     counts.append(sum_logs('_bleu_counts_' + str(i)))
+            #     totals.append(sum_logs('_bleu_totals_' + str(i)))
+            #
+            # if max(totals) > 0:
+            #     # log counts as numpy arrays -- log_scalar will sum them correctly
+            #     metrics.log_scalar('_bleu_counts', np.array(counts))
+            #     metrics.log_scalar('_bleu_totals', np.array(totals))
+            #     metrics.log_scalar('_bleu_sys_len', sum_logs('_bleu_sys_len'))
+            #     metrics.log_scalar('_bleu_ref_len', sum_logs('_bleu_ref_len'))
+            #
+            #     def compute_bleu(meters):
+            #         import inspect
+            #         import sacrebleu
+            #         fn_sig = inspect.getfullargspec(sacrebleu.compute_bleu)[0]
+            #         if 'smooth_method' in fn_sig:
+            #             smooth = {'smooth_method': 'exp'}
+            #         else:
+            #             smooth = {'smooth': 'exp'}
+            #         bleu = sacrebleu.compute_bleu(
+            #             correct=meters['_bleu_counts'].sum,
+            #             total=meters['_bleu_totals'].sum,
+            #             sys_len=meters['_bleu_sys_len'].sum,
+            #             ref_len=meters['_bleu_ref_len'].sum,
+            #             **smooth
+            #         )
+            #         return round(bleu.score, 2)
+            #
+            #     metrics.log_derived('bleu', compute_bleu)
 
-                def compute_bleu(meters):
-                    import inspect
-                    import sacrebleu
-                    fn_sig = inspect.getfullargspec(sacrebleu.compute_bleu)[0]
-                    if 'smooth_method' in fn_sig:
-                        smooth = {'smooth_method': 'exp'}
-                    else:
-                        smooth = {'smooth': 'exp'}
-                    bleu = sacrebleu.compute_bleu(
-                        correct=meters['_bleu_counts'].sum,
-                        total=meters['_bleu_totals'].sum,
-                        sys_len=meters['_bleu_sys_len'].sum,
-                        ref_len=meters['_bleu_ref_len'].sum,
-                        **smooth
-                    )
-                    return round(bleu.score, 2)
 
-                metrics.log_derived('bleu', compute_bleu)
+
+
+
         # if self.args['task']['eval_rouge']:
         #
         #     if '_rouge' in logging_outputs[0]:
@@ -423,6 +414,17 @@ class SummarizationTask(FairseqTask):
     def target_dictionary(self):
         """Return the target :class:`~fairseq.data.Dictionary`."""
         return self.tgt_dict
+
+    def _inference_score(self, hyps, refs, ids):
+        hypotheses, references = dict(), dict()
+
+        for key, pred, tgt in zip(ids, hyps, refs):
+            hypotheses[key] = [pred]
+            references[key] = tgt if isinstance(tgt, list) else [tgt]
+
+        bleu, rouge_l, meteor = eval_utils.eval_accuracies(hypotheses, references, filename='pred.txt')
+
+        return bleu, rouge_l, meteor
 
     # def _inference_with_bleu_wy(self, generator, sample, model):
     #     import sacrebleu
