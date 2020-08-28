@@ -88,8 +88,9 @@ def collate(
             vv = v['topk_prob']
             copy_tensor(vv[:, :distill_topk], teacher_outputs[1][i, :len(vv), :distill_topk])
 
-        batch['teacher_output'] = teacher_outputs[0].index_select(0, sort_order), \
-                                  teacher_outputs[1].index_select(0, sort_order)
+        batch['teacher_output'] = [
+            teacher_outputs[0].index_select(0, sort_order), teacher_outputs[1].index_select(0, sort_order)
+        ]
         batch['alpha'] = torch.FloatTensor([s['alpha'] for s in samples]).view(-1, 1).expand(-1, target.shape[1])
     return batch
 
@@ -204,10 +205,10 @@ class UniversalDataset(FairseqDataset):
             'dataset_id': self.dataset_ids[index] if self.dataset_ids is not None else None,
         }
         if self.topk_idxs is not None and self.is_train:
-            assert self.topk_idxs[index].shape[0] == self.tgt[index].shape[0], (
-                self.topk_idxs[index].shape, self.tgt[index].shape)
+            assert self.topk_idxs[index].shape[0] == self.tgt[index].shape[0], \
+                (self.topk_idxs[index].shape, self.tgt[index].shape)
             example['topk_idx'] = self.topk_idxs[index]
-            example['topk_prob'] = self.topk_probs[index] if self.tgt_lngs is not None else None
+            example['topk_prob'] = self.topk_probs[index]  # if self.tgt_lngs is not None else None
             if self.expert_scores[self.dataset_ids[index]] is None:
                 example['alpha'] = self.DEFAULT_ALPHA
             else:
