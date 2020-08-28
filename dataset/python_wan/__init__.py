@@ -25,7 +25,7 @@ COMMENT_END_TOKENS = set(['{', '[', '('])
 import logging
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='[%(asctime)-15s] %(levelname)7s >> %(message)s (%(filename)s:%(lineno)d, %(funcName)s())',
     datefmt='%Y-%m-%d %H:%M:%S',
 )

@@ -36,3 +36,8 @@ python -m dataset.csn_msra.feature_extract -l python -f ~/.ncc/python_wan/flatte
 ```
 python -m dataset.csn_msra.filter -l python -r ~/.ncc/python_wan/refine -f ~/.ncc/python_wan/filter
 ```
+
+# step 7 (optional)
+```
+python -m dataset.python_wan.portion
+```
