@@ -10,29 +10,29 @@ preprocess:
     - path.terminals
     - traversal
   target_lang: ~ #", default=None, metavar="TARGET", help="target language"
-  # ~ path for dataset default. e.g.  for CodeSearchNet, ~/filter = ~/.ncc/CodeSearchNet/filter
+  # ~ path for dataset default. e.g.  for csn_icse21, ~/filter = ~/.ncc/csn_icse21/filter
   dataprefs:
     # CSN ruby/go/java/javascript/php
     ruby:
-      trainpref: ~/.ncc/CodeSearchNet/filter/ruby/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/filter/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/filter/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/csn_icse21/filter/ruby/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/csn_icse21/filter/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/csn_icse21/filter/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     go:
-      trainpref: ~/.ncc/CodeSearchNet/filter/go/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/filter/go/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/filter/go/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/csn_icse21/filter/go/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/csn_icse21/filter/go/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/csn_icse21/filter/go/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     java:
-      trainpref: ~/.ncc/CodeSearchNet/filter/java/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/filter/java/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/filter/java/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/csn_icse21/filter/java/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/csn_icse21/filter/java/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/csn_icse21/filter/java/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     javascript:
-      trainpref: ~/.ncc/CodeSearchNet/filter/javascript/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/filter/javascript/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/filter/javascript/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/csn_icse21/filter/javascript/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/csn_icse21/filter/javascript/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/csn_icse21/filter/javascript/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     php:
-      trainpref: ~/.ncc/CodeSearchNet/filter/php/train #", metavar="FP", default=None, help="train file prefix"
-      validpref: ~/.ncc/CodeSearchNet/filter/php/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-      testpref:  ~/.ncc/CodeSearchNet/filter/php/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+      trainpref: ~/.ncc/csn_icse21/filter/php/train #", metavar="FP", default=None, help="train file prefix"
+      validpref: ~/.ncc/csn_icse21/filter/php/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+      testpref:  ~/.ncc/csn_icse21/filter/php/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
     # python_wan
     python:
       trainpref: ~/.ncc/python_wan/filter/python/train #", metavar="FP", default=None, help="train file prefix"
