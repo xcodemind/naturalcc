@@ -244,10 +244,10 @@ checkpoint:
 
 
 eval:
-  path: ~/.ncc/csn_icse21/summarization/data-mmap/ruby/transformer_ast/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  path: ~/.ncc/csn_icse21/summarization/data-mmap/ruby/transformer_ast/checkpoints/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
 #  path: ~/.ncc/csn_icse21/summarization/data-mmap/ruby/seq2seq/transformer_ast/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
-  quiet: 0 # ', action='store_true', help='only print final scores'
+  quiet: 1 # ', action='store_true', help='only print final scores'
   results_path: ~ # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'
   model_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override model args at generation '
 
