@@ -130,7 +130,6 @@ class Trainer(object):
                 update_num=self.get_num_updates(),
                 ignore_grad=False,
             )
-            # print('lossxxx: ', loss.item())
             loss.backward()
             self.optimizer.step()
             self.optimizer.zero_grad()
@@ -156,10 +155,11 @@ class Trainer(object):
             if self.cuda:
                 sample = utils.move_to_cuda(sample)
 
-            _loss, sample_size, logging_output = self.task.valid_step(
+            # _loss, sample_size, logging_output
+            hyps, refs, ids = self.task.valid_step(
                 sample, self.model, self.criterion
             )
-    #
+        return hyps, refs, ids
     # def zero_grad(self):
     #     self.optimizer.zero_grad()
 

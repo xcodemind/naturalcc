@@ -40,7 +40,7 @@ dataset:
   dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
 #  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
   train_subset: train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
-  valid_subset: test # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
+  valid_subset: valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
   validate_interval: 1 # type=int, default=1, metavar='N', help='validate every N epochs'
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
   disable_validation: 0 # action='store_true',help='disable validation'
@@ -119,22 +119,22 @@ model:
   arch: lstm
   # encoder
   # encoder embedding
-  encoder_embed_dim: 256 #', type=int, metavar='N', help='encoder embedding dimension'
+  encoder_embed_dim: 512 #', type=int, metavar='N', help='encoder embedding dimension'
   encoder_embed: ~ #', type=str, metavar='STR', help='path to pre-trained encoder embedding'
   encoder_freeze_embed: 0 #', action='store_true', help='freeze encoder embeddings'
   # encoder-LSTM
   encoder_hidden_size: 512 #', type=int, metavar='N', help='encoder hidden size'
   encoder_layers: 1 #', type=int, metavar='N', help='number of encoder layers'
-  encoder_bidirectional: 1 #, action='store_true', help='make all layers of encoder bidirectional'
+  encoder_bidirectional: 0 #, action='store_true', help='make all layers of encoder bidirectional'
 
   # decoder
-  decoder_embed_dim: 256 # ', type=int, metavar='N', help='decoder embedding dimension'
+  decoder_embed_dim: 512 # ', type=int, metavar='N', help='decoder embedding dimension'
   decoder_embed: ~ #', type=str, metavar='STR', help='path to pre-trained decoder embedding'
   decoder_freeze_embed: ~ #', action='store_true', help='freeze decoder embeddings'
   decoder_hidden_size: 512 #', type=int, metavar='N', help='decoder hidden size'
   decoder_layers: 1 #', type=int, metavar='N', help='number of decoder layers'
   decoder_out_embed_dim: 512
-  decoder_attention: 1 #', type=str, metavar='BOOL', help='decoder attention'
+  decoder_attention: 0 #', type=str, metavar='BOOL', help='decoder attention'
   adaptive_softmax_cutoff: ~ #', metavar='EXPR', help='comma separated list of adaptive softmax cutoff points. Must be used with adaptive_loss criterion'
   share_decoder_input_output_embed: 0 #', default=False, action='store_true', help='share decoder input and output embeddings'
   share_all_embeddings: 0 #', default=False, action='store_true', help='share encoder, decoder and output embeddings (requires shared dictionary and embed dim)'
