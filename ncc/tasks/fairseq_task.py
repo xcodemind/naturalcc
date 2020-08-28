@@ -252,23 +252,40 @@ class FairseqTask(object):
         return tokenizer.build_tokenization(args, self)
 
     def build_generator(self, args, extra_gen_cls_kwargs=None):
-        from ncc.eval.sequence_generator import SequenceGenerator
-
-        return SequenceGenerator(
-            self.target_dictionary,
-            beam_size=args['eval']['beam'],  # getattr(args, "beam", 5),
-            max_len_a=args['eval']['max_len_a'],  # getattr(args, "max_len_a", 0),
-            max_len_b=args['eval']['max_len_b'],  # getattr(args, "max_len_b", 200),
-            min_len=args['eval']['min_len'],  # getattr(args, "min_len", 1),
-            normalize_scores=(not args['eval']['unnormalized']),  # (not getattr(args, "unnormalized", False)),
-            len_penalty=args['eval']['lenpen'],  # getattr(args, "lenpen", 1),
-            unk_penalty=args['eval']['unkpen'],  # getattr(args, "unkpen", 0),
-            temperature=args['eval']['temperature'],  # getattr(args, "temperature", 1.0),
-            match_source_len=args['eval']['match_source_len'],  # getattr(args, "match_source_len", False),
-            no_repeat_ngram_size=args['eval']['no_repeat_ngram_size'],  # getattr(args, "no_repeat_ngram_size", 0),
-            # search_strategy=search_strategy,
-            # **extra_gen_cls_kwargs,
-        )
+        if args['model']['arch'] == 'transformer_summarization':
+            from ncc.eval.sequence_generator import TransformerSequenceGenerator
+            return TransformerSequenceGenerator(
+                self.target_dictionary,
+                beam_size=args['eval']['beam'],  # getattr(args, "beam", 5),
+                max_len_a=args['eval']['max_len_a'],  # getattr(args, "max_len_a", 0),
+                max_len_b=args['eval']['max_len_b'],  # getattr(args, "max_len_b", 200),
+                min_len=args['eval']['min_len'],  # getattr(args, "min_len", 1),
+                normalize_scores=(not args['eval']['unnormalized']),  # (not getattr(args, "unnormalized", False)),
+                len_penalty=args['eval']['lenpen'],  # getattr(args, "lenpen", 1),
+                unk_penalty=args['eval']['unkpen'],  # getattr(args, "unkpen", 0),
+                temperature=args['eval']['temperature'],  # getattr(args, "temperature", 1.0),
+                match_source_len=args['eval']['match_source_len'],  # getattr(args, "match_source_len", False),
+                no_repeat_ngram_size=args['eval']['no_repeat_ngram_size'],  # getattr(args, "no_repeat_ngram_size", 0),
+                # search_strategy=search_strategy,
+                # **extra_gen_cls_kwargs,
+            )
+        elif args['model']['arch'] == 'lstm':
+            from ncc.eval.sequence_generator import LSTMSequenceGenerator
+            return LSTMSequenceGenerator(
+                self.target_dictionary,
+                beam_size=args['eval']['beam'],  # getattr(args, "beam", 5),
+                max_len_a=args['eval']['max_len_a'],  # getattr(args, "max_len_a", 0),
+                max_len_b=args['eval']['max_len_b'],  # getattr(args, "max_len_b", 200),
+                min_len=args['eval']['min_len'],  # getattr(args, "min_len", 1),
+                normalize_scores=(not args['eval']['unnormalized']),  # (not getattr(args, "unnormalized", False)),
+                len_penalty=args['eval']['lenpen'],  # getattr(args, "lenpen", 1),
+                unk_penalty=args['eval']['unkpen'],  # getattr(args, "unkpen", 0),
+                temperature=args['eval']['temperature'],  # getattr(args, "temperature", 1.0),
+                match_source_len=args['eval']['match_source_len'],  # getattr(args, "match_source_len", False),
+                no_repeat_ngram_size=args['eval']['no_repeat_ngram_size'],  # getattr(args, "no_repeat_ngram_size", 0),
+                # search_strategy=search_strategy,
+                # **extra_gen_cls_kwargs,
+            )
 
     def build_generator_fair(
         self, args,
