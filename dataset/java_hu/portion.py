@@ -21,7 +21,7 @@ if __name__ == '__main__':
         help="portion of train dataset",
     )
     parser.add_argument(
-        "--language", "-l", default='python', type=str, help="set constant for language",
+        "--language", "-l", default='java', type=str, help="set constant for language",
     )
     args = parser.parse_args()
 

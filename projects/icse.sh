@@ -33,10 +33,12 @@ python -m dataset.python_wan.summarization.preprocess_multiattrs -p 0.01
 #csn => Python_wan, shared dict
 python -m dataset.python_wan.summarization.preprocess_multilingual
 
+########################################################################################################################
+
+
 ## Java_hu
 #bash dataset/java_hu/download.sh
 #python -m dataset.java_hu.build
-#python -m dataset.java_hu.src_code
 #python -m dataset.java_hu.flatten
 #python -m dataset.csn_msra.feature_extract -l java -f ~/.ncc/java_hu/flatten -r ~/.ncc/java_hu/refine -s ~/.ncc/java_hu/libs
 #python -m dataset.csn_msra.filter -l java -r ~/.ncc/java_hu/refine -f ~/.ncc/java_hu/filter
