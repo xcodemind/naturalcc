@@ -464,6 +464,10 @@ def make_positions_hibert(tensor, padding_idx, left_pad):
 def strip_pad(tensor, pad):
     return tensor[tensor.ne(pad)]
 
+def strip_eos(tensor, eos):
+    assert tensor.dim() == 1
+    idx = tensor.tolist().index(eos)
+    return tensor[:idx]
 
 def buffered_arange(max):
     if not hasattr(buffered_arange, "buf"):

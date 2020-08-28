@@ -69,7 +69,7 @@ class SequenceGenerator(object):
 
 
     @torch.no_grad()
-    def generate(self, model, sample, **kwargs):
+    def generate(self, models, sample, **kwargs):
         """Generate a batch of translations.
 
         Args:
@@ -80,6 +80,8 @@ class SequenceGenerator(object):
             bos_token (int, optional): beginning of sentence token
                 (default: self.eos)
         """
+        model = models[0]  # for ensemble expansion
+
         if not self.retain_dropout:
             model.eval()
 

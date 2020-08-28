@@ -403,7 +403,7 @@ class FairseqTask(object):
 
     def inference_step(self, generator, models, sample, prefix_tokens=None):
         with torch.no_grad():
-            return generator.generate(models, sample, prefix_tokens=prefix_tokens)
+            return generator.generate(models, sample) #, prefix_tokens=prefix_tokens
 
     def begin_epoch(self, epoch, model):
         """Hook function called before the start of each epoch."""
