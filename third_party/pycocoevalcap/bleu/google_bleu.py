@@ -100,6 +100,11 @@ def compute_bleu(reference_corpus, translation_corpus, max_order=4,
     if ratio > 1.0:
         bp = 1.
     else:
+        """
+        File "/GPUFS/hust_xhshi_1/wanyao/yang/naturalcodev3/third_party/pycocoevalcap/bleu/google_bleu.py", line 103, in compute_bleu
+            bp = math.exp(1 - 1. / ratio)
+        ZeroDivisionError: float division by zero
+        """
         bp = math.exp(1 - 1. / ratio)
 
     bleu = geo_mean * bp
