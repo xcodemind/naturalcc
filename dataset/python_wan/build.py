@@ -10,13 +10,11 @@ from tree_sitter import Language
 
 try:
     from dataset.python_wan import (
-        LANGUAGES, RAW_DATA_DIR, LIBS_DIR,
-        LOGGER,
+        RAW_DATA_DIR, LIBS_DIR, LOGGER,
     )
 except ImportError:
     from . import (
-        LANGUAGES, RAW_DATA_DIR, LIBS_DIR,
-        LOGGER,
+        RAW_DATA_DIR, LIBS_DIR, LOGGER,
     )
 
 

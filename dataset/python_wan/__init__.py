@@ -8,7 +8,6 @@ FLATTEN_DIR = '~/.ncc/{}/flatten'.format(DATASET_NAME)
 REFINE_DIR = '~/.ncc/{}/refine'.format(DATASET_NAME)
 FILTER_DIR = '~/.ncc/{}/filter'.format(DATASET_NAME)
 
-LANGUAGES = ['ruby', 'python', 'java', 'go', 'php', 'javascript']
 MODES = ['train', 'valid', 'test']
 
 RECURSION_DEPTH = 999  # dfs recursion limitation
