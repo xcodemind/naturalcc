@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # download refined dataset from CodeSearchNet
-mkdir -p ~/.ncc/CodeSearchNet_icse21/raw
-cd ~/.ncc/CodeSearchNet_icse21/raw
+mkdir -p ~/.ncc/csn_icse21/raw
+cd ~/.ncc/csn_icse21/raw
 # download
 pip install gdown
 gdown https://drive.google.com/uc?id=1rd2Tc6oUWBo7JouwexW3ksQ0PaOhUr6h
