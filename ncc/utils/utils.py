@@ -321,19 +321,19 @@ def move_to_cuda(sample):
 
 
 def get_incremental_state(
-        module: MultiheadAttention,
-        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]],
-        key: str,
+    module: MultiheadAttention,
+    incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]],
+    key: str,
 ) -> Optional[Dict[str, Optional[Tensor]]]:
     """Helper for getting incremental state for an nn.Module."""
     return module.get_incremental_state(incremental_state, key)
 
 
 def set_incremental_state(
-        module: MultiheadAttention,
-        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]],
-        key: str,
-        value: Dict[str, Optional[Tensor]],
+    module: MultiheadAttention,
+    incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]],
+    key: str,
+    value: Dict[str, Optional[Tensor]],
 ) -> Optional[Dict[str, Dict[str, Optional[Tensor]]]]:
     """Helper for setting incremental state for an nn.Module."""
     if incremental_state is not None:
@@ -413,7 +413,7 @@ def replace_unk(hypo_str, src_str, alignment, align_dict, unk):
 
 
 def post_process_prediction(
-        hypo_tokens, src_str, alignment, align_dict, tgt_dict, remove_bpe=None
+    hypo_tokens, src_str, alignment, align_dict, tgt_dict, remove_bpe=None
 ):
     hypo_str = tgt_dict.string(hypo_tokens, remove_bpe)
     if align_dict is not None:
@@ -464,10 +464,15 @@ def make_positions_hibert(tensor, padding_idx, left_pad):
 def strip_pad(tensor, pad):
     return tensor[tensor.ne(pad)]
 
+
 def strip_eos(tensor, eos):
     assert tensor.dim() == 1
-    idx = tensor.tolist().index(eos)
-    return tensor[:idx]
+    if eos in tensor:
+        idx = tensor.tolist().index(eos)
+        return tensor[:idx]
+    else:
+        return tensor
+
 
 def buffered_arange(max):
     if not hasattr(buffered_arange, "buf"):
@@ -479,7 +484,7 @@ def buffered_arange(max):
 
 
 def convert_padding_direction(
-        src_tokens, padding_idx, right_to_left=False, left_to_right=False
+    src_tokens, padding_idx, right_to_left=False, left_to_right=False
 ):
     assert right_to_left ^ left_to_right
     pad_mask = src_tokens.eq(padding_idx)
