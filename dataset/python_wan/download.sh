@@ -2,6 +2,7 @@
 
 echo "Downloading python-method dataset"
 DIR=~/.ncc/python_wan/raw/
+mkdir -p ${DIR}
 FILE=${DIR}python.zip
 
 if [[ -f "$FILE" ]]; then
