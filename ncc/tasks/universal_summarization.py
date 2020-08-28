@@ -50,6 +50,7 @@ def load_langpair_dataset(
     expert_scores = []
     dataset_ids = []
     lng_borders = [0]
+    is_train = split == 'train'
 
     for ds_idx, program_lang in enumerate(programming_langs):
         lang_data_path = os.path.join(data_path, program_lang)
@@ -83,14 +84,14 @@ def load_langpair_dataset(
         for i in range(length):
             dataset_ids.append(ds_idx)
 
-        if is_distill:
+        if is_distill and is_train:  # distill only for train
             path = '{}_{}_{}_topk_idx'.format(lang_data_path, src, tgt)
             topk_idxs.append(TeacherOutputDataset(path))
             path = '{}_{}_{}_topk_prob'.format(lang_data_path, src, tgt)
             topk_probs.append(TeacherOutputDataset(path))
-            expert_bleu = '{}_expert_bleu_{}_{}.json'.format(lang_data_path, src, tgt)
+            expert_bleu = os.path.join(data_path, 'expert_bleu_{}_{}_{}.json'.format(program_lang, src, tgt))
             expert_bleu = json.load(open(expert_bleu))
-            expert_scores.append(expert_bleu[f"{program_lang}_{src}_{tgt}"])
+            expert_scores.append(expert_bleu[f"bleu_{program_lang}"])
 
     assert len(src_datasets) == len(tgt_datasets) or len(tgt_datasets) == 0
 
@@ -102,7 +103,7 @@ def load_langpair_dataset(
     else:
         tgt_dataset = None
 
-    if is_distill:
+    if is_distill and is_train:  # distill only for train
         topk_idx_dataset = ConcatDataset(topk_idxs)
         topk_probs_dataset = ConcatDataset(topk_probs)
         assert len(topk_probs_dataset) == len(src_dataset), (len(topk_probs_dataset), len(src_dataset))
@@ -128,6 +129,9 @@ def load_langpair_dataset(
         left_pad_target=left_pad_target,
         max_source_positions=max_source_positions,
         max_target_positions=max_target_positions,
+
+        topk_idxs=topk_idx_dataset, topk_probs=topk_probs_dataset,
+        expert_scores=expert_scores, is_train=is_train,
     )
 
 
@@ -238,7 +242,7 @@ class UniversalSummarizationTask(FairseqTask):
             # The gen_args parameters have been set in the yml file
             # gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
             # self.sequence_generator = self.build_generator(Namespace(**gen_args))
-            self.sequence_generator = self.build_generator([model], args)
+            self.sequence_generator = self.build_generator(args)
         return model
 
     def valid_step(self, sample, model, criterion):
