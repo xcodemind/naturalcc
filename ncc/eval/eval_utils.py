@@ -5,9 +5,7 @@ from collections import OrderedDict, Counter
 import json
 
 
-
-def eval_accuracies(hypotheses, references, sources=None,
-                    filename=None, mode='dev'):
+def eval_accuracies(hypotheses, references, sources=None, filename=None, mode='dev'):
     """An unofficial evalutation helper.
      Arguments:
         hypotheses: A mapping from instance id to predicted sequences.
@@ -67,8 +65,7 @@ def eval_accuracies(hypotheses, references, sources=None,
             logobj['references'] = references[key]
             logobj['bleu'] = ind_bleu[key]
             logobj['rouge_l'] = ind_rouge[key]
-            fw.write(json.dumps(logobj) + '\n')
+            print(json.dumps(logobj), file=fw)
 
     if fw: fw.close()
-    return bleu * 100, rouge_l * 100, meteor * 100 #, precision.avg * 100, recall.avg * 100, f1.avg * 100
-
+    return bleu * 100, rouge_l * 100, meteor * 100  # , precision.avg * 100, recall.avg * 100, f1.avg * 100
