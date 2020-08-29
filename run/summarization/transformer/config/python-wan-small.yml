@@ -45,7 +45,7 @@ dataset:
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
   disable_validation: 1 # action='store_true',help='disable validation'
   max_tokens_valid: ~ # type=int, metavar='N', help='maximum number of tokens in a validation batch (defaults to --max-tokens)'
-  max_sentences_valid: 128 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
+  max_sentences_valid: 16 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
   curriculum: 0 # default=0, type=int, metavar='N', help='don\'t shuffle batches for first N epochs'
   gen_subset: test # default='test', metavar='SPLIT', help='data subset to generate (train, valid, test)'
   num_shards: 1 # default=1, type=int, metavar='N', help='shard generation over N shards'
@@ -59,7 +59,7 @@ dataset:
 #  per_gpu_eval_batch_size: 4 # default=4, type=int, help="Batch size per GPU/CPU for evaluation."
 
 distributed_training:
-  distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
+  distributed_world_size: 4 # default=max(1, torch.cuda.device_count()
   distributed_rank: 0 # default=0, type=int, help='rank of the current worker'
   distributed_backend: nccl # default='nccl', type=str, help='distributed backend'
   distributed_init_method: ~ # default=None, type=str,help='typically tcp://hostname:port that will be used to establish initial connetion'
@@ -125,19 +125,19 @@ model:
   activation_dropout: 0.0 # '--relu-dropout', type=float, metavar='D', help='dropout probability after activation in FFN.'
   relu_dropout: 0.0 # '--relu-dropout', type=float, metavar='D', help='dropout probability after activation in FFN.'
   encoder_embed_path: 0 # type=str, metavar='STR', help='path to pre-trained encoder embedding'
-  encoder_embed_dim: 512 # type=int, metavar='N', help='encoder embedding dimension'
-  encoder_ffn_embed_dim: 2048 # type=int, metavar='N', help='encoder embedding dimension for FFN'
-  encoder_layers: 6 # 12 type=int, metavar='N', help='num encoder layers'
+  encoder_embed_dim: 256 # type=int, metavar='N', help='encoder embedding dimension'
+  encoder_ffn_embed_dim: 1024 # type=int, metavar='N', help='encoder embedding dimension for FFN'
+  encoder_layers: 2 # 12 type=int, metavar='N', help='num encoder layers'
   encoder_attention_heads: 8 # 12 type=int, metavar='N', help='num encoder attention heads'
   encoder_normalize_before: 0 # action='store_true', help='apply layernorm before each encoder block'
   encoder_learned_pos: 0 # action='store_true', help='use learned positional embeddings in the encoder'
 
   decoder_embed_path: '' # type=str, metavar='STR', help='path to pre-trained decoder embedding'
-  decoder_embed_dim: 512 # ', type=int, metavar='N', help='decoder embedding dimension'
-  decoder_output_dim: 512 # ', type=int, metavar='N', help='decoder output dimension')
-  decoder_input_dim: 512 # ', type=int, metavar='N', help='decoder input dimension')
-  decoder_ffn_embed_dim: 2048 # type=int, metavar='N', help='decoder embedding dimension for FFN'
-  decoder_layers: 6 # type=int, metavar='N', help='num decoder layers'
+  decoder_embed_dim: 256 # ', type=int, metavar='N', help='decoder embedding dimension'
+  decoder_output_dim: 256 # ', type=int, metavar='N', help='decoder output dimension')
+  decoder_input_dim: 256 # ', type=int, metavar='N', help='decoder input dimension')
+  decoder_ffn_embed_dim: 1024 # type=int, metavar='N', help='decoder embedding dimension for FFN'
+  decoder_layers: 2 # type=int, metavar='N', help='num decoder layers'
   decoder_attention_heads: 8 # ', type=int, metavar='N', help='num decoder attention heads')
   decoder_normalize_before: 0 # ', action='store_true', help='apply layernorm before each decoder block')
   no_decoder_final_norm: 0 # ', action='store_true', help='don\'t add an extra layernorm after the last decoder block')
@@ -198,7 +198,7 @@ optimization:
   total_num_update: 1000000 # default=1000000, type=int
 
 #  for cross entropy
-  sentence_avg: ~ # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'
+  sentence_avg: 1 # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'
 
   adam:
     adam_betas: '(0.9, 0.999)' # default='(0.9, 0.999)', metavar='B', help='betas for Adam optimizer'
@@ -254,7 +254,7 @@ eval:
   path: ~/.ncc/python_wan/summarization/data-raw/python/transformer/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
 #  path: ~/.ncc/csn_icse21/summarization/data-mmap/ruby/seq2seq/transformer/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
-  quiet: 0 # ', action='store_true', help='only print final scores'
+  quiet: 1 # ', action='store_true', help='only print final scores'
   results_path: ~/.ncc/python_wan/summarization/data-raw/python/transformer/checkpoints # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'
   model_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override model args at generation '
 

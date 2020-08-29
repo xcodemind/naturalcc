@@ -328,34 +328,31 @@ class TransformerSequenceGenerator(object):
         # 2. generate
         for j in range(max_len):
             # embed positions
-            positions = (
-                model.decoder.embed_positions(
-                    prev_output_tokens, incremental_state=None
-                )
-                if model.decoder.embed_positions is not None
-                else None
-            )
+            # positions = (
+            #     model.decoder.embed_positions(
+            #         prev_output_tokens, incremental_state=None
+            #     )
+            #     if model.decoder.embed_positions is not None
+            #     else None
+            # )
 
             # embed tokens
             prev_output_tokens_emb = model.decoder.embed_tokens(prev_output_tokens)
-            if model.decoder.project_in_dim is not None:
-                prev_output_tokens_emb = model.decoder.project_in_dim(prev_output_tokens_emb)
+            # if model.decoder.project_in_dim is not None:
+            #     prev_output_tokens_emb = model.decoder.project_in_dim(prev_output_tokens_emb)
 
-            if positions is not None:
-                prev_output_tokens_emb += positions
+            # if positions is not None:
+            #     prev_output_tokens_emb += positions
 
-            if model.decoder.layernorm_embedding is not None:
-                prev_output_tokens_emb = model.decoder.layernorm_embedding(prev_output_tokens_emb)
-
-            # prev_output_tokens_emb = F.dropout(prev_output_tokens_emb, p=model.decoder.dropout_in,
-            #                                    training=model.decoder.training)
+            # if model.decoder.layernorm_embedding is not None:
+            #     prev_output_tokens_emb = model.decoder.layernorm_embedding(prev_output_tokens_emb)
 
             # B x T x C -> T x B x C
             prev_output_tokens_emb = prev_output_tokens_emb.transpose(0, 1)
 
             self_attn_padding_mask = None
-            if model.decoder.cross_self_attention or prev_output_tokens.eq(model.decoder.padding_idx).any():
-                self_attn_padding_mask = prev_output_tokens.eq(model.decoder.padding_idx)
+            # if model.decoder.cross_self_attention or prev_output_tokens.eq(model.decoder.padding_idx).any():
+            #     self_attn_padding_mask = prev_output_tokens.eq(model.decoder.padding_idx)
 
             # decoder layers
             # attn = None
