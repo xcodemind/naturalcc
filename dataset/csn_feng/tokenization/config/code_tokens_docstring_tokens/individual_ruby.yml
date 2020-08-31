@@ -3,18 +3,14 @@ preprocess:
   source_lang:
     - code_tokens
     - docstring_tokens
-    - path
-    - path.terminals
-    - sbt
-    - traversal
-  # ~ path for dataset default. e.g.  for csn_icse21, ~/filter = ~/.ncc/csn_icse21/filter
-  trainpref: ~/.ncc/csn_icse21/filter/php/train #", metavar="FP", default=None, help="train file prefix"
-  validpref: ~/.ncc/csn_icse21/filter/php/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-  testpref:  ~/.ncc/csn_icse21/filter/php/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  # ~ path for dataset default. e.g.  for CodeSearchNet, ~/flatten = ~/.ncc/code_search_net_feng/flatten
+  trainpref: ~/.ncc/code_search_net_feng/flatten/ruby/train #", metavar="FP", default=None, help="train file prefix"
+  validpref: ~/.ncc/code_search_net_feng/flatten/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+  testpref:  ~/.ncc/code_search_net_feng/flatten/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
   align_suffix: ~ # ", metavar="FP", default=None, help="alignment file suffix"
-#  destdir: ~/.ncc/csn_icse21/summarization/data-raw/php/ #", metavar="DIR", default="data-bin", help="destination dir"
-  destdir: ~/.ncc/csn_icse21/small/summarization/data-mmap/php #", metavar="DIR", default="data-bin", help="destination dir"
+#  destdir: ~/.ncc/CodeSearchNet/summarization/data-raw/ruby/ #", metavar="DIR", default="data-bin", help="destination dir"
+  destdir: ~/.ncc/code_search_net_feng/individual/code_tokens_docstring_tokens/data-mmap/ruby #", metavar="DIR", default="data-bin", help="destination dir"
   thresholdsrc: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
   srcdict: ~
   #  nwordssrc: -1 #", metavar="N", default=-1, type=int, help="number of source words to retain"

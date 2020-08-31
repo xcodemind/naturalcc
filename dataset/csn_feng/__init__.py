@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 
+import os
 
-DATASET_NAME = 'csn_icse21'
+DATASET_NAME = 'code_search_net_feng'
 RAW_DATA_DIR = '~/.ncc/{}/raw'.format(DATASET_NAME)
 LIBS_DIR = '~/.ncc/{}/libs'.format(DATASET_NAME)
 FLATTEN_DIR = '~/.ncc/{}/flatten'.format(DATASET_NAME)
 REFINE_DIR = '~/.ncc/{}/refine'.format(DATASET_NAME)
 FILTER_DIR = '~/.ncc/{}/filter'.format(DATASET_NAME)
+
+RAW_DATA_DIR, LIBS_DIR, FLATTEN_DIR, REFINE_DIR, FILTER_DIR = \
+    map(os.path.expanduser, (RAW_DATA_DIR, LIBS_DIR, FLATTEN_DIR, REFINE_DIR, FILTER_DIR))
 
 LANGUAGES = ['ruby', 'python', 'java', 'go', 'php', 'javascript']
 MODES = ['train', 'valid', 'test']
@@ -20,13 +24,10 @@ SBT_PARENTHESES = ['(_SBT', ')_SBT']
 # for binary-AST
 NODE_TMP = 'TMP'
 
-MEANINGLESS_TOKENS = set(['(', ')', '[', ']', '{', '}', ';', '@', '#', ':', '()', '<>', '{}'])
-COMMENT_END_TOKENS = set(['{', '[', '('])
-
 import logging
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='[%(asctime)-15s] %(levelname)7s >> %(message)s (%(filename)s:%(lineno)d, %(funcName)s())',
     datefmt='%Y-%m-%d %H:%M:%S',
 )

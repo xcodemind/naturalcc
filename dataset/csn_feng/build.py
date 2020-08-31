@@ -9,7 +9,7 @@ import shutil
 from tree_sitter import Language
 
 try:
-    from dataset.csn_msra import (
+    from dataset.csn_feng import (
         LANGUAGES, RAW_DATA_DIR, LIBS_DIR,
         LOGGER,
     )

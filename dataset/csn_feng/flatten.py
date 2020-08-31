@@ -10,7 +10,7 @@ from glob import glob
 from multiprocessing import Pool, cpu_count
 
 try:
-    from dataset.csn_msra import (
+    from dataset.csn_feng import (
         LANGUAGES, MODES,
         RAW_DATA_DIR, LIBS_DIR, FLATTEN_DIR,
         LOGGER,

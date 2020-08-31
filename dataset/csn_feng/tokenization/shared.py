@@ -275,6 +275,11 @@ def main(args):
             binarize_dgl(args, input_file, dict, prefix, 0, -1)
 
     def make_dataset(vocab, input_prefix, output_prefix, lang, modality, num_workers=1):
+        if num_workers is None:
+            num_workers = cpu_count()
+        else:
+            num_workers = min(num_workers, cpu_count())
+
         in_file = file_name(input_prefix, modality)
         out_file = dest_path(output_prefix, args['preprocess']['dataset_impl'], lang, modality)
         os.makedirs(os.path.dirname(out_file), exist_ok=True)
@@ -312,10 +317,15 @@ def main(args):
 
 
 def cli_main():
-    Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('preprocess_multilingual.yml')  # train_sl
-    LOGGER.info(args_)
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
+    import argparse
+    parser = argparse.ArgumentParser(description="Generating raw/bin dataset")
+    parser.add_argument(
+        "--yaml_file", "-f", default='code_tokens_docstring_tokens/shared', type=str,
+        help="load csn_feng/tokenization/config/{yaml_file}.yml for train",
+    )
+    args = parser.parse_args()
+    LOGGER.info(args)
+    yaml_file = os.path.join(os.path.dirname(__file__), 'config', args.yaml_file)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)
@@ -323,7 +333,4 @@ def cli_main():
 
 
 if __name__ == "__main__":
-    """
-    nohup python -m dataset.csn.summarization.preprocess_multilingual > log 2>&1 &
-    """
     cli_main()

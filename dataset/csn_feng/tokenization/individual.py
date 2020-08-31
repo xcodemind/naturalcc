@@ -11,7 +11,7 @@ import os
 import ujson
 import shutil
 from collections import namedtuple
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from ncc.utils.util_graph import (build_graph, tree2dgl)
 from ncc import tasks
 from collections import Counter
@@ -182,6 +182,10 @@ def main(args):
         save_graphs(output_file + '.mmap', graph_batch, graph_labels)
 
     def make_dataset(vocab, input_prefix, output_prefix, lang, num_workers=1):
+        if num_workers is None:
+            num_workers = cpu_count()
+        else:
+            num_workers = min(num_workers, cpu_count())
         if args['preprocess']['dataset_impl'] == "raw":
             in_file = file_name(input_prefix, lang)
             out_dir = args['preprocess']['destdir']
@@ -213,14 +217,14 @@ def main(args):
 
 def cli_main():
     import argparse
-    parser = argparse.ArgumentParser(
-        description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
+    parser = argparse.ArgumentParser(description="Generating raw/bin dataset")
     parser.add_argument(
-        "--language", "-l", default='ruby', type=str, help="load {language}.yml for train",
+        "--yaml_file", "-f", default='code_tokens_docstring_tokens/individual_ruby', type=str,
+        help="load csn_feng/tokenization/config/{yaml_file}.yml for train",
     )
     args = parser.parse_args()
     LOGGER.info(args)
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', 'preprocess_multiattrs_{}.yml'.format(args.language))
+    yaml_file = os.path.join(os.path.dirname(__file__), 'config', args.yaml_file)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)
@@ -228,10 +232,4 @@ def cli_main():
 
 
 if __name__ == "__main__":
-    """
-    nohup python -m dataset.csn.summarization.preprocess_multiattrs -l ruby > log  2>&1 &
-    nohup python -m dataset.csn.summarization.preprocess_multiattrs -l go > go.log  2>&1 &
-    nohup python -m dataset.csn.summarization.preprocess_multiattrs -l java > java.log  2>&1 &
-    nohup python -m dataset.csn.summarization.preprocess_multiattrs -l javascript > javascript.log  2>&1 &
-    """
     cli_main()
