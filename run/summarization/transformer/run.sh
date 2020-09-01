@@ -15,3 +15,7 @@ nohup python -m run.summarization.transformer.eval -l java > run/summarization/t
 nohup python -m run.summarization.transformer.eval -l javascript > run/summarization/transformer/javascript.eval.log 2>&1
 nohup python -m run.summarization.transformer.eval -l go > run/summarization/transformer/go.eval.log 2>&1
 nohup python -m run.summarization.transformer.eval -l csharp > run/summarization/transformer/csharp.eval.log 2>&1
+
+
+
+nohup python -m run.summarization.transformer.train -l csharp-bpe > run/summarization/transformer/csharp-bpe.log 2>&1

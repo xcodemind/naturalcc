@@ -32,20 +32,20 @@ common:
   server_port: '' # type=str, default="", help="For distant debugging."
 
 dataset:
-  num_workers: 0 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
+  num_workers: 1 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
   skip_invalid_size_inputs_valid_test: 0 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
-  max_sentences: 16 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  max_sentences: 64 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
-  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
-#  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
+#  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
+  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
   train_subset: train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
   valid_subset: valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
   validate_interval: 1 # type=int, default=1, metavar='N', help='validate every N epochs'
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
-  disable_validation: 1 # action='store_true',help='disable validation'
+  disable_validation: 0 # action='store_true',help='disable validation'
   max_tokens_valid: ~ # type=int, metavar='N', help='maximum number of tokens in a validation batch (defaults to --max-tokens)'
-  max_sentences_valid: 16 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
+  max_sentences_valid: 128 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
   curriculum: 0 # default=0, type=int, metavar='N', help='don\'t shuffle batches for first N epochs'
   gen_subset: test # default='test', metavar='SPLIT', help='data subset to generate (train, valid, test)'
   num_shards: 1 # default=1, type=int, metavar='N', help='shard generation over N shards'
@@ -59,7 +59,7 @@ dataset:
 #  per_gpu_eval_batch_size: 4 # default=4, type=int, help="Batch size per GPU/CPU for evaluation."
 
 distributed_training:
-  distributed_world_size: 4 # default=max(1, torch.cuda.device_count()
+  distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
   distributed_rank: 0 # default=0, type=int, help='rank of the current worker'
   distributed_backend: nccl # default='nccl', type=str, help='distributed backend'
   distributed_init_method: ~ # default=None, type=str,help='typically tcp://hostname:port that will be used to establish initial connetion'
@@ -83,13 +83,13 @@ distributed_training:
 
 
 task:
-  data: ~/.ncc/python_wan/summarization/data-raw/python # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/csn_icse21/summarization/data-mmap/ruby # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 
   # for summarization
-  source_lang: code_tokens_bak
-  target_lang: docstring_bak
+  source_lang: code_tokens
+  target_lang: docstring_tokens
   load_alignments: 0 #', action='store_true', help='load the binarized alignments'
-  left_pad_source: 0 #', default='True', type=str, metavar='BOOL', help='pad the source on the left'
+  left_pad_source: 1 #', default='True', type=str, metavar='BOOL', help='pad the source on the left'
   left_pad_target: 0 #', default='False', tydecoder_out_embed_dimpe=str, metavar='BOOL', help='pad the target on the left'
   max_source_positions: 1024 #', default=1024, type=int, metavar='N', help='max number of tokens in the source sequence'
   max_target_positions: 1024 #', default=1024, type=int, metavar='N', help='max number of tokens in the target sequence'
@@ -105,14 +105,14 @@ task:
   eval_bleu_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
   eval_bleu_print_samples: 0 #', action='store_true', help='print sample generations during validation'
 
-#  # rouge
-#  eval_rouge: 0
-#  eval_rouge_type: rouge-1 # rouge-1, rouge-2, rouge-L
-#  eval_rouge_detok: space #', type=str, default="space", help='detokenizer before computing rouge (e.g., "moses"); required if using --eval-rouge; use "space" to disable detokenization; see fairseq.data.encoders for other options'
-#  eval_rouge_detok_args: ~ #', type=str, metavar='JSON', help='args for building the tokenizer, if needed'
-#  eval_rouge_remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE before computing rouge'
-#  eval_rouge_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
-#  eval_rouge_print_samples: 0 #', action='store_true', help='print sample generations during validation'
+  # rouge
+  eval_rouge: 0
+  eval_rouge_type: rouge-1 # rouge-1, rouge-2, rouge-L
+  eval_rouge_detok: space #', type=str, default="space", help='detokenizer before computing rouge (e.g., "moses"); required if using --eval-rouge; use "space" to disable detokenization; see fairseq.data.encoders for other options'
+  eval_rouge_detok_args: ~ #', type=str, metavar='JSON', help='args for building the tokenizer, if needed'
+  eval_rouge_remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE before computing rouge'
+  eval_rouge_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
+  eval_rouge_print_samples: 0 #', action='store_true', help='print sample generations during validation'
 
   append_eos_to_target: 1
 
@@ -187,7 +187,7 @@ optimization:
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
     - 1
   lr: # '--learning-rate', default='0.25', type=eval_str_list, metavar='LR_1,LR_2,...,LR_N', help='learning rate for the first N epochs; all epochs >N using LR_N (note: this may be interpreted differently depending on --lr-scheduler)'
-    - 1e-4
+    - 0.001
   min_lr: -1 # default=-1, type=float, metavar='LR', help='stop training when the learning rate reaches this minimum'
   use_bmuf: 1 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
 
@@ -198,7 +198,7 @@ optimization:
   total_num_update: 1000000 # default=1000000, type=int
 
 #  for cross entropy
-  sentence_avg: 1 # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'
+  sentence_avg: ~ # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'
 
   adam:
     adam_betas: '(0.9, 0.999)' # default='(0.9, 0.999)', metavar='B', help='betas for Adam optimizer'
@@ -239,7 +239,7 @@ checkpoint:
   best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
   patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
-  save_dir: ~/.ncc/python_wan/summarization/data-raw/python/transformer/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
+  save_dir: ~/.ncc/csn_icse21/summarization/data-mmap/ruby/transformer/checkpoints_leftpad # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
   model_name_or_path: ~ # default=None, type=str, help="The model checkpoint for weights initialization. Leave None if you want to train a model from scratch.",
   cache_dir: ~ # default=None, type=str, help="Optional directory to store the pre-trained models downloaded from s3 (instead of the default one)",
@@ -251,16 +251,16 @@ checkpoint:
 
 
 eval:
-  path: ~/.ncc/python_wan/summarization/data-raw/python/transformer/checkpoints/checkpoint1.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  path: ~/.ncc/csn_icse21/summarization/data-mmap/ruby/transformer/checkpoints_leftpad/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
 #  path: ~/.ncc/csn_icse21/summarization/data-mmap/ruby/seq2seq/transformer/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
-  quiet: 1 # ', action='store_true', help='only print final scores'
-  results_path: ~/.ncc/python_wan/summarization/data-raw/python/transformer/checkpoints # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'
+  quiet: 0 # ', action='store_true', help='only print final scores'
+  results_path: ~ # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'
   model_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override model args at generation '
 
-  max_sentences: 16 # evaluation batch size, because while evaluation, it will not cost much ram, we can increase the batch size
+  max_sentences: 256 # evaluation batch size, because while evaluation, it will not cost much ram, we can increase the batch size
   beam: 5 # ', default=5, type=int, metavar='N', help='beam size')
-  nbest: 5 # ', default=1, type=int, metavar='N', help='number of hypotheses to output')
+  nbest: 1 # ', default=1, type=int, metavar='N', help='number of hypotheses to output')
   max_len_a: 0 #', default=0, type=float, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))
   max_len_b: 50 #', default=200, type=int, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))
   min_len: 1 # ', default=1, type=float, metavar='N', help=('minimum generation length'))
@@ -275,7 +275,7 @@ eval:
   score_reference: 0 # ', action='store_true', help='just score the reference translation')
   prefix_size: 0 # ', default=0, type=int, metavar='PS', help='initialize generation by target prefix of given length')
   no_repeat_ngram_size: 0 # ', default=0, type=int, metavar='N', help='ngram blocking such that this size ngram cannot be repeated in the generation')
-  sampling: 1 # ', action='store_true', help='sample hypotheses instead of using beam search')
+  sampling: 0 # ', action='store_true', help='sample hypotheses instead of using beam search')
   sampling_topk: -1 # ', default=-1, type=int, metavar='PS', help='sample from top K likely next words instead of all words')
   sampling_topp: -1 # ', default=-1.0, type=float, metavar='PS', help='sample from the smallest set whose cumulative probability mass exceeds p for next words')
   temperature: 1. #', default=1., type=float, metavar='N', help='temperature for generation')
