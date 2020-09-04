@@ -1,0 +1,29 @@
+
+
+## Step 1: Run sentencepiece to obtain the vocabulary model
+
+```
+python -m dataset.augmented_javascript.run_sentencepiece
+```
+
+
+## Step 2: Sentencepiece-format vocabulary to Fairseq-format vocabulary
+
+```
+cut -f1 csnjs_8k_9995p_unigram_url.vocab | tail -n +9 | sed "s/$/ 100/g" > csnjs_8k_9995p_unigram_url.dict.txt
+```
+
+
+
+## Step 3: Preprocessing
+> Note: currently only 100 samples are preprocessed for debugging. Modify around line 116 of ```preprocess.py```.
+
+For augmented javascript
+```
+python -m dataset.augmented_javascript.preprocess_augmented
+```
+
+For javascript without augmentation
+```
+python -m dataset.augmented_javascript.preprocess
+```
