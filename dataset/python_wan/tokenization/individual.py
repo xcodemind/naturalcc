@@ -41,7 +41,7 @@ def binarize(args: Dict, filename: str, dict: Dictionary, in_file: str, attr: st
     return res
 
 
-def main(args, portion):
+def main(args):
     task = tasks.get_task(args['preprocess']['task'])
     LOGGER.info('mkdir for {} task'.format(args['preprocess']['task']))
     os.makedirs(args['preprocess']['destdir'], exist_ok=True)
@@ -89,10 +89,6 @@ def main(args, portion):
             dict_filename = dict_path(attr)
             if os.path.exists(dict_filename):
                 attr_dict = task.load_dictionary(dict_filename)
-            elif not os.path.exists(dict_filename) and portion < 1.0:
-                # if portion < 1.0, copy dicts from directory where portion=1.0
-                all_filename = dict_filename.replace('python-{}'.format(portion), 'python')
-                attr_dict = task.load_dictionary(all_filename)
             else:
                 assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
                 attr_dict = build_dictionary([train_path(attr)], attr, src=True)
@@ -224,18 +220,16 @@ def cli_main():
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        "--portion", "-p", default=1.0, type=float, help="portion of Python_wan train data",
+        "--yaml_file", "-f", default='code_tokens_docstring_tokens/individual', type=str,
+        help="load python_wan/tokenization/config/{yaml_file}.yml for train",
     )
     args = parser.parse_args()
     LOGGER.info(args)
-    # args.portion = 0.01  # for debug
-    portion = args.portion
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config',
-                             'preprocess_multiattrs_python{}.yml'.format('' if portion == 1.0 else args.portion))
+    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.yaml_file))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)
-    main(args, portion)
+    main(args)
 
 
 if __name__ == "__main__":
