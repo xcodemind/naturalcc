@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 
+import os
 
-DATASET_NAME = 'CodeSearchNet'
+DATASET_NAME = 'code_search_net'
 RAW_DATA_DIR = '~/.ncc/{}/raw'.format(DATASET_NAME)
 LIBS_DIR = '~/.ncc/{}/libs'.format(DATASET_NAME)
 FLATTEN_DIR = '~/.ncc/{}/flatten'.format(DATASET_NAME)
 REFINE_DIR = '~/.ncc/{}/refine'.format(DATASET_NAME)
 FILTER_DIR = '~/.ncc/{}/filter'.format(DATASET_NAME)
+
+RAW_DATA_DIR, LIBS_DIR, FLATTEN_DIR, REFINE_DIR, FILTER_DIR = \
+    map(os.path.expanduser, (RAW_DATA_DIR, LIBS_DIR, FLATTEN_DIR, REFINE_DIR, FILTER_DIR))
 
 LANGUAGES = ['ruby', 'python', 'java', 'go', 'php', 'javascript']
 MODES = ['train', 'valid', 'test']
