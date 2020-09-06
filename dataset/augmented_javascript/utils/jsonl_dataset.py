@@ -24,11 +24,15 @@ _fix_function_crop_regexes = [
 ]
 _valid_identifier_regex = re.compile(r"^[a-zA-Z_$][0-9a-zA-Z_$]*$")
 _url_regex = re.compile(r"https?://\S+\b")
-
+_newline_regex = re.compile(r"\n")
+_whitespace_regex = re.compile(r"[ \t\n]+")
 
 def normalize_docstring(docstring: str):
     # Substitute urls with [URL]
-    return _url_regex.sub("[URL]", docstring)
+    # docstring = _newline_regex.sub(r" [EOL]", docstring)
+    # docstring = _whitespace_regex.sub(" ", docstring)
+    docstring = _url_regex.sub("[URL]", docstring)
+    return docstring
 
 
 def _fix_json_dict(json_dict, require_fields, src_function_key, src_method_name_key):

@@ -46,7 +46,7 @@ if __name__ == "__main__":
     parser.add_argument("--format", type=str, default='piece', help='id(num)/piece(str)')
     parser.add_argument("--vocab-size", type=int, default=8000, help='token dictionary size')
     parser.add_argument("--src-dir", type=str, default='~/.ncc/augmented_javascript/raw', help='source data')
-    parser.add_argument("--tgt-dir", type=str, default='~/.ncc/augmented_javascript/contracode/data-raw', help='save dir for sentencepiece bpe models or save files')
+    parser.add_argument("--tgt-dir", type=str, default='~/.ncc/augmented_javascript/contracode/data-raw/augmented', help='save dir for sentencepiece bpe models or save files')
     parser.add_argument("--model-type", type=str, default='unigram',  help='source data')
     parser.add_argument("--model-prefix", type=str, default='csnjs_8k_9995p_unigram_url',  help='source data')
 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     input = os.path.join(args.src_dir, 'javascript_dedupe_definitions_nonoverlap_v2_train.jsonl')
     output = os.path.join(args.src_dir, 'javascript_dedupe_definitions_nonoverlap_v2_train.txt')
     # 1. make corpus
-    # make_corpus(input, output)
+    make_corpus(input, output)
     # exit()
     # 2. spm_train
     model_prefix = os.path.join(args.tgt_dir, args.model_prefix)

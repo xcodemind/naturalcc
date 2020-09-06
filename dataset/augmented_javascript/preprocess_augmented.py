@@ -114,17 +114,16 @@ def main(args):
             examples = list(filter(lambda ex: len(ex) >= min_alternatives, examples))
             with open(dest_path(output_prefix+'.sp.json', lang=None), 'w', encoding="utf-8") as output_file:
                 for example in examples[0: 100]:  # TODO only for debug
-                    # programs = []
-                    # for program in example:
-                    program = example[0]
-                    program = normalize_program(program)
-                    program = sp.EncodeAsPieces(program)
-                    # programs.append(program)
-                    print(ujson.dumps(program), file=output_file)
+                    programs = []
+                    for program in example:
+                        program = normalize_program(program)
+                        program = sp.EncodeAsPieces(program)
+                        programs.append(program)
+                    print(ujson.dumps(programs), file=output_file)
 
     def make_all(lang, vocab, sp):
         if args['preprocess']['trainpref']:
-            make_dataset(vocab, sp, args['preprocess']['trainpref'], "train", lang,
+            make_dataset(vocab, sp, args['preprocess']['trainpref'], "javascript_augmented_debug", lang,
                          num_workers=args['preprocess']['workers'])
         if args['preprocess']['validpref']:
             for k, validpref in enumerate(args['preprocess']['validpref'].split(",")):
@@ -142,7 +141,7 @@ def main(args):
 
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('preprocess.yml')  # train_sl
+    args_ = Argues('preprocess_augmented.yml')  # train_sl
     LOGGER.info(args_)
     yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))

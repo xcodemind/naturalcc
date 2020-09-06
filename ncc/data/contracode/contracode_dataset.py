@@ -119,7 +119,7 @@ class ContraCodeDataset(FairseqDataset):
             # return self.program2tensor(src_item[0])
             example = {
                 'id': index,
-                'code_q': src_item[0]
+                'code_q': src_item#[0]
             }
         elif self.program_mode == "augmentation":
             i = np.random.randint(n_alt)
@@ -195,6 +195,10 @@ class ContraCodeDataset(FairseqDataset):
         filtering a dataset with ``--max-positions``."""
         # return (self.src_sizes[index], self.tgt_sizes[index] if self.tgt_sizes is not None else 0)
         return self.src_sizes[index]
+
+    @property
+    def sizes(self):
+        return self.src_sizes
 
     def ordered_indices(self):
         """Return an ordered list of indices. Batches will be constructed based
