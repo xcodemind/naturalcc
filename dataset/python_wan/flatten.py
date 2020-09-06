@@ -10,7 +10,7 @@ def code(raw_code_file, refined_code_file, dst_file):
     with open(raw_code_file, 'r') as raw_reader:
         raw_codes = {}
         for line in raw_reader:
-            raw_code = ujson.loads(line)
+            raw_code = line
             raw_code = raw_code[raw_code.find('def '):]
             func_name = raw_code[:raw_code.find('(')][4:].strip()
             raw_codes[func_name] = line.rstrip('\n')
@@ -44,25 +44,24 @@ def docstring_tokens(src_file, dst_file):
 
 if __name__ == '__main__':
     lang = 'python'
-    _RAW_DATA_DIR, _FLATTEN_DIR = os.path.expanduser(RAW_DATA_DIR), os.path.expanduser(FLATTEN_DIR)
     for mode in MODES:
         # code
-        raw_code_file = os.path.join(_RAW_DATA_DIR, 'code.json')
-        refined_code_file = os.path.join(_RAW_DATA_DIR, mode, 'code.original')
-        dst_file = os.path.join(_FLATTEN_DIR, lang, '{}.code'.format(mode))
+        raw_code_file = os.path.join(RAW_DATA_DIR, 'data_ps.declbodies')
+        refined_code_file = os.path.join(RAW_DATA_DIR, mode, 'code.original')
+        dst_file = os.path.join(FLATTEN_DIR, lang, '{}.code'.format(mode))
         code(raw_code_file, refined_code_file, dst_file)
 
         # code_tokens
-        src_file = os.path.join(_RAW_DATA_DIR, mode, 'code.original_subtoken')
-        dst_file = os.path.join(_FLATTEN_DIR, lang, '{}.code_tokens'.format(mode))
+        src_file = os.path.join(RAW_DATA_DIR, mode, 'code.original_subtoken')
+        dst_file = os.path.join(FLATTEN_DIR, lang, '{}.code_tokens'.format(mode))
         code_tokens(src_file, dst_file)
 
         # docstring
-        src_file = os.path.join(_RAW_DATA_DIR, mode, 'javadoc.original')
-        dst_file = os.path.join(_FLATTEN_DIR, lang, '{}.docstring'.format(mode))
+        src_file = os.path.join(RAW_DATA_DIR, mode, 'javadoc.original')
+        dst_file = os.path.join(FLATTEN_DIR, lang, '{}.docstring'.format(mode))
         docstring(src_file, dst_file)
 
         # docstring_tokens
-        src_file = os.path.join(_RAW_DATA_DIR, mode, 'javadoc.original')
-        dst_file = os.path.join(_FLATTEN_DIR, lang, '{}.docstring_tokens'.format(mode))
+        src_file = os.path.join(RAW_DATA_DIR, mode, 'javadoc.original')
+        dst_file = os.path.join(FLATTEN_DIR, lang, '{}.docstring_tokens'.format(mode))
         docstring_tokens(src_file, dst_file)

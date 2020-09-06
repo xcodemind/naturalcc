@@ -13,7 +13,7 @@ else
     curl -c ./cookie -s -L "https://drive.google.com/uc?export=download&id=${fileid}" > /dev/null
     curl -Lb ./cookie "https://drive.google.com/uc?export=download&confirm=`awk '/download/ {print $NF}' ./cookie`&id=${fileid}" -o ${FILE}
     rm ./cookie
-    unzip ${FILE} -d ${DIR} # && rm ${FILE}
+    unzip ${FILE} -d ${DIR} && rm ${FILE}
 fi
 
 # rename dev to valid
