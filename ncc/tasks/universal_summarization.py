@@ -103,6 +103,8 @@ def load_langpair_dataset(
     else:
         tgt_dataset = None
 
+    LOGGER.info('src data: {}, tgt data: {}'.format(len(src_dataset), len(tgt_dataset)))
+
     if is_distill and is_train:  # distill only for train
         topk_idx_dataset = ConcatDataset(topk_idxs)
         topk_probs_dataset = ConcatDataset(topk_probs)
