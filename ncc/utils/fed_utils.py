@@ -275,12 +275,13 @@ def gen_outputs(args, task, trainer):
         dataset=task.dataset('train'),
         max_tokens=args['dataset']['max_tokens'],
         max_sentences=args['dataset']['max_sentences_valid'],
+        # max_sentences=16,
         max_positions=utils.resolve_max_positions(
             task.max_positions(),
             trainer.get_model().max_positions(),
         ),
         ignore_invalid_inputs=args['dataset']['skip_invalid_size_inputs_valid_test'],
-        required_batch_size_multiple=8,
+        # required_batch_size_multiple=8,
         seed=args['common']['seed'],
         num_shards=args['distributed_training']['distributed_world_size'],
         shard_id=args['distributed_training']['distributed_rank'],
@@ -313,6 +314,7 @@ def save_expert_outputs(args, task, trainer):
     expert_outputs = gen_outputs(args, task, trainer)
     output_path = os.path.join(args['checkpoint']['save_dir'],
                                'train_output.json.{}'.format(args['distributed_training']['distributed_rank']))
+    print('Save topk output at {}'.format(output_path))
     json.dump(expert_outputs, open(output_path, 'w'))
     # distributed_utils.barrier(args, 'save_expert_outputs')
     if distributed_utils.is_master(args):
@@ -325,7 +327,9 @@ def save_expert_outputs(args, task, trainer):
                                                args['task']['source_lang'],
                                                args['task']['target_lang'])
         )
-        os.system('cp {} {}'.format(val_bleu_path1, val_bleu_path2))
+        cmd = 'cp {} {}'.format(val_bleu_path1, val_bleu_path2)
+        print(cmd)
+        os.system(cmd)
 
         for i in range(args['distributed_training']['distributed_world_size']):
             output_path = os.path.join(args['checkpoint']['save_dir'], 'train_output.json.{}'.format(i))
