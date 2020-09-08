@@ -381,6 +381,11 @@ class FairseqTask(object):
 
         return SequenceCompletor()
 
+    def build_type_predictor(self, models, args):
+        from ncc.eval.type_predictor import TypePredictor
+
+        return TypePredictor()
+
     def train_step(
         self, sample, model, criterion, optimizer, update_num, ignore_grad=False
     ):
