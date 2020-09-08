@@ -35,7 +35,8 @@ def main(args):
 
     if args['eval']['results_path'] is not None:
         os.makedirs(args['eval']['results_path'], exist_ok=True)
-        output_path = os.path.join(args['eval']['results_path'], 'generate-{}.txt'.format(args['dataset']['gen_subset']))
+        output_path = os.path.join(args['eval']['results_path'],
+                                   'generate-{}.txt'.format(args['dataset']['gen_subset']))
         with open(output_path, 'w', buffering=1) as h:
             return _main(args, h)
     else:
@@ -128,7 +129,7 @@ def _main(args, output_file):
         gen_timer.start()
         hypos = task.inference_step(generator, models, sample)
         # gen_out = task.sequence_generator.generate(model, sample)
-        num_generated_tokens = sum(len(h[0]['tokens']) for h in hypos)  #TODO: warning
+        num_generated_tokens = sum(len(h[0]['tokens']) for h in hypos)  # TODO: warning
         gen_timer.stop(num_generated_tokens)
 
         for i, sample_id in enumerate(sample['id'].tolist()):
@@ -168,15 +169,23 @@ def _main(args, output_file):
 
                 print('H-{}\t{}'.format(sample_id, hypo_str), file=output_file)
 
-    bleu, rouge_l, meteor = eval_utils.eval_accuracies(hypotheses, references, filename='pred.txt')
-    LOGGER.info('BLEU: {}\t ROUGE-L: {}\t METEOR: {}'.format(bleu, rouge_l, meteor))
+    filename = os.path.join(os.path.dirname(__file__), 'config', 'transformer.info')
+    LOGGER.info('write predicted file at {}'.format(filename))
+    bleu, rouge_l, meteor = eval_utils.eval_accuracies(hypotheses, references, filename=filename)
+    LOGGER.info('BLEU: {:.2f}\t ROUGE-L: {:.2f}\t METEOR: {:.2f}'.format(bleu, rouge_l, meteor))
 
 
 def cli_main():
-    Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('python-wan.yml')  # train_sl
-    LOGGER.info(args_)
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
+    parser.add_argument(
+        "--language", "-l", default='python_wan', type=str, help="load {language}.yml for train",
+    )
+    args = parser.parse_args()
+    # Argues = namedtuple('Argues', 'yaml')
+    # args_ = Argues('ruby.yml')
+    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.language))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)

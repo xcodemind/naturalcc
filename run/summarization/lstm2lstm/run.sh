@@ -1,17 +1,35 @@
 #!/usr/bin/env bash
 
-nohup python -m run.summarization.lstm2lstm.train -l ruby > run/summarization/lstm2lstm/ruby.log 2>&1
-nohup python -m run.summarization.lstm2lstm.train -l python > run/summarization/lstm2lstm/python.log 2>&1
-nohup python -m run.summarization.lstm2lstm.train -l php > run/summarization/lstm2lstm/php.log 2>&1
-nohup python -m run.summarization.lstm2lstm.train -l java > run/summarization/lstm2lstm/java.log 2>&1
-nohup python -m run.summarization.lstm2lstm.train -l javascript > run/summarization/lstm2lstm/javascript.log 2>&1
-nohup python -m run.summarization.lstm2lstm.train -l go > run/summarization/lstm2lstm/go.log 2>&1
-nohup python -m run.summarization.lstm2lstm.train -l csharp > run/summarization/lstm2lstm/csharp.log 2>&1
 
-nohup python -m run.summarization.lstm2lstm.eval -l ruby > run/summarization/lstm2lstm/ruby.eval.log 2>&1
-nohup python -m run.summarization.lstm2lstm.eval -l php > run/summarization/lstm2lstm/php.eval.log 2>&1
-nohup python -m run.summarization.lstm2lstm.eval -l python > run/summarization/lstm2lstm/python.eval.log 2>&1
-nohup python -m run.summarization.lstm2lstm.eval -l java > run/summarization/lstm2lstm/java.eval.log 2>&1
-nohup python -m run.summarization.lstm2lstm.eval -l javascript > run/summarization/lstm2lstm/javascript.eval.log 2>&1
-nohup python -m run.summarization.lstm2lstm.eval -l go > run/summarization/lstm2lstm/go.eval.log 2>&1
-nohup python -m run.summarization.lstm2lstm.eval -l csharp > run/summarization/lstm2lstm/csharp.eval.log 2>&1
+nohup python -m run.summarization.lstm2lstm.train -l python_wan > run/summarization/lstm2lstm/python_wan.log 2>&1
+python -m run.summarization.lstm2lstm.eval -l python_wan
+
+nohup python -m run.summarization.lstm2lstm.train -l python_wan0.8 > run/summarization/lstm2lstm/python_wan0.8.log 2>&1
+python -m run.summarization.lstm2lstm.eval -l python_wan0.8
+
+nohup python -m run.summarization.lstm2lstm.train -l python_wan0.7 > run/summarization/lstm2lstm/python_wan0.7.log 2>&1
+python -m run.summarization.lstm2lstm.eval -l python_wan0.7
+
+nohup python -m run.summarization.lstm2lstm.train -l python_wan0.6 > run/summarization/lstm2lstm/python_wan0.6.log 2>&1
+python -m run.summarization.lstm2lstm.eval -l python_wan0.6
+
+nohup python -m run.summarization.lstm2lstm.train -l python_wan0.5 > run/summarization/lstm2lstm/python_wan0.5.log 2>&1
+python -m run.summarization.lstm2lstm.eval -l python_wan0.5
+
+nohup python -m run.summarization.lstm2lstm.train -l python_wan0.4 > run/summarization/lstm2lstm/python_wan0.4.log 2>&1
+python -m run.summarization.lstm2lstm.eval -l python_wan0.4
+
+nohup python -m run.summarization.lstm2lstm.train -l python_wan0.3 > run/summarization/lstm2lstm/python_wan0.3.log 2>&1
+python -m run.summarization.lstm2lstm.eval -l python_wan0.3
+
+nohup python -m run.summarization.lstm2lstm.train -l python_wan0.2 > run/summarization/lstm2lstm/python_wan0.2.log 2>&1
+python -m run.summarization.lstm2lstm.eval -l python_wan0.2
+
+nohup python -m run.summarization.lstm2lstm.train -l python_wan0.1 > run/summarization/lstm2lstm/python_wan0.1.log 2>&1
+python -m run.summarization.lstm2lstm.eval -l python_wan0.1
+
+nohup python -m run.summarization.lstm2lstm.train -l python_wan0.05 > run/summarization/lstm2lstm/python_wan0.05.log 2>&1
+python -m run.summarization.lstm2lstm.eval -l python_wan0.05
+
+nohup python -m run.summarization.lstm2lstm.train -l python_wan0.01 > run/summarization/lstm2lstm/python_wan0.01.log 2>&1
+python -m run.summarization.lstm2lstm.eval -l python_wan0.01
