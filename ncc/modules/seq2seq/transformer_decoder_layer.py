@@ -30,7 +30,8 @@ class TransformerDecoderLayer(nn.Module):
     ):
         super().__init__()
         self.embed_dim = args['model']['decoder_embed_dim']
-        self.cross_self_attention = args['model']['cross_self_attention']    # getattr(args, "cross_self_attention", False)
+        self.cross_self_attention = args['model'][
+            'cross_self_attention']  # getattr(args, "cross_self_attention", False)
         self.self_attn = MultiheadAttention(
             embed_dim=self.embed_dim,
             num_heads=args['model']['decoder_attention_heads'],
@@ -38,15 +39,16 @@ class TransformerDecoderLayer(nn.Module):
             add_bias_kv=add_bias_kv,
             add_zero_attn=add_zero_attn,
             self_attention=not self.cross_self_attention,
+            maximum_relative_position=args['model']['decoder_max_relative_len'],
         )
         self.dropout = args['model']['dropout']
         self.activation_fn = utils.get_activation_fn(
-            activation= args['model']['activation_fn']    # getattr(args, "activation_fn", "relu")
+            activation=args['model']['activation_fn']  # getattr(args, "activation_fn", "relu")
         )
-        self.activation_dropout = args['model']['activation_dropout']     # getattr(args, "activation_dropout", 0)
+        self.activation_dropout = args['model']['activation_dropout']  # getattr(args, "activation_dropout", 0)
         if self.activation_dropout == 0:
             # for backwards compatibility with models that use args.relu_dropout
-            self.activation_dropout = args['model']['relu_dropout']      # getattr(args, "relu_dropout", 0)
+            self.activation_dropout = args['model']['relu_dropout']  # getattr(args, "relu_dropout", 0)
         self.normalize_before = args['model']['decoder_normalize_before']
 
         # use layerNorm rather than FusedLayerNorm for exporting.
@@ -62,8 +64,8 @@ class TransformerDecoderLayer(nn.Module):
             self.encoder_attn = MultiheadAttention(
                 self.embed_dim,
                 args['model']['decoder_attention_heads'],
-                kdim=args['model']['encoder_embed_dim'],  #getattr(args, "encoder_embed_dim", None),
-                vdim= args['model']['encoder_embed_dim'],  #getattr(args, "encoder_embed_dim", None),
+                kdim=args['model']['encoder_embed_dim'],  # getattr(args, "encoder_embed_dim", None),
+                vdim=args['model']['encoder_embed_dim'],  # getattr(args, "encoder_embed_dim", None),
                 dropout=args['model']['attention_dropout'],
                 encoder_decoder_attention=True,
             )

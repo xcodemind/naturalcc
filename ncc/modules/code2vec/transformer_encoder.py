@@ -40,8 +40,10 @@ class TransformerEncoder(FairseqEncoder):
 
         self.embed_tokens = embed_tokens
 
+        # log: args['model']['no_scale_embedding']=1 => false
         self.embed_scale = 1.0 if args['model']['no_scale_embedding'] else math.sqrt(embed_dim)
 
+        # log: SinusoidalPositionalEmbedding => None
         self.embed_positions = (
             PositionalEmbedding(
                 args['model']['max_source_positions'],
@@ -49,12 +51,11 @@ class TransformerEncoder(FairseqEncoder):
                 self.padding_idx,
                 learned=args['model']['encoder_learned_pos'],
             )
-            if not args['model']['no_token_positional_embeddings']
+            if not args['model']['encoder_positional_embeddings']
             else None
         )
 
-        self.layer_wise_attention = args['model'][
-            'layer_wise_attention']  # getattr(args, "layer_wise_attention", False)
+        self.layer_wise_attention = args['model']['layer_wise_attention']
 
         self.layers = nn.ModuleList([])
         self.layers.extend(
@@ -74,10 +75,6 @@ class TransformerEncoder(FairseqEncoder):
     def forward_embedding(self, src_tokens):
         # embed tokens and positions
         x = embed = self.embed_scale * self.embed_tokens(src_tokens)
-        # if self.lng_embed is not None:
-        #     x += self.lng_embed(lng[:, 0:1])
-        #     if not self.args.decoder_lng_embed:
-        #         x += self.lng_embed(lng[:, 1:2] + self.lng_len)
         if self.embed_positions is not None:
             x = embed + self.embed_positions(src_tokens)
         if self.layernorm_embedding is not None:
@@ -125,6 +122,7 @@ class TransformerEncoder(FairseqEncoder):
         encoder_padding_mask = src_tokens.eq(self.padding_idx)
         if not encoder_padding_mask.any():
             encoder_padding_mask = None
+        # encoder_padding_mask = None  # debug neural transformer
 
         encoder_states = [] if return_all_hiddens else None
 

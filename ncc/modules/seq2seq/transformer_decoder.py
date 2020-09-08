@@ -61,7 +61,7 @@ class TransformerDecoder(FairseqIncrementalDecoder):
                 self.padding_idx,
                 learned=args['model']['decoder_learned_pos'],
             )
-            if not args['model']['no_token_positional_embeddings']
+            if not args['model']['decoder_positional_embeddings']
             else None
         )
 

@@ -31,6 +31,7 @@ class TransformerEncoderLayer(nn.Module):
             args['model']['encoder_attention_heads'],
             dropout=args['model']['attention_dropout'],
             self_attention=True,
+            maximum_relative_position=args['model']['encoder_max_relative_len']
         )
         self.self_attn_layer_norm = LayerNorm(self.embed_dim)
         self.dropout = args['model']['dropout']

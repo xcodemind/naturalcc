@@ -216,18 +216,18 @@ class MultiheadAttention(nn.Module):
     """
 
     def __init__(
-            self,
-            embed_dim,
-            num_heads,
-            kdim=None,
-            vdim=None,
-            dropout=0.0,
-            bias=True,
-            add_bias_kv=False,
-            add_zero_attn=False,
-            self_attention=False,
-            encoder_decoder_attention=False,
-            maximum_relative_position=None,
+        self,
+        embed_dim,
+        num_heads,
+        kdim=None,
+        vdim=None,
+        dropout=0.0,
+        bias=True,
+        add_bias_kv=False,
+        add_zero_attn=False,
+        self_attention=False,
+        encoder_decoder_attention=False,
+        maximum_relative_position=None,
     ):
         super().__init__()
         self.embed_dim = embed_dim
@@ -239,7 +239,7 @@ class MultiheadAttention(nn.Module):
         self.dropout = dropout
         self.head_dim = embed_dim // num_heads
         assert (
-                self.head_dim * num_heads == self.embed_dim
+            self.head_dim * num_heads == self.embed_dim
         ), "embed_dim must be divisible by num_heads"
         self.scaling = self.head_dim ** -0.5
 
@@ -269,7 +269,7 @@ class MultiheadAttention(nn.Module):
         # https://github.com/OpenNMT/OpenNMT-tf/blob/7ef62c8781e7f582af33ea278cb9f03223f2a455/opennmt/layers/transformer.py
         self.maximum_relative_position = maximum_relative_position
         # self.maximum_relative_position = 5 # for debug
-        if self.maximum_relative_position is not None:
+        if self.maximum_relative_position:
             self.relative_position_keys = nn.Embedding(2 * self.maximum_relative_position + 1, self.head_dim)
             self.relative_position_values = nn.Embedding(2 * self.maximum_relative_position + 1, self.head_dim)
 
@@ -311,20 +311,23 @@ class MultiheadAttention(nn.Module):
         arange = torch.arange(length)
         distance = torch.unsqueeze(arange, dim=0) - torch.unsqueeze(arange, dim=1)
         distance = torch.clamp(distance, -max_position, max_position)
-        distance += max_position
+        distance = distance + max_position
         return distance
 
-    def matmul_with_relative_representations(self, query: torch.Tensor, relative_pos: torch.Tensor):
+    def matmul_with_relative_representations(self, query: torch.Tensor, relative_pos: torch.Tensor,
+                                             transpose=True):
         """
 
         Args:
-            query: [tgt_len, bsz * head, head_dim]
-            relative_pos: [tgt_len, tgt_len, head_dim]
+            query: [bsz * head, tgt_len, head_dim]
+            relative_pos: [bsz * head, tgt_len, head_dim]
 
         Returns:
             [bsz * head, tgt_len, tgt_len]
         """
-        Q_RP = torch.matmul(query.transpose(0, 1), relative_pos.transpose(1, 2))
+        if transpose:
+            relative_pos = relative_pos.transpose(1, 2)
+        Q_RP = torch.matmul(query.transpose(0, 1), relative_pos)
         Q_RP = Q_RP.transpose(0, 1)
         return Q_RP
 
@@ -352,17 +355,17 @@ class MultiheadAttention(nn.Module):
             nn.init.xavier_normal_(self.bias_v)
 
     def forward(
-            self,
-            query,
-            key: Optional[Tensor],
-            value: Optional[Tensor],
-            key_padding_mask: Optional[Tensor] = None,
-            incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
-            need_weights: bool = True,
-            static_kv: bool = False,
-            attn_mask: Optional[Tensor] = None,
-            before_softmax: bool = False,
-            need_head_weights: bool = False,
+        self,
+        query,
+        key: Optional[Tensor],
+        value: Optional[Tensor],
+        key_padding_mask: Optional[Tensor] = None,
+        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
+        need_weights: bool = True,
+        static_kv: bool = False,
+        attn_mask: Optional[Tensor] = None,
+        before_softmax: bool = False,
+        need_head_weights: bool = False,
     ) -> Tuple[Tensor, Optional[Tensor]]:
         """Input shape: Time x Batch x Channel
 
@@ -390,10 +393,10 @@ class MultiheadAttention(nn.Module):
         assert list(query.size()) == [tgt_len, bsz, embed_dim]
 
         if (
-                self.enable_torch_version
-                and not self.onnx_trace
-                and incremental_state is None
-                and not static_kv
+            self.enable_torch_version
+            and not self.onnx_trace
+            and incremental_state is None
+            and not static_kv
         ):
             assert key is not None and value is not None
             return F.multi_head_attention_forward(
@@ -559,17 +562,17 @@ class MultiheadAttention(nn.Module):
         attn_weights = torch.bmm(q, k.transpose(1, 2))  # [bsz * head, tgt_len, tgt_len]
 
         # relative position
-        if self.maximum_relative_position is None:
-            relative_repr_keys = relative_repr_values = None
-        else:
+        if self.maximum_relative_position:
             keys_length = k.size(1)
-            relative_pos = self.relative_positions(keys_length, self.maximum_relative_position)
+            relative_pos = self.relative_positions(keys_length, self.maximum_relative_position).to(k.device)
             relative_repr_keys = self.relative_position_keys(relative_pos)
             relative_repr_values = self.relative_position_values(relative_pos)
             attn_weights += self.matmul_with_relative_representations(q, relative_repr_keys)
+        else:
+            relative_repr_keys = relative_repr_values = None
 
-        # TODO: sparse operation, need to be implemented later
-        attn_weights = MultiheadAttention.apply_sparse_mask(attn_weights, tgt_len, src_len, bsz)
+        # # TODO: sparse operation, need to be implemented later
+        # attn_weights = MultiheadAttention.apply_sparse_mask(attn_weights, tgt_len, src_len, bsz)
 
         assert list(attn_weights.size()) == [bsz * self.num_heads, tgt_len, src_len]
 
@@ -579,6 +582,7 @@ class MultiheadAttention(nn.Module):
                 attn_mask = attn_mask.repeat(attn_weights.size(0), 1, 1)
             attn_weights += attn_mask
 
+        # TODO: NeuralTransformer encoder's mask is None
         if key_padding_mask is not None:
             # don't attend to padding symbols
             attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len)
@@ -604,7 +608,7 @@ class MultiheadAttention(nn.Module):
 
         # relative position
         if relative_repr_values is not None:
-            attn += self.matmul_with_relative_representations(attn, relative_repr_values)
+            attn += self.matmul_with_relative_representations(attn_probs, relative_repr_values, transpose=False)
 
         assert list(attn.size()) == [bsz * self.num_heads, tgt_len, self.head_dim]
         if self.onnx_trace and attn.size(1) == 1:
@@ -627,11 +631,11 @@ class MultiheadAttention(nn.Module):
 
     @staticmethod
     def _append_prev_key_padding_mask(
-            key_padding_mask: Optional[Tensor],
-            prev_key_padding_mask: Optional[Tensor],
-            batch_size: int,
-            src_len: int,
-            static_kv: bool,
+        key_padding_mask: Optional[Tensor],
+        prev_key_padding_mask: Optional[Tensor],
+        batch_size: int,
+        src_len: int,
+        static_kv: bool,
     ) -> Optional[Tensor]:
         # saved key padding masks have shape (bsz, seq_len)
         if prev_key_padding_mask is not None and static_kv:
@@ -664,7 +668,7 @@ class MultiheadAttention(nn.Module):
 
     @torch.jit.export
     def reorder_incremental_state(
-            self, incremental_state: Dict[str, Dict[str, Optional[Tensor]]], new_order: Tensor
+        self, incremental_state: Dict[str, Dict[str, Optional[Tensor]]], new_order: Tensor
     ):
         """Reorder buffered internal state (for incremental generation)."""
         input_buffer = self._get_input_buffer(incremental_state)
@@ -677,7 +681,7 @@ class MultiheadAttention(nn.Module):
         return incremental_state
 
     def _get_input_buffer(
-            self, incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]]
+        self, incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]]
     ) -> Dict[str, Optional[Tensor]]:
         result = self.get_incremental_state(incremental_state, "attn_state")
         if result is not None:
@@ -687,9 +691,9 @@ class MultiheadAttention(nn.Module):
             return empty_result
 
     def _set_input_buffer(
-            self,
-            incremental_state: Dict[str, Dict[str, Optional[Tensor]]],
-            buffer: Dict[str, Optional[Tensor]],
+        self,
+        incremental_state: Dict[str, Dict[str, Optional[Tensor]]],
+        buffer: Dict[str, Optional[Tensor]],
     ):
         return self.set_incremental_state(incremental_state, "attn_state", buffer)
 
