@@ -18,7 +18,7 @@ from ncc.data.wrappers.truncate_dataset import TruncateDataset
 from ncc.data.wrappers.strip_token_dataset import StripTokenDataset
 from ncc.data.concat_dataset import ConcatDataset
 from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
-from ncc.data.summarization.hi_code_pair_dataset import HiCodePairDataset
+# from ncc.data.summarization.hi_code_pair_dataset import HiCodePairDataset
 from ncc.data.dictionary import Dictionary
 from ncc.utils import tokenizer # , utils # metrics, search,
 
