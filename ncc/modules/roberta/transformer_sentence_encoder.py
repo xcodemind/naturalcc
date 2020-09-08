@@ -71,17 +71,17 @@ class TransformerSentenceEncoder(FairseqEncoder):
     """
 
     def __init__(
-            self,
-            args,
-            dictionary,
-            embed_tokens,
-            num_segments: int = 2,
-            offset_positions_by_padding: bool = True,
-            apply_bert_init: bool = False,
-            freeze_embeddings: bool = False,
-            n_trans_layers_to_freeze: int = 0,
-            export: bool = False,
-            traceable: bool = False,
+        self,
+        args,
+        dictionary,
+        embed_tokens,
+        num_segments: int = 2,
+        offset_positions_by_padding: bool = True,
+        apply_bert_init: bool = False,
+        freeze_embeddings: bool = False,
+        n_trans_layers_to_freeze: int = 0,
+        export: bool = False,
+        traceable: bool = False,
     ):
         super().__init__(dictionary)
         self.register_buffer("version", torch.Tensor([3]))
@@ -183,9 +183,9 @@ class TransformerSentenceEncoder(FairseqEncoder):
 
         x = F.dropout(x, p=self.dropout, training=self.training)
 
-        # account for padding while computing the representation
-        if padding_mask is not None:
-            x *= 1 - padding_mask.unsqueeze(-1).type_as(x)
+        # # account for padding while computing the representation
+        # if padding_mask is not None:
+        #     x *= 1 - padding_mask.unsqueeze(-1).type_as(x)
 
         return x
 

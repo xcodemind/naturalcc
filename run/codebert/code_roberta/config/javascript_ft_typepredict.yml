@@ -25,7 +25,7 @@ common:
   user_dir: ~ # default=None, help='path to a python module containing custom extensions (tasks and/or architectures)'
   empty_cache_freq: 0 # type=int, help='how often to clear the PyTorch CUDA cache (0 to disable)'
   all_gather_list_size: 16384 # default=16384, type=int, help='number of bytes reserved for gathering stats from workers'
-  task: contracode_mlm # masked_lm # task
+  task: type_prediction # masked_lm # task
 
 dataset:
   num_workers: 0 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
@@ -69,7 +69,7 @@ distributed_training:
   warmup_iterations: 500 # default=500, type=int, help="warmup iterations for model to broadcast",
 
 task:
-  data: ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/ # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/augmented_javascript/contracode/types # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
   tokens_per_sample: 1024 #512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
   mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
@@ -81,8 +81,8 @@ task:
   pooler_activation_fn: 'tanh' # choices=utils.get_available_activation_fns(), help='Which activation function to use for pooler layer.'
 
   # for summarization
-  source_lang: code
-  target_lang: docstring
+  source_lang: code_filtered
+  target_lang: type_filtered
   load_alignments: 0 #', action='store_true', help='load the binarized alignments'
   left_pad_source: 1 #', default='True', type=str, metavar='BOOL', help='pad the source on the left'
   left_pad_target: 0 #', default='False', type=str, metavar='BOOL', help='pad the target on the left'
@@ -94,7 +94,7 @@ task:
   eval_accuracy: 1
 
 model:
-  arch: code_roberta # contracode_mlm contracode_hybrid'-a', default='fconv', metavar='ARCH', choices=ARCH_MODEL_REGISTRY.keys(), help='Model Architecture'
+  arch: type_prediction_transformer # contracode_mlm contracode_hybrid'-a', default='fconv', metavar='ARCH', choices=ARCH_MODEL_REGISTRY.keys(), help='Model Architecture'
   pooler_dropout: 0.0 # type=float, metavar='D', help='dropout probability in the masked_lm pooler layers'
   activation_fn: gelu # choices=utils.get_available_activation_fns(), help='activation function to use'
   dropout: 0.1 # type=float, metavar='D', help='dropout probability'

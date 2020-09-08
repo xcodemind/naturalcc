@@ -272,10 +272,10 @@ class RobertaEncoder(FairseqDecoder):
         # RoBERTa is a sentence encoder model, so users will intuitively trim
         # encoder layers. However, the implementation uses the fairseq decoder,
         # so we fix here.
-        # if args['model']['encoder_layers_to_keep']:
-        #     args['model']['encoder_layers'] = len(args['model']['encoder_layers_to_keep'].split(","))
-        #     args['model']['decoder_layers_to_keep'] = args['model']['encoder_layers_to_keep']
-        #     args['model']['encoder_layers_to_keep'] = None
+        if args['model']['encoder_layers_to_keep']:
+            args['model']['encoder_layers'] = len(args['model']['encoder_layers_to_keep'].split(","))
+            args['model']['decoder_layers_to_keep'] = args['model']['encoder_layers_to_keep']
+            args['model']['encoder_layers_to_keep'] = None
 
         # self.sentence_encoder = TransformerSentenceEncoder(
         #     padding_idx=dictionary.pad(),
