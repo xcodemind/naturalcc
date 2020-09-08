@@ -6,7 +6,7 @@
 import math
 
 import torch
-# import torch.nn.functional as F
+import torch.nn.functional as F
 
 # from fairseq import metrics, utils
 from ncc.logging import metrics
@@ -46,7 +46,10 @@ class MaskedLmLoss(FairseqCriterion):
                 masked_tokens.new([True]),
             )
 
-        logits = model(**sample['net_input'], masked_tokens=masked_tokens)[0]
+        # logits = model(**sample['net_input'], masked_tokens=masked_tokens)[0]
+        outp = model(**sample['net_input'], masked_tokens=masked_tokens)
+        logits = outp[0]
+
         targets = model.get_targets(sample, [logits])
         targets = targets[masked_tokens] #TODO: unilm doesnt require this line, if other needs, pls annotate here
 
@@ -56,6 +59,7 @@ class MaskedLmLoss(FairseqCriterion):
             reduction='sum',
             ignore_index=self.padding_idx,
         )
+        # loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=self.padding_idx)
 
         sample_size = masked_tokens.int().sum()
         logging_output = {
@@ -64,6 +68,7 @@ class MaskedLmLoss(FairseqCriterion):
             'nsentences': sample['nsentences'],
             'sample_size': sample_size,
         }
+        # print('logging_output: ', logging_output)
         return loss, sample_size, logging_output
 
     @staticmethod
@@ -71,8 +76,8 @@ class MaskedLmLoss(FairseqCriterion):
         """Aggregate logging outputs from data parallel training."""
         loss_sum = sum(log.get('loss', 0) for log in logging_outputs)
         sample_size = sum(log.get('sample_size', 0) for log in logging_outputs)
-
-        metrics.log_scalar('loss', loss_sum / sample_size / math.log(2), sample_size, round=3)
+        # metrics.log_scalar('loss', loss_sum / sample_size / math.log(2), sample_size, round=3)
+        metrics.log_scalar('loss', loss_sum / sample_size, sample_size, round=3)
         metrics.log_derived('ppl', lambda meters: utils.get_perplexity(meters['loss'].avg))
 
     @staticmethod
