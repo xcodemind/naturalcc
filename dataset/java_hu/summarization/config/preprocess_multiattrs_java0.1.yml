@@ -8,9 +8,9 @@ preprocess:
     - sbt
     - traversal
   # ~ path for dataset default. e.g.  for python_wan, ~/filter = ~/.ncc/python_wan/filter
-  trainpref: ~/.ncc/python_wan/filter/python-0.1/train #", metavar="FP", default=None, help="train file prefix"
-  validpref: ~/.ncc/python_wan/filter/python-0.1/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-  testpref:  ~/.ncc/python_wan/filter/python-0.1/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  trainpref: ~/.ncc/java_hu/filter/java-0.1/train #", metavar="FP", default=None, help="train file prefix"
+  validpref: ~/.ncc/java_hu/filter/java-0.1/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+  testpref:  ~/.ncc/java_hu/filter/java-0.1/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
   align_suffix: ~ # ", metavar="FP", default=None, help="alignment file suffix"
 #  destdir: ~/.ncc/python_wan/summarization/data-raw/python/ #", metavar="DIR", default="data-bin", help="destination dir"
