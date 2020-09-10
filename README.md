@@ -38,6 +38,7 @@ git clone https://github.com/whatsmyname/naturalcodev3
 ```
 cd naturalcodev3
 pip install --editable .
+pip install -r requirements.txt
 ```
 
 ## Dataset
@@ -61,12 +62,19 @@ For example, in my environment I will stay at `/data/wanyao/Dropbox/ghproj-titan
 #### Step 1: Download the raw dataset and process it into data that can be fed to models.
 For our current SCodeBert task, we mainly use the CodeSearchNet dataset to fairly compare with CodeBert.
 
-Please refer to `dataset/csn/readme.md` to process the CodeSearchNet dataset.
+Please refer to [dataset/csn/readme.md](https://github.com/whatsmyname/naturalcodev3/tree/master/dataset/csn) to process the CodeSearchNet dataset.
 After this step, we will obtain the preprocessed data in `~/.ncc/` folder.
+
+One quick step to download all datasets: 
+
+```python -m dataset.csn.download 
+```
+
+or add `-l language` to download the dataset for a specific language. 
 
 #### Step 2: Pre-training
 
-##### Model 1 (code-roberta): only code tokens, Roberta architecture
+##### Model 1 ([code-roberta](https://github.com/whatsmyname/naturalcodev3/tree/master/run/codebert/code_roberta)): only code tokens, Roberta architecture
 
 ```
 python -m run.codebert.code_roberta.train

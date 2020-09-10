@@ -23,3 +23,6 @@ python -m dataset.csn.feature_extract -l [language] -f [flatten data directory] 
 python -m dataset.csn.filter -l [language] -r [refined data directory] -f [filter data directory] -a [data attributes]
 ```
 
+### Note
+
+To process all the languages, one just needs to run the commands before `-l`, e.g., using `python -m dataset.csn.download` to download all datasets.
