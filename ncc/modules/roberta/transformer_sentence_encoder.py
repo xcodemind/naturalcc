@@ -134,10 +134,7 @@ class TransformerSentenceEncoder(FairseqEncoder):
         #         for _ in range(num_encoder_layers)
         #     ]
         # )
-        self.layers = nn.ModuleList([])
-        self.layers.extend(
-            [TransformerEncoderLayer(args) for i in range(args['model']['encoder_layers'])]
-        )
+        self.layers = nn.ModuleList([TransformerEncoderLayer(args) for i in range(args['model']['encoder_layers'])])
         self.num_layers = len(self.layers)
 
         if args['model']['layernorm_embedding']:
