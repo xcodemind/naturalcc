@@ -562,7 +562,7 @@ class MultiheadAttention(nn.Module):
         attn_weights = torch.bmm(q, k.transpose(1, 2))  # [bsz * head, tgt_len, tgt_len]
 
         # relative position
-        if self.maximum_relative_position:
+        if self.maximum_relative_position and self.self_attention:
             keys_length = k.size(1)
             relative_pos = self.relative_positions(keys_length, self.maximum_relative_position).to(k.device)
             relative_repr_keys = self.relative_position_keys(relative_pos)
