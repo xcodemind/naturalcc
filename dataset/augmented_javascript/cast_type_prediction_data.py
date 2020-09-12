@@ -1,10 +1,11 @@
 import os
 
-data_path = '/home/wanyao/.ncc/augmented_javascript/contracode/types'
+data_path = os.path.expanduser('~/.ncc/augmented_javascript/type_prediction/raw')
+output_path = os.path.expanduser('~/.ncc/augmented_javascript/type_prediction/data-raw')
 
 def cast_file(file_name, mode, src, tgt):
-    with open(file_name, 'r') as input_file, open(os.path.join(data_path, '{}.{}'.format(mode, src)), 'w') as code_file, \
-            open(os.path.join(data_path, '{}.{}'.format(mode, tgt)), 'w') as type_file:
+    with open(file_name, 'r') as input_file, open(os.path.join(output_path, '{}.{}'.format(mode, src)), 'w') as code_file, \
+            open(os.path.join(output_path, '{}.{}'.format(mode, tgt)), 'w') as type_file:
         for line in input_file.readlines():
             code_file.write(line.split('\t')[0] + '\n')
             type_file.write(line.split('\t')[1])

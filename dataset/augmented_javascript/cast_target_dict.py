@@ -1,9 +1,11 @@
 import os
 
-data_path = '/home/wanyao/.ncc/augmented_javascript/contracode/types'
+data_path = os.path.expanduser('~/.ncc/augmented_javascript/type_prediction/raw')
+output_path = os.path.expanduser('~/.ncc/augmented_javascript/type_prediction/data-raw')
+
 
 def cast_file(file_name):
-    with open(file_name, 'r') as input_file, open(os.path.join(data_path, 'target.dict.txt'), 'w') as output_file:
+    with open(file_name, 'r') as input_file, open(os.path.join(output_path, 'target.dict.txt'), 'w') as output_file:
         for line in input_file.readlines():
             output_file.write(line.strip('\n') + ' ' + '1' + '\n')
 

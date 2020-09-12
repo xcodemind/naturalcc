@@ -4,6 +4,16 @@
 ```
 bash download.sh 
 ```
+## Step 0: cast the downloaded target_dict to support our scenario
+```
+python -m data
+set.augmented_javascript.cast_target_dict 
+```
+
+## Step 0: cast the downloaded type_prediction_data to support our scenario
+```
+python -m dataset.augmented_javascript.cast_type_prediction_data
+```
 
 
 ## Step 1: Run sentencepiece to obtain the vocabulary model
