@@ -1,5 +1,11 @@
 
 
+## Step 0: Download augmented_javascript dataset realeased in https://github.com/parasj/contracode. 
+```
+bash download.sh 
+```
+
+
 ## Step 1: Run sentencepiece to obtain the vocabulary model
 
 ```
