@@ -1,7 +1,7 @@
 import os
 
-data_path = os.path.expanduser('/export/share/jianguo/scodebert_datasets/augmented_javascript/type_prediction/raw')
-output_path = os.path.expanduser('/export/share/jianguo/scodebert_datasets/augmented_javascript/type_prediction/data-raw')
+data_path = os.path.expanduser('~/.ncc/augmented_javascript/type_prediction/raw')
+output_path = os.path.expanduser('~/.ncc/augmented_javascript/type_prediction/data-raw')
 
 if not os.path.exists(output_path):
     os.makedirs(output_path)

@@ -18,7 +18,8 @@ for (( idx = 0 ; idx < ${#data_names[@]} ; idx++ )); do
 echo "Downloading augmented_javascript dataset: ${data_names[idx]}"
 #DIR=~/.ncc/augmented_javascript/raw/
 DIR=/export/share/jianguo/scodebert/augmented_javascript/raw/
-fi
+#fi
+
 mkdir -p ${DIR}
 FILE=${DIR}${data_names[idx]}
 
