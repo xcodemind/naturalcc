@@ -582,7 +582,6 @@ class MultiheadAttention(nn.Module):
                 attn_mask = attn_mask.repeat(attn_weights.size(0), 1, 1)
             attn_weights += attn_mask
 
-        # TODO: NeuralTransformer encoder's mask is None
         if key_padding_mask is not None:
             # don't attend to padding symbols
             attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len)

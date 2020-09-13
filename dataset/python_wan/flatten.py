@@ -23,9 +23,11 @@ def code(raw_code_file, refined_code_file, dst_file):
             print(raw_code, file=writer)
 
 
-def code_tokens(src_file, dst_file):
+def code_tokens(src_file, dst_file, uncase=True):
     with open(src_file, 'r') as reader, open(dst_file, 'w') as writer:
         for line in reader:
+            if uncase:
+                line = str.lower(line)
             print(ujson.dumps(line.split()), file=writer)
 
 
@@ -35,9 +37,11 @@ def docstring(src_file, dst_file):
             print(ujson.dumps(line.rstrip('\n')), file=writer)
 
 
-def docstring_tokens(src_file, dst_file):
+def docstring_tokens(src_file, dst_file, uncase=True):
     with open(src_file, 'r') as reader, open(dst_file, 'w') as writer:
         for line in reader:
+            if uncase:
+                line = str.lower(line)
             docstring_tokens = line.split()
             print(ujson.dumps(docstring_tokens), file=writer)
 
@@ -46,7 +50,7 @@ if __name__ == '__main__':
     lang = 'python'
     for mode in MODES:
         # code
-        raw_code_file = os.path.join(RAW_DATA_DIR, 'data_ps.declbodies')
+        raw_code_file = os.path.join(RAW_DATA_DIR, 'code.json')
         refined_code_file = os.path.join(RAW_DATA_DIR, mode, 'code.original')
         dst_file = os.path.join(FLATTEN_DIR, lang, '{}.code'.format(mode))
         code(raw_code_file, refined_code_file, dst_file)

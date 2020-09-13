@@ -123,12 +123,6 @@ def _main(args, output_file):
         if 'net_input' not in sample:
             continue
 
-        loss, sample_size, _ = criterion(models[0], sample)
-        print('loss: {:.2f}'.format(loss.item() / sample_size))
-        # prefix_tokens = None
-        # if args['eval']['prefix_size'] > 0:
-        #     prefix_tokens = sample['target'][:, :args['eval']['prefix_size']]
-
         gen_timer.start()
         hypos = task.inference_step(generator, models, sample)
         # gen_out = task.sequence_generator.generate(model, sample)

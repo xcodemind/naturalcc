@@ -49,6 +49,9 @@ def main(args):
     def train_path(lang):
         return "{}{}".format(args['preprocess']['trainpref'], ("." + lang) if lang else "")
 
+    def valid_path(lang):
+        return "{}{}".format(args['preprocess']['validpref'], ("." + lang) if lang else "")
+
     def file_name(prefix, lang):
         fname = prefix
         if lang is not None:
@@ -91,7 +94,12 @@ def main(args):
                 attr_dict = task.load_dictionary(dict_filename)
             else:
                 assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
-                attr_dict = build_dictionary([train_path(attr)], attr, src=True)
+                if attr == 'code_tokens':
+                    attr_dict = build_dictionary([train_path(attr), valid_path(attr)], attr, src=True)
+                elif attr == 'docstring_tokens':
+                    attr_dict = build_dictionary([train_path(attr), valid_path(attr)], attr, tgt=True)
+                else:
+                    raise NotImplementedError
         LOGGER.info('dict_path: {}'.format(dict_path(attr)))
         attr_dict.save_json(dict_path(attr))
         src_dict[attr] = attr_dict

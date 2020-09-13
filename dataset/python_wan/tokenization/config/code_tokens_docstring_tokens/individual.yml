@@ -14,9 +14,10 @@ preprocess:
   srcdict: ~
 #  nwordssrc: -1 #", metavar="N", default=-1, type=int, help="number of source words to retain"
   nwordssrc: 50000 #", metavar="N", default=-1, type=int, help="number of source words to retain"
+  nwordstgt: 30000
   alignfile: ~ #", metavar="ALIGN", default=None, help="an alignment file (optional)"
 #  dataset_impl: raw #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
   dataset_impl: mmap #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
   joined_dictionary: 0 # ", action="store_true", help="Generate joined dictionary"
   padding_factor: 8 #", metavar="N", default=8, type=int, help="Pad dictionary size to be multiple of N"
-  workers: 36 # ", metavar="N", default=1, type=int, help="number of parallel workers"
+  workers: 10 # ", metavar="N", default=1, type=int, help="number of parallel workers"
