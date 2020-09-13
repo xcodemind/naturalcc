@@ -16,7 +16,9 @@ data_urls=(
 for (( idx = 0 ; idx < ${#data_names[@]} ; idx++ )); do
 
 echo "Downloading augmented_javascript dataset: ${data_names[idx]}"
-DIR=~/.ncc/augmented_javascript/raw/
+#DIR=~/.ncc/augmented_javascript/raw/
+DIR=/export/share/jianguo/scodebert/augmented_javascript/raw/
+fi
 mkdir -p ${DIR}
 FILE=${DIR}${data_names[idx]}
 
@@ -57,7 +59,8 @@ data_names=(
 for (( idx = 0 ; idx < ${#data_names[@]} ; idx++ )); do
 
 echo "Downloading augmented_javascript dataset files: ${data_names[idx]}"
-DIR=~/.ncc/augmented_javascript/type_prediction/raw/
+#DIR=~/.ncc/augmented_javascript/type_prediction/raw/
+DIR=/export/share/jianguo/scodebert/augmented_javascript/type_prediction/raw/
 mkdir -p ${DIR}
 FILE=${DIR}${data_names[idx]}
 
