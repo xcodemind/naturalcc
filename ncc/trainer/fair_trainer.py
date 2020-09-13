@@ -179,6 +179,18 @@ class Trainer(object):
                 extra_state,
             )
 
+    def metrics2cuda(self, metrics):
+        if isinstance(metrics, dict):
+            for key, value in metrics.items():
+                metrics[key] = self.metrics2cuda(value)
+        elif isinstance(metrics, list) or isinstance(metrics, tuple):
+            metrics = list(metrics)
+            for idx, m in enumerate(metrics):
+                metrics[idx] = self.metrics2cuda(m)
+        elif isinstance(metrics, torch.Tensor):
+            metrics = metrics.to(self.device)
+        return metrics
+
     def load_checkpoint(
         self,
         filename,
@@ -243,6 +255,8 @@ class Trainer(object):
             self.lr_step(epoch)
 
             if "metrics" in extra_state and not reset_meters:
+                # if load pre-trained checkpoint, we need to convert metrics to cuda
+                self.metrics2cuda(extra_state["metrics"])
                 metrics.load_state_dict(extra_state["metrics"])
 
                 # reset TimeMeters, since their start times don't make sense anymore
