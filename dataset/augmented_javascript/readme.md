@@ -6,8 +6,7 @@ bash download.sh
 ```
 ## Step 0: cast the downloaded target_dict to support our scenario
 ```
-python -m data
-set.augmented_javascript.cast_target_dict 
+python -m dataset.augmented_javascript.cast_target_dict 
 ```
 
 ## Step 0: cast the downloaded type_prediction_data to support our scenario
@@ -37,12 +36,13 @@ cut -f1 csnjs_8k_9995p_unigram_url.vocab | tail -n +9 | sed "s/$/ 100/g" > csnjs
 ## Step 3: Preprocessing
 > Note: currently only 100 samples are preprocessed for debugging. Modify around line 116 of ```preprocess.py```.
 
-For augmented javascript. If we want to pretrain the codebert, we will use this data.
+If we want to pretrain the codebert, we will use this data.
+```
+python -m dataset.augmented_javascript.preprocess
+```
+
+If we want to pretrain via contrastive learning, we should use this dataset with augmentation.
 ```
 python -m dataset.augmented_javascript.preprocess_augmented
 ```
 
-For javascript without augmentation. If we want to pretrain via contrastive learning, we should use this dataset with augmentation.
-```
-python -m dataset.augmented_javascript.preprocess
-```

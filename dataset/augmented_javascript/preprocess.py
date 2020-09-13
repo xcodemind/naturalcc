@@ -113,7 +113,7 @@ def main(args):
             examples = list(map(sorted, map(list, examples)))
             examples = list(filter(lambda ex: len(ex) >= min_alternatives, examples))
             with open(dest_path(output_prefix+'.sp.json', lang=None), 'w', encoding="utf-8") as output_file:
-                for example in examples[0: 100]:  # TODO only for debug
+                for example in examples:#[0: 100]:  # TODO only for debug
                     # programs = []
                     # for program in example:
                     program = example[0]

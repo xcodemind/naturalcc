@@ -78,11 +78,14 @@ python -m run.codebert.code_roberta.train
 python -m run.codebert.code_docstring_roberta.train
 ```
 
-##### Model 3 (traverse-roberta): only code structure (AST traverse), Roberta architecture
+##### Model 3 ([traverse-roberta]): only code structure (AST traverse), Roberta architecture
 
 ```
 python -m run.codebert.traverse_roberta.train
 ```
+
+To verify the model, first process the [augmented_javascript](https://github.com/whatsmyname/naturalcodev3/blob/387ba47fd66428a55d782a98fb05b5e07c411e42/dataset/augmented_javascript/readme.md).
+
 ##### Model 4 (traverse-docstring-roberta): code structure (AST traverse) and comment tokens, Roberta architecture
 
 ```

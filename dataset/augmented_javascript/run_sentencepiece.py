@@ -54,7 +54,7 @@ if __name__ == "__main__":
     parser.add_argument("--keep-empty", type=bool, default=True, help="keep empty lines")
     parser.add_argument("--overwrite", type=bool, default=False, help="build BPE model for files")
     # parser.add_argument("--insert", type=bool, help='insert CLS/S_SEP')
-    parser.add_argument("--workers", type=int, default=16, help='multi-processors number')
+    parser.add_argument("--workers", type=int, default=100, help='multi-processors number')
     args = parser.parse_args()
 
     args.src_dir = os.path.expanduser(args.src_dir)

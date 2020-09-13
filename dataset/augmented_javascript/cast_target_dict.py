@@ -1,8 +1,10 @@
 import os
 
-data_path = os.path.expanduser('~/.ncc/augmented_javascript/type_prediction/raw')
-output_path = os.path.expanduser('~/.ncc/augmented_javascript/type_prediction/data-raw')
+data_path = os.path.expanduser('/export/share/jianguo/scodebert_datasets/augmented_javascript/type_prediction/raw')
+output_path = os.path.expanduser('/export/share/jianguo/scodebert_datasets/augmented_javascript/type_prediction/data-raw')
 
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
 
 def cast_file(file_name):
     with open(file_name, 'r') as input_file, open(os.path.join(output_path, 'target.dict.txt'), 'w') as output_file:
