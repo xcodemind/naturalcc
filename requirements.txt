@@ -24,7 +24,6 @@ editdistance
 EditorConfig
 fastBPE
 filelock
-fr-core-news-sm
 future
 gdown
 gpustat
