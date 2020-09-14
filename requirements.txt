@@ -22,10 +22,8 @@ dill
 docutils
 editdistance
 EditorConfig
-en-core-web-sm
 fastBPE
 filelock
-fr-core-news-sm
 future
 gdown
 gpustat
