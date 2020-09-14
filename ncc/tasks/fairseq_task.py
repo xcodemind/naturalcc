@@ -414,7 +414,7 @@ class FairseqTask(object):
         loss, sample_size, logging_output = criterion(model, sample)
         if ignore_grad:
             loss *= 0
-        # optimizer.backward(loss)
+        optimizer.backward(loss)
         return loss, sample_size, logging_output
 
     def valid_step(self, sample, model, criterion):
