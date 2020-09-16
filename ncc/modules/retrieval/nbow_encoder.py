@@ -42,7 +42,7 @@ class NBOWEncoder(FairseqEncoder):
             tokens: [batch_size, max_token_len, embed_dim]
         """
         if tokens_mask is None:
-            tokens_mask = (tokens.ne(self.dictionary.pad())).to(tokens.device)
+            tokens_mask = (tokens == self.dictionary.pad()).to(tokens.device)
         if tokens_len is None:
             tokens_len = tokens_mask.sum(dim=-1)
         tokens = self.embed(tokens)
