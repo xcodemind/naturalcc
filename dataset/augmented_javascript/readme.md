@@ -27,7 +27,6 @@ python -m dataset.augmented_javascript.run_sentencepiece
 Change to the folder of `csnjs_8k_9995p_unigram_url.vocab` (`~/.ncc/augmented_javascript/contracode/data-raw/no_augmented` in my server), and tranform it into fairseq-format.
 
 ```
-cd ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented
 cut -f1 csnjs_8k_9995p_unigram_url.vocab | tail -n +9 | sed "s/$/ 100/g" > csnjs_8k_9995p_unigram_url.dict.txt
 ```
 
