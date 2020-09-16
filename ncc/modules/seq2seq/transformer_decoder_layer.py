@@ -196,6 +196,8 @@ class TransformerDecoderLayer(nn.Module):
         residual = x
         if self.normalize_before:
             x = self.final_layer_norm(x)
+
+        # x = self.final_layer_norm(x)#NueralSum, TODO: check whether transformer still works when we annotate this line
         x = self.activation_fn(self.fc1(x))
         x = F.dropout(x, p=float(self.activation_dropout), training=self.training)
         x = self.fc2(x)
