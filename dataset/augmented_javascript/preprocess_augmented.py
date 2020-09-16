@@ -15,10 +15,10 @@ from ncc import tasks
 from ncc.data.tools.binarizer import Binarizer
 import sentencepiece as spm
 from ncc import LOGGER
+from tqdm import tqdm
 import pickle
 import re
 import ujson
-
 
 _newline_regex = re.compile(r"\n")
 _whitespace_regex = re.compile(r"[ \t\n]+")
@@ -30,6 +30,7 @@ def normalize_program(fn: str):
     fn = _newline_regex.sub(r" [EOL]", fn)
     fn = _whitespace_regex.sub(" ", fn)
     return fn
+
 
 def main(args):
     task = tasks.get_task(args['preprocess']['task'])
@@ -112,8 +113,10 @@ def main(args):
             examples = pickle.load(open(input_prefix, 'rb'))
             examples = list(map(sorted, map(list, examples)))
             examples = list(filter(lambda ex: len(ex) >= min_alternatives, examples))
-            with open(dest_path(output_prefix+'.sp.json', lang=None), 'w', encoding="utf-8") as output_file:
-                for example in examples[0: 100]:  # TODO only for debug
+            output_file = dest_path(output_prefix + '.sp.json', lang=None)
+            LOGGER.info('Writing data in {}'.format(output_file))
+            with open(output_file, 'w', encoding="utf-8") as output_file:
+                for example in tqdm(examples):
                     programs = []
                     for program in example:
                         program = normalize_program(program)

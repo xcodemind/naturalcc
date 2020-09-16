@@ -9,8 +9,8 @@ data_urls=(
   "https://drive.google.com/uc?id=1YfPTPPOv4evldpN-n_4QBDWDWFImv7xO" # 3.4G
 )
 
-DIR=~/.ncc/augmented_javascript/raw/
-#DIR=/export/share/jianguo/scodebert/augmented_javascript/raw/
+#DIR=~/.ncc/augmented_javascript/raw/
+DIR=/export/share/jianguo/scodebert/augmented_javascript/raw/
 mkdir -p ${DIR}
 
 for (( idx = 0 ; idx < ${#data_urls[@]} ; idx++ )); do
