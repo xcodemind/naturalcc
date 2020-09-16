@@ -290,6 +290,8 @@ class TansformerSummarizationTask(FairseqTask):
                     escape_unk=escape_unk,
                     trunc_eos=trunc_eos,
                 )
+                if len(s) == 0:
+                    s = '0'  # if predict sentence is null, use '0'
                 if self.tokenizer:
                     s = self.tokenizer.decode(s)
                 return s
@@ -307,6 +309,7 @@ class TansformerSummarizationTask(FairseqTask):
                 ))
 
             bleu, rouge_l, meteor = self._inference_score(hyps, refs, ids)
+            # print('bleu: {:.3f}, rouge-l: {:.2f} | {} | {}'.format(bleu, rouge_l, refs[-1], hyps[-1]))
             logging_output['bleu'] = bleu
             logging_output['rouge_l'] = rouge_l
             logging_output['meteor'] = meteor
