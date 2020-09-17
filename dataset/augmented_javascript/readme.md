@@ -34,7 +34,7 @@ cut -f1 csnjs_8k_9995p_unigram_url.vocab | tail -n +9 | sed "s/$/ 100/g" > csnjs
 
 
 ## Step 3: Preprocessing
-> Note: currently only 100 samples are preprocessed for debugging. Modify around line 116 of ```preprocess.py```.
+> Note: currently only 100 samples are preprocessed for debugging. Modify around line 123 of ```preprocess.py```.
 
 If we want to pretrain the codebert, we will use this data.
 ```
