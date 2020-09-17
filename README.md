@@ -78,7 +78,7 @@ python -m run.codebert.code_roberta.train
 python -m run.codebert.code_docstring_roberta.train
 ```
 
-##### Model 3 ([traverse-roberta]): only code structure (AST traverse), Roberta architecture
+##### Model 3 ([traverse-roberta](https://github.com/whatsmyname/naturalcodev3/tree/master/run/codebert/traverse_roberta)): only code structure (AST traverse), Roberta architecture
 
 ```
 python -m run.codebert.traverse_roberta.train
