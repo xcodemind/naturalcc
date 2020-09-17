@@ -84,7 +84,7 @@ python -m run.codebert.code_docstring_roberta.train
 python -m run.codebert.traverse_roberta.train
 ```
 
-To verify the model, first process the [augmented_javascript](https://github.com/whatsmyname/naturalcodev3/blob/387ba47fd66428a55d782a98fb05b5e07c411e42/dataset/augmented_javascript/readme.md).
+To verify the model, first process the [augmented_javascript](https://github.com/whatsmyname/naturalcodev3/tree/master/dataset/augmented_javascript).
 
 ##### Model 4 (traverse-docstring-roberta): code structure (AST traverse) and comment tokens, Roberta architecture
 
