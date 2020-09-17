@@ -120,26 +120,19 @@ class TransformerEncoder(FairseqEncoder):
 
         # compute padding mask
         encoder_padding_mask = src_tokens.eq(self.padding_idx)
-        if not encoder_padding_mask.any():
-            encoder_padding_mask = None
-        # encoder_padding_mask = None  # debug neural transformer
 
         encoder_states = [] if return_all_hiddens else None
 
         # encoder layers
         for layer in self.layers:
             # add LayerDrop (see https://arxiv.org/abs/1909.11556 for description)
-            dropout_probability = torch.empty(1).uniform_()
-            if not self.training or (dropout_probability > self.encoder_layerdrop):
-                x = layer(x, encoder_padding_mask)
-                if return_all_hiddens:
-                    assert encoder_states is not None
-                    encoder_states.append(x)
+            x = layer(x, encoder_padding_mask)
+            if return_all_hiddens:
+                assert encoder_states is not None
+                encoder_states.append(x)
 
         if self.layer_norm is not None:
             x = self.layer_norm(x)
-            if return_all_hiddens:
-                encoder_states[-1] = x
 
         return EncoderOut(
             encoder_out=x,  # T x B x C

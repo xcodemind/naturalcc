@@ -165,9 +165,8 @@ def _main(args, output_file):
                     print('T-{}\t{}'.format(sample_id, target_str), file=output_file)
 
                 print('H-{}\t{}'.format(sample_id, hypo_str), file=output_file)
-
-    bleu, rouge_l, meteor = eval_utils.eval_accuracies(hypotheses, references, filename='pred.txt')
-    LOGGER.info('BLEU: {}\t ROUGE-L: {}\t METEOR: {}'.format(bleu, rouge_l, meteor))
+    bleu, rouge_l, meteor = eval_utils.eval_accuracies(hypotheses, references, filename='pred.txt', mode='test')
+    LOGGER.info('BLEU: {:.2f}\t ROUGE-L: {:.2f}\t METEOR: {:.2f}'.format(bleu, rouge_l, meteor))
 
 
 def cli_main():

@@ -1,14 +1,21 @@
 import os
 
-data_path = os.path.expanduser('~/.ncc/augmented_javascript/type_prediction/raw')
-output_path = os.path.expanduser('~/.ncc/augmented_javascript/type_prediction/data-raw')
+from dataset.augmented_javascript import (
+    RAW_DATA_DIR_TYPE_PREDICTION,
+)
+
+data_path = RAW_DATA_DIR_TYPE_PREDICTION
+output_path = os.path.join(os.path.dirname(RAW_DATA_DIR_TYPE_PREDICTION), 'data-raw')
+os.makedirs(output_path, exist_ok=True)
+
 
 def cast_file(file_name, mode, src, tgt):
-    with open(file_name, 'r') as input_file, open(os.path.join(output_path, '{}.{}'.format(mode, src)), 'w') as code_file, \
-            open(os.path.join(output_path, '{}.{}'.format(mode, tgt)), 'w') as type_file:
+    with open(file_name, 'r') as input_file, \
+        open(os.path.join(output_path, '{}.{}'.format(mode, src)), 'w') as code_file, \
+        open(os.path.join(output_path, '{}.{}'.format(mode, tgt)), 'w') as type_file:
         for line in input_file.readlines():
-            code_file.write(line.split('\t')[0] + '\n')
-            type_file.write(line.split('\t')[1])
+            print(line.split('\t')[0], file=code_file)
+            print(line.split('\t')[1], end='', file=type_file)
 
 
 if __name__ == '__main__':

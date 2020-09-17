@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 import socket
 import getpass
 from ncc import LOGGER
@@ -8,7 +9,8 @@ from ncc import LOGGER
 HOSTNAME = socket.gethostname()
 USERNAME = getpass.getuser()
 # register your hostname or username
-if HOSTNAME in ['GS65'] or USERNAME in ['hust_xhshi_1']:
+if HOSTNAME in ['GS65'] or re.match(r'pytorch-.*', HOSTNAME) is not None \
+    or USERNAME in ['hust_xhshi_1']:
     DEFAULT_DIR = '~/.ncc'
 else:
     DEFAULT_DIR = '/export/share/jianguo/scodebert/'

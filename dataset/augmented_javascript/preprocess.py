@@ -8,17 +8,18 @@ Data pre-processing: build vocabularies and binarize training data.
 """
 import os
 from multiprocessing import Pool
+from ncc.utils.mp_ppool import PPool
 from collections import (namedtuple, OrderedDict, Counter)
 from ncc.data import (Dictionary, indexed_dataset)
 from ncc.utils.util_file import load_yaml
 from ncc import tasks
 from ncc.data.tools.binarizer import Binarizer
+from tqdm import tqdm
 import sentencepiece as spm
 from ncc import LOGGER
 import pickle
 import re
 import ujson
-
 
 _newline_regex = re.compile(r"\n")
 _whitespace_regex = re.compile(r"[ \t\n]+")
@@ -30,6 +31,7 @@ def normalize_program(fn: str):
     fn = _newline_regex.sub(r" [EOL]", fn)
     fn = _whitespace_regex.sub(" ", fn)
     return fn
+
 
 def main(args):
     task = tasks.get_task(args['preprocess']['task'])
@@ -112,15 +114,17 @@ def main(args):
             examples = pickle.load(open(input_prefix, 'rb'))
             examples = list(map(sorted, map(list, examples)))
             examples = list(filter(lambda ex: len(ex) >= min_alternatives, examples))
-            with open(dest_path(output_prefix+'.sp.json', lang=None), 'w', encoding="utf-8") as output_file:
-                for example in examples:#[0: 100]:  # TODO only for debug
-                    # programs = []
-                    # for program in example:
+            LOGGER.info('After filtering, exmaples size: {}'.format(len(examples)))
+
+            # Attention: mutli-processing only support text file, not a pickle file or a huge list in memory
+            output_file = dest_path(output_prefix + '.sp.json', lang=None)
+            LOGGER.info('Writing data in {}'.format(output_file))
+            with open(output_file, 'w', encoding="utf-8") as writer:
+                for example in tqdm(examples):
                     program = example[0]
                     program = normalize_program(program)
                     program = sp.EncodeAsPieces(program)
-                    # programs.append(program)
-                    print(ujson.dumps(program), file=output_file)
+                    print(ujson.dumps(program), file=writer)
 
     def make_all(lang, vocab, sp):
         if args['preprocess']['trainpref']:

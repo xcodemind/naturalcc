@@ -61,7 +61,7 @@ dataset:
 #  per_gpu_eval_batch_size: 4 # default=4, type=int, help="Batch size per GPU/CPU for evaluation."
 
 distributed_training:
-  distributed_world_size: 4 # default=max(1, torch.cuda.device_count()
+  distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
   distributed_rank: 0 # default=0, type=int, help='rank of the current worker'
   distributed_backend: nccl # default='nccl', type=str, help='distributed backend'
   distributed_init_method: ~ # default=None, type=str,help='typically tcp://hostname:port that will be used to establish initial connetion'
@@ -129,9 +129,9 @@ model:
   attention_dropout: 0.2 # type=float, metavar='D', help='dropout probability for attention weights'
   activation_dropout: 0.2 # '--relu-dropout', type=float, metavar='D', help='dropout probability after activation in FFN.'
   relu_dropout: 0.2 # '--relu-dropout', type=float, metavar='D', help='dropout probability after activation in FFN.'
-  encoder_positional_embeddings: 0 # default=False, action='store_true', help='if set, disables positional embeddings (outside self attention)'
+  encoder_positional_embeddings: 1 # default=False, action='store_true', help='if set, disables positional embeddings (outside self attention)'
   encoder_learned_pos: 0 # action='store_true', help='use learned positional embeddings in the encoder'
-  encoder_max_relative_len: 0 # default=0, help='encoder max relative positional embedding len'
+  encoder_max_relative_len: 32 # default=0, help='encoder max relative positional embedding len'
   encoder_embed_path: 0 # type=str, metavar='STR', help='path to pre-trained encoder embedding'
   encoder_embed_dim: 512 # type=int, metavar='N', help='encoder embedding dimension'
   encoder_ffn_embed_dim: 2048 # type=int, metavar='N', help='encoder embedding dimension for FFN'
@@ -142,7 +142,7 @@ model:
 
   decoder_embed_path: '' # type=str, metavar='STR', help='path to pre-trained decoder embedding'
   decoder_positional_embeddings: 0 # default=False, action='store_true', help='if set, disables positional embeddings (outside self attention)'
-  decoder_learned_pos: 0 # ', action='store_true', help='use learned positional embeddings in the decoder')
+  decoder_learned_pos: 1 # ', action='store_true', help='use learned positional embeddings in the decoder')
   decoder_max_relative_len: 0 # default=0, help='encoder max relative positional embedding len'
   decoder_embed_dim: 512 # ', type=int, metavar='N', help='decoder embedding dimension'
   decoder_output_dim: 512 # ', type=int, metavar='N', help='decoder output dimension')
@@ -150,7 +150,7 @@ model:
   decoder_ffn_embed_dim: 2048 # type=int, metavar='N', help='decoder embedding dimension for FFN'
   decoder_layers: 6 # type=int, metavar='N', help='num decoder layers'
   decoder_attention_heads: 8 # ', type=int, metavar='N', help='num decoder attention heads')
-  decoder_normalize_before: 1 # ', action='store_true', help='apply layernorm before each decoder block')
+  decoder_normalize_before: 0 # ', action='store_true', help='apply layernorm before each decoder block')
   no_decoder_final_norm: 0 # ', action='store_true', help='don\'t add an extra layernorm after the last decoder block')
   adaptive_softmax_cutoff: ~ # metavar='EXPR', help='comma separated list of adaptive softmax cutoff points. Must be used with adaptive_loss criterion'
   adaptive_softmax_dropout: 0.2 # type=float, metavar='D', help='sets adaptive softmax dropout for the tail projections'
@@ -191,9 +191,9 @@ model:
   max_target_positions: 30
 
 optimization:
-  max_epoch: 100 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
+  max_epoch: 200 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
   max_update: 0 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
-  clip_norm: 25 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
+  clip_norm: 5 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
     - 1
   lr: # '--learning-rate', default='0.25', type=eval_str_list, metavar='LR_1,LR_2,...,LR_N', help='learning rate for the first N epochs; all epochs >N using LR_N (note: this may be interpreted differently depending on --lr-scheduler)'
@@ -209,7 +209,7 @@ optimization:
   total_num_update: 1000000 # default=1000000, type=int
 
 #  for cross entropy
-  sentence_avg: ~ # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'
+  sentence_avg: 1 # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'
 
   adam:
     adam_betas: '(0.9, 0.999)' # default='(0.9, 0.999)', metavar='B', help='betas for Adam optimizer'
@@ -247,7 +247,7 @@ checkpoint:
   no_epoch_checkpoints: 0 # action='store_true', help='only store last and best checkpoints'
   no_last_checkpoints: 0 # action='store_true', help='don\'t store last checkpoints'
   no_save_optimizer_state: ~ # action='store_true', help='don\'t save optimizer-state as part of checkpoint'
-  best_checkpoint_metric: bleu # type=str, default='loss', help='metric to use for saving "best" checkpoints'
+  best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
   patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
   save_dir: ~/.ncc/python_wan/individual/code_tokens_docstring_tokens/data-mmap/python/transformer/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
@@ -269,7 +269,7 @@ eval:
   results_path: ~ # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'
   model_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override model args at generation '
 
-  max_sentences: 32 # evaluation batch size, because while evaluation, it will not cost much ram, we can increase the batch size
+  max_sentences: 128 # evaluation batch size, because while evaluation, it will not cost much ram, we can increase the batch size
   beam: 5 # ', default=5, type=int, metavar='N', help='beam size')
   nbest: 1 # ', default=1, type=int, metavar='N', help='number of hypotheses to output')
   max_len_a: 0 #', default=0, type=float, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))

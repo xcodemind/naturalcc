@@ -55,13 +55,17 @@ def collate(
     prev_output_tokens = None
     target = None
     if samples[0].get('target', None) is not None:
-        raw_target = merge('target', left_pad=left_pad_target)
-        raw_target = raw_target.index_select(0, sort_order)
-        prev_output_tokens, target = raw_target[:, :-1], raw_target[:, 1:]
+        target = merge('target', left_pad=left_pad_target)
+        target = target.index_select(0, sort_order)
         tgt_lengths = torch.LongTensor([s['target'].numel() for s in samples]).index_select(0, sort_order)
-        ntokens = sum(len(s['target'][1:]) for s in samples)
+        ntokens = sum(len(s['target']) for s in samples)
+
+        if input_feeding:
+            # we create a shifted version of targets for feeding the
+            # previous output token(s) into the next decoder step
+            prev_output_tokens = target
     else:
-        ntokens = sum(len(s['source'][1:]) for s in samples)
+        ntokens = sum(len(s['source']) for s in samples)
 
     batch = {
         'id': id,

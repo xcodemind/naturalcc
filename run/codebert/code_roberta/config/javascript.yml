@@ -130,8 +130,11 @@ model:
   layernorm_embedding: 0 # action='store_true', help='add layernorm to embedding'
   no_scale_embedding: 0 # action='store_true', help='if True, dont scale embeddings'
 
+  encoder_max_relative_len: 0
+
   max_source_positions: 1024
   max_target_positions: 1024
+
 
 optimization:
   max_epoch: 0 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'

@@ -6,6 +6,8 @@
 import torch
 from ncc.utils import utils
 import torch.nn.functional as F
+from torch import Tensor
+from typing import Optional, List, Dict
 
 
 class LSTMSequenceGenerator(object):
@@ -298,20 +300,11 @@ class TransformerSequenceGenerator(object):
         if not self.retain_dropout:
             model.eval()
 
-        # model.forward normally channels prev_output_tokens into the decoder
-        # separately, but SequenceGenerator directly calls model.encoder
-        encoder_input = {
-            k: v for k, v in sample['net_input'].items()
-            if k != 'prev_output_tokens'
-        }
-
-        src_tokens = encoder_input['src_tokens']
-        src_lengths = src_tokens.ne(self.pad).long().sum(dim=1)
-        input_size = src_tokens.size()
-        # batch dimension goes first followed by source lengths
-        bsz = input_size[0]
-        src_len = input_size[1]
+        src_tokens = sample['net_input']['src_tokens']
+        src_lengths = (src_tokens != self.pad).int().sum(-1)
+        bsz, src_len = src_tokens.size()
         device = src_tokens.device
+
         if self.match_source_len:
             max_len = src_lengths.max().item()
         else:
@@ -321,85 +314,37 @@ class TransformerSequenceGenerator(object):
                 model.max_decoder_positions() - 1,
             )
         assert self.min_len <= max_len, 'min_len cannot be larger than max_len, please adjust these!'
-        encoder_out = model.encoder(sample['net_input']['src_tokens'], src_lengths=sample['net_input']['src_lengths'],
-                                    **kwargs)
+
+        encoder_out = model.encoder(sample['net_input']['src_tokens'], src_lengths=sample['net_input']['src_lengths'])
 
         prev_output_tokens = torch.zeros(bsz, 1).long().fill_(self.bos).to(device)
         # prev_output_tokens = torch.zeros(bsz, 1).long().fill_(self.eos).to(device)
 
         dec_preds = []
         # 2. generate
-        for j in range(max_len):
-            prob_prev, _ = model.decoder.forward(prev_output_tokens, encoder_out)
-            prob_prev = prob_prev[:, -1].softmax(dim=-1)
+        from collections import OrderedDict
+        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = OrderedDict()
+        full_context_alignment: bool = False
+        alignment_layer: Optional[int] = None
+        alignment_heads: Optional[int] = None
+        for j in range(max_len + 1):
 
-            # # embed positions
-            # positions = (
-            #     model.embed_positions(
-            #         prev_output_tokens, incremental_state=None
-            #     )
-            #     if model.embed_positions is not None
-            #     else None
-            # )
-            #
-            # # embed tokens
-            # prev_output_tokens_emb = model.decoder.embed_tokens(prev_output_tokens)
-            # # if model.decoder.project_in_dim is not None:
-            # #     prev_output_tokens_emb = model.decoder.project_in_dim(prev_output_tokens_emb)
-            #
-            # # if positions is not None:
-            # #     prev_output_tokens_emb += positions
-            #
-            # # if model.decoder.layernorm_embedding is not None:
-            # #     prev_output_tokens_emb = model.decoder.layernorm_embedding(prev_output_tokens_emb)
-            #
-            # # B x T x C -> T x B x C
-            # prev_output_tokens_emb = prev_output_tokens_emb.transpose(0, 1)
-            #
-            # self_attn_padding_mask = None
-            # # if model.decoder.cross_self_attention or prev_output_tokens.eq(model.decoder.padding_idx).any():
-            # #     self_attn_padding_mask = prev_output_tokens.eq(model.decoder.padding_idx)
-            #
-            # # decoder layers
-            # # attn = None
-            # inner_states = [prev_output_tokens_emb]
-            #
-            # input = prev_output_tokens_emb
-            # alignment_layer = model.decoder.num_layers - 1
-            # for idx, layer in enumerate(model.decoder.layers):
-            #     self_attn_mask = None
-            #
-            #     input, layer_attn, _ = layer(
-            #         input,
-            #         encoder_out.encoder_out if encoder_out is not None else None,
-            #         encoder_out.encoder_padding_mask if encoder_out is not None else None,
-            #         incremental_state=None,
-            #         self_attn_mask=self_attn_mask,
-            #         self_attn_padding_mask=self_attn_padding_mask,
-            #         need_attn=bool((idx == alignment_layer)),
-            #         need_head_weights=bool((idx == alignment_layer)),
-            #     )
-            #     inner_states.append(input)
-            #     # if layer_attn is not None and idx == alignment_layer:
-            #     #     attn = layer_attn.float().to(prev_output_tokens_emb)
-            #
-            # out = inner_states[-1].squeeze(0)  # .transpose(0, 1)
-            # decoded = model.decoder.output_layer(out)  # (batch_size*comment_dict_size)
-            # logprobs = F.log_softmax(decoded, dim=-1)  # (batch_size*comment_dict_size)
-            # prob_prev = torch.exp(logprobs)  # (batch_size*comment_dict_size)
+            incremental_state['step'] = j
+            decoder_outputs, attns = model.decoder(prev_output_tokens, encoder_out=encoder_out, \
+                                                   incremental_state=incremental_state)
+
+            prediction = decoder_outputs.squeeze(1)
+            prediction = prediction.log_softmax(dim=1)
 
             sample_max = True
             if sample_max:
-                sample_logprobs, predicted = torch.max(prob_prev, dim=-1, keepdim=True)
-                dec_preds.append(predicted.clone())
+                sample_logprobs, predicted = torch.max(prediction, dim=-1, keepdim=True)
             else:
-                predicted = torch.multinomial(prob_prev, 1)  # .to(device)
-                dec_preds.append(predicted.clone())
+                predicted = torch.multinomial(prediction, 1)  # .to(device)
+            dec_preds.append(predicted.squeeze(1).clone())
+            prev_output_tokens = predicted
 
-            prev_output_tokens = torch.cat([prev_output_tokens, predicted], dim=-1)
-            # prev_output_tokens = torch.cat([prev_output_tokens, predicted.reshape(-1, 1)], dim=1)
-
-        dec_preds = torch.stack(dec_preds, dim=1).squeeze(dim=-1)
+        dec_preds = torch.stack(dec_preds, dim=1)
 
         predictions = []
         for pred in dec_preds.tolist():
