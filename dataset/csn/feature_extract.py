@@ -380,7 +380,7 @@ if __name__ == '__main__':
         default=[
             'code', 'docstring',
             'code_tokens', 'docstring_tokens',
-            'raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'binary_ast', 'traversal',
+            # 'raw_ast', 'ast', 'path', 'sbt', 'sbtao', 'binary_ast', 'traversal',
         ],
         type=str, nargs='+', help="attrs: raw_ast, ...",
     )
