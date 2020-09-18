@@ -84,7 +84,7 @@ command to filter those code snippets whose attributes are invalid. For instance
 ```
 python -m dataset.csn.filter
 ```
-after you run this command, your directory ```~/.ncc/code_search_net/refine``` would be
+after you run this command, your directory ```~/.ncc/code_search_net/filter``` would be
 ```
 (base) yang@GS65:~/.ncc/code_search_net/filter$ ls
 ruby
