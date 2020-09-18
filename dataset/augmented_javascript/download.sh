@@ -32,8 +32,8 @@ data_urls=(
   "https://drive.google.com/uc?id=1YvN5UQuijRgUAL3aF1MzGLn1NiVMTAEo"#3.6M
 )
 
-DIR=~/.ncc/augmented_javascript/type_prediction/raw/
-#DIR=/export/share/jianguo/scodebert/augmented_javascript/type_prediction/raw/
+#DIR=~/.ncc/augmented_javascript/type_prediction/raw/
+DIR=/export/share/jianguo/scodebert/augmented_javascript/type_prediction/raw/
 mkdir -p ${DIR}
 
 for (( idx = 0 ; idx < ${#data_urls[@]} ; idx++ )); do
