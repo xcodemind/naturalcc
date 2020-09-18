@@ -9,7 +9,7 @@ from ncc import LOGGER
 HOSTNAME = socket.gethostname()
 USERNAME = getpass.getuser()
 # register your hostname or username
-if HOSTNAME in ['GS65'] or re.match(r'pytorch-.*', HOSTNAME) is not None \
+if HOSTNAME in ['GS65', 'node14'] or re.match(r'pytorch-.*', HOSTNAME) is not None \
     or USERNAME in ['hust_xhshi_1']:
     DEFAULT_DIR = '~/.ncc'
 else:
