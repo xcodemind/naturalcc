@@ -43,7 +43,6 @@ test              test.docstring         test.original_string  train.code_tokens
 test.code         test.docstring_tokens  train                 train.docstring         train.original_string  valid.code_tokens  valid.func_name
 test.code_tokens  test.func_name         train.code            train.docstring_tokens  valid                  valid.docstring    valid.original_string
 ```
-*If you only use code/code_tokens/docstring/docstring_tokens*
 
 ### step 3(optional). If you want to get AST/binary-AST etc. of code and so on. Plz run such command.
 ```
