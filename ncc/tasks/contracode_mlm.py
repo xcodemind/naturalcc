@@ -114,7 +114,7 @@ class ContraCodeMLM(FairseqTask):
     def setup_task(cls, args, **kwargs):
         paths = utils.split_paths(args['task']['data'])
         assert len(paths) > 0
-        dictionary = cls.load_dictionary(os.path.join('/'.join(paths[0].split('/')[:-1]), 'csnjs_8k_9995p_unigram_url.dict.txt'))
+        dictionary = cls.load_dictionary(os.path.join(paths[0], 'csnjs_8k_9995p_unigram_url.dict.txt'))
         LOGGER.info('dictionary: {} types'.format(len(dictionary)))
         # sp = spm.SentencePieceProcessor()
         # sp.Load(os.path.join(paths[0], 'csnjs_8k_9995p_unigram_url.model'))
