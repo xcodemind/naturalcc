@@ -46,6 +46,6 @@ preprocess:
   joined_dictionary: 1 # ", action="store_true", help="Generate joined dictionary"
   only_source: 1 # ", action="store_true", help="Only process the source language"
   padding_factor: 8 #", metavar="N", default=8, type=int, help="Pad dictionary size to be multiple of N"
-  workers: 1 # ", metavar="N", default=1, type=int, help="number of parallel workers"
+  workers: 80 # ", metavar="N", default=1, type=int, help="number of parallel workers"
   inserted: 0
   min_alternatives: 2
