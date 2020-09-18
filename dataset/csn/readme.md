@@ -75,7 +75,7 @@ test.code_tokens  test.docstring_tokens  train.code_tokens  train.docstring_toke
 ```
 
  
-### step 4. filter data containing invalid attributes. Only available after you run step3.
+### step 4(optional, run after step3). filter data containing invalid attributes. Only available after you run step3.
 ```
 python -m dataset.csn.filter -l [language] -r [refined data directory] -f [filter data directory] -a [data attributes]
 ```
