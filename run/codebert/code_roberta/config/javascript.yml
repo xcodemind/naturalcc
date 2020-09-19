@@ -28,7 +28,7 @@ common:
   task: contracode_mlm # masked_lm # task
 
 dataset:
-  num_workers: 0 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
+  num_workers: 64 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
   skip_invalid_size_inputs_valid_test: 1 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
   max_sentences: 8 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
@@ -50,7 +50,7 @@ dataset:
 
 
 distributed_training:
-  distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
+  distributed_world_size: 2 # default=max(1, torch.cuda.device_count()
   distributed_rank: 0 # default=0, type=int, help='rank of the current worker'
   distributed_backend: nccl # default='nccl', type=str, help='distributed backend'
   distributed_init_method: ~ # default=None, type=str,help='typically tcp://hostname:port that will be used to establish initial connetion'
@@ -138,7 +138,7 @@ model:
 
 optimization:
   max_epoch: 0 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
-  max_update: 12500 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
+  max_update: 90000 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
   clip_norm: 25 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
   sentence_avg: ~ # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
