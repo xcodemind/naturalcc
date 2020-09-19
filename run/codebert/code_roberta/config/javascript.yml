@@ -28,7 +28,7 @@ common:
   task: contracode_mlm # masked_lm # task
 
 dataset:
-  num_workers: 64 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
+  num_workers: 0 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
   skip_invalid_size_inputs_valid_test: 1 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
   max_sentences: 8 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
@@ -50,7 +50,7 @@ dataset:
 
 
 distributed_training:
-  distributed_world_size: 2 # default=max(1, torch.cuda.device_count()
+  distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
   distributed_rank: 0 # default=0, type=int, help='rank of the current worker'
   distributed_backend: nccl # default='nccl', type=str, help='distributed backend'
   distributed_init_method: ~ # default=None, type=str,help='typically tcp://hostname:port that will be used to establish initial connetion'
