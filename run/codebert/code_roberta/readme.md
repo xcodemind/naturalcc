@@ -5,7 +5,7 @@ python -m run.codebert.code_roberta.train
 ```
 
 ## Fine-tuning
-> Currently no fine-tuning, will be added later.
+> Currently no fine-tuning, will be added later. Still exists bugs.
 
 ```
 python -m run.codebert.code_roberta.ft_type_predict
