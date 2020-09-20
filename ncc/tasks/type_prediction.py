@@ -81,8 +81,8 @@ class TypePredictionTask(FairseqTask):
         src_dict = Dictionary(
                 extra_special_symbols=[constants.CLS, constants.SEP, constants.MASK,
                                        constants.EOL, constants.URL])
-        src_dict.add_from_file(args['eval']['srcdict'])
-        tgt_dict = Dictionary.load(args['eval']['tgtdict'])
+        src_dict.add_from_file(args['dataset']['srcdict'])
+        tgt_dict = Dictionary.load(args['dataset']['tgtdict'])
 
         # src_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.txt'.format(args['task']['source_lang'])))
         # tgt_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.txt'.format(args['task']['target_lang'])))
@@ -136,7 +136,7 @@ class TypePredictionTask(FairseqTask):
         src, tgt = self.args['task']['source_lang'], self.args['task']['target_lang']
 
         sp = spm.SentencePieceProcessor()
-        sp.load(self.args['eval']['src_sp'])
+        sp.load(self.args['dataset']['src_sp'])
 
         self.datasets[split] = load_codetype_dataset(
             data_path, split, src, self.src_dict, tgt, self.tgt_dict, sp,
@@ -150,7 +150,8 @@ class TypePredictionTask(FairseqTask):
             # truncate_source=self.args['task']['truncate_source'],
             # append_eos_to_target=self.args['task']['append_eos_to_target'],
         )
-
+        # item = self.datasets[split].__getitem__(0)
+        # print('item: ', item)
     # def build_dataset_for_inference(self, src_tokens, src_lengths):
     #     return LanguagePairDataset(src_tokens, src_lengths, self.source_dictionary)
 
@@ -221,11 +222,11 @@ class TypePredictionTask(FairseqTask):
 
     def reduce_metrics(self, logging_outputs, criterion):
         super().reduce_metrics(logging_outputs, criterion)
-        if self.args['task']['eval_bleu']:
-            def sum_logs(key):
-                return sum(log.get(key, 0) for log in logging_outputs)
-
-            metrics.log_scalar('bleu', sum_logs('bleu'))
+        # if self.args['task']['eval_bleu']:
+        #     def sum_logs(key):
+        #         return sum(log.get(key, 0) for log in logging_outputs)
+        #
+        #     metrics.log_scalar('bleu', sum_logs('bleu'))
 
     def max_positions(self):
         """Return the max sentence length allowed by the task."""
