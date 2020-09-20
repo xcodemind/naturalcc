@@ -102,14 +102,14 @@ def load_dict(args: Dict, task, modality: str, overwrite: bool):
 
 def vocab2dict(vocab_file: str, dict_file: str = None):
     if dict_file is None:
-        dict_file = vocab_file.replace('.vocab', '.dict.txt')
+        dict_file = vocab_file.replace('.vocab', '.dict.json')
     with open(vocab_file, 'r', encoding='UTF-8') as reader:
         with open(dict_file, 'w', encoding='UTF-8') as writer:
             for line in reader:
                 token, _ = line.rstrip('\n').split('\t')
                 if token in DICTIONARY_CONTAINED:
                     continue
-                writer.write('{} {}\n'.format(token, 1))
+                print(ujson.dumps([token, 1]), file=writer)
 
 
 ######################################################################
@@ -333,8 +333,11 @@ def build_model(file: List[str], model_name: str, vocab_size: int,
 
     LOGGER.info(params)
     spm.SentencePieceTrainer.train(params)
-    # rewrite bpe.vocab into bpe.dict.txt so that we can use for model training and case-study
-    vocab2dict(vocab_file='{}.vocab'.format(model_name))
+    # load spm model
+    model_file = '{}.model'.format(model_name)
+    sp = spm.SentencePieceProcessor()
+    sp.load(model_file)
+    return sp
 
 
 class WordpieceEncoder(object):
