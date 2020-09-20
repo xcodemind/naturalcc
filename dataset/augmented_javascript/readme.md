@@ -21,6 +21,13 @@ python -m dataset.augmented_javascript.cast_type_prediction_data
 python -m dataset.augmented_javascript.run_sentencepiece
 ```
 
+Move the generated `.model` and `.vocab` to the `no_augmented` and `augmented` folders
+
+```
+cp csnjs_8k_9995p_unigram_url.vocab csnjs_8k_9995p_unigram_url.model no_augmented/
+mv csnjs_8k_9995p_unigram_url.vocab csnjs_8k_9995p_unigram_url.model augmented/
+```
+
 
 ## Step 2: Sentencepiece-format vocabulary to Fairseq-format vocabulary
 
@@ -28,7 +35,7 @@ Change to the folder of `csnjs_8k_9995p_unigram_url.vocab` (`[default data direc
 
 ```
 cd /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/
-cut -f1 csnjs_8k_9995p_unigram_url.vocab | tail -n +9 | sed "s/$/ 100/g" > csnjs_8k_9995p_unigram_url.dict.txt
+cut -f1 csnjs_8k_9995p_unigram_url.vocab | tail -n +10 | sed "s/$/ 100/g" > csnjs_8k_9995p_unigram_url.dict.txt
 ```
 
 
