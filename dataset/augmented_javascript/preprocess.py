@@ -33,6 +33,27 @@ def normalize_program(fn: str):
     return fn
 
 
+def tokenizer(sp):
+    def _tokenizer(program):
+        program = normalize_program(program)
+        program = sp.EncodeAsPieces(program)
+
+    return _tokenizer
+
+
+def binarize(args, filename: str, dict: Dictionary, in_file: str, offset: int, end: int):
+    """binarize function for multi-processing"""
+    ds_file = '{}.mmap'.format(in_file)
+    ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(dict))
+
+    def consumer(tensor):
+        ds.add_item(tensor)
+
+    res = Binarizer.binarize_bpe(filename, dict=None, sp=dict, consumer=consumer, offset=offset, end=end)
+    ds.finalize('{}.idx'.format(in_file))
+    return res
+
+
 def main(args):
     task = tasks.get_task(args['preprocess']['task'])
     LOGGER.info('mkdir for {} task'.format(args['preprocess']['task']))
@@ -109,22 +130,96 @@ def main(args):
             tgt_sp = None
 
     # 2. ***************build dataset********************
-    def make_dataset(vocab, sp, input_prefix, output_prefix, lang, min_alternatives=2, num_workers=1):
-        if args['preprocess']['dataset_impl'] == "raw":
-            examples = pickle.load(open(input_prefix, 'rb'))
-            examples = list(map(sorted, map(list, examples)))
-            examples = list(filter(lambda ex: len(ex) >= min_alternatives, examples))
-            LOGGER.info('After filtering, exmaples size: {}'.format(len(examples)))
+    def make_binary_dataset(vocab: Dictionary, input_file, output_file,
+                            attr: str, num_workers: int):
+        """make binary dataset"""
+        LOGGER.info("[{}] Dictionary: {} types".format(attr, len(vocab) - 1))
+        n_seq_tok = [0, 0]
+        replaced = Counter()  # save un-recorded tokens
 
-            # Attention: mutli-processing only support text file, not a pickle file or a huge list in memory
-            output_file = dest_path(output_prefix + '.sp.json', lang=None)
-            LOGGER.info('Writing data in {}'.format(output_file))
-            with open(output_file, 'w', encoding="utf-8") as writer:
-                for example in tqdm(examples):
-                    program = example[0]
-                    program = normalize_program(program)
+        def merge_result(worker_result):
+            replaced.update(worker_result["replaced"])
+            n_seq_tok[0] += worker_result["nseq"]
+            n_seq_tok[1] += worker_result["ntok"]
+
+        # split a file into different parts
+        # if use multi-processing, we first process 2nd to last file
+        # 1.txt -> 10 processor, 0(p0)(0-99), 100(p1)(100-199), ...
+        offsets = Binarizer.find_offsets(input_file, num_workers)
+        pool = None
+        if num_workers > 1:
+            # p1-pN -> (1 bin-txt, 1 idx), (N bin-txt, N idx)
+            pool = Pool(processes=num_workers - 1)
+            for worker_id in range(1, num_workers):
+                prefix = "{}{}".format(output_file, worker_id)
+                pool.apply_async(
+                    binarize,
+                    (
+                        args,
+                        input_file,
+                        vocab,
+                        prefix,
+                        offsets[worker_id],
+                        offsets[worker_id + 1]
+                    ),
+                    callback=merge_result
+                )
+            pool.close()
+        # process 1th file, if multi-processing available. If not, process all file
+        # p0 -> 0,end
+        ds_file = '{}.mmap'.format(output_file)
+        ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(vocab))
+        merge_result(
+            Binarizer.binarize_bpe(
+                input_file, dict=None, sp=vocab, consumer=lambda t: ds.add_item(t),
+                offset=0, end=offsets[1],
+            )
+        )
+        if num_workers > 1:
+            # p1-pN
+            pool.join()
+            # merge sub-processors' index and data files into final files and delete them.
+            for worker_id in range(1, num_workers):
+                temp_file_path = "{}{}".format(output_file, worker_id)
+                ds.merge_file_(temp_file_path)
+                # idx, txt
+                os.remove(indexed_dataset.data_file_path(temp_file_path))
+                os.remove(indexed_dataset.index_file_path(temp_file_path))
+        ds.finalize('{}.idx'.format(output_file))
+
+        LOGGER.info(
+            "[{}] {}: {} sents, {} tokens, BPE node replacement".format(
+                attr,
+                input_file,
+                n_seq_tok[0],
+                n_seq_tok[1],
+            )
+        )
+
+    def make_dataset(vocab, sp, input_prefix, output_prefix, lang, num_workers=1):
+        if args['preprocess']['dataset_impl'] == "raw":
+            out_file = dest_path(output_prefix, lang='code')
+            with open(input_prefix, 'r') as reader, open(out_file, 'w')as writer:
+                for example in reader:
+                    program = normalize_program(example)
                     program = sp.EncodeAsPieces(program)
                     print(ujson.dumps(program), file=writer)
+        elif args['preprocess']['dataset_impl'] == "mmap":
+            out_file = dest_path(output_prefix, lang='code')
+            os.makedirs(os.path.dirname(out_file), exist_ok=True)
+            make_binary_dataset(sp, input_prefix, out_file, lang, num_workers)
+
+            # with open('input_prefix', 'r') as reader:
+            #     LOGGER.info('After filtering, exmaples size: {}'.format(len(examples)))
+            #
+            # # Attention: mutli-processing only support text file, not a pickle file or a huge list in memory
+            # output_file = dest_path(output_prefix + '.bpe.json', lang=None)
+            # LOGGER.info('Writing data in {}'.format(output_file))
+            # with open(output_file, 'w', encoding="utf-8") as writer:
+            #     for example in tqdm(examples):
+            #         program = normalize_program(program)
+            #         program = sp.EncodeAsPieces(program)
+            #         print(ujson.dumps(program), file=writer)
 
     def make_all(lang, vocab, sp):
         if args['preprocess']['trainpref']:

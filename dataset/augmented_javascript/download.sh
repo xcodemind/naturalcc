@@ -23,7 +23,7 @@ gunzip ${FILE} -d ${DIR} # && rm ${FILE}
 done
 
 
-
+# type inference data
 data_urls=(
   "https://drive.google.com/uc?id=1YtLVoMUsxU6HTpu5Qvs0xldm_SC_FZRz"#82K
   "https://drive.google.com/uc?id=1YvoM6rxcaX1wsyQu0HbGurQdaV6fsmym"#7.0M
@@ -42,3 +42,20 @@ echo "Downloading augmented_javascript dataset file from ${data_urls[idx]}"
 gdown ${data_urls[idx]} -O ${DIR} --no-cookies
 
 done
+
+# type inference data
+data_urls=(
+  "https://contrastive-code.s3.amazonaws.com/codesearchnet_javascript/javascript_dedupe_definitions_nonoverlap_v2_train.jsonl.gz"
+)
+
+#DIR=~/.ncc/augmented_javascript/contracode/data-raw/
+DIR=/export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/
+mkdir -p ${DIR}
+
+for (( idx = 0 ; idx < ${#data_urls[@]} ; idx++ )); do
+
+echo "Downloading augmented_javascript dataset file from ${data_urls[idx]}"
+gdown ${data_urls[idx]} -O ${DIR} --no-cookies
+
+done
+

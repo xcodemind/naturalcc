@@ -38,6 +38,8 @@ cut -f1 csnjs_8k_9995p_unigram_url.vocab | tail -n +9 | sed "s/$/ 100/g" > csnjs
 
 If we want to pretrain the codebert, we will use this data.
 ```
+mv ~/.ncc/augmented_javascript/raw/javascript_augmented.json ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/train.code
+cd ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/
 python -m dataset.augmented_javascript.preprocess
 ```
 
