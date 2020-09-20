@@ -43,16 +43,6 @@ def collate(samples, pad_idx):
     }
 
 
-def truncate_tokens(tokens, max_len):
-    """truncate code/query tokens"""
-    if len(tokens) > max_len and max_len > 0:
-        # randome sample
-        start_idx = randint(0, len(tokens) - max_len)
-        return tokens[start_idx:start_idx + max_len]
-    else:
-        return tokens
-
-
 class RetrievalDataset(FairseqDataset):
     """
     A pair of torch.utils.data.Datasets.
@@ -96,10 +86,8 @@ class RetrievalDataset(FairseqDataset):
         self.input_feeding = input_feeding
 
     def __getitem__(self, index):
-        if self.max_source_positions:
-            src_item = truncate_tokens(self.src[index], self.max_source_positions)
-        if self.max_target_positions:
-            tgt_item = truncate_tokens(self.tgt[index], self.max_target_positions)
+        src_item = self.src[index]
+        tgt_item = self.tgt[index]
 
         example = {
             'id': index,

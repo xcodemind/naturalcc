@@ -10,8 +10,11 @@
 Evaluate the perplexity of a trained language model.
 """
 import os
+import numpy as np
 from collections import namedtuple
+import random
 import torch
+import torch.nn.functional as F
 from ncc import LOGGER
 from ncc import tasks
 from ncc.utils import checkpoint_utils
@@ -22,23 +25,22 @@ from ncc.logging.meters import StopwatchMeter
 from ncc.eval.com2cod_retrieval import Com2CodeRetrievalScorer
 
 
-def main(parsed_args, **unused_kwargs):
-    assert parsed_args['eval']['path'] is not None, '--path required for evaluation!'
+def main(args, **unused_kwargs):
+    assert args['eval']['path'] is not None, '--path required for evaluation!'
 
-    if torch.cuda.is_available() and not parsed_args['common']['cpu']:
-        torch.cuda.set_device(parsed_args['distributed']['device_id'])
+    if torch.cuda.is_available() and not args['common']['cpu']:
+        torch.cuda.set_device(args['distributed_training']['device_id'])
 
-    LOGGER.info(parsed_args)
-    use_cuda = torch.cuda.is_available() and not parsed_args['common']['cpu']
-    task = tasks.setup_task(parsed_args)
+    LOGGER.info(args)
+    use_cuda = torch.cuda.is_available() and not args['common']['cpu']
+    task = tasks.setup_task(args)
 
     # Load ensemble
-    LOGGER.info('loading model(s) from {}'.format(parsed_args['eval']['path']))
-    models, args = checkpoint_utils.load_model_ensemble(
-        parsed_args['eval']['path'].split(os.pathsep),
-        arg_overrides=eval(parsed_args['eval']['model_overrides']),
+    LOGGER.info('loading model(s) from {}'.format(args['eval']['path']))
+    models, _model_args = checkpoint_utils.load_model_ensemble(
+        utils.split_paths(args['eval']['path']),
+        arg_overrides=eval(args['eval']['model_overrides']),
         task=task,
-        suffix=parsed_args['eval']['checkpoint_suffix'],
     )
 
     task = tasks.setup_task(args)
@@ -78,37 +80,52 @@ def main(parsed_args, **unused_kwargs):
         default_log_format=('tqdm' if not args['common']['no_progress_bar'] else 'none'),
     )
 
-    retrieval_timer = StopwatchMeter()
-    scorer = Com2CodeRetrievalScorer(task.target_dictionary)
-    count, accuracy, mrr, ndcg = 0, 0., 0., 0.
-
+    code_reprs, query_reprs = [], []
     for sample in progress:
         if 'net_input' not in sample:
             continue
-
         sample = utils.move_to_cuda(sample) if use_cuda else sample
-        retrieval_timer.start()
-        hypos = scorer.compute(models, sample, parsed_args['eval']['predict_type'])
-        retrieval_timer.stop(sample['ntokens'])
+        batch_code_reprs, batch_query_reprs = models[0](**sample['net_input'])
+        code_reprs.extend(batch_code_reprs.tolist())
+        query_reprs.extend(batch_query_reprs.tolist())
+    code_reprs = np.asarray(code_reprs, dtype=np.float32)
+    query_reprs = np.asarray(query_reprs, dtype=np.float32)
 
-        count = len(hypos)
-        for i, hypo_i in enumerate(hypos):
-            accuracy += hypo_i['accuracy']
-            mrr += hypo_i['mrr']
+    assert code_reprs.shape == query_reprs.shape, (code_reprs.shape, query_reprs.shape)
+    eval_size = len(code_reprs) if args['eval']['eval_size'] == -1 else args['eval']['eval_size']
 
-        # if count  > 100: # TODO: for debug
-        #     break
-
-        progress.log({'accuracy': accuracy / count, 'mrr': mrr / count})
-
-    LOGGER.info('Accuracy: {:.4f}, MRR: {:.4f}'.format(accuracy / count, mrr / count))
+    MRR = []
+    for idx in range(len(query_reprs)):
+        if eval_size == -1:
+            batch_ids = range(len(query_reprs))
+            gt_idx = idx
+        else:
+            batch_ids = set(random.sample(range(len(query_reprs)), eval_size))
+            if idx not in batch_ids:
+                batch_ids = list(batch_ids)[:eval_size - 1] + [idx]
+                gt_idx = eval_size - 1
+            else:
+                batch_ids = list(batch_ids)
+                gt_idx = batch_ids.index(idx)
+        batch_code_reprs = torch.from_numpy(code_reprs[batch_ids, :])
+        batch_query_reprs = torch.from_numpy(query_reprs[batch_ids, :])
+        similarity_scores = F.cosine_similarity(batch_code_reprs, batch_query_reprs)
+        gt_sim = similarity_scores[gt_idx]
+        MRR.append(
+            (1 / (similarity_scores >= gt_sim).sum(dim=-1).float()).item()
+        )
+    print('mrr: {:.4f}'.format(sum(MRR) / len(MRR)))
 
 
 def cli_main():
-    Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('csn_retrieval.yml')  # train_sl
-    LOGGER.info(args_)
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
+    parser.add_argument(
+        "--language", "-l", default='javascript', type=str, help="load {language}.yml for train",
+    )
+    args = parser.parse_args()
+    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.language))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)

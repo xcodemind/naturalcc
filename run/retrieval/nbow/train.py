@@ -202,6 +202,7 @@ def single_main(args, init_distributed=False):
         torch.cuda.set_device(args['distributed_training']['device_id'])
     np.random.seed(args['common']['seed'])
     torch.manual_seed(args['common']['seed'])
+    torch.cuda.manual_seed(args['common']['seed'])
     if init_distributed:
         args['distributed_training']['distributed_rank'] = distributed_utils.distributed_init(args)
 
@@ -293,10 +294,14 @@ def distributed_main(i, args, start_rank=0):
 
 
 def cli_main():
-    Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('ruby.yml')
-    LOGGER.info(args_)
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
+    parser.add_argument(
+        "--language", "-l", default='javascript', type=str, help="load {language}.yml for train",
+    )
+    args = parser.parse_args()
+    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.language))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)
@@ -333,5 +338,5 @@ def cli_main():
 
 
 if __name__ == '__main__':
-    """nohup python -m run.completion.seqrnn.main > log.txt 2>&1 &"""
+    """nohup python -m run.retrieval.nbow.train > run/retrieval/nbow/log.txt 2>&1 &"""
     cli_main()
