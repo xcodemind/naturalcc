@@ -37,7 +37,7 @@ try:
         import torch
 
         _torch_available = True  # pylint: disable=invalid-name
-        logger.info("PyTorch version {} available.".format(torch.__version__))
+        logger.debug("PyTorch version {} available.".format(torch.__version__))
     else:
         logger.info("Disabling PyTorch because USE_TF is set")
         _torch_available = False
@@ -204,15 +204,15 @@ def filename_to_url(filename, cache_dir=None):
 
 
 def cached_path(
-        url_or_filename,
-        cache_dir=None,
-        force_download=False,
-        proxies=None,
-        resume_download=False,
-        user_agent=None,
-        extract_compressed_file=False,
-        force_extract=False,
-        local_files_only=False,
+    url_or_filename,
+    cache_dir=None,
+    force_download=False,
+    proxies=None,
+    resume_download=False,
+    user_agent=None,
+    extract_compressed_file=False,
+    force_extract=False,
+    local_files_only=False,
 ) -> Optional[str]:
     """
     Given something that might be a URL (or might be a local path),
@@ -378,14 +378,14 @@ def http_get(url, temp_file, proxies=None, resume_size=0, user_agent=None):
 
 
 def get_from_cache(
-        url,
-        cache_dir=None,
-        force_download=False,
-        proxies=None,
-        etag_timeout=10,
-        resume_download=False,
-        user_agent=None,
-        local_files_only=False,
+    url,
+    cache_dir=None,
+    force_download=False,
+    proxies=None,
+    etag_timeout=10,
+    resume_download=False,
+    user_agent=None,
+    local_files_only=False,
 ) -> Optional[str]:
     """
     Given a URL, look for the corresponding file in the local cache.
