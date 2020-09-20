@@ -38,8 +38,8 @@ def spm_train(
 ):  # , input_sentence_size: int, shuffle_input_sentence: str):
     # command = f"--input={input} --model_prefix={model_prefix} --vocab_size={vocab_size} --character_coverage={character_coverage} --model_type={model_type} --input_sentence_size={input_sentence_size} --shuffle_input_sentence={shuffle_input_sentence}"
     command = f"--input={input} --model_prefix={model_prefix} --vocab_size={vocab_size} " \
-              f"--character_coverage={character_coverage} --model_type={model_type} --unk_piece=[UNK] " \
-              f"--pad_piece=[PAD] --user_defined_symbols=[CLS],[SEP],[MASK],[EOL],[URL] --hard_vocab_limit=false"
+              f"--character_coverage={character_coverage} --model_type={model_type} --pad_id=0 --bos_id=1 --eos_id=2 --unk_id=3" \
+              f" --unk_piece=[UNK] --pad_piece=[PAD] --user_defined_symbols=[CLS],[SEP],[MASK],[EOL],[URL] --hard_vocab_limit=false"
     print(command)
     spm.SentencePieceTrainer.Train(command)
 
@@ -75,4 +75,4 @@ if __name__ == "__main__":
     # 2. spm_train
     model_prefix = os.path.join(args.tgt_dir, args.model_prefix)
     spm_train(output, model_prefix=model_prefix, vocab_size=args.vocab_size, model_type=args.model_type)
-    vocab2dict(vocab_file='{}.vocab'.format(model_prefix))
+    # vocab2dict(vocab_file='{}.vocab'.format(model_prefix))
