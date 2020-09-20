@@ -33,8 +33,8 @@ def collate(samples, pad_idx, no_type_id):
     L = X.size(1)
 
     # Create tensor of sequence lengths, [B]
-    lengths = torch.tensor([len(x) for x in X], dtype=torch.long)
-
+    # lengths = torch.tensor([len(x) for x in X], dtype=torch.long)
+    lengths = torch.LongTensor([s['subword_ids'].numel() for s in samples])
     # Make masks for each label interval
     labels = torch.zeros(B, L, dtype=torch.long)
     labels.fill_(no_type_id)
@@ -49,7 +49,7 @@ def collate(samples, pad_idx, no_type_id):
             'src_tokens': X,
             'src_length': lengths,
         },
-        'labels': labels,
+        'target': labels,
         # 'id': [s['id'] for s in samples],
     }
     return batch
