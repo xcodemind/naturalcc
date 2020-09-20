@@ -53,7 +53,6 @@ networkx
 nltk
 numba
 numpy
-nvidia-ml-py3
 olefile
 omegaconf
 pandas
