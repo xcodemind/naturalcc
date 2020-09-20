@@ -1,14 +1,11 @@
 eval:
-  path: /export/share/jianguo/scodebert/augmented_javascript/codebert/code_roberta/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  path: ~/.ncc/augmented_javascript/codebert/code_roberta/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+#  path: /export/share/jianguo/scodebert/augmented_javascript/codebert/code_roberta/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
   quiet: 1 # ', action='store_true', help='only print final scores'
   results_path: ~ # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'
   model_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override model args at generation '
-
-#  types_file: ~/.ncc/augmented_javascript/type_prediction/test_projects_gold_filtered.json
-  srcdict: /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/csnjs_8k_9995p_unigram_url.dict.txt
-  src_sp: /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/csnjs_8k_9995p_unigram_url.model
-  tgtdict: /export/share/jianguo/scodebert/augmented_javascript/type_prediction/data-raw/target.dict.txt
+#  tgtdict: /export/share/jianguo/scodebert/augmented_javascript/type_prediction/data-raw/target.dict.txt
 #  beam: 5 # ', default=5, type=int, metavar='N', help='beam size')
 #  nbest: 1 # ', default=1, type=int, metavar='N', help='number of hypotheses to output')
 #  max_len_a: 0 #', default=0, type=float, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))
