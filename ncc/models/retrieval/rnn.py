@@ -17,7 +17,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@register_model('rnn')
+@register_model('birnn')
 class RNN(FairseqRetrievalModel):
     def __init__(self, args, src_encoder, tgt_encoder):
         super().__init__(src_encoder, tgt_encoder)

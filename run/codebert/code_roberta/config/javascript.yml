@@ -31,9 +31,9 @@ dataset:
   num_workers: 0 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
   skip_invalid_size_inputs_valid_test: 1 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
-  max_sentences: 8 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  max_sentences: 4 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
-  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
+  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
   train_subset: train # train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
   valid_subset: train # valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
   validate_interval: 1 # type=int, default=1, metavar='N', help='validate every N epochs'
@@ -69,6 +69,7 @@ distributed_training:
   warmup_iterations: 500 # default=500, type=int, help="warmup iterations for model to broadcast",
 
 task:
+#  data: ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   data: /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
   tokens_per_sample: 1024 #512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
@@ -101,6 +102,7 @@ model:
   attention_dropout: 0.1 # type=float, metavar='D', help='dropout probability for attention weights'
   activation_dropout: 0.0 # '--relu-dropout', type=float, metavar='D', help='dropout probability after activation in FFN.'
   relu_dropout: 0.0 # '--relu-dropout', type=float, metavar='D', help='dropout probability after activation in FFN.'
+  encoder_positional_embeddings: 1 # default=False, action='store_true', help='if set, disables positional embeddings (outside self attention)'
   encoder_embed_path: 0 # type=str, metavar='STR', help='path to pre-trained encoder embedding'
   encoder_embed_dim: 512 # 768 # type=int, metavar='N', help='encoder embedding dimension'
   encoder_ffn_embed_dim: 2048 # 3072 # type=int, metavar='N', help='encoder embedding dimension for FFN'
@@ -167,7 +169,8 @@ optimization:
     log-keys: '' # type=str, default=None, help='output keys to log'
 
 checkpoint:
-  save_dir: /export/share/jianguo/scodebert/augmented_javascript/codebert/code_roberta/checkpoints # default='checkpoints', help='path to save checkpoints'
+  save_dir: /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/codebert/code_roberta/checkpoints # default='checkpoints', help='path to save checkpoints'
+#  save_dir: ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/codebert/code_roberta/checkpoints # default='checkpoints', help='path to save checkpoints'
   restore_file: checkpoint_last.pt # default='checkpoint_last.pt', help='filename from which to load checkpoint (default: <save-dir>/checkpoint_last.pt'
   reset_dataloader: ~ # action='store_true', help='if set, does not reload dataloader state from the checkpoint'
   reset_lr_scheduler: ~ # action='store_true', help='if set, does not load lr scheduler state from the checkpoint'

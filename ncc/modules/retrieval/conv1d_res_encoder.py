@@ -27,8 +27,7 @@ class Conv1dResEncoder(FairseqEncoder):
         self.embed = Embedding(len(dictionary), embed_dim, padding_idx=self.dictionary.pad())
         self.position_encoding = kwargs.get('position_encoding', None)
         if self.position_encoding == 'learned':
-            self.position_embed = nn.Parameter(torch.FloatTensor(kwargs['max_tokens'], embed_dim))
-            nn.init.uniform_(self.position_embed, -0.1, 0.1)
+            self.position_embed = Embedding(kwargs['max_tokens'], embed_dim, padding_idx=None)
         else:
             self.position_embed = None
         # pooling
@@ -93,7 +92,9 @@ class Conv1dResEncoder(FairseqEncoder):
 
     def _position_encoding(self, input_emb: Tensor_t) -> Tensor_t:
         if self.position_encoding == 'learned':
-            return input_emb + self.position_embed.expand(*input_emb.size())
+            pos_idx = torch.arange(start=0, end=input_emb.size(1)).unsqueeze(0).expand(input_emb.size(0), -1) \
+                .to(input_emb.device)
+            return input_emb + self.position_embed(pos_idx)
         elif self.position_encoding is None:
             return input_emb
         else:

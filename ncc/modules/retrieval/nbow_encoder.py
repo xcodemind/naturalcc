@@ -7,7 +7,8 @@
 
 
 import logging
-from torch.nn import Linear
+import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from ncc.models import register_model
 from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
@@ -20,16 +21,28 @@ from ncc.types import (
 logger = logging.getLogger(__name__)
 
 
+def Linear(in_features, out_features, bias=True):
+    m = nn.Linear(in_features, out_features, bias)
+    nn.init.xavier_uniform_(m.weight)
+    if bias:
+        nn.init.constant_(m.bias, 0.0)
+    return m
+
+
 class NBOWEncoder(FairseqEncoder):
     """based on CodeSearchNet """
 
     def __init__(self, dictionary, embed_dim: Int_t, **kwargs):
         super().__init__(dictionary)
-        self.embed = Embedding(len(dictionary), embed_dim, padding_idx=self.dictionary.pad())
-        # self.dropout = kwargs.get('dropout', None)
+        self.embed = nn.Embedding(len(dictionary), embed_dim, padding_idx=self.dictionary.pad())
+        # self.embed = Embedding(len(dictionary), embed_dim, padding_idx=None)
+        self.dropout = kwargs.get('dropout', None)
+        self.embed.weight.data.copy_(F.dropout(self.embed.weight.data, self.dropout))
         pooling = kwargs.get('pooling', None)
         self.pooling = pooling1d(pooling)
-        self.weight_layer = Linear(embed_dim, 1, bias=False) if 'weighted' in pooling else None
+        self.dropout = kwargs.get('dropout', None)
+        if self.pooling:
+            self.weight_layer = Linear(embed_dim, 1, bias=False) if 'weighted' in pooling else None
 
     def forward(self, tokens: Tensor_t, tokens_len: Tensor_t = None, tokens_mask: Tensor_t = None):
         """
@@ -42,10 +55,11 @@ class NBOWEncoder(FairseqEncoder):
             tokens: [batch_size, max_token_len, embed_dim]
         """
         if tokens_mask is None:
-            tokens_mask = (tokens == self.dictionary.pad()).to(tokens.device)
+            tokens_mask = (tokens != self.dictionary.pad()).to(tokens.device)
         if tokens_len is None:
             tokens_len = tokens_mask.sum(dim=-1)
         tokens = self.embed(tokens)
+        # tokens = F.dropout(tokens, self.dropout, self.training)
         if self.pooling:
             tokens = self.pooling(
                 input_emb=tokens, input_len=tokens_len, input_mask=tokens_mask, weight_layer=self.weight_layer

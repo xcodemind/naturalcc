@@ -2,6 +2,8 @@ import argparse
 import sentencepiece as spm
 import tqdm
 import os
+import gzip
+import ujson
 from dataset.augmented_javascript.utils.jsonl_dataset import JSONLinesDataset, normalize_docstring
 from dataset.augmented_javascript.utils.util import normalize_program
 from dataset.codesearchnet.utils.codebert_utils import vocab2dict
@@ -26,7 +28,7 @@ def make_corpus(input, output):
             # Write normalized function
             function = ex["function"]
             line = normalize_program(function)
-            print(line, file=f)
+            print(ujson.dumps(line), file=f)
 
     print("Wrote corpus to:", output)
 
@@ -36,8 +38,8 @@ def spm_train(
 ):  # , input_sentence_size: int, shuffle_input_sentence: str):
     # command = f"--input={input} --model_prefix={model_prefix} --vocab_size={vocab_size} --character_coverage={character_coverage} --model_type={model_type} --input_sentence_size={input_sentence_size} --shuffle_input_sentence={shuffle_input_sentence}"
     command = f"--input={input} --model_prefix={model_prefix} --vocab_size={vocab_size} " \
-              f"--character_coverage={character_coverage} --model_type={model_type} --unk_piece=[UNK] " \
-              f"--pad_piece=[PAD] --user_defined_symbols=[CLS],[SEP],[MASK],[EOL],[URL] --hard_vocab_limit=false"
+              f"--character_coverage={character_coverage} --model_type={model_type} --pad_id=0 --bos_id=1 --eos_id=2 --unk_id=3" \
+              f" --unk_piece=[UNK] --pad_piece=[PAD] --user_defined_symbols=[CLS],[SEP],[MASK],[EOL],[URL] --hard_vocab_limit=false"
     print(command)
     spm.SentencePieceTrainer.Train(command)
 
@@ -48,10 +50,10 @@ if __name__ == "__main__":
     parser.add_argument("--format", type=str, default='piece', help='id(num)/piece(str)')
     parser.add_argument("--vocab-size", type=int, default=8000, help='token dictionary size')
     parser.add_argument("--src-dir", type=str, default=RAW_DATA_DIR, help='source data')
-    # parser.add_argument("--tgt-dir", type=str, default=os.path.join(DATASET_DIR, 'contracode/data-raw/augmented'),
-    #                     help='save dir for sentencepiece bpe models or save files')
-    parser.add_argument("--tgt-dir", type=str, default=os.path.join(DATASET_DIR, 'contracode/data-raw/'),
+    parser.add_argument("--tgt-dir", type=str, default=os.path.join(DATASET_DIR, 'contracode/data-raw/no_augmented'),
                         help='save dir for sentencepiece bpe models or save files')
+    # parser.add_argument("--tgt-dir", type=str, default=os.path.join(DATASET_DIR, 'contracode/data-raw/'),
+    #                     help='save dir for sentencepiece bpe models or save files')
     parser.add_argument("--model-type", type=str, default='unigram', help='source data')
     parser.add_argument("--model-prefix", type=str, default='csnjs_8k_9995p_unigram_url', help='source data')
 
@@ -65,12 +67,12 @@ if __name__ == "__main__":
     os.makedirs(args.src_dir, exist_ok=True)
     os.makedirs(args.tgt_dir, exist_ok=True)
 
-    input = os.path.join(args.src_dir, 'javascript_dedupe_definitions_nonoverlap_v2_train.jsonl')
-    output = os.path.join(args.src_dir, 'javascript_dedupe_definitions_nonoverlap_v2_train.txt')
+    input = os.path.join(args.src_dir, 'javascript_dedupe_definitions_nonoverlap_v2_train.jsonl.gz')
+    output = os.path.join(args.src_dir, 'javascript_dedupe_definitions_nonoverlap_v2_train.json')
     # 1. make corpus
     make_corpus(input, output)
     # exit()
     # 2. spm_train
     model_prefix = os.path.join(args.tgt_dir, args.model_prefix)
     spm_train(output, model_prefix=model_prefix, vocab_size=args.vocab_size, model_type=args.model_type)
-    vocab2dict(vocab_file='{}.vocab'.format(model_prefix))
+    # vocab2dict(vocab_file='{}.vocab'.format(model_prefix))

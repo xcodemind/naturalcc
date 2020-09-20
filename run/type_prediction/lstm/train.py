@@ -12,12 +12,7 @@ import math
 import random
 import numpy as np
 from collections import namedtuple
-
 import torch
-import torch.multiprocessing
-
-torch.multiprocessing.set_sharing_strategy('file_system')
-
 from ncc import LOGGER
 from ncc import tasks
 from ncc.logging import meters
@@ -137,13 +132,13 @@ def validate(args, trainer, task, epoch_itr, subsets):
         with metrics.aggregate(new_root=True) as agg:
             for sample in progress:
                 trainer.valid_step(sample)
-                # break # TODO: only for debug
 
         # log validation stats
         stats = get_valid_stats(args, trainer, agg.get_smoothed_values())
         progress.print(stats, tag=subset, step=trainer.get_num_updates())
 
         valid_losses.append(stats[args['checkpoint']['best_checkpoint_metric']])
+
     return valid_losses
 
 
@@ -202,7 +197,6 @@ def single_main(args, init_distributed=False):
         torch.cuda.set_device(args['distributed_training']['device_id'])
     np.random.seed(args['common']['seed'])
     torch.manual_seed(args['common']['seed'])
-    torch.cuda.manual_seed(args['common']['seed'])
     if init_distributed:
         args['distributed_training']['distributed_rank'] = distributed_utils.distributed_init(args)
 
@@ -218,7 +212,7 @@ def single_main(args, init_distributed=False):
     # 1. Setup task, e.g., translation, language modeling, etc.
     task = tasks.setup_task(args)
 
-    # # 2. Load valid dataset (we load training data below, based on the latest checkpoint)
+    # 2. Load valid dataset (we load training data below, based on the latest checkpoint)
     for valid_sub_split in args['dataset']['valid_subset'].split(','):
         task.load_dataset(valid_sub_split, combine=False, epoch=1)
 
@@ -282,6 +276,7 @@ def single_main(args, init_distributed=False):
             # sharded data: get train iterator for next epoch
             load_dataset=(os.pathsep in args['task']['data']),
         )
+
     train_meter.stop()
     LOGGER.info('done training in {:.1f} seconds'.format(train_meter.sum))
 
@@ -301,6 +296,8 @@ def cli_main():
         "--language", "-l", default='javascript', type=str, help="load {language}.yml for train",
     )
     args = parser.parse_args()
+    # Argues = namedtuple('Argues', 'yaml')
+    # args_ = Argues('ruby.yml')
     yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.language))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
@@ -338,5 +335,7 @@ def cli_main():
 
 
 if __name__ == '__main__':
-    """nohup python -m run.retrieval.nbow.train > run/retrieval/nbow/log.txt 2>&1 &"""
+    """
+    nohup python -m run.summarization.transformer.train > run/summarization/transformer/ruby.log 2>&1 &
+    """
     cli_main()

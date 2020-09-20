@@ -73,25 +73,25 @@ class TypePredictionTransformerModel(FairseqLanguageModel):
             x = self.classification_heads[classification_head_name](x)
         return x, extra
 
-    def register_classification_head(self, name, num_classes=None, inner_dim=None, **kwargs):
-        """Register a classification head."""
-        if name in self.classification_heads:
-            prev_num_classes = self.classification_heads[name].out_proj.out_features
-            prev_inner_dim = self.classification_heads[name].dense.out_features
-            if num_classes != prev_num_classes or inner_dim != prev_inner_dim:
-                LOGGER.warning(
-                    're-registering head "{}" with num_classes {} (prev: {}) '
-                    'and inner_dim {} (prev: {})'.format(
-                        name, num_classes, prev_num_classes, inner_dim, prev_inner_dim
-                    )
-                )
-        self.classification_heads[name] = RobertaClassificationHead(
-            self.args['model']['encoder_embed_dim'],
-            inner_dim or self.args['model']['encoder_embed_dim'],
-            num_classes,
-            self.args['task']['pooler_activation_fn'],
-            self.args['model']['pooler_dropout'],
-        )
+    # def register_classification_head(self, name, num_classes=None, inner_dim=None, **kwargs):
+    #     """Register a classification head."""
+    #     if name in self.classification_heads:
+    #         prev_num_classes = self.classification_heads[name].out_proj.out_features
+    #         prev_inner_dim = self.classification_heads[name].dense.out_features
+    #         if num_classes != prev_num_classes or inner_dim != prev_inner_dim:
+    #             LOGGER.warning(
+    #                 're-registering head "{}" with num_classes {} (prev: {}) '
+    #                 'and inner_dim {} (prev: {})'.format(
+    #                     name, num_classes, prev_num_classes, inner_dim, prev_inner_dim
+    #                 )
+    #             )
+    #     self.classification_heads[name] = RobertaClassificationHead(
+    #         self.args['model']['encoder_embed_dim'],
+    #         inner_dim or self.args['model']['encoder_embed_dim'],
+    #         num_classes,
+    #         self.args['task']['pooler_activation_fn'],
+    #         self.args['model']['pooler_dropout'],
+    #     )
 
     @property
     def supported_targets(self):
@@ -237,26 +237,26 @@ class RobertaLMHead(nn.Module):
         x = F.linear(x, self.weight) + self.bias
         return x
 
-
-class RobertaClassificationHead(nn.Module):
-    """Head for sentence-level classification tasks."""
-
-    def __init__(self, input_dim, inner_dim, num_classes, activation_fn, pooler_dropout):
-        super().__init__()
-        self.dense = nn.Linear(input_dim, inner_dim)
-        self.activation_fn = utils.get_activation_fn(activation_fn)
-        self.dropout = nn.Dropout(p=pooler_dropout)
-        self.out_proj = nn.Linear(inner_dim, num_classes)
-
-    def forward(self, features, **kwargs):
-        x = features[:, 0, :]  # take <s> token (equiv. to [CLS])
-        x = self.dropout(x)
-        x = self.dense(x)
-        x = self.activation_fn(x)
-        x = self.dropout(x)
-        x = self.out_proj(x)
-        return x
-
+#
+# class RobertaClassificationHead(nn.Module):
+#     """Head for sentence-level classification tasks."""
+#
+#     def __init__(self, input_dim, inner_dim, num_classes, activation_fn, pooler_dropout):
+#         super().__init__()
+#         self.dense = nn.Linear(input_dim, inner_dim)
+#         self.activation_fn = utils.get_activation_fn(activation_fn)
+#         self.dropout = nn.Dropout(p=pooler_dropout)
+#         self.out_proj = nn.Linear(inner_dim, num_classes)
+#
+#     def forward(self, features, **kwargs):
+#         x = features[:, 0, :]  # take <s> token (equiv. to [CLS])
+#         x = self.dropout(x)
+#         x = self.dense(x)
+#         x = self.activation_fn(x)
+#         x = self.dropout(x)
+#         x = self.out_proj(x)
+#         return x
+#
 
 class RobertaEncoder(FairseqDecoder):
     """RoBERTa encoder.
@@ -339,7 +339,7 @@ class RobertaEncoder(FairseqDecoder):
         x, extra = self.extract_features(src_tokens, return_all_hiddens=return_all_hiddens)
         if not features_only:
             x = self.output_layer(x, masked_tokens=masked_tokens)
-        print('=================')
+
         return x, extra
 
     def extract_features(self, src_tokens, return_all_hiddens=False, **unused):

@@ -22,7 +22,7 @@ from ncc.data.contracode.contracode_dataset import ContraCodeDataset
 
 
 def load_masked_code_dataset(args, epoch, data_path, split, source_dictionary, combine,):
-    split_path = os.path.join(data_path, '{}.sp.json'.format(split)) # '{}.code'.format(split)
+    split_path = os.path.join(data_path, '{}.code'.format(split)) # '{}.code'.format(split)
     dataset = data_utils.load_indexed_dataset(
         path=split_path,
         modality='javascript',
