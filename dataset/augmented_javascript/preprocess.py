@@ -209,18 +209,6 @@ def main(args):
             os.makedirs(os.path.dirname(out_file), exist_ok=True)
             make_binary_dataset(sp, input_prefix, out_file, lang, num_workers)
 
-            # with open('input_prefix', 'r') as reader:
-            #     LOGGER.info('After filtering, exmaples size: {}'.format(len(examples)))
-            #
-            # # Attention: mutli-processing only support text file, not a pickle file or a huge list in memory
-            # output_file = dest_path(output_prefix + '.bpe.json', lang=None)
-            # LOGGER.info('Writing data in {}'.format(output_file))
-            # with open(output_file, 'w', encoding="utf-8") as writer:
-            #     for example in tqdm(examples):
-            #         program = normalize_program(program)
-            #         program = sp.EncodeAsPieces(program)
-            #         print(ujson.dumps(program), file=writer)
-
     def make_all(lang, vocab, sp):
         if args['preprocess']['trainpref']:
             make_dataset(vocab, sp, args['preprocess']['trainpref'], "train", lang,

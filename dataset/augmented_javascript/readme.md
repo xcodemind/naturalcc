@@ -64,7 +64,7 @@ If we want to pretrain the codebert, we will use this data.
 python -m dataset.augmented_javascript.preprocess
 ```
 
-If we want to pretrain via contrastive learning, we should use this dataset with augmentation.
+(Deprecated)If we want to pretrain via contrastive learning, we should use this dataset with augmentation.
 ```
 python -m dataset.augmented_javascript.preprocess_augmented
 ```
