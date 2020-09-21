@@ -27,6 +27,7 @@ def load_masked_traverse_dataset_roberta(args, epoch, data_path, split, source_d
     split_path = os.path.join(data_path, '{}.ast_trav_df'.format(split))
     dataset = data_utils.load_indexed_dataset(
         path=split_path,
+        modality='dfs',
         dictionary=source_dictionary,
         dataset_impl=args['dataset']['dataset_impl'],
         combine=combine,
@@ -34,16 +35,16 @@ def load_masked_traverse_dataset_roberta(args, epoch, data_path, split, source_d
     if dataset is None:
         raise FileNotFoundError('Dataset not found: {} ({})'.format(split, split_path))
 
-    # create continuous blocks of tokens
-    dataset = TokenBlockDataset(
-        dataset,
-        dataset.sizes,
-        args['task']['tokens_per_sample'] - 1,  # one less for <s>
-        pad=source_dictionary.pad(),
-        eos=source_dictionary.eos(),
-        break_mode=args['task']['sample_break_mode'],
-    )
-    LOGGER.info('loaded {} blocks from: {}'.format(len(dataset), split_path))
+    # # create continuous blocks of tokens
+    # dataset = TokenBlockDataset(
+    #     dataset,
+    #     dataset.sizes,
+    #     args['task']['tokens_per_sample'] - 1,  # one less for <s>
+    #     pad=source_dictionary.pad(),
+    #     eos=source_dictionary.eos(),
+    #     break_mode=args['task']['sample_break_mode'],
+    # )
+    # LOGGER.info('loaded {} blocks from: {}'.format(len(dataset), split_path))
 
     # prepend beginning-of-sentence token (<s>, equiv. to [CLS] in BERT)
     dataset = PrependTokenDataset(dataset, source_dictionary.bos())  # .source_dictionary.bos()
