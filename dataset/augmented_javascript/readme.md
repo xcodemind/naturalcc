@@ -21,39 +21,12 @@ python dataset/augmented_javascript/pkl2json.py
 mv /export/share/jianguo/scodebert/augmented_javascript/raw/javascript_augmented.json /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/train.code
 ```
 
-## Step 4: Download ContraCode's SPM Vocab
-```
-cd /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/
-wget https://contrastive-code.s3.amazonaws.com/codesearchnet_javascript/csn_unigrams_8k_9995p.tar.gz
-tar -xzf csn_unigrams_8k_9995p.tar.gz
-# you will have csnjs_8k_9995p_unigram_url.vocab csnjs_8k_9995p_unigram_url.model
-cut -f1 csnjs_8k_9995p_unigram_url.vocab | tail -n +10 | sed "s/$/ 100/g" > csnjs_8k_9995p_unigram_url.dict.txt
-```
-
-
-## Step 3(Deprecated): Run sentencepiece to obtain the vocabulary model
+## Step 4: Run sentencepiece to obtain the vocabulary model
 
 ```
 python -m dataset.augmented_javascript.run_sentencepiece
-```
-
-Move the generated `.model` and `.vocab` to the `no_augmented` and `augmented` folders
-
-```
-cp csnjs_8k_9995p_unigram_url.vocab csnjs_8k_9995p_unigram_url.model no_augmented/
-mv csnjs_8k_9995p_unigram_url.vocab csnjs_8k_9995p_unigram_url.model augmented/
-```
-
-
-## Step 4(Deprecated): Sentencepiece-format vocabulary to Fairseq-format vocabulary
-
-Change to the folder of `csnjs_8k_9995p_unigram_url.vocab` (`[default data directory]/augmented_javascript/contracode/data-raw/no_augmented` in my server), and tranform it into fairseq-format.
-
-```
-cd /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented
 cut -f1 csnjs_8k_9995p_unigram_url.vocab | tail -n +10 | sed "s/$/ 100/g" > csnjs_8k_9995p_unigram_url.dict.txt
 ```
-
 
 
 ## Step 5: Preprocessing
@@ -68,4 +41,3 @@ python -m dataset.augmented_javascript.preprocess
 ```
 python -m dataset.augmented_javascript.preprocess_augmented
 ```
-

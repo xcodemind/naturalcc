@@ -203,7 +203,7 @@ def main(args):
                 for example in reader:
                     program = normalize_program(example)
                     program = sp.EncodeAsPieces(program)
-                    print(ujson.dumps(program), file=writer)
+                    print(ujson.dumps(program, ensure_ascii=False), file=writer)
         elif args['preprocess']['dataset_impl'] == "mmap":
             out_file = dest_path(output_prefix, lang='code')
             os.makedirs(os.path.dirname(out_file), exist_ok=True)

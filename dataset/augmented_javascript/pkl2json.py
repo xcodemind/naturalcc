@@ -25,4 +25,4 @@ if __name__ == '__main__':
             examples = filter(lambda ex: len(ex) >= min_alternatives, examples)
         examples = list(examples)
         for exs in tqdm(examples):
-            print(ujson.dumps(exs[0]), file=writer)
+            print(ujson.dumps(exs[0], ensure_ascii=False), file=writer)

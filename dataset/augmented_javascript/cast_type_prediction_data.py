@@ -15,8 +15,8 @@ def cast_file(file_name, mode, src, tgt):
         open(os.path.join(output_path, '{}.{}'.format(mode, src)), 'w') as code_file, \
         open(os.path.join(output_path, '{}.{}'.format(mode, tgt)), 'w') as type_file:
         for line in input_file.readlines():
-            print(ujson.dumps(line.split('\t')[0]), file=code_file)
-            print(ujson.dumps(line.split('\t')[1]), end='', file=type_file)
+            print(ujson.dumps(line.split('\t')[0], ensure_ascii=False), file=code_file)
+            print(ujson.dumps(line.split('\t')[1], ensure_ascii=False), end='', file=type_file)
 
 
 if __name__ == '__main__':

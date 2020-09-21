@@ -122,7 +122,7 @@ def main(args):
                         program = normalize_program(program)
                         program = sp.EncodeAsPieces(program)
                         programs.append(program)
-                    print(ujson.dumps(programs), file=output_file)
+                    print(ujson.dumps(programs, ensure_ascii=False), file=output_file)
 
     def make_all(lang, vocab, sp):
         if args['preprocess']['trainpref']:

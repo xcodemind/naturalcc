@@ -43,18 +43,18 @@ gdown ${data_urls[idx]} -O ${DIR} --no-cookies
 
 done
 
-## type inference data
-#data_urls=(
-#  "https://contrastive-code.s3.amazonaws.com/codesearchnet_javascript/javascript_dedupe_definitions_nonoverlap_v2_train.jsonl.gz"
-#)
-#
-##DIR=~/.ncc/augmented_javascript/contracode/data-raw/no_augmented
-#DIR=/export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented
-#mkdir -p ${DIR}
-#
-#for (( idx = 0 ; idx < ${#data_urls[@]} ; idx++ )); do
-#
-#echo "Downloading augmented_javascript dataset file from ${data_urls[idx]}"
-#gdown ${data_urls[idx]} -O ${DIR} --no-cookies
-#
-#done
+# type inference data
+data_urls=(
+  "https://contrastive-code.s3.amazonaws.com/codesearchnet_javascript/javascript_dedupe_definitions_nonoverlap_v2_train.jsonl.gz"
+)
+
+#DIR=~/.ncc/augmented_javascript/contracode/data-raw/no_augmented
+DIR=/export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented
+mkdir -p ${DIR}
+
+for (( idx = 0 ; idx < ${#data_urls[@]} ; idx++ )); do
+
+echo "Downloading augmented_javascript dataset file from ${data_urls[idx]}"
+gdown ${data_urls[idx]} -O ${DIR} --no-cookies
+
+done
