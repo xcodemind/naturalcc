@@ -1,20 +1,24 @@
 #!/usr/bin/env bash
 
+data_names=(
+  "python.zip"
+)
+data_urls=(
+  "https://drive.google.com/uc?id=1XPE1txk9VI0aOT_TdqbAeI58Q8puKVl2"
+)
+
 echo "Downloading python-method dataset"
 DIR=~/.ncc/python_wan/raw/
 mkdir -p ${DIR}
-FILE=${DIR}python.zip
 
-if [[ -f "$FILE" ]]; then
-    echo "$FILE exists, skipping download"
-else
-    # https://drive.google.com/open?id=1XPE1txk9VI0aOT_TdqbAeI58Q8puKVl2
-    fileid="1XPE1txk9VI0aOT_TdqbAeI58Q8puKVl2"
-    curl -c ./cookie -s -L "https://drive.google.com/uc?export=download&id=${fileid}" > /dev/null
-    curl -Lb ./cookie "https://drive.google.com/uc?export=download&confirm=`awk '/download/ {print $NF}' ./cookie`&id=${fileid}" -o ${FILE}
-    rm ./cookie
-    unzip ${FILE} -d ${DIR} && rm ${FILE}
-fi
+for (( idx = 0 ; idx < ${#data_urls[@]} ; idx++ )); do
+
+FILE=${DIR}${data_names[idx]}
+echo "Downloading augmented_javascript dataset file from ${data_urls[idx]}"
+gdown ${data_urls[idx]} -O ${FILE} --no-cookies
+unzip ${FILE} -d ${DIR} # && rm ${FILE}
+
+done
 
 # rename dev to valid
 mv ${DIR}dev ${DIR}valid
