@@ -21,15 +21,15 @@ preprocess:
   source_lang: ast_trav_df
 #  target_lang: docstring #", default=None, metavar="TARGET", help="target language"
   # ~ path for dataset default. e.g.  for CodeSearchNet, ~/flatten = ~/.ncc/CodeSearchNet/flatten
-  trainpref: ~/.ncc/py150/trav_trans/raw/train #", metavar="FP", default=None, help="train file prefix"
+  trainpref: ~/.ncc/py150/trav_trans_debug/raw/train #", metavar="FP", default=None, help="train file prefix"
   validpref: ~ #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-  testpref:  ~/.ncc/py150/trav_trans/raw/test #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  testpref:  ~/.ncc/py150/trav_trans_debug/raw/test #", metavar="FP", default=None, help="comma separated, test file prefixes"
 #  trainpref: ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path #", metavar="FP", default=None, help="train file prefix"
 #  validpref: ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path #", metavar="FP", default=None, help="comma separated, valid file prefixes"
 #  testpref:  ~/.ncc/CodeSearchNet/codebert/data-raw/ruby/docstring_path #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
   align_suffix: ~ # ", metavar="FP", default=None, help="alignment file suffix"
-  destdir: ~/.ncc/py150/trav_trans/data-raw #", metavar="DIR", default="data-bin", help="destination dir"
+  destdir: ~/.ncc/py150/trav_trans_debug/data-raw #", metavar="DIR", default="data-bin", help="destination dir"
 #  destdir: ~/.ncc/py150/trav_trans/data-mmap
   thresholdtgt: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
   thresholdsrc: 20 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
