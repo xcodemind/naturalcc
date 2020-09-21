@@ -8,7 +8,7 @@ from dataset import (
 DATASET_NAME = 'python_wan'
 DATASET_DIR = os.path.join(DEFAULT_DIR, DATASET_NAME)
 RAW_DATA_DIR = os.path.join(DATASET_DIR, 'raw')
-LIBS_DIR = os.path.join(DEFAULT_DIR, 'libs')
+LIBS_DIR = os.path.join(DATASET_DIR, 'libs')
 FLATTEN_DIR = os.path.join(DATASET_DIR, 'flatten')
 REFINE_DIR = os.path.join(DATASET_DIR, 'refine')
 FILTER_DIR = os.path.join(DATASET_DIR, 'filter')
