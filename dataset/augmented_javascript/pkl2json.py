@@ -18,7 +18,7 @@ def get_file_lines(f):
 if __name__ == '__main__':
     min_alternatives = 2
 
-    with gzip.open(os.path.join(RAW_DATA_DIR, 'javascript_augmented.pickle.gz'), 'rb') as reader, \
+    with open(os.path.join(RAW_DATA_DIR, 'javascript_augmented.pickle'), 'rb') as reader, \
         open(os.path.join(RAW_DATA_DIR, 'javascript_augmented.json'), 'w') as writer:
         examples = map(list, pickle.load(reader))
         if min_alternatives:
