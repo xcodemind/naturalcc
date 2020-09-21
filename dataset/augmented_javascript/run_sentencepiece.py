@@ -28,7 +28,7 @@ def make_corpus(input, output):
             # Write normalized function
             function = ex["function"]
             line = normalize_program(function)
-            print(ujson.dumps(line, ensure_ascii=False), file=f)
+            print(line, file=f)
 
     print("Wrote corpus to:", output)
 
