@@ -36,10 +36,10 @@ common:
   server_port: '' # type=str, default="", help="For distant debugging."
 
 dataset:
-  num_workers: 1 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
+  num_workers: 5 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
   skip_invalid_size_inputs_valid_test: 1 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
-  max_sentences: 150 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  max_sentences: 128 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
 #  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
   dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
@@ -49,7 +49,7 @@ dataset:
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
   disable_validation: 0 # action='store_true',help='disable validation'
   max_tokens_valid: ~ # type=int, metavar='N', help='maximum number of tokens in a validation batch (defaults to --max-tokens)'
-  max_sentences_valid: 150 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
+  max_sentences_valid: 128 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
   curriculum: 0 # default=0, type=int, metavar='N', help='don\'t shuffle batches for first N epochs'
   gen_subset: test # default='test', metavar='SPLIT', help='data subset to generate (train, valid, test)'
   num_shards: 1 # default=1, type=int, metavar='N', help='shard generation over N shards'
@@ -63,7 +63,7 @@ dataset:
 #  per_gpu_eval_batch_size: 4 # default=4, type=int, help="Batch size per GPU/CPU for evaluation."
 
 distributed_training:
-  distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
+  distributed_world_size: 4 # default=max(1, torch.cuda.device_count()
   distributed_rank: 0 # default=0, type=int, help='rank of the current worker'
   distributed_backend: nccl # default='nccl', type=str, help='distributed backend'
   distributed_init_method: ~ # default=None, type=str,help='typically tcp://hostname:port that will be used to establish initial connetion'

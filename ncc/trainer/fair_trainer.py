@@ -507,10 +507,14 @@ class Trainer(object):
             logging_outputs, (sample_size,) = self._aggregate_logging_outputs(
                 logging_outputs, sample_size, ignore=is_dummy_batch,
             )
-
+            if 'bleu' in logging_outputs[0]:
+                logging_outputs[0]['bleu'] /= self.args['distributed_training']['distributed_world_size']
+            if 'rouge_l' in logging_outputs[0]:
+                logging_outputs[0]['rouge_l'] /= self.args['distributed_training']['distributed_world_size']
+            if 'meteor' in logging_outputs[0]:
+                logging_outputs[0]['meteor'] /= self.args['distributed_training']['distributed_world_size']
         # log validation stats
         logging_output = self._reduce_and_log_stats(logging_outputs, sample_size)
-
         return logging_output
 
     def zero_grad(self):

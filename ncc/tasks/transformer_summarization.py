@@ -309,7 +309,6 @@ class TansformerSummarizationTask(FairseqTask):
                 ))
 
             bleu, rouge_l, meteor = self._inference_score(hyps, refs, ids)
-            # print('bleu: {:.3f}, rouge-l: {:.2f} | {} | {}'.format(bleu, rouge_l, refs[-1], hyps[-1]))
             logging_output['bleu'] = bleu
             logging_output['rouge_l'] = rouge_l
             logging_output['meteor'] = meteor
