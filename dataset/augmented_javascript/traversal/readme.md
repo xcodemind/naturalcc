@@ -3,7 +3,7 @@
 python -m dataset.augmented_javascript.traversal.json2str -i ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/filter/javascript/train.traversal
 ```
 
-# Step 1: get AST non-lead node types and save them at ```.ast.node_types```
+# Step 1: get AST non-leaf node types and save them at ```.ast.node_types```
 ```
 python -m dataset.augmented_javascript.traversal.get_type_node -i ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/filter/javascript/train.ast -o ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/filter/javascript/.ast.node_types
 ```
