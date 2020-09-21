@@ -23,7 +23,8 @@ from ncc.logging import metrics, progress_bar
 from ncc.utils import utils
 from ncc.utils.file_utils import remove_files
 from ncc.data import iterators
-from ncc.models.summarization.transformer_from_roberta import TransformerFromRobertaModel
+# from ncc.models.summarization.transformer_from_roberta import TransformerFromRobertaModel
+from ncc.models.type_prediction.type_transformer_from_roberta import TypePredictionTransformerFromRobertaModel
 
 
 @metrics.aggregate('train')
@@ -222,18 +223,18 @@ def single_main(args, init_distributed=False):
     criterion = task.build_criterion(args)
 
     # 4. Initialize encoder from CodeBERT
-    encoder = TransformerFromRobertaModel.build_model(args, None, task).encoder
-    trainer_encoder = Trainer(args, task, encoder, criterion)
+    decoder = TypePredictionTransformerFromRobertaModel.build_model(args, None, task).decoder
+    trainer_decoder = Trainer(args, task, decoder, criterion)
     LOGGER.info('training on {} GPUs'.format(args['distributed_training']['distributed_world_size']))
     LOGGER.info('max tokens per GPU = {} and max sentences per GPU = {}'.format(
         args['dataset']['max_tokens'],
         args['dataset']['max_sentences'],
     ))
-    extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer_encoder, combine=False)
+    extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer_decoder, combine=False)
 
     # 5. Build model
     model = task.build_model(args)
-    model.encoder = trainer_encoder.get_model()
+    model.decoder = trainer_decoder.get_model()
     LOGGER.info(model)
     LOGGER.info('model {}, criterion {}'.format(args['model']['arch'], criterion.__class__.__name__))
     LOGGER.info('num. model params: {} (num. trained: {})'.format(

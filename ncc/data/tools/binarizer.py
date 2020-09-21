@@ -115,7 +115,10 @@ class Binarizer:
             while line:
                 if end > 0 and f.tell() > end:
                     break
-                line = ujson.loads(line)
+                if str.endswith(filename, 'str'):
+                    pass
+                else:
+                    line = ujson.loads(line)
 
                 # ids = dict.encode_line(line, line_tokenizer=sp.EncodeAsPieces)  # text => ids
                 line = normalize_program(line)

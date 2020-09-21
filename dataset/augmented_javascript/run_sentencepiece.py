@@ -69,7 +69,7 @@ if __name__ == "__main__":
     os.makedirs(args.tgt_dir, exist_ok=True)
 
     input = os.path.join(args.src_dir, 'javascript_dedupe_definitions_nonoverlap_v2_train.jsonl.gz')
-    output = os.path.join(args.src_dir, 'javascript_dedupe_definitions_nonoverlap_v2_train.json')
+    output = os.path.join(args.tgt_dir, 'javascript_dedupe_definitions_nonoverlap_v2_train.json')
     # 1. make corpus
     make_corpus(input, output)
     # exit()
