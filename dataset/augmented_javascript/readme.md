@@ -38,6 +38,10 @@ cut -f1 csnjs_8k_9995p_unigram_url.vocab | tail -n +10 | sed "s/$/ 100/g" > csnj
 If we want to pretrain the codebert, we will use this data.
 ```
 python -m dataset.augmented_javascript.preprocess
+
+# AST
+python -m dataset.augmented_javascript.build
+python -m dataset.csn.feature_extract -l javascript -f ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented -r ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/refine -s ~/.ncc/augmented_javascript/libs -a code raw_ast ast -c 40  
 ```
 
 (Deprecated)If we want to pretrain via contrastive learning, we should use this dataset with augmentation.
