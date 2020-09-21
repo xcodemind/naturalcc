@@ -17,4 +17,3 @@ build/*
 ncc/data/tools/token_block_utils_fast.cpp
 ncc/data/tools/data_utils_fast.cpp
 *.log
-*.py
