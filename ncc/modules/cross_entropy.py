@@ -8,7 +8,6 @@ import logging
 import torch
 import torch.nn.functional as F
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -20,9 +19,11 @@ def _cross_entropy_pytorch(logits, target, ignore_index=None, reduction='mean'):
 
 
 try:
+    import xentropy_cuda
     from apex.contrib import xentropy
 
     logger.info('using fused cross entropy')
+
 
     def cross_entropy(logits, target, ignore_index=-100, reduction='mean'):
         if logits.device == torch.device('cpu'):

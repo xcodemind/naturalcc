@@ -18,6 +18,7 @@ python -m dataset.augmented_javascript.cast_type_prediction_data
 ## Step 3: Write pkl file to json file so that we can binarize dataset with multi-processing
 ```
 python dataset/augmented_javascript/pkl2json.py
+mkdir /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/
 # mv ~/.ncc/augmented_javascript/raw/javascript_augmented.json ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/train.code
 mv /export/share/jianguo/scodebert/augmented_javascript/raw/javascript_augmented.json /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/train.code
 ```
@@ -38,6 +39,10 @@ cut -f1 csnjs_8k_9995p_unigram_url.vocab | tail -n +10 | sed "s/$/ 100/g" > csnj
 If we want to pretrain the codebert, we will use this data.
 ```
 python -m dataset.augmented_javascript.preprocess
+
+# AST
+python -m dataset.augmented_javascript.build
+python -m dataset.csn.feature_extract -l javascript -f ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented -r ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/refine -s ~/.ncc/augmented_javascript/libs -a code raw_ast ast -c 40  
 ```
 
 (Deprecated)If we want to pretrain via contrastive learning, we should use this dataset with augmentation.
