@@ -453,14 +453,14 @@ class Trainer(object):
             raise e
 
         if self.args['common']['fp16']:
-            metrics.log_scalar("loss_scale", self.optimizer.scaler.loss_scale, priority=700, round=0)
+            metrics.log_scalar("loss_scale", self.optimizer.scaler.loss_scale, priority=700, round=4)
 
         metrics.log_stop_time("train_wall")
 
         return logging_output
 
     def clip_grad_norm(self, clip_norm):
-        return self.optimizer.clip_grad_norm(clip_norm)
+        return self.optimizer.clip_grad_norm(clip_norm, aggregate_norm_fn=None)
 
     @metrics.aggregate("valid")
     def valid_step(self, sample, raise_oom=False):
