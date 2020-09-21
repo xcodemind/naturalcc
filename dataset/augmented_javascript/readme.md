@@ -41,8 +41,15 @@ If we want to pretrain the codebert, we will use this data.
 python -m dataset.augmented_javascript.preprocess
 
 # AST
+# copy javascript/train.code to ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/javascript/
+mkdir -p ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/javascript/
+cd ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/javascript/
+cp ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/train.code ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/javascript/
+# build javascript.so
 python -m dataset.augmented_javascript.build
-python -m dataset.csn.feature_extract -l javascript -f ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented -r ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/refine -s ~/.ncc/augmented_javascript/libs -a code raw_ast ast -c 40  
+python -m dataset.csn.feature_extract -l javascript -f ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented -r ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/refine -s ~/.ncc/augmented_javascript/libs -a code raw_ast ast traversal -c 40
+python -m dataset.csn.filter -l javascript -r ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/refine -f ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/filter -a code ast traversal
+
 ```
 
 (Deprecated)If we want to pretrain via contrastive learning, we should use this dataset with augmentation.

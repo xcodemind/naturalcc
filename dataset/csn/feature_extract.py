@@ -385,9 +385,12 @@ if __name__ == '__main__':
         type=str, nargs='+', help="attrs: raw_ast, ...",
     )
     parser.add_argument(
-        "--cores", "-c", default=cpu_count()*4, type=int, help="cpu cores for flatten raw data attributes",
+        "--cores", "-c", default=cpu_count() * 4, type=int, help="cpu cores for flatten raw data attributes",
     )
     args = parser.parse_args()
+    args.flatten_dir = os.path.expanduser(args.flatten_dir)
+    args.refine_dir = os.path.expanduser(args.refine_dir)
+    args.so_dir = os.path.expanduser(args.so_dir)
     print(args)
 
     """
@@ -423,7 +426,9 @@ if __name__ == '__main__':
                 src_filename = os.path.join(args.flatten_dir, lang, '{}.{}'.format(mode, src_attr))
             else:
                 src_filename = os.path.join(args.refine_dir, lang, '{}.{}'.format(mode, src_attr))
-            tgt_filename = os.path.join(args.refine_dir, lang, '{}.{}'.format(mode, tgt_attr))
-            LOGGER.info('Generating {}'.format(tgt_filename))
-            process(src_filename, tgt_filename, num_workers=args.cores,
-                    lang=lang, so_dir=args.so_dir)
+            LOGGER.info(src_filename)
+            if os.path.exists(src_filename):
+                tgt_filename = os.path.join(args.refine_dir, lang, '{}.{}'.format(mode, tgt_attr))
+                LOGGER.info('Generating {}'.format(tgt_filename))
+                process(src_filename, tgt_filename, num_workers=args.cores,
+                        lang=lang, so_dir=args.so_dir)

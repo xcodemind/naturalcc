@@ -228,10 +228,16 @@ def main(args):
 
 
 def cli_main():
-    Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('preprocess.yml')  # train_sl
-    LOGGER.info(args_)
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
+    parser.add_argument(
+        "--yaml_file", "-f", default='preprocess', type=str,
+        help="load python_wan/tokenization/config/{yaml_file}.yml for train",
+    )
+    args = parser.parse_args()
+    LOGGER.info(args)
+    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.yaml_file))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)

@@ -80,12 +80,15 @@ if __name__ == '__main__':
     NONE_LINE = 'null\n'
 
 
-    def filter_fn(attrs):
+    def filter_fn(attrs, lang, mode):
         LOGGER.info('Filtering {}'.format(attrs))
         readers, writers = {}, {}
         for attr in attrs:
-            readers[attr] = open(os.path.join(args.refine_dir, lang, '{}.{}'.format(mode, attr)), 'r',
-                                 encoding='UTF-8')
+            src_attr_file = os.path.join(args.refine_dir, lang, '{}.{}'.format(mode, attr))
+            if not os.path.exists(src_attr_file):
+                LOGGER.info('{} does not exists, ignore filtering {}.{}.{}'.format(src_attr_file, lang, mode, attrs))
+                return
+            readers[attr] = open(src_attr_file, 'r', encoding='UTF-8')
             dst_dir = os.path.join(args.filter_dir, lang)
             os.makedirs(dst_dir, exist_ok=True)
             writers[attr] = open(os.path.join(dst_dir, '{}.{}'.format(mode, attr)), 'w')
@@ -131,4 +134,4 @@ if __name__ == '__main__':
 
 
     for lang, mode in itertools.product(args.language, MODES):
-        filter_fn(args.attrs)
+        filter_fn(args.attrs, lang, mode)
