@@ -101,7 +101,7 @@ task:
   eval_accuracy: 1
 
 model:
-  arch: type_prediction_transformer # contracode_mlm contracode_hybrid'-a', default='fconv', metavar='ARCH', choices=ARCH_MODEL_REGISTRY.keys(), help='Model Architecture'
+  arch: type_prediction_transformer_from_roberta # contracode_mlm contracode_hybrid'-a', default='fconv', metavar='ARCH', choices=ARCH_MODEL_REGISTRY.keys(), help='Model Architecture'
   pooler_dropout: 0.0 # type=float, metavar='D', help='dropout probability in the masked_lm pooler layers'
   activation_fn: gelu # choices=utils.get_available_activation_fns(), help='activation function to use'
   dropout: 0.1 # type=float, metavar='D', help='dropout probability'
@@ -115,6 +115,8 @@ model:
   encoder_attention_heads: 8 #6 # 12 # type=int, metavar='N', help='num encoder attention heads'
   encoder_normalize_before: 0 # action='store_true', help='apply layernorm before each encoder block'
   encoder_learned_pos: 0 # action='store_true', help='use learned positional embeddings in the encoder'
+  encoder_max_relative_len: 0 # default=0, help='encoder max relative positional embedding len'
+
   decoder_embed_path: '' # type=str, metavar='STR', help='path to pre-trained decoder embedding'
   decoder_embed_dim: 0 # type=int, metavar='N', help='decoder embedding dimension'
   decoder_ffn_embed_dim: 0 # type=int, metavar='N', help='decoder embedding dimension for FFN'
