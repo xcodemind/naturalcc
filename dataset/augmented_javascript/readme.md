@@ -18,6 +18,7 @@ python -m dataset.augmented_javascript.cast_type_prediction_data
 ## Step 3: Write pkl file to json file so that we can binarize dataset with multi-processing
 ```
 python dataset/augmented_javascript/pkl2json.py
+mkdir /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/
 # mv ~/.ncc/augmented_javascript/raw/javascript_augmented.json ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/train.code
 mv /export/share/jianguo/scodebert/augmented_javascript/raw/javascript_augmented.json /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/train.code
 ```
