@@ -142,7 +142,7 @@ class JSONLinesDataset(torch.utils.data.Dataset):
 
 def get_csnjs_dataset(filepath, label_mode, limit_size):
     """
-    Returns dataset for CodeSearchNet JavaScript language,
+    Returns dataset for code_search_net JavaScript language,
     which contains datapoints as dicts with keys "function" and "label"
     """
     if label_mode == "identifier":

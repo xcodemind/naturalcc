@@ -65,7 +65,7 @@ if __name__ == '__main__':
         sum(p.numel() for p in model.parameters() if p.requires_grad),
     ))
 
-    data_path = os.path.expanduser('~/.ncc/CodeSearchNet/summarization/data-mmap/ruby')
+    data_path = os.path.expanduser('~/.ncc/code_search_net/summarization/data-mmap/ruby')
     split = 'train'
     # src_modalities = ['path'] # , 'code'
     # src_dicts = None

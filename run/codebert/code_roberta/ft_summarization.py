@@ -23,6 +23,7 @@ from ncc.logging import metrics, progress_bar
 from ncc.utils import utils
 from ncc.utils.file_utils import remove_files
 from ncc.data import iterators
+from ncc.models.summarization.transformer_from_roberta import TransformerFromRobertaModel
 
 
 @metrics.aggregate('train')
@@ -82,6 +83,7 @@ def train(args, trainer, task, epoch_itr):
         if num_updates >= max_update:
             break
 
+
     # log end-of-epoch stats
     stats = get_training_stats(metrics.get_smoothed_values('train'))
     progress.print(stats, tag='train', step=num_updates)
@@ -132,6 +134,7 @@ def validate(args, trainer, task, epoch_itr, subsets):
         with metrics.aggregate(new_root=True) as agg:
             for sample in progress:
                 trainer.valid_step(sample)
+                break # TODO: only for debug
 
         # log validation stats
         stats = get_valid_stats(args, trainer, agg.get_smoothed_values())
@@ -181,8 +184,7 @@ def should_stop_early(args, valid_loss):
     else:
         should_stop_early.num_runs += 1
         if should_stop_early.num_runs >= args['checkpoint']['patience']:
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
-                args['checkpoint']['patience']))
+            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(args['checkpoint']['patience']))
 
         return should_stop_early.num_runs >= args['checkpoint']['patience']
 
@@ -217,8 +219,21 @@ def single_main(args, init_distributed=False):
         task.load_dataset(valid_sub_split, combine=False, epoch=1)
 
     # 3. Build model and criterion
-    model = task.build_model(args)
     criterion = task.build_criterion(args)
+
+    # 4. Initialize encoder from CodeBERT
+    encoder = TransformerFromRobertaModel.build_model(args, None, task).encoder
+    trainer_encoder = Trainer(args, task, encoder, criterion)
+    LOGGER.info('training on {} GPUs'.format(args['distributed_training']['distributed_world_size']))
+    LOGGER.info('max tokens per GPU = {} and max sentences per GPU = {}'.format(
+        args['dataset']['max_tokens'],
+        args['dataset']['max_sentences'],
+    ))
+    extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer_encoder, combine=False)
+
+    # 5. Build model
+    model = task.build_model(args)
+    model.encoder = trainer_encoder.get_model()
     LOGGER.info(model)
     LOGGER.info('model {}, criterion {}'.format(args['model']['arch'], criterion.__class__.__name__))
     LOGGER.info('num. model params: {} (num. trained: {})'.format(
@@ -226,16 +241,8 @@ def single_main(args, init_distributed=False):
         sum(p.numel() for p in model.parameters() if p.requires_grad),
     ))
 
-    # 4. Build trainer
+    # 6. Build trainer
     trainer = Trainer(args, task, model, criterion)
-    LOGGER.info('training on {} GPUs'.format(args['distributed_training']['distributed_world_size']))
-    LOGGER.info('max tokens per GPU = {} and max sentences per GPU = {}'.format(
-        args['dataset']['max_tokens'],
-        args['dataset']['max_sentences'],
-    ))
-
-    # 5. Load the latest checkpoint if one is available and restore the corresponding train iterator
-    extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer, combine=False)
 
     # 6. Train until the learning rate gets too small
     max_epoch = args['optimization']['max_epoch'] or math.inf
@@ -266,13 +273,12 @@ def single_main(args, init_distributed=False):
 
         # early stop
         if should_stop_early(args, valid_losses[0]):
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
-                args['checkpoint']['patience']))
+            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(args['checkpoint']['patience']))
             break
 
         epoch_itr = trainer.get_train_iterator(
             epoch_itr.next_epoch_idx,
-            combine=False,  # TODO to be checked
+            combine=False, # TODO to be checked
             # sharded data: get train iterator for next epoch
             load_dataset=(os.pathsep in args['task']['data']),
         )
@@ -289,18 +295,20 @@ def distributed_main(i, args, start_rank=0):
 
 
 def cli_main():
-    import argparse
-    parser = argparse.ArgumentParser(
-        description="Downloading/Decompressing code_search_net dataset(s) or Tree-Sitter Library(ies)")
-    parser.add_argument(
-        "--language", "-l", default='python', type=str, help="load {language}.yml for train",
-    )
-    args = parser.parse_args()
-    # Argues = namedtuple('Argues', 'yaml')
-    # args_ = Argues('ruby.yml')
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.language))
+    Argues = namedtuple('Argues', 'yaml')
+    args_ = Argues('ruby_ft_summarization.yml')
+    LOGGER.info(args_)
+    yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
+
+    yaml_file_eval = os.path.join(os.path.dirname(__file__), 'config', 'ruby_summarization.yml')
+    LOGGER.info('Load arguments in {}'.format(yaml_file_eval))
+    args_eval = load_yaml(yaml_file_eval)
+
+    # Concatenate the training and evaluation arguments.
+    args = {**args, **args_eval}
+
     LOGGER.info(args)
 
     if args['distributed_training']['distributed_init_method'] is None:
@@ -335,7 +343,5 @@ def cli_main():
 
 
 if __name__ == '__main__':
-    """
-    nohup python -m run.summarization.neural_transformer.train > transformer.log 2>&1 &
-    """
+    """nohup python -m run.completion.seqrnn.main > log.txt 2>&1 &"""
     cli_main()

@@ -4,7 +4,7 @@ common:
   task: summarization # task
 
 eval:
-  path: ~/.ncc/CodeSearchNet/summarization/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  path: ~/.ncc/code_search_net/summarization/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   model_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override model args at generation '
   checkpoint_suffix: '' # default='', help='Suffix to add to the checkpoint file name'
   output_word_probs: 0 # ', action='store_true', help='if set, outputs words and their predicted log probabilities to standard output'
@@ -14,7 +14,7 @@ eval:
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
 
 task:
-  data: ~/.ncc/CodeSearchNet/base/data-raw/ruby # /tmp/pycharm_project_629/data-bin help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/code_search_net/base/data-raw/ruby # /tmp/pycharm_project_629/data-bin help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   # for summarization
   source_lang: code_tokens
   target_lang: docstring_tokens

@@ -33,7 +33,7 @@ dataset:
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
   max_sentences: 4 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
-  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
+  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
   train_subset: train # train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
   valid_subset: test # valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
   validate_interval: 1 # type=int, default=1, metavar='N', help='validate every N epochs'
@@ -69,7 +69,7 @@ distributed_training:
   warmup_iterations: 500 # default=500, type=int, help="warmup iterations for model to broadcast",
 
 task:
-  data: ~/.ncc/code_search_net/base/data-raw/ruby # /tmp/pycharm_project_629/data-bin help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/code_search_net/summarization/data-mmap/ruby # /tmp/pycharm_project_629/data-bin help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
 
   # for summarization
@@ -83,6 +83,7 @@ task:
   upsample_primary: 1 #', default=1, type=int, help='amount to upsample primary dataset'
   truncate_source: 0 #', action='store_true', default=False, help='truncate source to max-source-positions'
   add_bos_token: 0 # ', action='store_true', help='prepend beginning of sentence token (<s>)'
+  append_eos_to_target: 1 # default=True, append eos to the end of target sentence for summarization task
 
   # options for reporting BLEU during validation
   eval_bleu: 1 #action='store_true', help='evaluation with BLEU scores'
@@ -92,6 +93,8 @@ task:
   eval_bleu_remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE before computing BLEU'
   eval_bleu_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
   eval_bleu_print_samples: 0 #', action='store_true', help='print sample generations during validation'
+
+  eval_rouge: 1
 
 model:
   arch: transformer_from_roberta_summarization

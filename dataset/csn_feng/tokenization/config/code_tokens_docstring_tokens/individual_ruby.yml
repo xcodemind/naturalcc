@@ -3,13 +3,13 @@ preprocess:
   source_lang:
     - code_tokens
     - docstring_tokens
-  # ~ path for dataset default. e.g.  for CodeSearchNet, ~/flatten = ~/.ncc/code_search_net_feng/flatten
+  # ~ path for dataset default. e.g.  for code_search_net, ~/flatten = ~/.ncc/code_search_net_feng/flatten
   trainpref: ~/.ncc/code_search_net_feng/flatten/ruby/train #", metavar="FP", default=None, help="train file prefix"
   validpref: ~/.ncc/code_search_net_feng/flatten/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
   testpref:  ~/.ncc/code_search_net_feng/flatten/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
   align_suffix: ~ # ", metavar="FP", default=None, help="alignment file suffix"
-#  destdir: ~/.ncc/CodeSearchNet/summarization/data-raw/ruby/ #", metavar="DIR", default="data-bin", help="destination dir"
+#  destdir: ~/.ncc/code_search_net/summarization/data-raw/ruby/ #", metavar="DIR", default="data-bin", help="destination dir"
   destdir: ~/.ncc/code_search_net_feng/individual/code_tokens_docstring_tokens/data-mmap/ruby #", metavar="DIR", default="data-bin", help="destination dir"
   thresholdsrc: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
   srcdict: ~

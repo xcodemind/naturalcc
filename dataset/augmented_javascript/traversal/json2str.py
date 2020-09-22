@@ -62,7 +62,7 @@ def merge_attr_files(file_patterns):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Download CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
+    parser = argparse.ArgumentParser(description="Download code_search_net dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
         "--in_files", "-i",
         default='~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/filter/javascript/train.traversal',

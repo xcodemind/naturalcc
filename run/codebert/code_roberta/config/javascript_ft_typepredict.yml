@@ -1,5 +1,5 @@
 #registry
-criterion: masked_lm
+criterion: type_predicition_cross_entropy
 optimizer: 'adam'
 lr_scheduler: 'polynomial_decay'
 tokenizer: ~ # default=None
@@ -13,7 +13,7 @@ common:
   log_format: simple # default=None, help='log format to use', choices=['json', 'none', 'simple', 'tqdm']
   tensorboard_logdir: '' # default='', help='path to save logs for tensorboard, should match --logdir of running tensorboard (default: no tensorboard logging)'
   seed: 1 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
-  cpu: 0 # action='store_true', help='use CPU instead of CUDA'
+  cpu: 1 # action='store_true', help='use CPU instead of CUDA'
   fp16: 0 # action='store_true', help='use FP16'
   memory_efficient_fp16: 0 # action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
   fp16_no_flatten_grads: 0 # action='store_true', help='don\'t flatten FP16 grads tensor'
@@ -48,9 +48,9 @@ dataset:
 
   joined_dictionary: 1
   #  types_file: ~/.ncc/augmented_javascript/type_prediction/test_projects_gold_filtered.json
-  srcdict: ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/csnjs_8k_9995p_unigram_url.dict.txt
+  srcdict: ~/.ncc/augmented_javascript/codebert/code_roberta/data-mmap/csnjs_8k_9995p_unigram_url.dict.txt
   #  srcdict: /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/csnjs_8k_9995p_unigram_url.dict.txt
-  src_sp: ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/csnjs_8k_9995p_unigram_url.model
+  src_sp: ~/.ncc/augmented_javascript/codebert/code_roberta/data-mmap/csnjs_8k_9995p_unigram_url.model
   #  src_sp: /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/csnjs_8k_9995p_unigram_url.model
   tgtdict: ~/.ncc/augmented_javascript/type_prediction/data-raw/target.dict.txt
 
@@ -173,7 +173,7 @@ optimization:
     log-keys: '' # type=str, default=None, help='output keys to log'
 
 checkpoint:
-  save_dir: ~/.ncc/augmented_javascript/codebert/code_roberta/checkpoints # default='checkpoints', help='path to save checkpoints'
+  save_dir: ~/.ncc/augmented_javascript/codebert/code_roberta/checkpoints_ft_type_prediction # default='checkpoints', help='path to save checkpoints'
 #  save_dir: /export/share/jianguo/scodebert/augmented_javascript/codebert/code_roberta/checkpoints # default='checkpoints', help='path to save checkpoints'
   restore_file: checkpoint_last.pt # default='checkpoint_last.pt', help='filename from which to load checkpoint (default: <save-dir>/checkpoint_last.pt'
   reset_dataloader: ~ # action='store_true', help='if set, does not reload dataloader state from the checkpoint'

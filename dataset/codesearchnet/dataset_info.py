@@ -15,7 +15,7 @@ MODALITIES = [
 ]
 
 for lang, mode, modality in itertools.product(LANGUAGES, MODES, MODALITIES):
-    file = '~/.ncc/CodeSearchNet/flatten/{}/{}.{}'.format(lang, mode, modality)
+    file = '~/.ncc/code_search_net/flatten/{}/{}.{}'.format(lang, mode, modality)
     file = os.path.expanduser(file)
     with open(file, 'r', encoding='UTF-8') as reader:
         counter = Counter([len(ujson.loads(line)) for line in reader])

@@ -128,7 +128,7 @@ def _main(args, output_file):
         net_output = type_predictor.predict(models, sample)  # , prefix_tokens=prefix_tokens
 
         logits = net_output[0]
-        labels = sample['labels']
+        labels = sample['target']
         loss = F.cross_entropy(logits.transpose(1, 2), labels, ignore_index=task.target_dictionary.index('O'))
         print('loss: ', loss)
         (corr1_any, corr5_any), num_labels_any = accuracy(

@@ -8,9 +8,9 @@ preprocess:
 #    - sbt
     - traversal
   # ~ path for dataset default. e.g.  for CodeSearchNet, ~/filter = ~/.ncc/CodeSearchNet/filter
-  trainpref: ~/.ncc/CodeSearchNet/filter/java/train #", metavar="FP", default=None, help="train file prefix"
-  validpref: ~/.ncc/CodeSearchNet/filter/java/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-  testpref:  ~/.ncc/CodeSearchNet/filter/java/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  trainpref: ~/.ncc/code_search_net/filter/java/train #", metavar="FP", default=None, help="train file prefix"
+  validpref: ~/.ncc/code_search_net/filter/java/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+  testpref:  ~/.ncc/code_search_net/filter/java/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
   align_suffix: ~ # ", metavar="FP", default=None, help="alignment file suffix"
 #  destdir: ~/.ncc/CodeSearchNet/summarization/data-raw/java/ #", metavar="DIR", default="data-bin", help="destination dir"

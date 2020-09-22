@@ -85,7 +85,7 @@ distributed_training:
 
 
 task:
-  data: ~/.ncc/CodeSearchNet/summarization/data-mmap/javascript # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/code_search_net/summarization/data-mmap/javascript # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 
   # for summarization
   source_lang: code_tokens
@@ -212,7 +212,7 @@ checkpoint:
 
 
 eval:
-  path: ~/.ncc/CodeSearchNet/summarization/data-mmap/javascript/codenn/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  path: ~/.ncc/code_search_net/summarization/data-mmap/javascript/codenn/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
   quiet: 1 # ', action='store_true', help='only print final scores'
   results_path: ~ # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'

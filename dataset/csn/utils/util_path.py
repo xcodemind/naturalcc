@@ -111,7 +111,7 @@ def ast_to_path(ast_tree, MAX_PATH: int):
 if __name__ == '__main__':
     import ujson
 
-    with open('/home/yang/.ncc/CodeSearchNet/flatten/ruby/train.ast', 'r') as reader:
+    with open('/home/yang/.ncc/code_search_net/flatten/ruby/train.ast', 'r') as reader:
         for line in reader:
             ast_tree = ujson.loads(line)
             paths = ast_to_path(ast_tree, MAX_PATH=300)

@@ -200,7 +200,7 @@ checkpoint:
   best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
   patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
-#  save_dir: ~/.ncc/CodeSearchNet/summarization/data-mmap/python/seq2seq/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
+#  save_dir: ~/.ncc/code_search_net/summarization/data-mmap/python/seq2seq/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   save_dir: ~/.ncc/icse21/csn2python_wan/kd/summarization/data-mmap/php/seq2seq/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
   model_name_or_path: ~ # default=None, type=str, help="The model checkpoint for weights initialization. Leave None if you want to train a model from scratch.",
@@ -214,7 +214,7 @@ checkpoint:
 
 eval:
   path: ~/.ncc/icse21/csn2python_wan/kd/summarization/data-mmap/php/seq2seq/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
-#  path: ~/.ncc/CodeSearchNet/summarization/data-mmap/python/seq2seq/checkpoints/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+#  path: ~/.ncc/code_search_net/summarization/data-mmap/python/seq2seq/checkpoints/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
   quiet: 1 # ', action='store_true', help='only print final scores'
   results_path: ~/.ncc/icse21/csn2python_wan/kd/summarization/data-mmap/php/seq2seq/checkpoints # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'

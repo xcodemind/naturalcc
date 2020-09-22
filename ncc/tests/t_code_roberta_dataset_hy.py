@@ -35,7 +35,7 @@ if __name__ == '__main__':
     args = load_yaml(yaml_file)
     # LOGGER.info(args)
 
-    data_path = os.path.expanduser('~/.ncc/CodeSearchNet/summarization/hicodebert-data-bin')
+    data_path = os.path.expanduser('~/.ncc/code_search_net/summarization/hicodebert-data-bin')
     split = 'test'
     # src_modalities = ['path'] # , 'code'
     # src_dicts = None

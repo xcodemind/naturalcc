@@ -22,7 +22,7 @@ preprocess:
     - code
 #    - code
   target_lang: ~ # docstring #", default=None, metavar="TARGET", help="target language"
-  # ~ path for dataset default. e.g.  for CodeSearchNet, ~/flatten = ~/.ncc/CodeSearchNet/flatten
+  # ~ path for dataset default. e.g.  for code_search_net, ~/flatten = ~/.ncc/code_search_net/flatten
 #  trainpref: ~/.ncc/augmented_javascript/raw/javascript_augmented.pickle #", metavar="FP", default=None, help="train file prefix"
   trainpref: /export/share/jianguo/scodebert//augmented_javascript/raw/javascript_augmented.pickle #", metavar="FP", default=None, help="train file prefix"
   validpref: ~ #", metavar="FP", default=None, help="comma separated, valid file prefixes"

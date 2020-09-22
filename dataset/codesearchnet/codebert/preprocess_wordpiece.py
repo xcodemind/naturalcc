@@ -26,12 +26,12 @@ if __name__ == "__main__":
     parser.add_argument("--format", type=str, default='piece', help='id(num)/piece(str)')
     parser.add_argument("--vocab-size", type=int, default=50000, help='token dictionary size')
     parser.add_argument("--src-dir", type=str,
-                        default='~/.ncc/CodeSearchNet/flatten',
+                        default='~/.ncc/code_search_net/flatten',
                         help='source data')
     parser.add_argument("--language", type=str, help='sentencepiece tokenizer for language')
     parser.add_argument("--modalities", type=list, help='sentencepiece tokenizer for modalities')
     parser.add_argument("--tgt-dir", type=str,
-                        default='~/.ncc/CodeSearchNet/codebert/',
+                        default='~/.ncc/code_search_net/codebert/',
                         help='save dir for sentencepiece bpe models or save files')
     # parser.add_argument("--bpe-dir", type=str, default='wordpiece_bpe', help='wordpiece_bpe modal save direction')
     parser.add_argument("--keep-empty", type=bool, default=True, help="keep empty lines")
