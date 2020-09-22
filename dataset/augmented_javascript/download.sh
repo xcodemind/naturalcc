@@ -25,11 +25,11 @@ done
 
 # type inference data
 data_urls=(
-  "https://drive.google.com/uc?id=1YtLVoMUsxU6HTpu5Qvs0xldm_SC_FZRz"#82K
-  "https://drive.google.com/uc?id=1YvoM6rxcaX1wsyQu0HbGurQdaV6fsmym"#7.0M
-  "https://drive.google.com/uc?id=1YsoSKGhuOUw3CNAAzZ3j9Fm5C8itc8Jt"#6.0M
-  "https://drive.google.com/uc?id=1YunIabuWqd3V9kZssloXrOUvyfLcM7FH"#53M
-  "https://drive.google.com/uc?id=1YvN5UQuijRgUAL3aF1MzGLn1NiVMTAEo"#3.6M
+  "https://drive.google.com/uc?id=1YtLVoMUsxU6HTpu5Qvs0xldm_SC_FZRz" #82K
+  "https://drive.google.com/uc?id=1YvoM6rxcaX1wsyQu0HbGurQdaV6fsmym" #7.0M
+  "https://drive.google.com/uc?id=1YsoSKGhuOUw3CNAAzZ3j9Fm5C8itc8Jt" #6.0M
+  "https://drive.google.com/uc?id=1YunIabuWqd3V9kZssloXrOUvyfLcM7FH" #53M
+  "https://drive.google.com/uc?id=1YvN5UQuijRgUAL3aF1MzGLn1NiVMTAEo" #3.6M
 )
 
 #DIR=~/.ncc/augmented_javascript/type_prediction/raw/
