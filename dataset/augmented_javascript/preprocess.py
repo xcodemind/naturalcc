@@ -128,6 +128,8 @@ def main(args):
         else:
             tgt_dict = None
             tgt_sp = None
+    for lang in args['preprocess']['source_lang']:
+        src_dict.save_json(dict_path(lang))  # save spm dict to ncc.dictionary
 
     # 2. ***************build dataset********************
     def make_binary_dataset(sp, input_file, output_file,
@@ -200,6 +202,7 @@ def main(args):
             out_file = dest_path(output_prefix, lang=lang)
             with open(input_prefix, 'r') as reader, open(out_file, 'w')as writer:
                 for example in reader:
+                    example = ujson.loads(example)
                     program = normalize_program(example)
                     program = sp.EncodeAsPieces(program)
                     print(ujson.dumps(program, ensure_ascii=False), file=writer)
@@ -221,17 +224,23 @@ def main(args):
                 outprefix = "test{}".format(k) if k > 0 else "test"
                 make_dataset(vocab, sp, testpref, outprefix, lang, num_workers=args['preprocess']['workers'])
 
-    make_all(args['preprocess']['source_lang'], src_dict, src_sp)
+    for lang in args['preprocess']['source_lang']:
+        make_all(lang, src_dict, src_sp)
     if target:
-        make_all(args['preprocess']['target_lang'], tgt_dict, tgt_sp)
+        for lang in args['preprocess']['target_lang']:
+            make_all(lang, tgt_dict, tgt_sp)
 
 
 def cli_main():
     import argparse
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
+    # parser.add_argument(
+    #     "--yaml_file", "-f", default='preprocess.traversal', type=str,
+    #     help="load python_wan/tokenization/config/{yaml_file}.yml for train",
+    # )
     parser.add_argument(
-        "--yaml_file", "-f", default='preprocess.traversal', type=str,
+        "--yaml_file", "-f", default='preprocess', type=str,
         help="load python_wan/tokenization/config/{yaml_file}.yml for train",
     )
     args = parser.parse_args()
