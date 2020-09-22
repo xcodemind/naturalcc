@@ -108,7 +108,7 @@ class JSONLinesDataset(torch.utils.data.Dataset):
         label_char_set = set()
         nl = 0
         full_path = pathlib.Path(path).resolve()
-        f = gzip.open(full_path, "rb") if path.endswith(".jsonl.gz") else full_path.open("r")
+        f = open(full_path, "rb") if path.endswith(".jsonl") else full_path.open("r")
         reader = jsonlines.Reader(f)
 
         self.examples = []

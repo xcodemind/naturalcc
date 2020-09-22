@@ -35,9 +35,9 @@ preprocess:
   thresholdsrc: 0 #", metavar="N", default=0, type=int, help="map words appearing less than threshold times to unknown"
   tgtdict: ~ # ", metavar="FP", help="reuse given target dictionary"
 #  srcdict: ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/csnjs_8k_9995p_unigram_url.dict.txt #", metavar="FP", help="reuse given source dictionary"
-  srcdict: /export/share/jianguo/scodebert//augmented_javascript/contracode/data-raw/csnjs_8k_9995p_unigram_url.dict.txt #", metavar="FP", help="reuse given source dictionary"
+  srcdict: /export/share/jianguo/scodebert//augmented_javascript/contracode/data-raw/no_augmented/csnjs_8k_9995p_unigram_url.dict.txt #", metavar="FP", help="reuse given source dictionary"
 #  src_sp: ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/csnjs_8k_9995p_unigram_url.model
-  src_sp: /export/share/jianguo/scodebert//augmented_javascript/contracode/data-raw/csnjs_8k_9995p_unigram_url.model
+  src_sp: /export/share/jianguo/scodebert//augmented_javascript/contracode/data-raw/no_augmented/csnjs_8k_9995p_unigram_url.model
   tgt_sp: ~
   nwordstgt: -1 #", metavar="N", default=-1, type=int, help="number of target words to retain"
   nwordssrc: -1 #", metavar="N", default=-1, type=int, help="number of source words to retain"

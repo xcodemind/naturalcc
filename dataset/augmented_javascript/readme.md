@@ -36,11 +36,11 @@ mv /export/share/jianguo/scodebert/augmented_javascript/raw/javascript_augmented
 
 - For Yao & Yang
 ```
-cp ~/.ncc/augmented_javascript/raw/javascript_dedupe_definitions_nonoverlap_v2_train.jsonl.gz ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/
+cp ~/.ncc/augmented_javascript/raw/javascript_dedupe_definitions_nonoverlap_v2_train.jsonl ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/
 ```
 - For Jian-Guo
 ```
-cp /export/share/jianguo/scodebert/augmented_javascript/raw/javascript_dedupe_definitions_nonoverlap_v2_train.jsonl.gz /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/
+cp /export/share/jianguo/scodebert/augmented_javascript/raw/javascript_dedupe_definitions_nonoverlap_v2_train.jsonl /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/
 ```
 Run the sentencepiece
 ```
@@ -48,7 +48,7 @@ python -m dataset.augmented_javascript.run_sentencepiece
 ```
 Cast the sentencepiece vocab to the format of NCC Dictionary.
 ```
-cd ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented
+cd ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented OR cd /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/ for Jian-Guo
 cut -f1 csnjs_8k_9995p_unigram_url.vocab | tail -n +10 | sed "s/$/ 100/g" > csnjs_8k_9995p_unigram_url.dict.txt
 ```
 
