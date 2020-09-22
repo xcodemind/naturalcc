@@ -16,7 +16,7 @@ python -m dataset.augmented_javascript.cast_type_prediction_data
 
 ## Step 1: Cast downloaded `.pkl` file to `.json` for data binarization (mmap) (~1min).
 ```
-python dataset/augmented_javascript/cast_pkl2json.py
+python -m dataset.augmented_javascript.cast_pkl2json
 ```
 
 ## Step 2: Run sentencepiece to obtain the vocabulary and corresponding model (~20min).
