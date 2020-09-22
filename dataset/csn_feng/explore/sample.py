@@ -23,7 +23,7 @@ mode = 'train'
 for lang in LANGUAGES:
     print('[{}]'.format(lang), file=writer)
     for modality in MODALITIES:
-        with open(os.path.expanduser('~/.ncc/CodeSearchNet/flatten/{}/{}.{}'.format(lang, mode, modality)),
+        with open(os.path.expanduser('~/.ncc/code_search_net/flatten/{}/{}.{}'.format(lang, mode, modality)),
                   'r') as reader:
             line = reader.readline()
             data = ujson.loads(line)

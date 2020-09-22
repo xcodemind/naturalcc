@@ -73,7 +73,7 @@ distributed_training:
   local_rank: -1 # type=int, default=-1, help="For distributed training: local_rank"
 
 task:
-  data: ~/.ncc/CodeSearchNet/base/data-raw/ruby # /tmp/pycharm_project_629/data-bin help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/code_search_net/base/data-raw/ruby # /tmp/pycharm_project_629/data-bin help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
 
   # for summarization
@@ -200,7 +200,7 @@ optimization:
 
 
 checkpoint:
-  save_dir: ~/.ncc/CodeSearchNet/summarization/transformer/checkpoints # default='checkpoints', help='path to save checkpoints'
+  save_dir: ~/.ncc/code_search_net/summarization/transformer/checkpoints # default='checkpoints', help='path to save checkpoints'
   restore_file: checkpoint_last.pt # default='checkpoint_last.pt', help='filename from which to load checkpoint (default: <save-dir>/checkpoint_last.pt'
   reset_dataloader: ~ # action='store_true', help='if set, does not reload dataloader state from the checkpoint'
   reset_lr_scheduler: ~ # action='store_true', help='if set, does not load lr scheduler state from the checkpoint'
@@ -230,7 +230,7 @@ checkpoint:
 
 
 eval:
-  path: ~/.ncc/CodeSearchNet/summarization/transformer/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  path: ~/.ncc/code_search_net/summarization/transformer/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
   quiet: 1 # ', action='store_true', help='only print final scores'
   results_path: ~ # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'

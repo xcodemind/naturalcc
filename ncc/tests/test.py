@@ -72,7 +72,7 @@ if __name__ == '__main__':
     from ncc.tasks.summarization import SummarizationTask
 
     dict = SummarizationTask.load_dictionary(
-        filename='/home/yang/.ncc/CodeSearchNet/summarization/data-raw/ruby/bin_ast.dict.json'
+        filename='/home/yang/.ncc/code_search_net/summarization/data-raw/ruby/bin_ast.dict.json'
     )
     bin_ast = {
         "0": {"type": "method", "parent": None, "children": [1, 2]},

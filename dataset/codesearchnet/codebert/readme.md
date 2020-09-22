@@ -18,7 +18,7 @@ python -m dataset.codesearchnet.codebert.preprocess_codebert.py # from data-raw 
 
 # Preprocess for HiCodeBert
 
-The flatten data is in ~/.ncc/CodeSearchNet/flatten/ruby/
+The flatten data is in ~/.ncc/code_search_net/flatten/ruby/
 1. Insert <S_SEP> token to the flatten code based on the args\['preprocess'\]\['inserted'\]
 e.g., train.code -> train_inserted.code
 

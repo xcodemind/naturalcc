@@ -291,7 +291,7 @@ def distributed_main(i, args, start_rank=0):
 def cli_main():
     import argparse
     parser = argparse.ArgumentParser(
-        description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
+        description="Downloading/Decompressing code_search_net dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
         "--language", "-l", default='python', type=str, help="load {language}.yml for train",
     )

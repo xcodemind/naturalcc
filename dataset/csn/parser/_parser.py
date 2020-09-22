@@ -331,7 +331,7 @@ if __name__ == '__main__':
     from dataset.utils.ast import tranv_trans
 
     lang = 'ruby'
-    so_file = '/home/yang/.ncc/CodeSearchNet/libs/{}.so'.format(lang)
+    so_file = '/home/yang/.ncc/code_search_net/libs/{}.so'.format(lang)
     parser = CodeParser(so_file, lang, to_lower=False, operators_file='operators.json')
 
     while True:

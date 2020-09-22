@@ -20,7 +20,7 @@ preprocess:
   task: summarization # task', metavar='TASK', default="translation", choices=TASK_REGISTRY.keys(), help='task'
   source_lang: code
   target_lang: docstring # docstring #", default=None, metavar="TARGET", help="target language"
-  # ~ path for dataset default. e.g.  for CodeSearchNet, ~/flatten = ~/.ncc/CodeSearchNet/flatten
+  # ~ path for dataset default. e.g.  for code_search_net, ~/flatten = ~/.ncc/code_search_net/flatten
   trainpref: ~/.ncc/CodeSearchNet_MSRA/flatten/ruby/train #", metavar="FP", default=None, help="train file prefix"
   validpref: ~/.ncc/CodeSearchNet_MSRA/flatten/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
   testpref:  ~/.ncc/CodeSearchNet_MSRA/flatten/ruby/test #", metavar="FP", default=None, help="comma separated, test file prefixes"

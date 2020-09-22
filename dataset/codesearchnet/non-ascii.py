@@ -13,7 +13,7 @@ for lang, mode in itertools.product(LANGUAGES, MODES):
     outfile = os.path.expanduser('~/{}_{}.non_ascii'.format(lang, mode))
     print(outfile)
     with open(outfile, 'w') as writer:
-        raw_files = '~/.ncc/CodeSearchNet/raw_unzip/{}/{}_{}_*.jsonl.gz'.format(lang, lang, mode)
+        raw_files = '~/.ncc/code_search_net/raw_unzip/{}/{}_{}_*.jsonl.gz'.format(lang, lang, mode)
         raw_files = os.path.expanduser(raw_files)
         raw_files = glob(raw_files)
         for file in raw_files:

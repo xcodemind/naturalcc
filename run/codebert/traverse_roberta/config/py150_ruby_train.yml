@@ -72,7 +72,7 @@ distributed_training:
 
 
 task:
-#  data: ~/.ncc/CodeSearchNet/codebert/data-mmap/ruby/code # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+#  data: ~/.ncc/code_search_net/codebert/data-mmap/ruby/code # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   data: ~/.ncc/py150/trav_trans/data-raw
   sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
   tokens_per_sample: 512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'

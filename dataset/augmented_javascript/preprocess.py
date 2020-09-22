@@ -278,7 +278,7 @@ def main(args):
 def cli_main():
     import argparse
     parser = argparse.ArgumentParser(
-        description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
+        description="Downloading/Decompressing code_search_net dataset(s) or Tree-Sitter Library(ies)")
     # parser.add_argument(
     #     "--yaml_file", "-f", default='preprocess.traversal', type=str,
     #     help="load python_wan/tokenization/config/{yaml_file}.yml for train",
