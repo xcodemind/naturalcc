@@ -10,7 +10,8 @@ os.makedirs(output_path, exist_ok=True)
 
 
 def cast_file(file_name):
-    with open(file_name, 'r') as input_file, open(os.path.join(output_path, 'target.dict.txt'), 'w') as output_file:
+    with open(file_name, 'r', encoding='utf8') as input_file, \
+        open(os.path.join(output_path, 'target.dict.txt'), 'w', encoding='utf8') as output_file:
         for line in input_file.readlines():
             print(line.strip('\n') + ' ' + '1', file=output_file)
 

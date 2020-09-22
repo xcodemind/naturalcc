@@ -20,7 +20,7 @@ def make_corpus(input, output):
     print("Example normalized:", normalize_program(dataset[0]["function"]))
     print("Example normalized docstring:", normalize_docstring(dataset[0]["docstring"]))
 
-    with open(output, "w") as f:
+    with open(output, "w", encoding='utf8') as f:
         for ex in tqdm.tqdm(dataset, "Writing corpus to txt"):
             # Write docstring
             if ex["docstring"]:
@@ -49,8 +49,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--format", type=str, default='piece', help='id(num)/piece(str)')
     parser.add_argument("--vocab-size", type=int, default=8000, help='token dictionary size')
-    parser.add_argument("--src-dir", type=str, default=os.path.join(DATASET_DIR, 'codebert/code_roberta/data-mmap')
-                        , help='source data')
+    parser.add_argument("--src-dir", type=str, default=RAW_DATA_DIR, help='source data')
     parser.add_argument("--tgt-dir", type=str, default=os.path.join(DATASET_DIR, 'codebert/code_roberta/data-mmap'),
                         help='save dir for sentencepiece bpe models or save files')
     # parser.add_argument("--tgt-dir", type=str, default=os.path.join(DATASET_DIR, 'contracode/data-raw/'),

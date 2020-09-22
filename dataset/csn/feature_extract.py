@@ -426,9 +426,11 @@ if __name__ == '__main__':
                 src_filename = os.path.join(args.flatten_dir, lang, '{}.{}'.format(mode, src_attr))
             else:
                 src_filename = os.path.join(args.refine_dir, lang, '{}.{}'.format(mode, src_attr))
-            LOGGER.info(src_filename)
+
             if os.path.exists(src_filename):
                 tgt_filename = os.path.join(args.refine_dir, lang, '{}.{}'.format(mode, tgt_attr))
                 LOGGER.info('Generating {}'.format(tgt_filename))
                 process(src_filename, tgt_filename, num_workers=args.cores,
                         lang=lang, so_dir=args.so_dir)
+            else:
+                LOGGER.info('{} does exist'.format(src_filename))

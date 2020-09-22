@@ -44,7 +44,7 @@ def safe_readline(f):
 
 
 def spm_encode(in_file, sp, out_file, start=0, end=0):
-    with open(in_file, 'r') as reader, open(out_file, 'w') as writer:
+    with open(in_file, 'r', encoding='utf8') as reader, open(out_file, 'w', encoding='utf8') as writer:
         reader.seek(start)
         line = safe_readline(reader)
         while line:
@@ -241,9 +241,9 @@ def main(args):
 
             def merge_file(src_files, tgt_file):
                 import shutil
-                with open(tgt_file, 'w') as writer:
+                with open(tgt_file, 'w', encoding='utf8') as writer:
                     for src_fl in src_files:
-                        with open(src_fl, 'r') as reader:
+                        with open(src_fl, 'r', encoding='utf8') as reader:
                             shutil.copyfileobj(reader, writer)
                         os.remove(src_fl)
 

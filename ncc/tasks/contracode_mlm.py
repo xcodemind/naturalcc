@@ -48,6 +48,13 @@ def load_masked_code_dataset(args, epoch, data_path, split, source_dictionary, c
         )
     )
 
+    # TODO: check
+    # for i in range(10):
+    #     input = dataset[i].tolist()
+    #     assert input[0] == 1 and input[-1] == 2
+    #     print(input)
+    # exit()
+
     dataset = ContraCodeDataset(dataset, dataset.sizes, source_dictionary, program_mode='identity', shuffle=False, )
     # create masked input and targets
     mask_whole_words = get_whole_word_mask(args, source_dictionary) if args['task']['mask_whole_words'] else None

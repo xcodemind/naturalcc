@@ -11,9 +11,9 @@ os.makedirs(output_path, exist_ok=True)
 
 
 def cast_file(file_name, mode, src, tgt):
-    with open(file_name, 'r') as input_file, \
-        open(os.path.join(output_path, '{}.{}'.format(mode, src)), 'w') as code_file, \
-        open(os.path.join(output_path, '{}.{}'.format(mode, tgt)), 'w') as type_file:
+    with open(file_name, 'r', encoding='utf8') as input_file, \
+        open(os.path.join(output_path, '{}.{}'.format(mode, src)), 'w', encoding='utf8') as code_file, \
+        open(os.path.join(output_path, '{}.{}'.format(mode, tgt)), 'w', encoding='utf8') as type_file:
         for line in input_file.readlines():
             print(ujson.dumps(line.split('\t')[0], ensure_ascii=False), file=code_file)
             print(ujson.dumps(line.split('\t')[1], ensure_ascii=False), end='', file=type_file)

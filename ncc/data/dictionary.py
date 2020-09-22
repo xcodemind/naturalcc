@@ -352,7 +352,7 @@ class Dictionary(object):
             with PathManager.open(f, "w", encoding="utf-8") as fd:
                 return self.save_json(fd)
         for k, v in kv_iterator:
-            print(json.dumps([k, v]), file=f)
+            print(json.dumps([k, v], ensure_ascii=False), file=f)
 
     def _get_meta(self):
         return [], []

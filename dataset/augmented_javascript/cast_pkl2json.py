@@ -19,7 +19,7 @@ if __name__ == '__main__':
     min_alternatives = 2
 
     with open(os.path.join(RAW_DATA_DIR, 'javascript_augmented.pickle'), 'rb') as reader, \
-        open(os.path.join(RAW_DATA_DIR, 'javascript_augmented.json'), 'w') as writer:
+        open(os.path.join(RAW_DATA_DIR, 'javascript_augmented.json'), 'w', encoding='utf8') as writer:
         examples = map(list, pickle.load(reader))
         if min_alternatives:
             examples = filter(lambda ex: len(ex) >= min_alternatives, examples)
