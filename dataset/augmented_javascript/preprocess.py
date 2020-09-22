@@ -33,6 +33,32 @@ def normalize_program(fn: str):
     return fn
 
 
+def safe_readline(f):
+    pos = f.tell()
+    while True:
+        try:
+            return f.readline()
+        except UnicodeDecodeError:
+            pos -= 1
+            f.seek(pos)  # search where this character begins
+
+
+def spm_encode(in_file, sp, out_file, start=0, end=0):
+    with open(in_file, 'r') as reader, open(out_file, 'w') as writer:
+        reader.seek(start)
+        line = safe_readline(reader)
+        while line:
+            if end > 0 and reader.tell() > end:
+                break
+
+            example = ujson.loads(line)
+            program = normalize_program(example)
+            program = sp.EncodeAsPieces(program)
+            print(ujson.dumps(program, ensure_ascii=False), file=writer)
+
+            line = safe_readline(reader)
+
+
 def tokenizer(sp):
     def _tokenizer(program):
         program = normalize_program(program)
@@ -200,12 +226,30 @@ def main(args):
     def make_dataset(vocab, sp, input_prefix, output_prefix, lang, num_workers=1):
         if args['preprocess']['dataset_impl'] == "raw":
             out_file = dest_path(output_prefix, lang=lang)
-            with open(input_prefix, 'r') as reader, open(out_file, 'w')as writer:
-                for example in reader:
-                    example = ujson.loads(example)
-                    program = normalize_program(example)
-                    program = sp.EncodeAsPieces(program)
-                    print(ujson.dumps(program, ensure_ascii=False), file=writer)
+            offsets = Binarizer.find_offsets(input_prefix, num_workers)
+
+            with PPool(num_workers) as pool:
+                params = []
+                for worker_id in range(num_workers):
+                    prefix = "{}{}".format(out_file, worker_id)
+                    params.append((input_prefix,
+                                   sp,
+                                   prefix,
+                                   offsets[worker_id],
+                                   offsets[worker_id + 1],))
+                pool.feed(spm_encode, params)
+
+            def merge_file(src_files, tgt_file):
+                import shutil
+                with open(tgt_file, 'w') as writer:
+                    for src_fl in src_files:
+                        with open(src_fl, 'r') as reader:
+                            shutil.copyfileobj(reader, writer)
+                        os.remove(src_fl)
+
+            merge_file(src_files=["{}{}".format(out_file, worker_id) for worker_id in range(num_workers)],
+                       tgt_file=out_file)
+
         elif args['preprocess']['dataset_impl'] == "mmap":
             out_file = dest_path(output_prefix, lang=lang)
             os.makedirs(os.path.dirname(out_file), exist_ok=True)
