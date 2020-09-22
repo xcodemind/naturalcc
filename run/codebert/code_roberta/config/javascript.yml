@@ -16,7 +16,7 @@ common:
   cpu: 0 # action='store_true', help='use CPU instead of CUDA'
   fp16: 1 # action='store_true', help='use FP16'
   memory_efficient_fp16: 0 # action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
-  fp16_no_flatten_grads: 0 # action='store_true', help='don\'t flatten FP16 grads tensor'
+  fp16_no_flatten_grads: 1 # action='store_true', help='don\'t flatten FP16 grads tensor'
   fp16_init_scale: 128 # 2 ** 7 # default=2 ** 7, type=int, help='default FP16 loss scale'
   fp16_scale_window: ~ # type=int, help='number of updates before increasing loss scale'
   fp16_scale_tolerance: 0.0 # default=0.0, type=float, help='pct of updates that can overflow before decreasing the loss scale'
@@ -31,7 +31,7 @@ dataset:
   num_workers: 5 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
   skip_invalid_size_inputs_valid_test: 1 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
-  max_sentences: 64 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  max_sentences: 4 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
   dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
   train_subset: train # train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
@@ -50,13 +50,14 @@ dataset:
 
 
 distributed_training:
-  distributed_world_size: 2 # default=max(1, torch.cuda.device_count()
+  distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
   distributed_rank: 0 # default=0, type=int, help='rank of the current worker'
   distributed_backend: nccl # default='nccl', type=str, help='distributed backend'
   distributed_init_method: ~ # default=None, type=str,help='typically tcp://hostname:port that will be used to establish initial connetion'
   distributed_port: -1 # default=-1, type=int, help='port number (not required if using --distributed-init-method)'
   device_id: 0 # '--local_rank', default=0, type=int, help='which GPU to use (usually configured automatically)'
 #  local_rank: 0 #
+  pipeline_model_parallel: 0 # '--pipeline-model-parallel', default=False, action='store_true', help='if set, use pipeline model parallelism across GPUs'
   distributed_no_spawn: 0 # action='store_true', help='do not spawn multiple processes even if multiple GPUs are visible'
   ddp_backend: c10d # default='c10d', type=str, choices=['c10d', 'no_c10d'], help='DistributedDataParallel backend'
   bucket_cap_mb: 25 # default=25, type=int, metavar='MB', help='bucket size for reduction'
@@ -69,8 +70,8 @@ distributed_training:
   warmup_iterations: 500 # default=500, type=int, help="warmup iterations for model to broadcast",
 
 task:
-#  data: ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
-  data: /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/augmented_javascript/codebert/code_roberta/data-mmap # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+#  data: /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
   tokens_per_sample: 1024 #512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
   mask_prob: 0.15 # default=0.15, type=float, help='probability of replacing a token with mask'
@@ -169,8 +170,8 @@ optimization:
     log-keys: '' # type=str, default=None, help='output keys to log'
 
 checkpoint:
-  save_dir: /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/codebert/code_roberta/checkpoints # default='checkpoints', help='path to save checkpoints'
-#  save_dir: ~/.ncc/augmented_javascript/contracode/data-raw/no_augmented/codebert/code_roberta/checkpoints # default='checkpoints', help='path to save checkpoints'
+#  save_dir: /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented/codebert/code_roberta/checkpoints # default='checkpoints', help='path to save checkpoints'
+  save_dir: ~/.ncc/augmented_javascript/codebert/code_roberta/checkpoints # default='checkpoints', help='path to save checkpoints'
   restore_file: checkpoint_last.pt # default='checkpoint_last.pt', help='filename from which to load checkpoint (default: <save-dir>/checkpoint_last.pt'
   reset_dataloader: ~ # action='store_true', help='if set, does not reload dataloader state from the checkpoint'
   reset_lr_scheduler: ~ # action='store_true', help='if set, does not load lr scheduler state from the checkpoint'

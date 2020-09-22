@@ -130,10 +130,9 @@ def main(args):
             tgt_sp = None
 
     # 2. ***************build dataset********************
-    def make_binary_dataset(vocab: Dictionary, input_file, output_file,
+    def make_binary_dataset(sp, input_file, output_file,
                             attr: str, num_workers: int):
         """make binary dataset"""
-        LOGGER.info("[{}] Dictionary: {} types".format(attr, len(vocab) - 1))
         n_seq_tok = [0, 0]
         replaced = Counter()  # save un-recorded tokens
 
@@ -157,7 +156,7 @@ def main(args):
                     (
                         args,
                         input_file,
-                        vocab,
+                        sp,
                         prefix,
                         offsets[worker_id],
                         offsets[worker_id + 1]
@@ -168,10 +167,10 @@ def main(args):
         # process 1th file, if multi-processing available. If not, process all file
         # p0 -> 0,end
         ds_file = '{}.mmap'.format(output_file)
-        ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(vocab))
+        ds = indexed_dataset.make_builder(ds_file, impl=args['preprocess']['dataset_impl'], vocab_size=len(sp))
         merge_result(
             Binarizer.binarize_bpe(
-                input_file, dict=None, sp=vocab, consumer=lambda t: ds.add_item(t),
+                input_file, dict=None, sp=sp, consumer=lambda t: ds.add_item(t),
                 offset=0, end=offsets[1],
             )
         )
