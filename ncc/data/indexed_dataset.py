@@ -18,7 +18,6 @@ from dataset.csn import PATH_NUM
 from ncc import LOGGER
 import re
 
-
 _newline_regex = re.compile(r"\n")
 _whitespace_regex = re.compile(r"[ \t\n]+")
 
@@ -75,7 +74,6 @@ def make_dataset(path, impl, modality='text', fix_lua_indexing=False, dictionary
             func = load_dataset(modality='dfs') # func = IndexedJsonDataset (namely, IndexedDFSASTDataset)
             return func(path, dictionary)
     """
-
     if impl == 'raw' and IndexedRawTextDataset.exists(path):
         if modality == 'path':
             return IndexedRawPathDataset(path, dictionary)
@@ -618,9 +616,9 @@ class IndexedJavascriptDataset(FairseqDataset):
                 # programs = []
                 # for program in line:
                 # TODO
-                program = [dictionary.bos_word] + program[: max_source_positions-2] + [dictionary.eos_word]
+                # program = [dictionary.bos_word] + program[: max_source_positions-2] + [dictionary.eos_word]
                 program = dictionary.encode_line(program, line_tokenizer=None, add_if_not_exist=False,
-                                              append_eos=self.append_eos, reverse_order=self.reverse_order).long()
+                                                 append_eos=self.append_eos, reverse_order=self.reverse_order).long()
                 # programs.append(program)
 
                 self.examples_list.append(program)
@@ -673,9 +671,10 @@ class IndexedJavascriptAugmentedDataset(FairseqDataset):
                 programs = []
                 for program in line:
                     # TODO
-                    program = [dictionary.bos_word] + program[: max_source_positions-2] + [dictionary.eos_word]
+                    program = [dictionary.bos_word] + program[: max_source_positions - 2] + [dictionary.eos_word]
                     program = dictionary.encode_line(program, line_tokenizer=None, add_if_not_exist=False,
-                                                  append_eos=self.append_eos, reverse_order=self.reverse_order).long()
+                                                     append_eos=self.append_eos,
+                                                     reverse_order=self.reverse_order).long()
                     programs.append(program)
 
                 self.examples_list.append(programs)

@@ -20,9 +20,13 @@ from ncc.data.dictionary import Dictionary
 from ncc.data.encoders.utils import get_whole_word_mask
 from ncc.data.contracode.contracode_dataset import ContraCodeDataset
 
+from ncc.data.wrappers.truncate_dataset import TruncateDataset
+from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
+from ncc.data.wrappers.append_token_dataset import AppendTokenDataset
 
-def load_masked_code_dataset(args, epoch, data_path, split, source_dictionary, combine,):
-    split_path = os.path.join(data_path, '{}.code'.format(split)) # '{}.code'.format(split)
+
+def load_masked_code_dataset(args, epoch, data_path, split, source_dictionary, combine, ):
+    split_path = os.path.join(data_path, '{}.code'.format(split))  # '{}.code'.format(split)
     dataset = data_utils.load_indexed_dataset(
         path=split_path,
         modality='javascript',
@@ -34,7 +38,17 @@ def load_masked_code_dataset(args, epoch, data_path, split, source_dictionary, c
     if dataset is None:
         raise FileNotFoundError('Dataset not found: {} ({})'.format(split, split_path))
 
-    dataset = ContraCodeDataset(dataset, dataset.sizes, source_dictionary, program_mode='identity', shuffle=False,)
+    dataset = AppendTokenDataset(
+        PrependTokenDataset(
+            AppendTokenDataset(
+                TruncateDataset(dataset, args['task']['max_source_positions'] - 2),
+                source_dictionary.eos(),
+            ),
+            source_dictionary.bos(),
+        )
+    )
+
+    dataset = ContraCodeDataset(dataset, dataset.sizes, source_dictionary, program_mode='identity', shuffle=False, )
     # create masked input and targets
     mask_whole_words = get_whole_word_mask(args, source_dictionary) if args['task']['mask_whole_words'] else None
 
@@ -107,7 +121,7 @@ class ContraCodeMLM(FairseqTask):
             dictionary.add_from_file(filename)
         else:
             dictionary = Dictionary(extra_special_symbols=[constants.CLS, constants.SEP, constants.MASK,
-                                       constants.EOL, constants.URL]).add_from_json_file(filename)
+                                                           constants.EOL, constants.URL]).add_from_json_file(filename)
         return dictionary
 
     @classmethod
@@ -131,7 +145,8 @@ class ContraCodeMLM(FairseqTask):
         assert len(paths) > 0
         data_path = paths[(epoch - 1) % len(paths)]
 
-        self.datasets[split] = load_masked_code_dataset(self.args, epoch, data_path, split, self.source_dictionary, combine) #, self.sp,
+        self.datasets[split] = load_masked_code_dataset(self.args, epoch, data_path, split, self.source_dictionary,
+                                                        combine)  # , self.sp,
 
     @property
     def source_dictionary(self):
