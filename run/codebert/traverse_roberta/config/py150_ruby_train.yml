@@ -95,6 +95,17 @@ task:
   upsample_primary: 1 #', default=1, type=int, help='amount to upsample primary dataset'
   truncate_source: 0 #', action='store_true', default=False, help='truncate source to max-source-positions'
 
+  # options for reporting BLEU during validation
+  eval_bleu: 1 #action='store_true', help='evaluation with BLEU scores'
+  eval_bleu_detok: space #', type=str, default="space", help='detokenizer before computing BLEU (e.g., "moses"); required if using --eval-bleu; use "space" to disable detokenization; see fairseq.data.encoders for other options'
+  eval_bleu_detok_args: ~ #', type=str, metavar='JSON', help='args for building the tokenizer, if needed'
+  eval_tokenized_bleu: 0 #', action='store_true', default=False, help='if setting, we compute tokenized BLEU instead of sacrebleu'
+  eval_bleu_remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE before computing BLEU'
+  eval_bleu_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
+  eval_bleu_print_samples: 0 #', action='store_true', help='print sample generations during validation'
+
+  eval_rouge: 1
+
 model:
   arch: code_roberta # '-a', default='fconv', metavar='ARCH', choices=ARCH_MODEL_REGISTRY.keys(), help='Model Architecture'
   pooler_dropout: 0.0 # type=float, metavar='D', help='dropout probability in the masked_lm pooler layers'

@@ -94,6 +94,8 @@ task:
   eval_bleu_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
   eval_bleu_print_samples: 0 #', action='store_true', help='print sample generations during validation'
 
+  eval_rouge: 1
+
 model:
   arch: transformer_from_roberta_summarization
   pooler_dropout: 0.0 # type=float, metavar='D', help='dropout probability in the masked_lm pooler layers'
