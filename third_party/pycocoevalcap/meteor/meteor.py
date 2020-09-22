@@ -40,7 +40,14 @@ class Meteor:
                             "then you can try to lower the `mem` variable in meteor.py")
             mem = '1G'
 
-        meteor_cmd = ['java', '-jar', '-Xmx{}'.format(mem), METEOR_JAR,
+        from dataset import HOSTNAME
+        if HOSTNAME in ['GS65']:
+            java_path = '/home/yang/Documents/jdk1.8.0_60/bin/java'
+        elif HOSTNAME in ['node14']:
+            java_path = '/usr/bin/java'
+        else:
+            java_path = 'java'
+        meteor_cmd = [java_path, '-jar', '-Xmx2G', METEOR_JAR,
                       '-', '-', '-stdio', '-l', 'en', '-norm']
         env = os.environ.copy()
         env['LC_ALL'] = "C"
