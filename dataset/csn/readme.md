@@ -44,7 +44,7 @@ test.code         test.docstring_tokens  train                 train.docstring  
 test.code_tokens  test.func_name         train.code            train.docstring_tokens  valid                  valid.docstring    valid.original_string
 ```
 
-### step 3(optional). If you want to get AST/binary-AST etc. of code and so on. Plz run such command.
+### step 3 (optional). If you want to get AST/binary-AST etc. of code and so on. Plz run such command.
 ```
 python -m dataset.csn.feature_extract -l [language] -f [flatten data directory] -r [refine data directory] -s [parse file] -a [data attributes] -c [cpu cores]
 ```
@@ -75,7 +75,7 @@ test.code_tokens  test.docstring_tokens  train.code_tokens  train.docstring_toke
 ```
 
  
-### step 4(optional, run after step3). filter data containing invalid attributes. Only available after you run step3.
+### step 4 (optional, run after step3). filter data containing invalid attributes. Only available after you run step3.
 ```
 python -m dataset.csn.filter -l [language] -r [refined data directory] -f [filter data directory] -a [data attributes]
 ```
