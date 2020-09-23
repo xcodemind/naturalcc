@@ -51,9 +51,11 @@ def get_leaf_tokens(in_file, out_file, start, end):
             if end > 0 and reader.tell() > end:
                 break
             tree = ujson.loads(line)
+            leaf_tokens = []
             for node in tree:
                 if 'value' in node:
-                    print(normalize_program(node['value']), file=writer)
+                    leaf_tokens.append(normalize_program(node['value']))
+            print(' '.join(leaf_tokens), file=writer)
             line = safe_readline(reader)
 
 

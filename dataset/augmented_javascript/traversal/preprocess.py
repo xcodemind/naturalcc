@@ -94,10 +94,19 @@ def get_dfs(ast, spm_dict, to_ids=True):
     for node in ast:
         if 'value' in node:
             string = node['value']
-            if to_ids:
-                tokens = spm_dict.encode_as_ids(string)
+            id = spm_dict.piece_to_id(string)
+            if spm_dict.unk_id() == id:
+                # if id = [UNK], spm_dict does not contain such token, use BPE instead
+                if to_ids:
+                    tokens = spm_dict.encode_as_ids(string)
+                else:
+                    tokens = spm_dict.encode_as_pieces(string)
             else:
-                tokens = spm_dict.encode_as_pieces(string)
+                # if id != [UNK], spm_dict does contain such token, directly view it as token
+                if to_ids:
+                    tokens = [id]
+                else:
+                    tokens = [string]
         else:
             string = node['type']
             if to_ids:
