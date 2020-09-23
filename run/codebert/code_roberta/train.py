@@ -53,7 +53,7 @@ def train(args, trainer, task, epoch_itr):
     # task specific setup per epoch
     task.begin_epoch(epoch_itr.epoch, trainer.get_model())
 
-    valid_subsets = args['dataset']['valid_subset'].split(',')
+    # valid_subsets = args['dataset']['valid_subset'].split(',')
     max_update = args['optimization']['max_update'] or math.inf
     for samples in progress:
         with metrics.aggregate('train_inner'):
@@ -70,14 +70,14 @@ def train(args, trainer, task, epoch_itr):
             # reset epoch-level meters
             metrics.reset_meters('train_inner')
 
-        if (
-            not args['dataset']['disable_validation']
-            and args['checkpoint']['save_interval_updates'] > 0
-            and num_updates % args['checkpoint']['save_interval_updates'] == 0
-            and num_updates > 0
-        ):
-            valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
-            checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, valid_losses[0])
+        # if (
+        #     not args['dataset']['disable_validation']
+        #     and args['checkpoint']['save_interval_updates'] > 0
+        #     and num_updates % args['checkpoint']['save_interval_updates'] == 0
+        #     and num_updates > 0
+        # ):
+        #     valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
+        #     checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, valid_losses[0])
 
         if num_updates >= max_update:
             break
@@ -90,56 +90,56 @@ def train(args, trainer, task, epoch_itr):
     metrics.reset_meters('train')
 
 
-def validate(args, trainer, task, epoch_itr, subsets):
-    """Evaluate the model on the validation set(s) and return the losses."""
-
-    if args['dataset']['fixed_validation_seed'] is not None:
-        # set fixed seed for every validation
-        utils.set_torch_seed(args['dataset']['fixed_validation_seed'])
-
-    valid_losses = []
-    for subset in subsets:
-        # Initialize data iterator
-        itr = task.get_batch_iterator(
-            dataset=task.dataset(subset),
-            max_tokens=args['dataset']['max_tokens_valid'],
-            max_sentences=args['dataset']['max_sentences_valid'],
-            max_positions=utils.resolve_max_positions(
-                task.max_positions(),
-                trainer.get_model().max_positions(),
-            ),
-            ignore_invalid_inputs=args['dataset']['skip_invalid_size_inputs_valid_test'],
-            required_batch_size_multiple=args['dataset']['required_batch_size_multiple'],
-            seed=args['common']['seed'],
-            num_shards=args['distributed_training']['distributed_world_size'],
-            shard_id=args['distributed_training']['distributed_rank'],
-            num_workers=args['dataset']['num_workers'],
-        ).next_epoch_itr(shuffle=False)
-        progress = progress_bar.progress_bar(
-            itr,
-            log_format=args['common']['log_format'],
-            log_interval=args['common']['log_interval'],
-            epoch=epoch_itr.epoch,
-            prefix=f"valid on '{subset}' subset",
-            tensorboard_logdir=(
-                args['common']['tensorboard_logdir'] if distributed_utils.is_master(args) else None
-            ),
-            default_log_format=('tqdm' if not args['common']['no_progress_bar'] else 'simple'),
-        )
-
-        # create a new root metrics aggregator so validation metrics
-        # don't pollute other aggregators (e.g., train meters)
-        with metrics.aggregate(new_root=True) as agg:
-            for sample in progress:
-                trainer.valid_step(sample)
-
-        # log validation stats
-        stats = get_valid_stats(args, trainer, agg.get_smoothed_values())
-        progress.print(stats, tag=subset, step=trainer.get_num_updates())
-
-        valid_losses.append(stats[args['checkpoint']['best_checkpoint_metric']])
-
-    return valid_losses
+# def validate(args, trainer, task, epoch_itr, subsets):
+#     """Evaluate the model on the validation set(s) and return the losses."""
+#
+#     if args['dataset']['fixed_validation_seed'] is not None:
+#         # set fixed seed for every validation
+#         utils.set_torch_seed(args['dataset']['fixed_validation_seed'])
+#
+#     valid_losses = []
+#     for subset in subsets:
+#         # Initialize data iterator
+#         itr = task.get_batch_iterator(
+#             dataset=task.dataset(subset),
+#             max_tokens=args['dataset']['max_tokens_valid'],
+#             max_sentences=args['dataset']['max_sentences_valid'],
+#             max_positions=utils.resolve_max_positions(
+#                 task.max_positions(),
+#                 trainer.get_model().max_positions(),
+#             ),
+#             ignore_invalid_inputs=args['dataset']['skip_invalid_size_inputs_valid_test'],
+#             required_batch_size_multiple=args['dataset']['required_batch_size_multiple'],
+#             seed=args['common']['seed'],
+#             num_shards=args['distributed_training']['distributed_world_size'],
+#             shard_id=args['distributed_training']['distributed_rank'],
+#             num_workers=args['dataset']['num_workers'],
+#         ).next_epoch_itr(shuffle=False)
+#         progress = progress_bar.progress_bar(
+#             itr,
+#             log_format=args['common']['log_format'],
+#             log_interval=args['common']['log_interval'],
+#             epoch=epoch_itr.epoch,
+#             prefix=f"valid on '{subset}' subset",
+#             tensorboard_logdir=(
+#                 args['common']['tensorboard_logdir'] if distributed_utils.is_master(args) else None
+#             ),
+#             default_log_format=('tqdm' if not args['common']['no_progress_bar'] else 'simple'),
+#         )
+#
+#         # create a new root metrics aggregator so validation metrics
+#         # don't pollute other aggregators (e.g., train meters)
+#         with metrics.aggregate(new_root=True) as agg:
+#             for sample in progress:
+#                 trainer.valid_step(sample)
+#
+#         # log validation stats
+#         stats = get_valid_stats(args, trainer, agg.get_smoothed_values())
+#         progress.print(stats, tag=subset, step=trainer.get_num_updates())
+#
+#         valid_losses.append(stats[args['checkpoint']['best_checkpoint_metric']])
+#
+#     return valid_losses
 
 
 def get_valid_stats(args, trainer, stats):
@@ -213,8 +213,8 @@ def single_main(args, init_distributed=False):
     task = tasks.setup_task(args)
 
     # 2. Load valid dataset (we load training data below, based on the latest checkpoint)
-    for valid_sub_split in args['dataset']['valid_subset'].split(','):
-        task.load_dataset(valid_sub_split, combine=False, epoch=1)
+    # for valid_sub_split in args['dataset']['valid_subset'].split(','):
+    #     task.load_dataset(valid_sub_split, combine=False, epoch=1)
 
     # 3. Build model and criterion
     model = task.build_model(args)
@@ -252,10 +252,10 @@ def single_main(args, init_distributed=False):
         # train for one epoch
         train(args, trainer, task, epoch_itr)
 
-        if not args['dataset']['disable_validation'] and epoch_itr.epoch % args['dataset']['validate_interval'] == 0:
-            valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
-        else:
-            valid_losses = [None]
+        # if not args['dataset']['disable_validation'] and epoch_itr.epoch % args['dataset']['validate_interval'] == 0:
+        #     valid_losses = validate(args, trainer, task, epoch_itr, valid_subsets)
+        # else:
+        valid_losses = [None]
 
         # only use first validation loss to update the learning rate
         lr = trainer.lr_step(epoch_itr.epoch, valid_losses[0])
