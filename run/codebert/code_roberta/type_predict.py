@@ -132,12 +132,12 @@ def _main(args, output_file):
         loss = F.cross_entropy(logits.transpose(1, 2), labels, ignore_index=task.target_dictionary.index('O'))
         print('loss: ', loss)
         (corr1_any, corr5_any), num_labels_any = accuracy(
-            logits.cpu(), labels.cpu(), topk=(1, 5), ignore_idx=(task.target_dictionary.index('O'),))
+            logits, labels, topk=(1, 5), ignore_idx=(task.target_dictionary.index('O'),))
         num1_any += corr1_any
         num5_any += corr5_any
         num_labels_any_total += num_labels_any
 
-        (corr1, corr5), num_labels = accuracy(logits.cpu(), labels.cpu(), topk=(1, 5),
+        (corr1, corr5), num_labels = accuracy(logits, labels, topk=(1, 5),
             ignore_idx=(task.target_dictionary.index('O'), task.target_dictionary.index('$any$')))
         num1 += corr1
         num5 += corr5
