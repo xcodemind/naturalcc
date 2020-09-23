@@ -51,7 +51,7 @@ dataset:
 
 
 distributed_training:
-  distributed_world_size: 4 # default=max(1, torch.cuda.device_count()
+  distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
   distributed_rank: 0 # default=0, type=int, help='rank of the current worker'
   distributed_backend: nccl # default='nccl', type=str, help='distributed backend'
   distributed_init_method: ~ # default=None, type=str,help='typically tcp://hostname:port that will be used to establish initial connetion'
@@ -71,8 +71,14 @@ distributed_training:
   warmup_iterations: 500 # default=500, type=int, help="warmup iterations for model to broadcast",
 
 task:
-  data: ~/.ncc/augmented_javascript/codebert/code_roberta/data-mmap # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  # code
+#  data: ~/.ncc/augmented_javascript/codebert/code_roberta/data-mmap # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 #  data: ~/.ncc/augmented_javascript/codebert/code_roberta/data-raw # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+
+  # traversal
+  data: ~/.ncc/augmented_javascript/codebert/traverse_roberta/filter/javascript/data-mmap # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+#  data: ~/.ncc/augmented_javascript/codebert/traverse_roberta/filter/javascript/data-raw # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+
 #  data: /export/share/jianguo/scodebert/augmented_javascript/contracode/data-raw/no_augmented # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
   sample_break_mode: complete # choices=['none', 'complete', 'complete_doc', 'eos'], help='If omitted or "none", fills each sample with tokens-per-sample tokens. If set to "complete", splits samples only at the end of sentence, but may include multiple sentences per sample. "complete_doc" is similar but respects doc boundaries. If set to "eos", includes only one sentence per sample.'
   tokens_per_sample: 1024 #512 # max_positions, default=512, type=int, help='max number of total tokens over all segments per sample for BERT dataset'
@@ -85,7 +91,8 @@ task:
   pooler_activation_fn: 'tanh' # choices=utils.get_available_activation_fns(), help='Which activation function to use for pooler layer.'
 
   # for summarization
-  source_lang: code
+#  source_lang: code
+  source_lang: traversal
   target_lang: docstring
   load_alignments: 0 #', action='store_true', help='load the binarized alignments'
   left_pad_source: 1 #', default='True', type=str, metavar='BOOL', help='pad the source on the left'
