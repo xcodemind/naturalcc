@@ -1,10 +1,11 @@
 import os
+import re
 import ujson
 import argparse
 import itertools
 from collections import Counter
 from multiprocessing import Pool, cpu_count
-
+from dataset import LOGGER
 from dataset.augmented_javascript import DATASET_DIR
 
 
@@ -30,22 +31,39 @@ def safe_readline(f):
             f.seek(pos)  # search where this character begins
 
 
-def get_non_leaf_node(filename, start, end):
-    node_couter = Counter()
-    with open(filename, 'r') as reader:
+_newline_regex = re.compile(r"\n")
+_whitespace_regex = re.compile(r"[ \t\n]+")
+
+
+def normalize_program(fn: str):
+    if not isinstance(fn, (str, bytes)):
+        LOGGER.error(f"normalize_program got non-str: {type(fn)}, {fn}")
+    fn = _newline_regex.sub(r" [EOL]", fn)
+    fn = _whitespace_regex.sub(" ", fn)
+    return fn
+
+
+def get_leaf_tokens(in_file, out_file, start, end):
+    with open(in_file, 'r', encoding='utf8') as reader, open(out_file, 'w', encoding='utf8') as writer:
         reader.seek(start)
         line = safe_readline(reader)
         while line:
             if end > 0 and reader.tell() > end:
                 break
             tree = ujson.loads(line)
-            tokens = []
             for node in tree:
-                if 'children' in node:
-                    tokens.append(node['type'])
-            node_couter.update(tokens)
+                if 'value' in node:
+                    print(normalize_program(node['value']), file=writer)
             line = safe_readline(reader)
-    return node_couter
+
+
+def merge_file(src_files, tgt_file):
+    import shutil
+    with open(tgt_file, 'w', encoding='utf8') as writer:
+        for src_fl in src_files:
+            with open(src_fl, 'r', encoding='utf8') as reader:
+                shutil.copyfileobj(reader, writer)
+            os.remove(src_fl)
 
 
 if __name__ == '__main__':
@@ -57,7 +75,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         "--out_file", "-o",
-        default=os.path.join(DATASET_DIR, 'codebert/traverse_roberta/filter/javascript/.ast.node_types'),
+        default=os.path.join(DATASET_DIR, 'codebert/traverse_roberta/filter/javascript/train.ast.leaf_token'),
         type=str, help="out file to save tree node type names",
     )
     parser.add_argument(
@@ -68,18 +86,20 @@ if __name__ == '__main__':
         else [os.path.expanduser(file) for file in args.in_files]
     args.out_file = os.path.expanduser(args.out_file)
 
+    tmp_files = []
     for in_file in args.in_files:
+        LOGGER.info('Multi-processing with {}'.format(in_file))
         offsets = find_offsets(in_file, args.cores)
+        out_file = ['{}.tmp{}'.format(in_file, worker_id) for worker_id in range(args.cores)]
+        tmp_files.extend(out_file)
         with Pool(args.cores) as mpool:
             result = [
                 mpool.apply_async(
-                    get_non_leaf_node,
-                    (in_file, offsets[idx], offsets[idx + 1])
+                    get_leaf_tokens,
+                    (in_file, out_file[idx], offsets[idx], offsets[idx + 1])
                 )
                 for idx in range(args.cores)
             ]
             result = [res.get() for res in result]
-    dict = Counter(itertools.chain(*[res.elements() for res in result]))
-    with open(args.out_file, 'w') as writer:
-        for token, freq in sorted(dict.items(), key=lambda key_value: key_value[-1], reverse=True):
-            print(ujson.dumps([token, freq], ensure_ascii=False), file=writer)
+
+    merge_file(src_files=tmp_files, tgt_file=args.out_file)
