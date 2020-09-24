@@ -26,7 +26,7 @@ from ncc.data.wrappers.append_token_dataset import AppendTokenDataset
 
 
 def load_masked_code_dataset(args, epoch, data_path, split, source_dictionary, combine, ):
-    split_path = os.path.join(data_path, '{}.code'.format(split))  # '{}.code'.format(split)
+    split_path = os.path.join(data_path, '{}.{}'.format(split, args['task']['source_lang']))
     dataset = data_utils.load_indexed_dataset(
         path=split_path,
         modality='javascript',
@@ -48,11 +48,12 @@ def load_masked_code_dataset(args, epoch, data_path, split, source_dictionary, c
         )
     )
 
-    # TODO: check
+    # # TODO: check
     # for i in range(10):
     #     input = dataset[i].tolist()
     #     assert input[0] == 1 and input[-1] == 2
     #     print(input)
+    #     print(source_dictionary.string(input))
     # exit()
 
     dataset = ContraCodeDataset(dataset, dataset.sizes, source_dictionary, program_mode='identity', shuffle=False, )
@@ -128,14 +129,16 @@ class ContraCodeMLM(FairseqTask):
             dictionary.add_from_file(filename)
         else:
             dictionary = Dictionary(extra_special_symbols=[constants.CLS, constants.SEP, constants.MASK,
-                                                           constants.EOL, constants.URL]).add_from_json_file(filename)
+                                                           constants.EOL, constants.URL])
+            dictionary.add_from_json_file(filename)
         return dictionary
 
     @classmethod
     def setup_task(cls, args, **kwargs):
         paths = utils.split_paths(args['task']['data'])
         assert len(paths) > 0
-        dictionary = cls.load_dictionary(os.path.join(paths[0], 'csnjs_8k_9995p_unigram_url.dict.txt'))
+        # dictionary = cls.load_dictionary(os.path.join(paths[0], 'csnjs_8k_9995p_unigram_url.dict.txt'))
+        dictionary = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.json'.format(args['task']['source_lang'])))
         LOGGER.info('dictionary: {} types'.format(len(dictionary)))
         # sp = spm.SentencePieceProcessor()
         # sp.Load(os.path.join(paths[0], 'csnjs_8k_9995p_unigram_url.model'))
