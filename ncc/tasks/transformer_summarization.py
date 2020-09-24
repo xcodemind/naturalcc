@@ -36,9 +36,10 @@ def load_langpair_dataset(
     src, src_dict,
     tgt, tgt_dict,
     combine, dataset_impl, upsample_primary,
-    left_pad_source, left_pad_target, max_source_positions,
-    max_target_positions, prepend_bos=False, load_alignments=False,
-    truncate_source=False, truncate_target=False, append_source_id=False,
+    left_pad_source, left_pad_target,
+    max_source_positions, max_target_positions,
+    load_alignments=False,
+    truncate_source=False, truncate_target=False,
     append_bos_to_target=False, append_eos_to_target=False,
 ):
     def split_exists(split, src, data_path):
@@ -64,25 +65,19 @@ def load_langpair_dataset(
                 raise FileNotFoundError('Dataset not found: {} ({})'.format(split, data_path))
 
         src_dataset = data_utils.load_indexed_dataset(prefix + src, 'text', src_dict, dataset_impl)
-        if truncate_source:
-            src_dataset = AppendTokenDataset(
-                TruncateDataset(
-                    StripTokenDataset(src_dataset, src_dict.eos()),
-                    max_source_positions - 1,
-                ),
-                src_dict.eos(),
-            )
+        if truncate_source and max_source_positions:
+            src_dataset = TruncateDataset(src_dataset, max_source_positions)
         src_datasets.append(src_dataset)
 
         tgt_dataset = data_utils.load_indexed_dataset(prefix + tgt, 'text', tgt_dict, dataset_impl)
-        if truncate_target:
-            tgt_dataset = AppendTokenDataset(
-                TruncateDataset(
-                    StripTokenDataset(tgt_dataset, tgt_dict.eos()),
-                    max_target_positions - 1,
-                ),
-                tgt_dict.eos(),
-            )
+        if truncate_target and max_target_positions:
+            if append_bos_to_target:
+                tgt_dataset = PrependTokenDataset(tgt_dataset, tgt_dict.bos())
+            tgt_dataset = TruncateDataset(tgt_dataset, max_target_positions - 1 if append_eos_to_target \
+                else max_target_positions)
+            if append_eos_to_target:
+                tgt_dataset = AppendTokenDataset(tgt_dataset, tgt_dict.eos())
+
         if tgt_dataset is not None:
             tgt_datasets.append(tgt_dataset)
 
@@ -103,25 +98,6 @@ def load_langpair_dataset(
         else:
             tgt_dataset = None
 
-    if prepend_bos:
-        assert hasattr(src_dict, "bos_index") and hasattr(tgt_dict, "bos_index")
-        src_dataset = PrependTokenDataset(src_dataset, src_dict.bos())
-        if tgt_dataset is not None:
-            tgt_dataset = PrependTokenDataset(tgt_dataset, tgt_dict.bos())
-
-    eos = None
-    if append_source_id:
-        src_dataset = AppendTokenDataset(src_dataset, src_dict.index('[{}]'.format(src)))
-        if tgt_dataset is not None:
-            tgt_dataset = AppendTokenDataset(tgt_dataset, tgt_dict.index('[{}]'.format(tgt)))
-        eos = tgt_dict.index('[{}]'.format(tgt))
-
-    # align_dataset = None
-    # if load_alignments:
-    #     align_path = os.path.join(data_path, '{}.align.{}-{}'.format(split, src, tgt))
-    #     if indexed_dataset.dataset_exists(align_path, impl=dataset_impl):
-    #         align_dataset = data_utils.load_indexed_dataset(align_path, None, dataset_impl)
-
     tgt_dataset_sizes = tgt_dataset.sizes if tgt_dataset is not None else None
     return LanguagePairDataset(
         src_dataset, src_dataset.sizes, src_dict,
@@ -130,8 +106,6 @@ def load_langpair_dataset(
         left_pad_target=left_pad_target,
         max_source_positions=max_source_positions,
         max_target_positions=max_target_positions,
-        align_dataset=None, eos=eos,
-        remove_eos_from_source=True,
         append_bos_to_target=append_bos_to_target,
         append_eos_to_target=append_eos_to_target,
         shuffle=True,  # TODO debug: shuffle=False
