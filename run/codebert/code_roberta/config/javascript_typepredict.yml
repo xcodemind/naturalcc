@@ -1,5 +1,5 @@
 eval:
-  path: ~/.ncc/augmented_javascript/codebert/code_roberta/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  path: /export/share/jianguo/scodebert/augmented_javascript/codebert/code_roberta/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
 #  path: /export/share/jianguo/scodebert/augmented_javascript/codebert/code_roberta/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
   quiet: 1 # ', action='store_true', help='only print final scores'
