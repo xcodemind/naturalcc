@@ -52,12 +52,14 @@ python -m dataset.augmented_javascript.traversal.get_ast_leaf_token
 ```
 
 # Step 6: run sentencepiece on ```*.ast.leaf_token``` with AST non-leaf node types```.ast.node_types```
+- For Yao & Yang
 ```
 python -m dataset.augmented_javascript.traversal.run_sentencepiece
 
 cd ~/.ncc/augmented_javascript/codebert/traverse_roberta/filter/javascript/data-mmap
 cut -f1 traversal.vocab | tail -n +10 | sed "s/$/ 100/g" > traversal.dict.txt
 ```
+- For Jian-Guo
 
 # Step 7: binarize traversal dataset
 ```
