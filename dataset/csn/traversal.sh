@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #python -m dataset.csn.download
-python -m dataset.csn.flattn
+#python -m dataset.csn.flatten
 python -m dataset.csn.feature_extract -a code_tokens docstring_tokens raw_ast ast traversal
 python -m dataset.csn.filter -a code_tokens docstring_tokens traversal
 

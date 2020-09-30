@@ -385,7 +385,7 @@ if __name__ == '__main__':
         type=str, nargs='+', help="attrs: raw_ast, ...",
     )
     parser.add_argument(
-        "--cores", "-c", default=cpu_count() * 4, type=int, help="cpu cores for flatten raw data attributes",
+        "--cores", "-c", default=cpu_count(), type=int, help="cpu cores for flatten raw data attributes",
     )
     args = parser.parse_args()
     args.flatten_dir = os.path.expanduser(args.flatten_dir)
