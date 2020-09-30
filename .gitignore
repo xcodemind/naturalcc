@@ -11,9 +11,10 @@
 src/test.py
 /.vs
 *.xml
-*.so
 *.o
 build/*
 ncc/data/tools/token_block_utils_fast.cpp
 ncc/data/tools/data_utils_fast.cpp
 *.log
+ncc/data/tools/data_utils_fast.cpython-37m-x86_64-linux-gnu.so
+ncc/data/tools/token_block_utils_fast.cpython-37m-x86_64-linux-gnu.so

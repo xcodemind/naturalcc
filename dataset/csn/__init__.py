@@ -2,13 +2,13 @@
 
 import os
 from dataset import (
-    HOSTNAME, USERNAME, DEFAULT_DIR, LOGGER,
+    HOSTNAME, USERNAME, DEFAULT_DIR, LIBS_DIR, LOGGER,
 )
 
 DATASET_NAME = 'code_search_net'
 DATASET_DIR = os.path.join(DEFAULT_DIR, DATASET_NAME)
 RAW_DATA_DIR = os.path.join(DATASET_DIR, 'raw')
-LIBS_DIR = os.path.join(DATASET_DIR, 'libs')
+# LIBS_DIR = os.path.join(DATASET_DIR, 'libs')
 FLATTEN_DIR = os.path.join(DATASET_DIR, 'flatten')
 REFINE_DIR = os.path.join(DATASET_DIR, 'refine')
 FILTER_DIR = os.path.join(DATASET_DIR, 'filter')

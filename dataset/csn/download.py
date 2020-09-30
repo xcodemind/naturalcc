@@ -6,6 +6,7 @@ import wget
 import argparse
 import zipfile
 import shutil
+import gdown
 from tree_sitter import Language
 
 try:
@@ -29,6 +30,18 @@ def download_file(url, local):
     else:
         LOGGER.info('Download {} from {}'.format(local, url))
         wget.download(url=url, out=_local)
+
+
+def gdownload_file(url, local):
+    """download raw data files from amazon and lib files from github.com"""
+    _local = os.path.expanduser(local)
+    os.makedirs(os.path.dirname(_local), exist_ok=True)
+    if os.path.exists(_local):
+        LOGGER.info('File {} exists, ignore it. If you want to overwrite it, pls delete it firstly.'.format(local))
+    else:
+        LOGGER.info('Download {} from {}'.format(local, url))
+        # wget.download(url=url, out=_local)
+        gdown.download(url, _local, quiet=False)
 
 
 def unzip_raw_data(raw_dir, lang):
@@ -93,6 +106,10 @@ if __name__ == '__main__':
        go:          https://s3.amazonaws.com/code-search-net/CodeSearchNet/v2/go.zip			487525935
        ruby:        https://s3.amazonaws.com/code-search-net/CodeSearchNet/v2/ruby.zip			111758028
        python:      https://s3.amazonaws.com/code-search-net/CodeSearchNet/v2/python.zip		940909997
+       
+    Tree-Sitter libs has been updated and thus they cannot match this repo.. 
+    Therefore, we recommend use our built so files, or you can build it with old version libs(stored on google driver).
+    
     Tree-Sitter: AST generation tools, TreeSitter repositories from Github can be updated, therefore their size is capricious
        # language   # URL
        Java:        https://codeload.github.com/tree-sitter/tree-sitter-java/zip/master
@@ -101,6 +118,14 @@ if __name__ == '__main__':
        GO:          https://codeload.github.com/tree-sitter/tree-sitter-go/zip/master
        Ruby:        https://codeload.github.com/tree-sitter/tree-sitter-ruby/zip/master
        Python:      https://codeload.github.com/tree-sitter/tree-sitter-python/zip/master
+       # language   # google driver
+       csharp:      https://drive.google.com/uc?id=1nbUVW7WRWH-4B5JRT-Q_nJVPQ9sAfhwW,
+       go:          https://drive.google.com/uc?id=13cmMblgg1FeEIqk7YJlMUU59WM3y16en,
+       java:        https://drive.google.com/uc?id=1JIvpp3FVjrA1MVasin1RnFNy3-JQoKb0,
+       javascript:  https://drive.google.com/uc?id=13f7XqmIiXU633NLmTf3aqNEKrtQFNT2I,
+       php:         https://drive.google.com/uc?id=1uUtKmZ_lu9K-6W610Lx-VDme6QLiItum,
+       python:      https://drive.google.com/uc?id=1Z6R7VzZYwCCpu4ZK8ir0oBMeN9DYnepm,
+       ruby:        https://drive.google.com/uc?id=1v-evhEXR2Hff9melWSUJSfou9J1SRCaM,   
     """
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
@@ -116,6 +141,16 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # print(args)
 
+    # g_urls = {
+    #     'csharp': 'https://drive.google.com/uc?id=1nbUVW7WRWH-4B5JRT-Q_nJVPQ9sAfhwW',
+    #     'go': 'https://drive.google.com/uc?id=13cmMblgg1FeEIqk7YJlMUU59WM3y16en',
+    #     'java': 'https://drive.google.com/uc?id=1JIvpp3FVjrA1MVasin1RnFNy3-JQoKb0',
+    #     'javascript': 'https://drive.google.com/uc?id=13f7XqmIiXU633NLmTf3aqNEKrtQFNT2I',
+    #     'php': 'https://drive.google.com/uc?id=1uUtKmZ_lu9K-6W610Lx-VDme6QLiItum',
+    #     'python': 'https://drive.google.com/uc?id=1Z6R7VzZYwCCpu4ZK8ir0oBMeN9DYnepm',
+    #     'ruby': 'https://drive.google.com/uc?id=1v-evhEXR2Hff9melWSUJSfou9J1SRCaM',
+    # }
+
     for lang in args.language:
         # download raw data from amazon CSN datasets
         dataset_url = 'https://s3.amazonaws.com/code-search-net/CodeSearchNet/v2/{}.zip'.format(lang)
@@ -124,9 +159,9 @@ if __name__ == '__main__':
         # decompress raw data
         unzip_raw_data(raw_dir=args.dataset_dir, lang=lang)
 
-        # download Tree-Sitter AST parser libraries
-        lib_url = 'https://codeload.github.com/tree-sitter/tree-sitter-{}/zip/master'.format(lang)
-        lib_filename = os.path.join(args.libs_dir, '{}.zip'.format(lang))
-        download_file(url=lib_url, local=lib_filename)
-        # compiling Tree-Sitter so file
-        build_so(lib_dir=args.libs_dir, lang=lang)
+        # # download Tree-Sitter AST parser libraries
+        # lib_url = 'https://drive.google.com/uc?id={}'.format(g_urls[lang])
+        # lib_filename = os.path.join(args.libs_dir, '{}.zip'.format(lang))
+        # gdownload_file(url=lib_url, local=lib_filename)
+        # # compiling Tree-Sitter so file
+        # build_so(lib_dir=args.libs_dir, lang=lang)
