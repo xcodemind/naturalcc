@@ -1,8 +1,8 @@
 preprocess:
   task: summarization # task', metavar='TASK', default="translation", choices=TASK_REGISTRY.keys(), help='task'
   source_lang:
-#    - code_tokens
-#    - docstring_tokens
+    - code_tokens
+    - docstring_tokens
 #    - path
 #    - path.terminals
 #    - sbt
