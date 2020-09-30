@@ -2,8 +2,8 @@
 
 # python -m dataset.csn.download
 # python -m dataset.csn.flatten
-python -m dataset.csn.feature_extract -a code_tokens docstring_tokens raw_ast ast traversal
-python -m dataset.csn.filter -a code_tokens docstring_tokens traversal
+#python -m dataset.csn.feature_extract -a code_tokens docstring_tokens raw_ast ast traversal
+#python -m dataset.csn.filter -a code_tokens docstring_tokens traversal
 
 python -m dataset.csn.codebert.preprocess_traversal_roberta -l ruby
 python -m dataset.csn.codebert.preprocess_traversal_roberta -l php
