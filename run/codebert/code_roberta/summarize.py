@@ -226,11 +226,19 @@ def _main(args, output_file):
 
 def cli_main():
     Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('ruby.yml')  # train_sl
-    LOGGER.info(args_)
+    args_ = Argues('javascript_ft_summarization.yml')  # train_sl
+    # LOGGER.info(args_)
     yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
+
+    yaml_file_eval = os.path.join(os.path.dirname(__file__), 'config', 'javascript_summarization.yml')
+    LOGGER.info('Load arguments in {}'.format(yaml_file_eval))
+    args_eval = load_yaml(yaml_file_eval)
+
+    # Concatenate the training and evaluation arguments.
+    args = {**args, **args_eval}
+
     LOGGER.info(args)
     main(args)
 
