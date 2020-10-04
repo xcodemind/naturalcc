@@ -293,7 +293,7 @@ def cli_main():
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        "--language", "-l", default='python-wan', type=str, help="load {language}.yml for train",
+        "--language", "-l", default='python_wan', type=str, help="load {language}.yml for train",
     )
     args = parser.parse_args()
     # Argues = namedtuple('Argues', 'yaml')
@@ -336,6 +336,6 @@ def cli_main():
 
 if __name__ == '__main__':
     """
-    nohup python -m run.summarization.transformer.train > run/summarization/transformer/ruby.log 2>&1 &
+    nohup python -m run.summarization.transformer.train > run/summarization/transformer/python_wan.log 2>&1 &
     """
     cli_main()
