@@ -118,9 +118,6 @@ task:
   eval_rouge_args: ~ #', type=str, metavar='JSON', help='generation args for BLUE scoring, e.g., \'{"beam": 4, "lenpen": 0.6}\''
   eval_rouge_print_samples: 0 #', action='store_true', help='print sample generations during validation'
 
-  append_bos_to_target: 1
-  append_eos_to_target: 1
-
 model:
   #  arch: neural_summarization
   arch: transformer_summarization
