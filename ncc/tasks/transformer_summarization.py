@@ -17,11 +17,11 @@ from ncc.utils import utils
 from ncc.data import encoders
 from ncc.data import indexed_dataset
 from ncc.data.tools import data_utils
+from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
 from ncc.data.wrappers.append_token_dataset import AppendTokenDataset
 from ncc.data.wrappers.truncate_dataset import TruncateDataset
 from ncc.data.wrappers.strip_token_dataset import StripTokenDataset
 from ncc.data.concat_dataset import ConcatDataset
-from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
 from ncc.data.summarization.transformer_pair_dataset import LanguagePairDataset
 from ncc.data.summarization.path_dataset import PathDataset
 from ncc.data.summarization.bin_ast_dataset import BinaryASTDataset
@@ -40,7 +40,6 @@ def load_langpair_dataset(
     max_source_positions, max_target_positions,
     load_alignments=False,
     truncate_source=False, truncate_target=False,
-    append_bos_to_target=False, append_eos_to_target=False,
 ):
     def split_exists(split, src, data_path):
         filename = os.path.join(data_path, '{}.{}'.format(split, src))  # -{}.{} , tgt, lang
@@ -71,12 +70,10 @@ def load_langpair_dataset(
 
         tgt_dataset = data_utils.load_indexed_dataset(prefix + tgt, 'text', tgt_dict, dataset_impl)
         if truncate_target and max_target_positions:
-            if append_bos_to_target:
-                tgt_dataset = PrependTokenDataset(tgt_dataset, tgt_dict.bos())
-            tgt_dataset = TruncateDataset(tgt_dataset, max_target_positions - 1 if append_eos_to_target \
-                else max_target_positions)
-            if append_eos_to_target:
-                tgt_dataset = AppendTokenDataset(tgt_dataset, tgt_dict.eos())
+            tgt_dataset = PrependTokenDataset(
+                AppendTokenDataset(TruncateDataset(tgt_dataset, max_target_positions - 2), token=tgt_dict.eos()),
+                tgt_dict.bos()
+            )
 
         if tgt_dataset is not None:
             tgt_datasets.append(tgt_dataset)
@@ -106,8 +103,6 @@ def load_langpair_dataset(
         left_pad_target=left_pad_target,
         max_source_positions=max_source_positions,
         max_target_positions=max_target_positions,
-        append_bos_to_target=append_bos_to_target,
-        append_eos_to_target=append_eos_to_target,
         shuffle=True,  # TODO debug: shuffle=False
     )
 
@@ -192,8 +187,6 @@ class TansformerSummarizationTask(FairseqTask):
             load_alignments=self.args['task']['load_alignments'],
             truncate_source=self.args['task']['truncate_source'],
             truncate_target=self.args['task']['truncate_target'],
-            append_eos_to_target=self.args['task']['append_eos_to_target'],
-            append_bos_to_target=self.args['task']['append_bos_to_target'],
         )
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
