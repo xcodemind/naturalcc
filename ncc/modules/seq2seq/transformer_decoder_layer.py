@@ -30,8 +30,7 @@ class TransformerDecoderLayer(nn.Module):
     ):
         super().__init__()
         self.embed_dim = args['model']['decoder_embed_dim']
-        self.cross_self_attention = args['model'][
-            'cross_self_attention']  # getattr(args, "cross_self_attention", False)
+        self.cross_self_attention = args['model']['cross_self_attention']
         self.self_attn = MultiheadAttention(
             embed_dim=self.embed_dim,
             num_heads=args['model']['decoder_attention_heads'],
@@ -43,12 +42,12 @@ class TransformerDecoderLayer(nn.Module):
         )
         self.dropout = args['model']['dropout']
         self.activation_fn = utils.get_activation_fn(
-            activation=args['model']['activation_fn']  # getattr(args, "activation_fn", "relu")
+            activation=args['model']['activation_fn']
         )
-        self.activation_dropout = args['model']['activation_dropout']  # getattr(args, "activation_dropout", 0)
+        self.activation_dropout = args['model']['activation_dropout']
         if self.activation_dropout == 0:
             # for backwards compatibility with models that use args.relu_dropout
-            self.activation_dropout = args['model']['relu_dropout']  # getattr(args, "relu_dropout", 0)
+            self.activation_dropout = args['model']['relu_dropout']
         self.normalize_before = args['model']['decoder_normalize_before']
 
         # use layerNorm rather than FusedLayerNorm for exporting.
