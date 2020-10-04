@@ -1,6 +1,5 @@
 #registry
-#criterion: cross_entropy_neural
-criterion: cross_entropy
+criterion: transformer_cross_entropy
 optimizer: 'adam'
 #lr_scheduler: 'polynomial_decay'
 lr_scheduler: 'fixed'
@@ -63,13 +62,12 @@ dataset:
 #  per_gpu_eval_batch_size: 4 # default=4, type=int, help="Batch size per GPU/CPU for evaluation."
 
 distributed_training:
-  distributed_world_size: 4 # default=max(1, torch.cuda.device_count()
+  distributed_world_size: 3 # default=max(1, torch.cuda.device_count()
   distributed_rank: 0 # default=0, type=int, help='rank of the current worker'
   distributed_backend: nccl # default='nccl', type=str, help='distributed backend'
   distributed_init_method: ~ # default=None, type=str,help='typically tcp://hostname:port that will be used to establish initial connetion'
   distributed_port: -1 # default=-1, type=int, help='port number (not required if using --distributed-init-method)'
   device_id: 0 # '--local_rank', default=0, type=int, help='which GPU to use (usually configured automatically)'
-#  local_rank: 0 #
   pipeline_model_parallel: 0 # '--pipeline-model-parallel', default=False, action='store_true', help='if set, use pipeline model parallelism across GPUs'
   distributed_no_spawn: 0 # action='store_true', help='do not spawn multiple processes even if multiple GPUs are visible'
   ddp_backend: no_c10d # default='c10d', type=str, choices=['c10d', 'no_c10d'], help='DistributedDataParallel backend'
@@ -124,7 +122,7 @@ task:
   append_eos_to_target: 1
 
 model:
-#  arch: neural_summarization
+  #  arch: neural_summarization
   arch: transformer_summarization
   pooler_dropout: 0.2 # type=float, metavar='D', help='dropout probability in the masked_lm pooler layers'
   activation_fn: relu # choices=utils.get_available_activation_fns(), help='activation function to use'
@@ -161,10 +159,10 @@ model:
   share_decoder_input_output_embed: 1 # action='store_true', help='share decoder input and output embeddings'
   share_all_embeddings: 0 #', default=False, action='store_true', help='share encoder, decoder and output embeddings (requires shared dictionary and embed dim)'
 
-#  character_embeddings: 0 # ', action='store_true', help='if set, uses character embedding convolutions to produce token embeddings')
-#  character_filters: '[(1, 64), (2, 128), (3, 192), (4, 256), (5, 256), (6, 256), (7, 256)]' # ', type=str, metavar='LIST', default='[(1, 64), (2, 128), (3, 192), (4, 256), (5, 256), (6, 256), (7, 256)]', help='size of character embeddings')
-#  character_embedding_dim: 4 #', default=4, type=int, metavar='N', help='size of character embeddings')
-#  char_embedder_highway_layers: 2 # ', default=2, type=int, metavar='N', help='number of highway layers for character token embeddder')
+  #  character_embeddings: 0 # ', action='store_true', help='if set, uses character embedding convolutions to produce token embeddings')
+  #  character_filters: '[(1, 64), (2, 128), (3, 192), (4, 256), (5, 256), (6, 256), (7, 256)]' # ', type=str, metavar='LIST', default='[(1, 64), (2, 128), (3, 192), (4, 256), (5, 256), (6, 256), (7, 256)]', help='size of character embeddings')
+  #  character_embedding_dim: 4 #', default=4, type=int, metavar='N', help='size of character embeddings')
+  #  char_embedder_highway_layers: 2 # ', default=2, type=int, metavar='N', help='number of highway layers for character token embeddder')
   adaptive_input: 0 # ', action='store_true', help='if set, uses adaptive input')
   adaptive_input_factor: 0.0 # ', type=float, metavar='N', help='adaptive input factor')
   adaptive_input_cutoff: ~ # ', metavar='EXPR', help='comma separated list of adaptive input cutoff points.')
@@ -172,12 +170,12 @@ model:
   tie_adaptive_proj: 0 # ', action='store_true', help='if set, ties the projection weights of adaptive softmax and adaptive input')
 
 
-#  args for "Cross+Self-Attention for Transformer Models" (Peitz et al., 2019)
+  #  args for "Cross+Self-Attention for Transformer Models" (Peitz et al., 2019)
   no_cross_attention: 0 # default=False, action='store_true', help='do not perform cross-attention'
   cross_self_attention: 0 # default=False, action='store_true', help='perform cross+self-attention'
   layer_wise_attention: 0 # default=False, action='store_true', help='perform layer-wise attention (cross-attention or cross+self-attention)'
 
-#   args for "Reducing Transformer Depth on Demand with Structured Dropout" (Fan et al., 2019)
+  #   args for "Reducing Transformer Depth on Demand with Structured Dropout" (Fan et al., 2019)
   encoder_layerdrop: 0.0 # type=float, metavar='D', default=0, help='LayerDrop probability for encoder'
   decoder_layerdrop: 0.0 # type=float, metavar='D', default=0, help='LayerDrop probability for decoder'
   encoder_layers_to_keep: ~ # default=None, help='which layers to *keep* when pruning as a comma-separated list'
@@ -185,7 +183,7 @@ model:
   layernorm_embedding: 0 # action='store_true', help='add layernorm to embedding'
   no_scale_embedding: 1 # action='store_true', help='if True, dont scale embeddings'
 
-#  # encoder
+  # encoder
   encoder_dropout_in: 0.2 #', type=float, metavar='D', help='dropout probability for encoder input embedding'
   encoder_dropout_out: 0.2 #', type=float, metavar='D', help='dropout probability for encoder output'
   decoder_dropout_in: 0.2 #' type=float, metavar='D', help='dropout probability for decoder input embedding'
@@ -211,7 +209,7 @@ optimization:
   power: 1.0 # default=1.0, type=float
   total_num_update: 1000000 # default=1000000, type=int
 
-#  for cross entropy
+  #  for cross entropy
   sentence_avg: 1 # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'
 
   adam:
@@ -265,14 +263,14 @@ checkpoint:
 
 
 eval:
-  path: ~/.ncc/python_wan/individual/code_tokens_docstring_tokens/data-mmap/python/transformer/checkpoints/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  path: ~/.ncc/python_wan/individual/code_tokens_docstring_tokens/data-mmap/python/transformer/checkpoints/checkpoint200.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
 #  path: ~/.ncc/csn_icse21/summarization/data-mmap/ruby/seq2seq/transformer/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
   quiet: 1 # ', action='store_true', help='only print final scores'
   results_path: ~ # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'
   model_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override model args at generation '
 
-  max_sentences: 128 # evaluation batch size, because while evaluation, it will not cost much ram, we can increase the batch size
+  max_sentences: 512 # evaluation batch size, because while evaluation, it will not cost much ram, we can increase the batch size
   beam: 5 # ', default=5, type=int, metavar='N', help='beam size')
   nbest: 1 # ', default=1, type=int, metavar='N', help='number of hypotheses to output')
   max_len_a: 0 #', default=0, type=float, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))

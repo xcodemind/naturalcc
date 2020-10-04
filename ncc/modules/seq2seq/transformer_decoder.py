@@ -65,10 +65,8 @@ class TransformerDecoder(FairseqIncrementalDecoder):
             else None
         )
 
-        self.cross_self_attention = args['model'][
-            'cross_self_attention']  # getattr(args, "cross_self_attention", False)
-        self.layer_wise_attention = args['model'][
-            'layer_wise_attention']  # getattr(args, "layer_wise_attention", False)
+        self.cross_self_attention = args['model']['cross_self_attention']
+        self.layer_wise_attention = args['model']['layer_wise_attention']
 
         self.layers = nn.ModuleList([])
         self.layers.extend(

@@ -329,7 +329,7 @@ class TransformerSequenceGenerator(object):
         alignment_heads: Optional[int] = None
         for j in range(max_len + 1):
 
-            incremental_state['step'] = j
+            # incremental_state['step'] = j
             decoder_outputs, attns = model.decoder(prev_output_tokens, encoder_out=encoder_out, \
                                                    incremental_state=incremental_state)
 
@@ -342,7 +342,7 @@ class TransformerSequenceGenerator(object):
             else:
                 predicted = torch.multinomial(prediction, 1)  # .to(device)
             dec_preds.append(predicted.squeeze(1).clone())
-            prev_output_tokens = predicted
+            prev_output_tokens = torch.cat((prev_output_tokens, predicted), dim=-1)
 
         dec_preds = torch.stack(dec_preds, dim=1)
 
