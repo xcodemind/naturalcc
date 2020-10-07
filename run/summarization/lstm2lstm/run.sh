@@ -33,3 +33,30 @@ python -m run.summarization.lstm2lstm.eval -l python_wan0.05
 
 nohup python -m run.summarization.lstm2lstm.train -l python_wan0.01 > run/summarization/lstm2lstm/python_wan0.01.log 2>&1
 python -m run.summarization.lstm2lstm.eval -l python_wan0.01
+
+
+# seq2seq
+# python_wan
+CUDA_VISIBLE_DEVICES=1,2 nohup python -m run.summarization.lstm2lstm.train -l python_wan > run/summarization/lstm2lstm/python_wan.log 2>&1 &
+watch -n 2 "tail -n 10 run/summarization/lstm2lstm/python_wan.log"
+CUDA_VISIBLE_DEVICES=1,2 python -m run.summarization.lstm2lstm.eval -l python_wan
+
+# ruby
+CUDA_VISIBLE_DEVICES=1,2,3 nohup python -m run.summarization.lstm2lstm.train -l ruby > run/summarization/lstm2lstm/ruby.log 2>&1 &
+watch -n 2 "tail -n 10 run/summarization/lstm2lstm/ruby.log"
+CUDA_VISIBLE_DEVICES=1,2,3 python -m run.summarization.lstm2lstm.eval -l ruby
+
+
+
+nohup python -m run.summarization.lstm2lstm.train -l ruby.subtoken > run/summarization/lstm2lstm/ruby.subtoken 2>&1 &
+watch -n 2 "tail -n 10 run/summarization/lstm2lstm/ruby.subtoken"
+
+nohup python -m run.summarization.lstm2lstm.train -l python_wan.subtoken > run/summarization/lstm2lstm/python_wan.subtoken.log 2>&1 &
+watch -n 2 "tail -n 10 run/summarization/lstm2lstm/python_wan.subtoken.log"
+
+nohup python -m run.summarization.lstm2lstm.train -l python_wan.bpe > run/summarization/lstm2lstm/python_wan.bpe.log 2>&1 &
+watch -n 2 "tail -n 10 run/summarization/lstm2lstm/python_wan.bpe.log"
+
+nohup python -m run.summarization.lstm2lstm.train -l ruby.bpe > run/summarization/lstm2lstm/ruby.bpe.log 2>&1 &
+watch -n 2 "tail -n 10 run/summarization/lstm2lstm/ruby.bpe.log"
+python -m run.summarization.lstm2lstm.eval -l ruby.bpe

@@ -33,6 +33,7 @@ def main(args):
     assert args['eval']['replace_unk'] is None or args['dataset']['dataset_impl'] == 'raw', \
         '--replace-unk requires a raw text dataset (--dataset-impl=raw)'
 
+    torch.cuda.set_device(args['distributed_training']['device_id'])
     if args['eval']['results_path'] is not None:
         os.makedirs(args['eval']['results_path'], exist_ok=True)
         output_path = os.path.join(args['eval']['results_path'],
@@ -169,9 +170,9 @@ def _main(args, output_file):
 
                 print('H-{}\t{}'.format(sample_id, hypo_str), file=output_file)
 
-    filename = os.path.join(os.path.dirname(__file__), 'config', 'transformer.info')
+    filename = os.path.join(os.path.dirname(__file__), 'config', 'predict.txt')
     LOGGER.info('write predicted file at {}'.format(filename))
-    bleu, rouge_l, meteor = eval_utils.eval_accuracies(hypotheses, references, filename=filename)
+    bleu, rouge_l, meteor = eval_utils.eval_accuracies(hypotheses, references, filename=filename, mode='test')
     LOGGER.info('BLEU: {:.2f}\t ROUGE-L: {:.2f}\t METEOR: {:.2f}'.format(bleu, rouge_l, meteor))
 
 
@@ -180,11 +181,9 @@ def cli_main():
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        "--language", "-l", default='python_wan', type=str, help="load {language}.yml for train",
+        "--language", "-l", default='ruby.bpe', type=str, help="load {language}.yml for train",
     )
     args = parser.parse_args()
-    # Argues = namedtuple('Argues', 'yaml')
-    # args_ = Argues('ruby.yml')
     yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.language))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
