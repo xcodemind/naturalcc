@@ -27,17 +27,11 @@ python -m dataset.python_wan.flatten
 ```
 
 # step 4
-Build TreeSitter compile file at ```~/.ncc/python_wan/libs/python.so```.
-```
-python -m dataset.python_wan.build
-```
-
-# step 5
 ```
 python -m dataset.csn_feng.feature_extract -l python -f ~/.ncc/python_wan/flatten -r ~/.ncc/python_wan/refine -s ~/.ncc/python_wan/libs 
 ```
 
-# step 6
+# step 5
 ```
 python -m dataset.csn_feng.filter -l python -r ~/.ncc/python_wan/refine -f ~/.ncc/python_wan/filter
 ```

@@ -7,7 +7,7 @@ data_urls=(
   "https://drive.google.com/uc?id=1XPE1txk9VI0aOT_TdqbAeI58Q8puKVl2"
 )
 
-echo "Downloading python-method dataset"
+echo "Downloading python-wan dataset"
 DIR=~/.ncc/python_wan/raw/
 mkdir -p ${DIR}
 
