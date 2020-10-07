@@ -270,6 +270,12 @@ class TeacherOutputDataset(IndexedCachedDataset):
 
 
 def gen_outputs(args, task, trainer):
+    # cause some data mighe been filtered by max_source/target_position
+    tmp_cache = [
+        [8 * [0] for _ in range(6)],  # topk idx
+        [8 * [0] for _ in range(6)],  # topk prob
+    ]
+
     trainer.model.eval()
     itr = task.get_batch_iterator(
         dataset=task.dataset('train'),
@@ -287,7 +293,8 @@ def gen_outputs(args, task, trainer):
         shard_id=args['distributed_training']['distributed_rank'],
     ).next_epoch_itr(shuffle=False)
 
-    outputs = [None for _ in range(len(task.dataset('train')))]
+    # outputs = [None for _ in range(len(task.dataset('train')))]
+    outputs = {}
     for sample in tqdm(itr, mininterval=5):
         with torch.no_grad():
             if sample is None or len(sample) == 0:
@@ -306,7 +313,8 @@ def gen_outputs(args, task, trainer):
                 outputs[sample['id'][b].item()] = \
                     topk_idx[b, non_padding_mask[b]].tolist(), \
                     topk_v[b, non_padding_mask[b]].tolist()
-    return outputs
+
+    return [outputs[idx] if idx in outputs else tmp_cache for idx in list(range(len(task.dataset('train'))))]
 
 
 def save_expert_outputs(args, task, trainer):
@@ -323,9 +331,9 @@ def save_expert_outputs(args, task, trainer):
         val_bleu_path1 = os.path.join(args['checkpoint']['save_dir'], 'val_bleu.json')
         val_bleu_path2 = os.path.join(
             args['task']['data'],
-            'expert_bleu_{}_{}_{}.json'.format('_'.join(args['task']['programming_langs']),
-                                               args['task']['source_lang'],
-                                               args['task']['target_lang'])
+            'expert_bleu_{}_{}_{}.json'.format(
+                '_'.join(args['task']['programming_langs']), args['task']['source_lang'], args['task']['target_lang']
+            )
         )
         cmd = 'cp {} {}'.format(val_bleu_path1, val_bleu_path2)
         print(cmd)
