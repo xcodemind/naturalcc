@@ -1,0 +1,37 @@
+modalities:
+  # list, ujson.loads
+  - code_tokens
+  - docstring_tokens
+dataprefs:
+  ruby:
+    trainpref: ~/.ncc/code_search_net_feng/flatten/ruby/train #", metavar="FP", default=None, help="train file prefix"
+    validpref: ~/.ncc/code_search_net_feng/flatten/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+    testpref:  ~/.ncc/code_search_net_feng/flatten/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  go:
+    trainpref: ~/.ncc/code_search_net_feng/flatten/go/train #", metavar="FP", default=None, help="train file prefix"
+    validpref: ~/.ncc/code_search_net_feng/flatten/go/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+    testpref:  ~/.ncc/code_search_net_feng/flatten/go/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  java:
+    trainpref: ~/.ncc/code_search_net_feng/flatten/java/train #", metavar="FP", default=None, help="train file prefix"
+    validpref: ~/.ncc/code_search_net_feng/flatten/java/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+    testpref:  ~/.ncc/code_search_net_feng/flatten/java/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  javascript:
+    trainpref: ~/.ncc/code_search_net_feng/flatten/javascript/train #", metavar="FP", default=None, help="train file prefix"
+    validpref: ~/.ncc/code_search_net_feng/flatten/javascript/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+    testpref:  ~/.ncc/code_search_net_feng/flatten/javascript/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  python:
+    trainpref: ~/.ncc/code_search_net_feng/flatten/python/train #", metavar="FP", default=None, help="train file prefix"
+    validpref: ~/.ncc/code_search_net_feng/flatten/python/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+    testpref:  ~/.ncc/code_search_net_feng/flatten/python/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  php:
+    trainpref: ~/.ncc/code_search_net_feng/flatten/php/train #", metavar="FP", default=None, help="train file prefix"
+    validpref: ~/.ncc/code_search_net_feng/flatten/php/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+    testpref:  ~/.ncc/code_search_net_feng/flatten/php/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  python_wan:
+    trainpref: ~/.ncc/python_wan/flatten/python/train #", metavar="FP", default=None, help="train file prefix"
+    validpref: ~/.ncc/python_wan/flatten/python/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+    testpref:  ~/.ncc/python_wan/flatten/python/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  java_hu:
+    trainpref: ~/.ncc/java_hu/flatten/java/train  #", metavar="FP", default=None, help="train file prefix"
+    validpref: ~/.ncc/java_hu/flatten/java/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+    testpref:  ~/.ncc/java_hu/flatten/java/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
