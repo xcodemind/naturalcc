@@ -23,6 +23,7 @@ from ncc.utils.util_file import load_yaml
 from ncc.logging.meters import StopwatchMeter, TimeMeter
 from collections import OrderedDict
 from tqdm import tqdm
+from ncc.eval import eval_utils
 
 
 def main(args):
@@ -32,9 +33,11 @@ def main(args):
     assert args['eval']['replace_unk'] is None or args['dataset']['dataset_impl'] == 'raw', \
         '--replace-unk requires a raw text dataset (--dataset-impl=raw)'
 
+    torch.cuda.set_device(args['distributed_training']['device_id'])
     if args['eval']['results_path'] is not None:
         os.makedirs(args['eval']['results_path'], exist_ok=True)
-        output_path = os.path.join(args['eval']['results_path'], 'generate-{}.txt'.format(args['eval']['gen_subset']))
+        output_path = os.path.join(args['eval']['results_path'],
+                                   'generate-{}.txt'.format(args['dataset']['gen_subset']))
         with open(output_path, 'w', buffering=1) as h:
             return _main(args, h)
     else:
@@ -108,34 +111,26 @@ def _main(args, output_file):
     gen_timer = StopwatchMeter()
     generator = task.build_generator(args)
 
-    # Generate and compute BLEU score
-    scorer = OrderedDict()
-    if args['eval']['sacrebleu']:
-        scorer['bleu'] = bleu_scorer.SacrebleuScorer()
-    elif args['eval']['nltk_bleu']:
-        scorer['bleu'] = bleu_scorer.NLTKBleuScorer()
-    else:
-        scorer['bleu'] = bleu_scorer.Scorer(tgt_dict.pad(), tgt_dict.eos(), tgt_dict.unk())
-    # Generate and compute BLEU score
-    if args['eval']['rouge']:
-        scorer['rouge'] = rouge_scorer.RougeScorer()
     num_sentences = 0
     has_target = True
     wps_meter = TimeMeter()
     # for sample in tqdm(progress, total=len(progress)):
+    sources, hypotheses, references = dict(), dict(), dict()
+
     for sample in progress:
         torch.cuda.empty_cache()
         sample = utils.move_to_cuda(sample) if use_cuda else sample
         if 'net_input' not in sample:
             continue
 
-        prefix_tokens = None
-        if args['eval']['prefix_size'] > 0:
-            prefix_tokens = sample['target'][:, :args['eval']['prefix_size']]
+        # prefix_tokens = None
+        # if args['eval']['prefix_size'] > 0:
+        #     prefix_tokens = sample['target'][:, :args['eval']['prefix_size']]
 
         gen_timer.start()
-        hypos = task.inference_step(generator, models, sample, prefix_tokens)
-        num_generated_tokens = sum(len(h[0]['tokens']) for h in hypos)
+        hypos = task.inference_step(generator, models, sample)
+        # gen_out = task.sequence_generator.generate(model, sample)
+        num_generated_tokens = sum(len(h[0]['tokens']) for h in hypos)  # TODO: warning
         gen_timer.stop(num_generated_tokens)
 
         for i, sample_id in enumerate(sample['id'].tolist()):
@@ -147,17 +142,25 @@ def _main(args, output_file):
             if has_target:
                 target_tokens = utils.strip_pad(sample['target'][i, :], tgt_dict.pad()).int().cpu()
 
+            hypos_tokens = utils.strip_eos(hypos[i][0]['tokens'], tgt_dict.eos()).int().cpu()
             # Either retrieve the original sentences or regenerate them from tokens.
-            if align_dict is not None:
-                src_str = task.dataset(args['dataset']['gen_subset']).src.get_original_text(sample_id)
-                target_str = task.dataset(args['dataset']['gen_subset']).tgt.get_original_text(sample_id)
+            # if align_dict is not None:
+            #     src_str = task.dataset(args['dataset']['gen_subset']).src.get_original_text(sample_id)
+            #     target_str = task.dataset(args['dataset']['gen_subset']).tgt.get_original_text(sample_id)
+            # else:
+            if src_dict is not None:
+                src_str = src_dict.string(src_tokens, args['eval']['remove_bpe'])
             else:
-                if src_dict is not None:
-                    src_str = src_dict.string(src_tokens, args['eval']['remove_bpe'])
-                else:
-                    src_str = ""
-                if has_target:
-                    target_str = tgt_dict.string(target_tokens, args['eval']['remove_bpe'], escape_unk=True)
+                src_str = ""
+            if has_target:
+                target_str = tgt_dict.string(target_tokens, args['eval']['remove_bpe'], escape_unk=True)
+
+            # hypo_tokens = tgt_dict.encode_line(hypo_str, add_if_not_exist=True)
+            hypo_str = tgt_dict.string(hypos_tokens, args['eval']['remove_bpe'])
+
+            sources[sample_id] = [src_str]
+            hypotheses[sample_id] = [hypo_str]
+            references[sample_id] = [target_str]
 
             if not args['eval']['quiet']:
                 if src_dict is not None:
@@ -165,85 +168,12 @@ def _main(args, output_file):
                 if has_target:
                     print('T-{}\t{}'.format(sample_id, target_str), file=output_file)
 
-            # Process top predictions
-            for j, hypo in enumerate(hypos[i][:args['eval']['nbest']]):
-                hypo_tokens, hypo_str, alignment = utils.post_process_prediction(
-                    hypo_tokens=hypo['tokens'].int().cpu(),
-                    src_str=src_str,
-                    alignment=hypo['alignment'],
-                    align_dict=align_dict,
-                    tgt_dict=tgt_dict,
-                    remove_bpe=args['eval']['remove_bpe'],
-                )
+                print('H-{}\t{}'.format(sample_id, hypo_str), file=output_file)
 
-                if hypo_str == '.':
-                    # rouge cannot handle hypo'.'
-                    continue
-
-                if not args['eval']['quiet']:
-                    score = hypo['score'] / math.log(2)  # convert to base 2
-                    print('H-{}\t{}\t{}'.format(sample_id, score, hypo_str), file=output_file)
-                    print('P-{}\t{}'.format(
-                        sample_id,
-                        ' '.join(map(
-                            lambda x: '{:.4f}'.format(x),
-                            # convert from base e to base 2
-                            hypo['positional_scores'].div_(math.log(2)).tolist(),
-                        ))
-                    ), file=output_file)
-
-                    if args['eval']['print_alignment']:
-                        print('A-{}\t{}'.format(
-                            sample_id,
-                            ' '.join(['{}-{}'.format(src_idx, tgt_idx) for src_idx, tgt_idx in alignment])
-                        ), file=output_file)
-
-                    if args['eval']['print_step']:
-                        print('I-{}\t{}'.format(sample_id, hypo['steps']), file=output_file)
-
-                    # if getattr(args, 'retain_iter_history', False):
-                    if args['eval']['retain_iter_history']:
-                        for step, h in enumerate(hypo['history']):
-                            _, h_str, _ = utils.post_process_prediction(
-                                hypo_tokens=h['tokens'].int().cpu(),
-                                src_str=src_str,
-                                alignment=None,
-                                align_dict=None,
-                                tgt_dict=tgt_dict,
-                                remove_bpe=None,
-                            )
-                            print('E-{}_{}\t{}'.format(sample_id, step, h_str), file=output_file)
-
-                # Score only the top hypothesis
-                if has_target and j == 0:
-                    # print('Ref>> {}'.format(target_str), file=output_file)
-                    # print('Hyp>> {}'.format(hypo_str), file=output_file)
-                    if align_dict is not None or args['eval']['remove_bpe'] is not None:
-                        # Convert back to tokens for evaluation with unk replacement and/or without BPE
-                        target_tokens = tgt_dict.encode_line(target_str, add_if_not_exist=True)
-                    for metric in scorer:
-                        if hasattr(scorer[metric], 'add_string'):
-                            scorer[metric].add_string(target_str, hypo_str)
-                        else:
-                            scorer[metric].add(target_tokens, hypo_tokens)
-
-        wps_meter.update(num_generated_tokens)
-        progress.log({'wps': round(wps_meter.avg)})
-        num_sentences += sample['nsentences']
-
-    LOGGER.info('NOTE: hypothesis and token scores are output in base 2')
-    LOGGER.info('Translated {} sentences ({} tokens) in {:.1f}s ({:.2f} sentences/s, {:.2f} tokens/s)'.format(
-        num_sentences, gen_timer.n, gen_timer.sum, num_sentences / gen_timer.sum, 1. / gen_timer.avg))
-    if has_target:
-        LOGGER.info('Generate {} with beam={}: {}'.format(
-            args['dataset']['gen_subset'], args['eval']['beam'],
-            {
-                '\n{}:\n{}'.format(str.upper(metric), value.score())
-                for metric, value in scorer.items()
-            }
-        ))
-
-    return scorer
+    # filename = os.path.join(os.path.dirname(__file__), 'config', 'predict.txt')
+    # LOGGER.info('write predicted file at {}'.format(filename))
+    bleu, rouge_l, meteor = eval_utils.eval_accuracies(hypotheses, references,  mode='test')
+    LOGGER.info('BLEU: {:.2f}\t ROUGE-L: {:.2f}\t METEOR: {:.2f}'.format(bleu, rouge_l, meteor))
 
 
 def cli_main():
@@ -251,12 +181,10 @@ def cli_main():
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        "--language", "-l", default='csharp', type=str, help="load {language}.yml for train",
+        "--language", "-l", default='ruby.bpe', type=str, help="load {language}.yml for train",
     )
     args = parser.parse_args()
-    # Argues = namedtuple('Argues', 'yaml')
-    # args_ = Argues('ruby.yml')
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', 'finetune', '{}.yml'.format(args.language))
+    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.language))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)

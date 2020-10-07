@@ -204,7 +204,7 @@ def single_main(args, init_distributed=False):
     if distributed_utils.is_master(args):
         save_dir = args['checkpoint']['save_dir']
         checkpoint_utils.verify_checkpoint_directory(save_dir)
-        remove_files(save_dir, 'pt')  # this code will remove pre-trained models
+        # remove_files(save_dir, 'pt')  # this code will remove pre-trained models
 
     # Print args
     LOGGER.info(args)
@@ -237,11 +237,13 @@ def single_main(args, init_distributed=False):
     # 5. Load the latest checkpoint if one is available and restore the corresponding train iterator
     extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer, combine=False)
     # load pretrained model
-    assert args['checkpoint']['pretrain_path']
-    LOGGER.info('Load pretrain model parameters from {}'.format(args['checkpoint']['pretrain_path']))
-    state = checkpoint_utils.load_checkpoint_to_cpu(args['checkpoint']['pretrain_path'])
-    model.load_state_dict(state["model"], strict=True, args=args)
-    del state
+    if not os.path.exists(args['eval']['path']):
+        assert args['checkpoint']['pretrain_path'], \
+            f"trying load pretrained model at {args['checkpoint']['pretrain_path']}"
+        LOGGER.info('Load pretrain model parameters from {}'.format(args['checkpoint']['pretrain_path']))
+        state = checkpoint_utils.load_checkpoint_to_cpu(args['checkpoint']['pretrain_path'])
+        model.load_state_dict(state["model"], strict=True, args=args)
+        del state
 
     # 6. Train until the learning rate gets too small
     max_epoch = args['optimization']['max_epoch'] or math.inf
