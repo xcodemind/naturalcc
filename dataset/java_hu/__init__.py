@@ -1,13 +1,20 @@
 # -*- coding: utf-8 -*-
 
 
-DATASET_NAME = 'java_hu'
-RAW_DATA_DIR = '~/.ncc/{}/raw'.format(DATASET_NAME)
-LIBS_DIR = '~/.ncc/{}/libs'.format(DATASET_NAME)
-FLATTEN_DIR = '~/.ncc/{}/flatten'.format(DATASET_NAME)
-REFINE_DIR = '~/.ncc/{}/refine'.format(DATASET_NAME)
-FILTER_DIR = '~/.ncc/{}/filter'.format(DATASET_NAME)
+import os
+from dataset import (
+    HOSTNAME, USERNAME, DEFAULT_DIR, LIBS_DIR, LOGGER,
+)
 
+DATASET_NAME = 'java_hu'
+DATASET_DIR = os.path.join(DEFAULT_DIR, DATASET_NAME)
+RAW_DATA_DIR = os.path.join(DATASET_DIR, 'raw')
+# LIBS_DIR = os.path.join(DEFAULT_DIR, 'libs')
+FLATTEN_DIR = os.path.join(DATASET_DIR, 'flatten')
+REFINE_DIR = os.path.join(DATASET_DIR, 'refine')
+FILTER_DIR = os.path.join(DATASET_DIR, 'filter')
+
+LANGUAGES = ['java']
 MODES = ['train', 'valid', 'test']
 
 RECURSION_DEPTH = 999  # dfs recursion limitation
@@ -22,11 +29,9 @@ NODE_TMP = 'TMP'
 MEANINGLESS_TOKENS = set(['(', ')', '[', ']', '{', '}', ';', '@', '#', ':', '()', '<>', '{}'])
 COMMENT_END_TOKENS = set(['{', '[', '('])
 
-import logging
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)-15s] %(levelname)7s >> %(message)s (%(filename)s:%(lineno)d, %(funcName)s())',
-    datefmt='%Y-%m-%d %H:%M:%S',
+__all__ = (
+    DATASET_NAME,
+    RAW_DATA_DIR, LIBS_DIR, FLATTEN_DIR, REFINE_DIR, FILTER_DIR,
+    LANGUAGES, MODES,
+    RECURSION_DEPTH, PATH_NUM, MAX_SUB_TOKEN_LEN, SBT_PARENTHESES, NODE_TMP,
 )
-LOGGER = logging.getLogger(__name__)

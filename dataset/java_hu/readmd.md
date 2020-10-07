@@ -20,15 +20,10 @@ python -m dataset.java_hu.flatten
 
 # step 3
 ```
-python -m dataset.java_hu.build
-```
-
-# step 4
-```
 python -m dataset.csn_msra.feature_extract -l java -f ~/.ncc/java_hu/flatten -r ~/.ncc/java_hu/refine -s ~/.ncc/java_hu/libs 
 ```
 
-# step 5
+# step 4
 ```
 python -m dataset.csn_msra.filter -l java -r ~/.ncc/java_hu/refine -f ~/.ncc/java_hu/filter
 ```
