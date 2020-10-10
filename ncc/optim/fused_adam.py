@@ -27,7 +27,9 @@ def get_fused_adam_class():
         try:
             # fallback to the newer interface
             from apex.optimizers import FusedAdam as _FusedAdam  # noqa
-            return FusedAdamV2
+            from apex.multi_tensor_apply import multi_tensor_applier
+            if multi_tensor_applier.available:
+                return FusedAdamV2
         except ImportError:
             pass
     return None
@@ -94,6 +96,10 @@ class FusedAdamV1(torch.optim.Optimizer):
     def supports_flat_params(self):
         return True
 
+    @property
+    def supports_step_with_scale(self):
+        return True
+
     def step(self, closure=None, grads=None, scale=1., grad_norms=None):
         """Performs a single optimization step.
         Arguments:
@@ -124,21 +130,21 @@ class FusedAdamV1(torch.optim.Optimizer):
             grads_group = grads
 
         if grad_norms is None:
-            grad_norms = [None]*len(self.param_groups)
+            grad_norms = [None] * len(self.param_groups)
 
         for group, grads_this_group, grad_norm in zip(self.param_groups, grads_group, grad_norms):
             if grads_this_group is None:
-                grads_this_group = [None]*len(group['params'])
+                grads_this_group = [None] * len(group['params'])
 
             # compute combined scale factor for this group
             combined_scale = scale
-            if group['max_grad_norm'] > 0:
+            if group.get('max_grad_norm', 0) > 0:
                 # norm is in fact norm*scale
                 clip = ((grad_norm / scale) + 1e-6) / group['max_grad_norm']
                 if clip > 1:
                     combined_scale = clip * scale
 
-            bias_correction = 1 if group['bias_correction'] else 0
+            bias_correction = 1 if group.get('bias_correction', 1) else 0
 
             for p, grad in zip(group['params'], grads_this_group):
                 # note: p.grad should not ever be set for correct
@@ -166,8 +172,8 @@ class FusedAdamV1(torch.optim.Optimizer):
                     # Exponential moving average of squared gradient values
                     state['exp_avg_sq'] = torch.zeros_like(p_data_fp32)
                 else:
-                    state['exp_avg'] = state['exp_avg'].type_as(p_data_fp32)
-                    state['exp_avg_sq'] = state['exp_avg_sq'].type_as(p_data_fp32)
+                    state['exp_avg'] = state['exp_avg'].to(p_data_fp32)
+                    state['exp_avg_sq'] = state['exp_avg_sq'].to(p_data_fp32)
 
                 exp_avg = state['exp_avg']
                 exp_avg_sq = state['exp_avg_sq']
@@ -198,6 +204,7 @@ class FusedAdamV1(torch.optim.Optimizer):
 try:
     from apex.optimizers import FusedAdam
     from apex.multi_tensor_apply import multi_tensor_applier
+
 
     class FusedAdamV2(FusedAdam):
         """
@@ -255,6 +262,9 @@ try:
                         state['exp_avg'] = torch.zeros_like(p.data, dtype=torch.float)
                         # Exponential moving average of squared gradient values
                         state['exp_avg_sq'] = torch.zeros_like(p.data, dtype=torch.float)
+                    else:
+                        state['exp_avg'] = state['exp_avg'].to(device=p.data.device, dtype=torch.float)
+                        state['exp_avg_sq'] = state['exp_avg_sq'].to(device=p.data.device, dtype=torch.float)
 
                     if p.dtype == torch.float16:
                         g_16.append(p.grad.data.float())
@@ -271,7 +281,7 @@ try:
                         raise RuntimeError('FusedAdam only support fp16 and fp32.')
 
                 with torch.cuda.device(p.device):
-                    if(len(g_16) > 0):
+                    if (len(g_16) > 0):
                         multi_tensor_applier(self.multi_tensor_adam,
                                              self._dummy_overflow_buf,
                                              [g_16, p_16, m_16, v_16],
@@ -285,7 +295,7 @@ try:
                                              group['weight_decay'])
                         for orig_p, p in zip(orig_p_16, p_16):
                             orig_p.copy_(p.data)
-                    if(len(g_32) > 0):
+                    if (len(g_32) > 0):
                         multi_tensor_applier(self.multi_tensor_adam,
                                              self._dummy_overflow_buf,
                                              [g_32, p_32, m_32, v_32],
