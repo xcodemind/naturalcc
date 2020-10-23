@@ -25,7 +25,7 @@ import datetime
 import time
 
 # from .fairseq_decoder import FairseqDecoder
-# from .fairseq_encoder import FairseqEncoder
+# from .ncc_encoder import NccEncoder
 # from .fairseq_incremental_decoder import FairseqIncrementalDecoder
 # from .fairseq_model import (
 #     BaseNccModel,

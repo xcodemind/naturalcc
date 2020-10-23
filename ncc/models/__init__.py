@@ -21,11 +21,11 @@ import datetime
 import time
 
 # from .fairseq_decoder import FairseqDecoder
-# from .fairseq_encoder import FairseqEncoder
+# from .fairseq_encoder import NccEncoder
 # from .fairseq_incremental_decoder import FairseqIncrementalDecoder
 from .ncc_model import (
     BaseNccModel,
-    FairseqEncoderModel,
+    NccEncoderModel,
     FairseqEncoderDecoderModel,
     FairseqLanguageModel,
     NccModel,
@@ -51,7 +51,7 @@ __all__ = [
     # 'FairseqDecoder',
     # 'FairseqEncoder',
     'FairseqEncoderDecoderModel',
-    'FairseqEncoderModel',
+    'NccEncoderModel',
     # 'FairseqIncrementalDecoder',
     'FairseqLanguageModel',
     'NccModel',

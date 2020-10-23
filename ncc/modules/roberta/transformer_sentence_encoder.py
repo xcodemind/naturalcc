@@ -12,7 +12,7 @@ from ncc.modules.roberta.positional_embedding import PositionalEmbedding
 from ncc.modules.roberta.transformer_sentence_encoder_layer import TransformerSentenceEncoderLayer
 from ncc.modules.code2vec.transformer_encoder_layer import TransformerEncoderLayer
 import random
-from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
+from ncc.modules.code2vec.ncc_encoder import NccEncoder
 import math
 
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
@@ -46,7 +46,7 @@ def init_bert_params(module):
         module.v_proj.weight.data.normal_(mean=0.0, std=0.02)
 
 
-class TransformerSentenceEncoder(FairseqEncoder):
+class TransformerSentenceEncoder(NccEncoder):
     """
     Implementation for a Bi-directional Transformer based Sentence Encoder used
     in BERT/XLM style pre-trained models.

@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
+from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.modules.embedding import Embedding
 
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
@@ -66,7 +66,7 @@ class ChildSumTreeLSTMCell(nn.Module):
         return {'h': h, 'c': c}
 
 
-class TreeEncoder(FairseqEncoder):
+class TreeEncoder(NccEncoder):
     def __init__(
         self, dictionary, embed_dim=512, hidden_size=512,
         dropout_in=0.1, dropout_out=0.1, cell='nary',

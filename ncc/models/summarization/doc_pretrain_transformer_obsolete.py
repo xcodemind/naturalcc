@@ -19,12 +19,12 @@ from fairseq.modules import (
 )
 
 from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
-from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
+from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.models.ncc_model import NccModel
 from ncc.models import register_model
 
 # from . import (
-#     FairseqIncrementalDecoder, FairseqEncoder, NccModel,
+#     FairseqIncrementalDecoder, NccEncoder, NccModel,
 #     register_model, register_model_architecture,
 # )
 
@@ -141,7 +141,7 @@ class DocPretrainTransformerModel(NccModel):
         return sample[key]
 
 
-class TransformerEncoder(FairseqEncoder):
+class TransformerEncoder(NccEncoder):
     """Transformer encoder."""
 
     def __init__(self, args, dictionary, embed_tokens, left_pad=True):

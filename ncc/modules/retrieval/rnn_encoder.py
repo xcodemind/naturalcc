@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
-from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
+from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.modules.embedding import Embedding
 from ncc.utils.pooling1d import pooling1d
 from ncc.utils.activations import get_activation
@@ -19,7 +19,7 @@ from ncc.types import (
 logger = logging.getLogger(__name__)
 
 
-class RNNEncoder(FairseqEncoder):
+class RNNEncoder(NccEncoder):
     """based on CodeSearchNet """
 
     def __init__(self, dictionary, embed_dim: Int_t,

@@ -2,7 +2,7 @@ import math
 
 import torch
 from torch import nn
-from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
+from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.modules.code2vec.lstm_encoder import LSTMEncoder
 import torch.nn.functional as F
 from ncc.utils import utils
@@ -73,7 +73,7 @@ class PositionalEncoding(nn.Module):
 #             return out
 
 
-class CodeEncoderTransformer(FairseqEncoder):
+class CodeEncoderTransformer(NccEncoder):
     def __init__(self,
                  # args,
                  source_dictionary,

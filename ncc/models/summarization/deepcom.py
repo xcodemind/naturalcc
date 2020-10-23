@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ncc.models.fairseq_model import FairseqEncoderDecoderModel
-from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
+from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
 from ncc.modules.embedding import Embedding
 from ncc.models import register_model
@@ -29,7 +29,7 @@ def LSTMCell(input_size, hidden_size, **kwargs):
     return m
 
 
-class LSTMEncoder(FairseqEncoder):
+class LSTMEncoder(NccEncoder):
     """LSTM encoder."""
 
     def __init__(

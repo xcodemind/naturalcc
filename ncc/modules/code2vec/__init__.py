@@ -1,6 +1,6 @@
-from .fairseq_encoder import FairseqEncoder
+from .ncc_encoder import NccEncoder
 
 
 __all__ = [
-    'FairseqEncoder'
+    'NccEncoder'
 ]

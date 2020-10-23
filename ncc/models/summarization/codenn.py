@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ncc.models.fairseq_model import FairseqEncoderDecoderModel
-from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
+from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
 from ncc.modules.embedding import Embedding
 from ncc.models import register_model
@@ -13,7 +13,7 @@ DEFAULT_MAX_SOURCE_POSITIONS = 1e5
 DEFAULT_MAX_TARGET_POSITIONS = 1e5
 
 
-class NBOWEncoder(FairseqEncoder):
+class NBOWEncoder(NccEncoder):
     def __init__(
         self, dictionary, embed_dim=512, dropout=0.1,
         pretrained_embed=None, padding_idx=None,

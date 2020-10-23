@@ -15,7 +15,7 @@ import torch.nn.functional as F
 from ncc.utils import utils
 from ncc.utils.checkpoint_utils import prune_state_dict
 from ncc.data import Dictionary
-from ncc.modules.code2vec import FairseqEncoder
+from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.modules.seq2seq import FairseqDecoder
 from torch import Tensor
 
@@ -229,7 +229,7 @@ class FairseqEncoderDecoderModel(BaseNccModel):
     """Base class for encoder-decoder models.
 
     Args:
-        encoder (FairseqEncoder): the encoder
+        encoder (NccEncoder): the encoder
         decoder (FairseqDecoder): the decoder
     """
 
@@ -238,7 +238,7 @@ class FairseqEncoderDecoderModel(BaseNccModel):
 
         self.encoder = encoder
         self.decoder = decoder
-        assert isinstance(self.encoder, FairseqEncoder)
+        assert isinstance(self.encoder, NccEncoder)
         assert isinstance(self.decoder, FairseqDecoder)
 
     def forward(self, src_tokens, src_lengths, prev_output_tokens, **kwargs):
@@ -319,7 +319,7 @@ class FairseqMultiModel(BaseNccModel):
         assert encoders.keys() == decoders.keys()
         self.keys = list(encoders.keys())
         for key in self.keys:
-            assert isinstance(encoders[key], FairseqEncoder)
+            assert isinstance(encoders[key], NccEncoder)
             assert isinstance(decoders[key], FairseqDecoder)
 
         self.models = nn.ModuleDict(
@@ -466,17 +466,17 @@ class FairseqLanguageModel(BaseNccModel):
         return {"future"}
 
 
-class FairseqEncoderModel(BaseNccModel):
+class NccEncoderModel(BaseNccModel):
     """Base class for encoder-only models.
 
     Args:
-        encoder (FairseqEncoder): the encoder
+        encoder (NccEncoder): the encoder
     """
 
     def __init__(self, encoder):
         super().__init__()
         self.encoder = encoder
-        assert isinstance(self.encoder, FairseqEncoder)
+        assert isinstance(self.encoder, NccEncoder)
 
     def forward(self, src_tokens, src_lengths, **kwargs):
         """
@@ -513,15 +513,15 @@ class FairseqRetrievalModel(BaseNccModel):
     """Base class for a simple encoder-encoder retrieval models.
 
     Args:
-        src_encoder (FairseqEncoder): the encoder
-        tgt_encoder (FairseqEncoder): the encoder
+        src_encoder (NccEncoder): the encoder
+        tgt_encoder (NccEncoder): the encoder
     """
 
     def __init__(self, src_encoder, tgt_encoder):
         super().__init__()
         self.src_encoder = src_encoder
         self.tgt_encoder = tgt_encoder
-        assert isinstance(self.src_encoder, FairseqEncoder) and isinstance(self.tgt_encoder, FairseqEncoder)
+        assert isinstance(self.src_encoder, NccEncoder) and isinstance(self.tgt_encoder, NccEncoder)
 
     def forward(self,
                 src_tokens, src_tokens_len, src_tokens_mask,
@@ -547,15 +547,15 @@ class FairseqMoCoModel(BaseNccModel):
     """Base class for a simple encoder-encoder retrieval models.
 
     Args:
-        src_encoder (FairseqEncoder): the encoder
-        tgt_encoder (FairseqEncoder): the encoder
+        src_encoder (NccEncoder): the encoder
+        tgt_encoder (NccEncoder): the encoder
     """
 
     def __init__(self, encoder_q, encoder_k):
         super().__init__()
         self.encoder_q = encoder_q
         self.encoder_k = encoder_k
-        assert isinstance(self.encoder_q, FairseqEncoder) and isinstance(self.encoder_k, FairseqEncoder)
+        assert isinstance(self.encoder_q, NccEncoder) and isinstance(self.encoder_k, NccEncoder)
 
     def forward(self,
                 src_tokens, src_tokens_len, src_tokens_mask,

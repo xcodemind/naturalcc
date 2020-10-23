@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from ncc.models import register_model
-from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
+from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.modules.embedding import Embedding
 from ncc.utils.pooling1d import pooling1d
 from ncc.types import (
@@ -29,7 +29,7 @@ def Linear(in_features, out_features, bias=True):
     return m
 
 
-class NBOWEncoder(FairseqEncoder):
+class NBOWEncoder(NccEncoder):
     """based on CodeSearchNet """
 
     def __init__(self, dictionary, embed_dim: Int_t, **kwargs):

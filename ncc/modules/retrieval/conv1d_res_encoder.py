@@ -6,7 +6,7 @@ import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
+from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.modules.embedding import Embedding
 from ncc.utils.pooling1d import pooling1d
 from ncc.utils.activations import get_activation
@@ -17,7 +17,7 @@ from ncc.types import (
 logger = logging.getLogger(__name__)
 
 
-class Conv1dResEncoder(FairseqEncoder):
+class Conv1dResEncoder(NccEncoder):
     """based on CodeSearchNet """
 
     def __init__(self, dictionary, embed_dim: Int_t, out_channels: Sequence_t, kernel_size: Sequence_t,

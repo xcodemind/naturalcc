@@ -19,7 +19,7 @@ EncoderOut = NamedTuple(
 )
 
 
-class FairseqEncoder(nn.Module):
+class NccEncoder(nn.Module):
     """Base class for encoders."""
 
     def __init__(self, dictionary):

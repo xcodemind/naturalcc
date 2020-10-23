@@ -20,7 +20,7 @@ class PathLSTM(nn.Module):
         return h_n.permute((1, 0, 2)).view((batch_size, bag_size, -1))
 
 
-class TransformerEncoder(nn.Module):  # TODO: to check FairseqEncoder?
+class TransformerEncoder(nn.Module):  # TODO: to check NccEncoder?
     def __init__(
         self,
         padding_idx: int,

@@ -6,9 +6,9 @@ import torch.nn.functional as F
 from torch import Tensor
 from ncc.modules.code2vec.transformer_encoder_layer import TransformerEncoderLayer
 from ncc.modules.common.layer_norm import LayerNorm
-from ncc.modules.code2vec.fairseq_encoder import FairseqEncoder
+from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.modules.roberta.positional_embedding import PositionalEmbedding
-from ncc.modules.code2vec.fairseq_encoder import EncoderOut
+from ncc.modules.code2vec.ncc_encoder import EncoderOut
 from ncc.modules.roberta.sinusoidal_positional_embedding import SinusoidalPositionalEmbedding
 from ncc.utils import utils
 from collections import OrderedDict
@@ -16,7 +16,7 @@ from collections import OrderedDict
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
 
 
-class TransformerEncoder(FairseqEncoder):
+class TransformerEncoder(NccEncoder):
     """
     Transformer encoder consisting of *args.encoder_layers* layers. Each layer
     is a :class:`TransformerEncoderLayer`.
