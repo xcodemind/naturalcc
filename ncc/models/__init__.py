@@ -27,14 +27,14 @@ from .ncc_model import (
     BaseNccModel,
     NccEncoderModel,
     NccEncoderDecoderModel,
-    FairseqLanguageModel,
+    NccLanguageModel,
     NccModel,
-    FairseqMultiModel,
-    FairseqMoCoModel,
+    NccMultiModel,
+    NccMoCoModel,
 )
 
 # from .composite_encoder import CompositeEncoder
-from .distributed_fairseq_model import DistributedNccModel
+from .distributed_ncc_model import DistributedNccModel
 
 
 MODEL_REGISTRY = {}
@@ -53,9 +53,9 @@ __all__ = [
     'NccEncoderDecoderModel',
     'NccEncoderModel',
     # 'NccIncrementalDecoder',
-    'FairseqLanguageModel',
+    'NccLanguageModel',
     'NccModel',
-    'FairseqMultiModel',
+    'NccMultiModel',
 ]
 
 
@@ -76,7 +76,7 @@ def register_model(name):
 
     .. note:: All models must implement the :class:`BaseNccModel` interface.
         Typically you will extend :class:`NccEncoderDecoderModel` for
-        sequence-to-sequence tasks or :class:`FairseqLanguageModel` for
+        sequence-to-sequence tasks or :class:`NccLanguageModel` for
         language modeling tasks.
 
     Args:

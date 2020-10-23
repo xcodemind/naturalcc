@@ -9,7 +9,7 @@ import os
 from ncc import registry
 from ncc.optim.ncc_optimizer import NccOptimizer
 from ncc.optim.fp16_optimizer import FP16Optimizer, MemoryEfficientFP16Optimizer
-from ncc.optim.bmuf import FairseqBMUF  # noqa
+from ncc.optim.bmuf import NccBMUF  # noqa
 
 
 __all__ = [

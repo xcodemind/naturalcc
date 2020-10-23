@@ -9,7 +9,7 @@ import torch.distributed as dist
 from . import NccOptimizer
 
 
-class FairseqBMUF(NccOptimizer):
+class NccBMUF(NccOptimizer):
     """
     Implements incremental block distributed data parallelism similar to
     https://ieeexplore.ieee.org/document/7472805

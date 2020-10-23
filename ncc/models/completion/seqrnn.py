@@ -3,13 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 from ncc.models import register_model
-from ncc.models.fairseq_model import FairseqLanguageModel
+from ncc.models.ncc_model import NccLanguageModel
 from ncc.modules.seq2seq.lstm_decoder import LSTMDecoder
 DEFAULT_MAX_TARGET_POSITIONS = 1e5
 
 
 @register_model('seqrnn')
-class SeqRNNModel(FairseqLanguageModel):
+class SeqRNNModel(NccLanguageModel):
     def __init__(self, args, decoder):
         super().__init__(decoder)
         self.args = args

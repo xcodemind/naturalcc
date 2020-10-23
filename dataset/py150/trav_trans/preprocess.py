@@ -79,7 +79,7 @@ def binarize(args, filename, vocab, output_prefix, lang, offset, end, append_eos
     return res
 
 
-# TODO: Don't abstract it. Try to be consistent with Fairseq.
+# TODO: Don't abstract it. Try to be consistent with Ncc.
 def main(args):
     LOGGER.info('mkdir for {} task'.format(args['preprocess']['task']))
     os.makedirs(args['preprocess']['destdir'], exist_ok=True)

@@ -3,11 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from . import FairseqLRScheduler, register_lr_scheduler
+from . import NccLRScheduler, register_lr_scheduler
 
 
 @register_lr_scheduler('inverse_sqrt')
-class InverseSquareRootSchedule(FairseqLRScheduler):
+class InverseSquareRootSchedule(NccLRScheduler):
     """Decay the LR based on the inverse square root of the update number.
 
     We also support a warmup phase where we linearly increase the learning rate

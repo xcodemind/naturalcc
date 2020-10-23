@@ -5,11 +5,11 @@
 
 import math
 
-from . import FairseqLRScheduler, register_lr_scheduler
+from . import NccLRScheduler, register_lr_scheduler
 
 
 @register_lr_scheduler('triangular')
-class TriangularSchedule(FairseqLRScheduler):
+class TriangularSchedule(NccLRScheduler):
     """Assign LR based on a triangular cyclical schedule.
 
     See https://arxiv.org/pdf/1506.01186.pdf for details.

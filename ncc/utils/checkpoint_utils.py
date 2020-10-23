@@ -324,7 +324,7 @@ def _upgrade_state_dict(state):
             del optim_hist["optimizer"]
     # record the optimizer class name
     if "optimizer_name" not in state["optimizer_history"][-1]:
-        state["optimizer_history"][-1]["optimizer_name"] = "FairseqNAG"
+        state["optimizer_history"][-1]["optimizer_name"] = "NccNAG"
     # move best_loss into lr_scheduler_state
     if "lr_scheduler_state" not in state["optimizer_history"][-1]:
         state["optimizer_history"][-1]["lr_scheduler_state"] = {

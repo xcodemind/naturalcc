@@ -10,7 +10,7 @@ from . import NccOptimizer, register_optimizer
 
 
 @register_optimizer('adamax')
-class FairseqAdamax(NccOptimizer):
+class NccAdamax(NccOptimizer):
     def __init__(self, args, params):
         super().__init__(args)
         self._optimizer = Adamax(params, **self.optimizer_config)

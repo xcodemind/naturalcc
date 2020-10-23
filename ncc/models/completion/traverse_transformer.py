@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from ncc import LOGGER
 from ncc.models import register_model
-from ncc.models.fairseq_model import FairseqLanguageModel
+from ncc.models.ncc_model import NccLanguageModel
 from ncc.modules.completion.transformer_encoder import TransformerEncoder
 from ncc.utils import utils
 from ncc.modules.common.layer_norm import LayerNorm
@@ -16,7 +16,7 @@ from ncc.models.hub_interface import RobertaHubInterface
 
 
 @register_model('traverse_transformer')
-class TraverseTransformerModel(FairseqLanguageModel):
+class TraverseTransformerModel(NccLanguageModel):
     def __init__(self, args, decoder):
         super().__init__(decoder)
         self.args = args

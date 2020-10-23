@@ -5,11 +5,11 @@
 
 import math
 
-from . import FairseqLRScheduler, register_lr_scheduler
+from . import NccLRScheduler, register_lr_scheduler
 
 
 @register_lr_scheduler('cosine')
-class CosineSchedule(FairseqLRScheduler):
+class CosineSchedule(NccLRScheduler):
     """Assign LR based on a cyclical schedule that follows the cosine function.
 
     See https://arxiv.org/pdf/1608.03983.pdf for details.

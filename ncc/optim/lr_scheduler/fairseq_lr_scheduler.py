@@ -6,7 +6,7 @@
 from .. import NccOptimizer
 
 
-class FairseqLRScheduler(object):
+class NccLRScheduler(object):
 
     def __init__(self, args, optimizer):
         super().__init__()

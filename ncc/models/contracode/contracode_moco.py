@@ -7,26 +7,21 @@ RoBERTa: A Robustly Optimized BERT Pretraining Approach.
 """
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-from ncc.utils import utils
 from ncc.models import (
-    FairseqMoCoModel,
+    NccMoCoModel,
     register_model,
     # register_model_architecture,
 )
-from ncc.modules.seq2seq.ncc_decoder import NccDecoder
-from ncc.modules.roberta.layer_norm import LayerNorm
-from ncc.modules.roberta.transformer_sentence_encoder import TransformerSentenceEncoder
+
 from ncc.models.hub_interface import RobertaHubInterface
 from ncc.modules.code2vec.contracode_encoder import CodeEncoderLSTM, CodeEncoderTransformer
-from ncc import LOGGER
 
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
 
 
 @register_model('contracode_moco')
-class ContraCodeMoCo(FairseqMoCoModel):
+class ContraCodeMoCo(NccMoCoModel):
 
     @classmethod
     def hub_models(cls):

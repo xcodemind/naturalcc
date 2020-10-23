@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 from ncc.types import *
 from ncc.models import register_model
-from ncc.models.fairseq_model import FairseqRetrievalModel
+from ncc.models.ncc_model import NccRetrievalModel
 from ncc.modules.retrieval.rnn_encoder import RNNEncoder
 
 import logging
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 @register_model('birnn')
-class RNN(FairseqRetrievalModel):
+class RNN(NccRetrievalModel):
     def __init__(self, args, src_encoder, tgt_encoder):
         super().__init__(src_encoder, tgt_encoder)
         self.args = args

@@ -10,7 +10,7 @@ from . import NccOptimizer, register_optimizer
 
 
 @register_optimizer('nag')
-class FairseqNAG(NccOptimizer):
+class NccNAG(NccOptimizer):
     def __init__(self, args, params):
         super().__init__(args)
         self._optimizer = NAG(params, **self.optimizer_config)

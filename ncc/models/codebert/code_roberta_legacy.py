@@ -12,7 +12,7 @@ import torch.nn.functional as F
 
 from ncc.utils import utils
 from ncc.models import (
-    FairseqLanguageModel,
+    NccLanguageModel,
     register_model,
     # register_model_architecture,
 )
@@ -25,7 +25,7 @@ from ncc import LOGGER
 
 
 @register_model('code_roberta_legacy')
-class CodeRobertaModel(FairseqLanguageModel):
+class CodeRobertaModel(NccLanguageModel):
 
     @classmethod
     def hub_models(cls):
@@ -259,7 +259,7 @@ class RobertaEncoder(NccDecoder):
     """RoBERTa encoder.
 
     Implements the :class:`~fairseq.models.NccDecoder` interface required
-    by :class:`~fairseq.models.FairseqLanguageModel`.
+    by :class:`~fairseq.models.NccLanguageModel`.
     """
 
     def __init__(self, args, dictionary):

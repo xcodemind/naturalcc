@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 @register_optimizer('adam')
-class FairseqAdam(NccOptimizer):
+class NccAdam(NccOptimizer):
     """Adam optimizer for fairseq.
 
     Important note: this optimizer corresponds to the "AdamW" variant of

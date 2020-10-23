@@ -70,7 +70,7 @@ def dataset_dest_file(args, output_prefix, lang, extension):
     return "{}.{}".format(base, extension)
 
 
-# TODO: Don't abstract it. Try to be consistent with Fairseq.
+# TODO: Don't abstract it. Try to be consistent with Ncc.
 def main(args):
     LOGGER.info('mkdir for {} task'.format(args['preprocess']['task']))
     os.makedirs(args['preprocess']['destdir'], exist_ok=True)

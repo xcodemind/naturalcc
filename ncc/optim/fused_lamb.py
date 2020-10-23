@@ -7,7 +7,7 @@ from ncc.optim import NccOptimizer, register_optimizer
 
 
 @register_optimizer('lamb')
-class FairseqLAMB(NccOptimizer):
+class NccLAMB(NccOptimizer):
     """LAMB optimizer."""
 
     def __init__(self, args, params):

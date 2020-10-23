@@ -154,9 +154,9 @@ def parse_args_and_arch(
         TASK_REGISTRY[args.task].add_args(parser)
     if getattr(args, "use_bmuf", False):
         # hack to support extra args for block distributed data parallelism
-        from fairseq.optim.bmuf import FairseqBMUF
+        from ncc.optim.bmuf import NccBMUF
 
-        FairseqBMUF.add_args(parser)
+        NccBMUF.add_args(parser)
 
     # Modify the parser a second time, since defaults may have been reset
     if modify_parser is not None:

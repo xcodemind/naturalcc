@@ -13,7 +13,7 @@ from ncc.logging import metrics
 from ncc.utils import utils
 
 
-class FairseqConfig(object):
+class NccConfig(object):
 
     def __init__(self):
         # super().__init__()

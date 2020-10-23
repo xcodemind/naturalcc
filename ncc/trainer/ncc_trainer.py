@@ -156,7 +156,7 @@ class Trainer(object):
             self._optimizer = optim.build_optimizer(self.args, params)
 
         if self.args['optimization']['use_bmuf']:
-            self._optimizer = optim.FairseqBMUF(self.args, self._optimizer)
+            self._optimizer = optim.NccBMUF(self.args, self._optimizer)
 
         # We should initialize the learning rate scheduler immediately after
         # building the optimizer, so that the initial learning rate is set.

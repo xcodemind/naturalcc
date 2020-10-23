@@ -4,12 +4,12 @@ import torch
 import torch.nn as nn
 
 from ncc.models.type_prediction.encoder import CodeEncoder#, CodeEncoderLSTM
-from ncc.models import FairseqLanguageModel, register_model
+from ncc.models import NccLanguageModel, register_model
 from ncc.modules.seq2seq.ncc_decoder import NccDecoder
 
 
 @register_model('typetransformer')
-class TypeTransformer(FairseqLanguageModel):
+class TypeTransformer(NccLanguageModel):
     def __init__(self, args, encoder):
         super().__init__(encoder)
         self.args = args

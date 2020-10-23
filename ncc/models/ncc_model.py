@@ -311,7 +311,7 @@ class NccModel(NccEncoderDecoderModel):
         )
 
 
-class FairseqMultiModel(BaseNccModel):
+class NccMultiModel(BaseNccModel):
     """Base class for combining multiple encoder-decoder models."""
 
     def __init__(self, encoders, decoders):
@@ -405,7 +405,7 @@ class FairseqMultiModel(BaseNccModel):
         return super().load_state_dict(new_state_dict, strict)
 
 
-class FairseqLanguageModel(BaseNccModel):
+class NccLanguageModel(BaseNccModel):
     """Base class for decoder-only models.
 
     Args:
@@ -509,7 +509,7 @@ class NccEncoderModel(BaseNccModel):
         return self.encoder.max_positions()
 
 
-class FairseqRetrievalModel(BaseNccModel):
+class NccRetrievalModel(BaseNccModel):
     """Base class for a simple encoder-encoder retrieval models.
 
     Args:
@@ -543,7 +543,7 @@ class FairseqRetrievalModel(BaseNccModel):
                self.tgt_encoder(tgt_tokens, tgt_tokens_len, tgt_tokens_mask),
 
 
-class FairseqMoCoModel(BaseNccModel):
+class NccMoCoModel(BaseNccModel):
     """Base class for a simple encoder-encoder retrieval models.
 
     Args:

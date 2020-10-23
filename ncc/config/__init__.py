@@ -23,24 +23,7 @@ import importlib
 import os
 import datetime
 import time
-
-# from .fairseq_decoder import NccDecoder
-# from .ncc_encoder import NccEncoder
-# from .fairseq_incremental_decoder import NccIncrementalDecoder
-# from .fairseq_model import (
-#     BaseNccModel,
-#     FairseqEncoderModel,
-#     NccEncoderDecoderModel,
-#     FairseqLanguageModel,
-#     NccModel,
-#     FairseqMultiModel,
-# )
-
-# from .composite_encoder import CompositeEncoder
-# from .distributed_fairseq_model import DistributedNccModel
-# from ncc.config.bert.configuration_bert import BertConfig
-# from ncc.config.bert.configuration_roberta import RobertaConfig
-from ncc.config.fairseq_config import FairseqConfig
+from ncc.config.ncc_config import NccConfig
 
 CONFIG_REGISTRY = {}
 # ARCH_MODEL_REGISTRY = {}
@@ -73,7 +56,7 @@ def register_config(name):
 
     .. note:: All models must implement the :class:`BaseNccModel` interface.
         Typically you will extend :class:`NccEncoderDecoderModel` for
-        sequence-to-sequence tasks or :class:`FairseqLanguageModel` for
+        sequence-to-sequence tasks or :class:`NccLanguageModel` for
         language modeling tasks.
 
     Args:
@@ -83,7 +66,7 @@ def register_config(name):
     def register_config_cls(cls):
         if name in CONFIG_REGISTRY:
             raise ValueError('Cannot register duplicate model ({})'.format(name))
-        if not issubclass(cls, FairseqConfig):
+        if not issubclass(cls, NccConfig):
             raise ValueError('Model ({}: {}) must extend BaseNccModel'.format(name, cls.__name__))
         CONFIG_REGISTRY[name] = cls
         return cls

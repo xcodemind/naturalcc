@@ -7,12 +7,12 @@ import importlib
 import os
 
 from ncc import registry
-from ncc.optim.lr_scheduler.fairseq_lr_scheduler import FairseqLRScheduler
+from ncc.optim.lr_scheduler.fairseq_lr_scheduler import NccLRScheduler
 
 
 build_lr_scheduler, register_lr_scheduler, LR_SCHEDULER_REGISTRY = registry.setup_registry(
     'lr_scheduler',
-    base_class=FairseqLRScheduler,
+    base_class=NccLRScheduler,
     default='fixed',
 )
 
