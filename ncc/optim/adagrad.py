@@ -31,8 +31,8 @@ class Adagrad(FairseqOptimizer):
         different learning rate.
         """
         return {
-            'lr': self.args.lr[0],
-            'weight_decay': self.args.weight_decay,
+            'lr': self.args['optimization']['lr'][0],
+            'weight_decay': self.args['optimization']['adagrad']['weight_decay'],
         }
 
     @property
