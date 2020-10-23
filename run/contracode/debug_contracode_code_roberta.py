@@ -6,13 +6,11 @@ import os
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
 from ncc.tasks.contracode.contracode_hybrid import load_augmented_code_dataset_hybrid
-from ncc.tasks import NccTask
 from ncc import tasks
 import torch
-from ncc.data.contracode.contracode_dataset import collate
 from ncc.data import iterators
 from ncc.logging import progress_bar
-from ncc.utils import checkpoint_utils, distributed_utils
+from ncc.utils import distributed_utils
 from ncc.trainer.ncc_trainer import Trainer
 import numpy as np
 import random

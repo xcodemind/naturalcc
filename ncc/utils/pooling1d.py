@@ -2,14 +2,9 @@
 
 import torch
 import torch.nn.functional as F
-from ncc.types import (
-    Tensor_t,
-    String_t,
-    Func_t,
-)
 
 
-def pooling1d(pooling1d: String_t) -> Func_t:
+def pooling1d(pooling1d):
     """
     Args:
         pooling1d: mean/max/weighted_mean
@@ -17,7 +12,7 @@ def pooling1d(pooling1d: String_t) -> Func_t:
         https://github.com/github/CodeSearchNet/blob/47636ea72e9d7ea1ad3a5c977076cb54797bfa2f/src/utils/tfutils.py#L107-L149
     """
 
-    def _mean_pooling1d(input_emb: Tensor_t, **kwargs):
+    def _mean_pooling1d(input_emb, **kwargs):
         """
         input_emb: [B x T x D]
         input_len: [B x 1]
@@ -28,7 +23,7 @@ def pooling1d(pooling1d: String_t) -> Func_t:
         input_emb = input_emb_sum / kwargs['input_len']
         return input_emb
 
-    def _max_pooling1d(input_emb: Tensor_t, **kwargs):
+    def _max_pooling1d(input_emb, **kwargs):
         """
         input_emb: [B x T x D]
         input_len: [B x 1]
@@ -39,7 +34,7 @@ def pooling1d(pooling1d: String_t) -> Func_t:
         input_emb, _ = (input_emb + input_mask).max(dim=1)  # B x D
         return input_emb
 
-    def _weighted_mean_pooling1d(input_emb: Tensor_t, **kwargs):
+    def _weighted_mean_pooling1d(input_emb, **kwargs):
         """
         input_emb: [B x T x D]
         input_len: [B x 1]

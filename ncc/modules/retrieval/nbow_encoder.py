@@ -14,9 +14,6 @@ from ncc.models import register_model
 from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.modules.embedding import Embedding
 from ncc.utils.pooling1d import pooling1d
-from ncc.types import (
-    Int_t, Tensor_t,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +29,7 @@ def Linear(in_features, out_features, bias=True):
 class NBOWEncoder(NccEncoder):
     """based on CodeSearchNet """
 
-    def __init__(self, dictionary, embed_dim: Int_t, **kwargs):
+    def __init__(self, dictionary, embed_dim, **kwargs):
         super().__init__(dictionary)
         self.embed = nn.Embedding(len(dictionary), embed_dim, padding_idx=self.dictionary.pad())
         # self.embed = Embedding(len(dictionary), embed_dim, padding_idx=None)
@@ -44,7 +41,7 @@ class NBOWEncoder(NccEncoder):
         if self.pooling:
             self.weight_layer = Linear(embed_dim, 1, bias=False) if 'weighted' in pooling else None
 
-    def forward(self, tokens: Tensor_t, tokens_len: Tensor_t = None, tokens_mask: Tensor_t = None):
+    def forward(self, tokens, tokens_len=None, tokens_mask=None):
         """
         Args:
             tokens: [batch_size, max_token_len]

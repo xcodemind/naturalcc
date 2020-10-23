@@ -4,8 +4,6 @@
 import os
 from glob import glob
 
-from ncc.types import *
-
 join = os.path.join
 dirname = os.path.dirname
 basename = os.path.basename
@@ -17,17 +15,17 @@ exists = os.path.exists
 listdir = os.listdir
 
 
-def expanduser(path: String_t) -> String_t:
-    if isinstance(path, String_t) and path.startswith('~/'):
+def expanduser(path):
+    if isinstance(path) and path.startswith('~/'):
         path = os.path.expanduser(path)
     return path
 
 
-def makedirs(path: String_t, exist_ok=True) -> Void_t:
+def makedirs(path, exist_ok=True):
     os.makedirs(path, exist_ok=exist_ok)
 
 
-def getsize(path: String_t, unit: String_t = 'b') -> Number_t:
+def getsize(path, unit='b'):
     '''
     Args:
         path:
@@ -54,7 +52,7 @@ def getsize(path: String_t, unit: String_t = 'b') -> Number_t:
 # safe functions, can operate ~/ directory
 
 
-def safe_join(*args) -> String_t:
+def safe_join(*args):
     # if first path is '~/...', convert it to user path
     path = join(expanduser(args[0]), *args[1:])
     return path
@@ -64,7 +62,7 @@ safe_dirname = lambda path: dirname(expanduser(path))
 safe_basename = basename
 
 
-def safe_split(path: String_t) -> Tuple[String_t]:
+def safe_split(path):
     _dirname, _basename = split(path)
     _dirname = expanduser(_dirname)
     return _dirname, _basename
@@ -79,7 +77,7 @@ safe_getsize = lambda path: getsize(expanduser(path))
 safe_listdir = lambda path: listdir(expanduser(path))
 
 
-def safe_glob(path: String_t, suffix: Optional[String_t] = None) -> Sequence_t[String_t]:
+def safe_glob(path, suffix=None):
     if suffix is None:
         suffix = '*'
     else:

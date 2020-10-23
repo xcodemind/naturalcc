@@ -16,9 +16,6 @@ from ncc.tasks import register_task
 from ncc.tasks.ncc_task import NccTask
 from ncc.utils.tokenizer import tokenize_string
 from ncc.data.retrieval.retrieval_dataset import RetrievalDataset
-
-# from ncc.types import *
-from ncc.types import Dict_t, Class_t, String_t, Int_t, Bool_t
 from ncc.utils import utils
 from ncc.utils import path
 
@@ -47,7 +44,7 @@ class RetrievalTask(NccTask):
     A simple implementation. Only consider (single modality) code-comment retrieval task.
     """
 
-    def __init__(self, args: Dict_t, src_dict, tgt_dict):
+    def __init__(self, args, src_dict, tgt_dict):
         super().__init__(args)
         self.args = args
         self.src_dict = src_dict
@@ -55,7 +52,7 @@ class RetrievalTask(NccTask):
         # self.seed = args['common']['seed']
 
     @classmethod
-    def setup_task(cls, args: Dict_t, **kwargs) -> Class_t:
+    def setup_task(cls, args, **kwargs):
         paths = utils.split_paths(args['task']['data'])
         assert len(paths) > 0
         if args['dataset']['joined_dictionary']:
@@ -93,7 +90,7 @@ class RetrievalTask(NccTask):
         d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
         return d
 
-    def load_dataset(self, split: String_t, epoch: Int_t = 1, combine: Bool_t = False, **kwargs):
+    def load_dataset(self, split, epoch=1, combine=False, **kwargs):
         """Load a given dataset split.
 
         Args:

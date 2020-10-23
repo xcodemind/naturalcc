@@ -7,7 +7,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ncc.types import *
 from ncc.models import register_model
 from ncc.models.ncc_model import NccRetrievalModel
 from ncc.modules.retrieval.nbow_encoder import NBOWEncoder

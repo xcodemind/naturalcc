@@ -12,9 +12,6 @@ from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.modules.embedding import Embedding
 from ncc.utils.pooling1d import pooling1d
 from ncc.utils.activations import get_activation
-from ncc.types import (
-    Int_t, Sequence_t, Tensor_t, String_t, Bool_t, Any_t,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +19,10 @@ logger = logging.getLogger(__name__)
 class RNNEncoder(NccEncoder):
     """based on CodeSearchNet """
 
-    def __init__(self, dictionary, embed_dim: Int_t,
+    def __init__(self, dictionary, embed_dim,
                  # rnn config
-                 rnn_cell: String_t, rnn_hidden_dim: Int_t, rnn_num_layers: Int_t = 1,
-                 rnn_bidirectional: Bool_t = False,
+                 rnn_cell, rnn_hidden_dim, rnn_num_layers= 1,
+                 rnn_bidirectional=False,
                  **kwargs):
         super().__init__(dictionary)
         # word embedding + positional embedding
@@ -41,7 +38,7 @@ class RNNEncoder(NccEncoder):
             bidirectional=rnn_bidirectional,
         )
 
-    def init_hidden(self, batch_size: int, ) -> Any_t:
+    def init_hidden(self, batch_size: int, ):
         weight = next(self.parameters()).data
         biRNN = 2 if self.rnn.bidirectional else 1
         if isinstance(self.rnn, nn.LSTM):
@@ -52,7 +49,7 @@ class RNNEncoder(NccEncoder):
         else:
             return weight.new(self.layer_num * biRNN, batch_size, self.hidden_size).zero_().requires_grad_()
 
-    def _get_sorted_order(self, lens: Tensor_t) -> Any_t:
+    def _get_sorted_order(self, lens):
         sorted_len, fwd_order = torch.sort(
             lens.contiguous().reshape(-1), 0, descending=True
         )
@@ -60,7 +57,7 @@ class RNNEncoder(NccEncoder):
         sorted_len = list(sorted_len)
         return sorted_len, fwd_order, bwd_order
 
-    def _dynamic_forward(self, input_emb: Tensor_t, input_len: Tensor_t, hidden_state=None) -> Any_t:
+    def _dynamic_forward(self, input_emb, input_len, hidden_state=None):
         # 1) unsorted seq_emb, 2) padding to same length
         sorted_len, fwd_order, bwd_order = self._get_sorted_order(input_len)
         # sort seq_input & hidden state by seq_lens
@@ -95,7 +92,7 @@ class RNNEncoder(NccEncoder):
             hidden_state = hidden_state.index_select(dim=1, index=bwd_order)
         return unpacked_seq_output, hidden_state
 
-    def _merge_state(self, hidden_state) -> Any_t:
+    def _merge_state(self, hidden_state):
         if isinstance(self.rnn, nn.LSTM):
             hidden_state = torch.cat(
                 [hc.contiguous().view(hc.size(0), -1) for hc in hidden_state],
@@ -108,7 +105,7 @@ class RNNEncoder(NccEncoder):
             )
         return hidden_state
 
-    def forward(self, tokens: Tensor_t, tokens_len: Tensor_t = None, tokens_mask: Tensor_t = None) -> Tensor_t:
+    def forward(self, tokens, tokens_len=None, tokens_mask=None):
         # TODO: need to be checked
         if tokens_mask is None:
             tokens_mask = (tokens.ne(self.dictionary.pad())).to(tokens.device)

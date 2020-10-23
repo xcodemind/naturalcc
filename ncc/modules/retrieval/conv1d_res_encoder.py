@@ -10,9 +10,6 @@ from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.modules.embedding import Embedding
 from ncc.utils.pooling1d import pooling1d
 from ncc.utils.activations import get_activation
-from ncc.types import (
-    Int_t, Sequence_t, Tensor_t,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +17,7 @@ logger = logging.getLogger(__name__)
 class Conv1dResEncoder(NccEncoder):
     """based on CodeSearchNet """
 
-    def __init__(self, dictionary, embed_dim: Int_t, out_channels: Sequence_t, kernel_size: Sequence_t,
+    def __init__(self, dictionary, embed_dim, out_channels, kernel_size,
                  **kwargs):
         super().__init__(dictionary)
         # word embedding + positional embedding
@@ -60,7 +57,7 @@ class Conv1dResEncoder(NccEncoder):
         activation_fn = kwargs.get('activation_fn', None)
         self.activation_fn = get_activation(activation_fn) if activation_fn else None
 
-    def forward(self, tokens: Tensor_t, tokens_len: Tensor_t = None, tokens_mask: Tensor_t = None):
+    def forward(self, tokens, tokens_len=None, tokens_mask=None):
         if tokens_mask is None:
             tokens_mask = (tokens.ne(self.dictionary.pad())).to(tokens.device)
         if tokens_len is None:
@@ -90,7 +87,7 @@ class Conv1dResEncoder(NccEncoder):
             )
         return tokens
 
-    def _position_encoding(self, input_emb: Tensor_t) -> Tensor_t:
+    def _position_encoding(self, input_emb):
         if self.position_encoding == 'learned':
             pos_idx = torch.arange(start=0, end=input_emb.size(1)).unsqueeze(0).expand(input_emb.size(0), -1) \
                 .to(input_emb.device)
