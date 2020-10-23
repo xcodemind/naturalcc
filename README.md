@@ -1,4 +1,4 @@
-# NaturalCode-V3.0
+# NaturalCC
 Naturalcode is a sequence modeling toolkit that allows researchers and developers to train custom models for many software engineering tasks, e.g., code summarization, code retrieval and code clone detection. Our vision is to bridge the gap between programming language and natural language via some machine learning techniques.
 
 ## Note
