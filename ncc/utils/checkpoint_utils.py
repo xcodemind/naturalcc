@@ -182,7 +182,7 @@ def load_model_ensemble(filenames, arg_overrides=None, task=None, strict=True, s
         filenames (List[str]): checkpoint files to load
         arg_overrides (Dict[str,Any], optional): override model args that
             were used during model training
-        task (fairseq.tasks.FairseqTask, optional): task to use for loading
+        task (fairseq.tasks.NccTask, optional): task to use for loading
     """
     ensemble, args, _task = load_model_ensemble_and_task(
         filenames, arg_overrides, task, strict, suffix,

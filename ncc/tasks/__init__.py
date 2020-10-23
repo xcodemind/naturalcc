@@ -5,7 +5,7 @@
 
 import importlib
 import os
-from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks.ncc_task import NccTask
 
 TASK_REGISTRY = {}
 TASK_CLASS_NAMES = set()
@@ -23,12 +23,12 @@ def register_task(name):
     For example::
 
         @register_task('classification')
-        class ClassificationTask(FairseqTask):
+        class ClassificationTask(NccTask):
             (...)
 
     .. note::
 
-        All Tasks must implement the :class:`~fairseq.tasks.FairseqTask`
+        All Tasks must implement the :class:`~fairseq.tasks.NccTask`
         interface.
 
     Please see the
@@ -40,8 +40,8 @@ def register_task(name):
     def register_task_cls(cls):
         if name in TASK_REGISTRY:
             raise ValueError('Cannot register duplicate task ({})'.format(name))
-        if not issubclass(cls, FairseqTask):
-            raise ValueError('Task ({}: {}) must extend FairseqTask'.format(name, cls.__name__))
+        if not issubclass(cls, NccTask):
+            raise ValueError('Task ({}: {}) must extend NccTask'.format(name, cls.__name__))
         if cls.__name__ in TASK_CLASS_NAMES:
             raise ValueError('Cannot register task with duplicate class name ({})'.format(cls.__name__))
         TASK_REGISTRY[name] = cls

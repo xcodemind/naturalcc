@@ -11,7 +11,7 @@ from ncc.data.nested_dictionary_dataset import NestedDictionaryDataset
 from ncc.data.wrappers.numel_dataset import NumelDataset
 from ncc.data.num_samples_dataset import NumSamplesDataset
 from ncc.data.wrappers.pad_dataset import PadDataset
-from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 from ncc.utils import utils
 from ncc import LOGGER
@@ -104,7 +104,7 @@ def load_masked_code_dataset(args, epoch, data_path, split, source_dictionary, c
 
 
 @register_task('contracode_mlm')
-class ContraCodeMLM(FairseqTask):
+class ContraCodeMLM(NccTask):
     """Task for training masked language models (e.g., BERT, RoBERTa)."""
 
     def __init__(self, args, dictionary):

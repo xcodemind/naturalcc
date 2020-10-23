@@ -8,7 +8,7 @@ from collections import namedtuple
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
 from ncc.tasks.hi_transformer_summarization import load_codepair_dataset
-from ncc.tasks import FairseqTask
+from ncc.tasks import NccTask
 from ncc import tasks
 import torch
 from ncc.data.hi_code_pair_dataset import collate
@@ -42,20 +42,20 @@ if __name__ == '__main__':
     # tgt_dict = None
     combine = False
 
-    tgt_dict = FairseqTask.load_dictionary(os.path.join(data_path, 'dict.{}.txt'.format(args['task']['target_lang'])))
+    tgt_dict = NccTask.load_dictionary(os.path.join(data_path, 'dict.{}.txt'.format(args['task']['target_lang'])))
     # src_dict = {modality: None for modality in args['task']['source_lang']}
     # src_dicts = OrderedDict()
     if modality == 'path':  # special for path modality
-        dict_path_border = FairseqTask.load_dictionary(
+        dict_path_border = NccTask.load_dictionary(
             os.path.join(data_path, 'dict.{}_border.txt'.format(modality)))  # args['task']['source_lang']
-        dict_path_center = FairseqTask.load_dictionary(
+        dict_path_center = NccTask.load_dictionary(
             os.path.join(data_path, 'dict.{}_center.txt'.format(modality)))  # args['task']['source_lang']
         src_dict = [dict_path_border, dict_path_center]
         # assert src_dicts[modality][0].pad() == src_dicts[modality][1].pad() == tgt_dict.pad()
         # assert src_dicts[modality][0].eos() == src_dicts[modality][1].eos() == tgt_dict.eos()
         # assert src_dicts[modality][0].unk() == src_dicts[modality][1].unk() == tgt_dict.unk()
     else:
-        src_dict = FairseqTask.load_dictionary(
+        src_dict = NccTask.load_dictionary(
             os.path.join(data_path, 'dict.{}.txt'.format(modality)))  # args['task']['source_lang']
         # assert src_dicts[modality].pad() == tgt_dict.pad()
         # assert src_dicts[modality].eos() == tgt_dict.eos()

@@ -7,7 +7,7 @@ import json
 import itertools
 from argparse import Namespace
 from ncc import LOGGER
-from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 from ncc.utils import utils
 from ncc.data import encoders
@@ -130,7 +130,7 @@ def load_codepair_dataset(
 
 
 @register_task('hi_transformer_summarization')
-class HiTransformerSummarizationTask(FairseqTask):
+class HiTransformerSummarizationTask(NccTask):
     """Task for training masked language models (e.g., BERT, RoBERTa)."""
 
     def __init__(self, args, src_dict, tgt_dict):

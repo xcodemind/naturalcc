@@ -15,7 +15,7 @@ from ncc.data.fairseq_dataset import FairseqDataset
 from ncc.eval import search
 
 
-class FairseqTask(object):
+class NccTask(object):
     """
     Tasks store dictionaries and provide helpers for loading/iterating over
     Datasets, initializing the Model/Criterion and calculating the loss.
@@ -444,7 +444,7 @@ class FairseqTask(object):
     def reduce_metrics(self, logging_outputs, criterion):
         """Aggregate logging outputs from data parallel training."""
         # backward compatibility for tasks that override aggregate_logging_outputs
-        base_func = FairseqTask.aggregate_logging_outputs
+        base_func = NccTask.aggregate_logging_outputs
         self_func = getattr(self, "aggregate_logging_outputs").__func__
         if self_func is not base_func:
             utils.deprecation_warning(

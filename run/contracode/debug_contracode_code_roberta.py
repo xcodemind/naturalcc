@@ -6,7 +6,7 @@ import os
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
 from ncc.tasks.contracode_hybrid import load_augmented_code_dataset_hybrid
-from ncc.tasks import FairseqTask
+from ncc.tasks import NccTask
 from ncc import tasks
 import torch
 from ncc.data.contracode.contracode_dataset import collate

@@ -14,7 +14,7 @@ from ncc.data.num_samples_dataset import NumSamplesDataset
 from ncc.data.wrappers.pad_dataset import PadDataset
 from ncc.data.wrappers.sort_dataset import SortDataset
 from ncc.data.tools.token_block_dataset import TokenBlockDataset
-from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 from ncc.data.encoders.utils import get_whole_word_mask
 from ncc.utils import utils
@@ -94,7 +94,7 @@ def load_masked_code_dataset_roberta(args, epoch, data_path, split, source_dicti
 
 
 @register_task('masked_code_roberta')
-class MaskedCodeRobertaTask(FairseqTask):
+class MaskedCodeRobertaTask(NccTask):
     """Task for training masked language models (e.g., BERT, RoBERTa)."""
 
     def __init__(self, args, dictionary):

@@ -9,7 +9,7 @@ from collections import namedtuple
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
 from ncc.tasks.summarization import load_langpair_dataset
-from ncc.tasks import FairseqTask
+from ncc.tasks import NccTask
 from ncc import tasks
 import torch
 import torch.nn as nn
@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
     # Data
     data_path = os.path.expanduser('~/.ncc/python_wan/summarization/data-raw/python')
-    # src_dict = FairseqTask.load_dictionary(args['dataset']['srcdict'])
+    # src_dict = NccTask.load_dictionary(args['dataset']['srcdict'])
     src_dict = task.source_dictionary
     tgt_dict = task.target_dictionary
 

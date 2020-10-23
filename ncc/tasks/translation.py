@@ -10,7 +10,7 @@ import os
 import numpy as np
 from ncc.logging import metrics
 from ncc import LOGGER
-from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 from ncc.utils import utils
 from ncc.data import encoders
@@ -128,7 +128,7 @@ def load_langpair_dataset(
 
 
 @register_task('translation')
-class TranslationTask(FairseqTask):
+class TranslationTask(NccTask):
     """
     Translate from one (source) language to another (target) language.
 

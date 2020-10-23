@@ -23,7 +23,7 @@ from collections import namedtuple
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
 from ncc.tasks.mm_summarization import load_multimodalpair_dataset
-from ncc.tasks import FairseqTask
+from ncc.tasks import NccTask
 from collections import OrderedDict
 from ncc.utils import utils
 from ncc import tasks
@@ -53,21 +53,21 @@ if __name__ == '__main__':
     # tgt_dict = None
     combine = False
 
-    tgt_dict = FairseqTask.load_dictionary(os.path.join(data_path, 'dict.{}.txt'.format(args['task']['target_lang'])))
+    tgt_dict = NccTask.load_dictionary(os.path.join(data_path, 'dict.{}.txt'.format(args['task']['target_lang'])))
     # src_dict = {modality: None for modality in args['task']['source_lang']}
     src_dicts = OrderedDict()
     for modality in args['task']['source_lang']:
         if modality == 'path':  # special for path modality
-            dict_path_border = FairseqTask.load_dictionary(
+            dict_path_border = NccTask.load_dictionary(
                 os.path.join(data_path, 'dict.{}_border.txt'.format(modality)))  # args['task']['source_lang']
-            dict_path_center = FairseqTask.load_dictionary(
+            dict_path_center = NccTask.load_dictionary(
                 os.path.join(data_path, 'dict.{}_center.txt'.format(modality)))  # args['task']['source_lang']
             src_dicts[modality] = [dict_path_border, dict_path_center]
             # assert src_dicts[modality][0].pad() == src_dicts[modality][1].pad() == tgt_dict.pad()
             # assert src_dicts[modality][0].eos() == src_dicts[modality][1].eos() == tgt_dict.eos()
             # assert src_dicts[modality][0].unk() == src_dicts[modality][1].unk() == tgt_dict.unk()
         else:
-            src_dicts[modality] = FairseqTask.load_dictionary(
+            src_dicts[modality] = NccTask.load_dictionary(
                 os.path.join(data_path, 'dict.{}.txt'.format(modality)))  # args['task']['source_lang']
             # assert src_dicts[modality].pad() == tgt_dict.pad()
             # assert src_dicts[modality].eos() == tgt_dict.eos()

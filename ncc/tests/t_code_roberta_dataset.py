@@ -8,7 +8,7 @@ from collections import namedtuple
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
 from ncc.tasks.masked_code_roberta import load_masked_code_dataset_roberta
-from ncc.tasks import FairseqTask
+from ncc.tasks import NccTask
 from ncc import tasks
 import torch
 # from ncc.data.codebert.mask_tokens_dataset import collate
@@ -79,9 +79,9 @@ if __name__ == '__main__':
     # tgt_dict = None
     # combine = True
 
-    # src_dict = FairseqTask.load_dictionary(args['dataset']['srcdict'])
+    # src_dict = NccTask.load_dictionary(args['dataset']['srcdict'])
     src_dict = task.source_dictionary
-    # src_dict = FairseqTask.load_dictionary(
+    # src_dict = NccTask.load_dictionary(
     #     os.path.join(data_path, 'dict.{}.txt'.format(args['task']['source_lang'])))  # args['task']['source_lang']
 
     # src_dict.add_symbol(constants.S_SEP)

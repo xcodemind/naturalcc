@@ -16,7 +16,7 @@ from ncc.data.wrappers.pad_dataset import PadDataset
 from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
 from ncc.data.wrappers.sort_dataset import SortDataset
 from ncc.data.tools.token_block_dataset import TokenBlockDataset
-from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 from ncc.data.encoders.utils import get_whole_word_mask
 from ncc.utils import utils
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 @register_task('masked_lm_huggingface')
-class HuggingFaceMaskedLMTask(FairseqTask):
+class HuggingFaceMaskedLMTask(NccTask):
     """Task for training masked language models (e.g., BERT, RoBERTa)."""
 
     # @staticmethod

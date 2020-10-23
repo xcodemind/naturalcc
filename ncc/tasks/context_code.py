@@ -1,12 +1,12 @@
 import os
 
 from ncc.data.summarization.language_pair_dataset import LanguagePairDataset
-from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 
 
 @register_task('context_code')
-class ContextCodeTask(FairseqTask):
+class ContextCodeTask(NccTask):
 
     @staticmethod
     def add_args(parser):

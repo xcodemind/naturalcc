@@ -13,7 +13,7 @@ from ncc.logging import metrics
 from ncc.data.tools import data_utils
 from ncc.data.dictionary import Dictionary
 from ncc.tasks import register_task
-from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks.ncc_task import NccTask
 from ncc.utils.tokenizer import tokenize_string
 from ncc.data.retrieval.retrieval_dataset import RetrievalDataset
 
@@ -41,7 +41,7 @@ def load_tokens_dataset(data_path, split, src, src_dict, tgt, tgt_dict, dataset_
 
 
 @register_task('retrieval')
-class RetrievalTask(FairseqTask):
+class RetrievalTask(NccTask):
     """
     Task for code retrieval models (e.g., code and docstring).
     A simple implementation. Only consider (single modality) code-comment retrieval task.

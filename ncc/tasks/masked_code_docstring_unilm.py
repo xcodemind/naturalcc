@@ -11,7 +11,7 @@ from ncc.data.wrappers.numel_dataset import NumelDataset
 from ncc.data.wrappers.pad_dataset import PadDataset
 from ncc.data.wrappers.sort_dataset import SortDataset
 from ncc.data.tools.token_block_dataset import TokenBlockDataset
-from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 from ncc.utils import utils
 from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
@@ -59,7 +59,7 @@ def load_masked_code_docstring_dataset_unilm(
 
 
 @register_task('masked_code_docstring_unilm')
-class MaskedCodeDocstringUnilmTask(FairseqTask):
+class MaskedCodeDocstringUnilmTask(NccTask):
     """Task for training masked language models (e.g., BERT, RoBERTa)."""
 
     def __init__(self, args, src_dict, tgt_dict):

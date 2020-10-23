@@ -5,7 +5,7 @@
 
 import os
 from ncc.data.tools import data_utils
-from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 from ncc.utils import utils
 from ncc import LOGGER
@@ -142,7 +142,7 @@ def load_augmented_code_dataset_hybrid(args, epoch, data_path, split, source_dic
 
 
 @register_task('contracode_hybrid')
-class ContraCodeHybrid(FairseqTask):
+class ContraCodeHybrid(NccTask):
     """Task for training masked language models (e.g., BERT, RoBERTa)."""
 
     def __init__(self, args, dictionary):

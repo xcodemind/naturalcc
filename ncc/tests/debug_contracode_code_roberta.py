@@ -8,7 +8,7 @@ from collections import namedtuple
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
 from ncc.tasks.contracode_mlm import load_masked_code_dataset
-from ncc.tasks import FairseqTask
+from ncc.tasks import NccTask
 from ncc import tasks
 import torch
 from ncc.data.contracode.contracode_dataset import collate
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     # sp = task.sp
     # src_dict = task.load_dictionary(os.path.join(data_path, 'csnjs_8k_9995p_unigram_url.dict.txt'))
 
-    # src_dict = FairseqTask.load_dictionary(
+    # src_dict = NccTask.load_dictionary(
     #     os.path.join(data_path, 'dict.{}.txt'.format(args['task']['source_lang'])))  # args['task']['source_lang']
 
     # src_dict.add_symbol(constants.S_SEP)

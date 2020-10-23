@@ -8,7 +8,7 @@ from collections import namedtuple
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
 from ncc.tasks.retrieval import load_tokens_dataset
-from ncc.tasks import FairseqTask
+from ncc.tasks import NccTask
 from ncc import tasks
 import torch
 from ncc.data.retrieval.retrieval_dataset import collate
@@ -48,11 +48,11 @@ if __name__ == '__main__':
     # tgt_dict = None
     combine = False
 
-    # tgt_dict = FairseqTask.load_dictionary(os.path.join(data_path, 'dict.{}.txt'.format(args['task']['target_lang'])))
+    # tgt_dict = NccTask.load_dictionary(os.path.join(data_path, 'dict.{}.txt'.format(args['task']['target_lang'])))
 
-    src_dict = FairseqTask.load_dictionary(
+    src_dict = NccTask.load_dictionary(
         os.path.join(data_path, '{}.dict.json'.format(args['task']['source_lang'])))  # args['task']['source_lang']
-    tgt_dict = FairseqTask.load_dictionary(
+    tgt_dict = NccTask.load_dictionary(
         os.path.join(data_path, '{}.dict.json'.format(args['task']['target_lang'])))  # args['task']['source_lang']
 
     # dataset = load_tokens_dataset(data_path, split, args['task']['source_lang'], src_dict,

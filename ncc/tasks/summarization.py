@@ -11,7 +11,7 @@ from ncc.logging import metrics
 import itertools
 from ncc import LOGGER
 from ncc.data.dictionary import Dictionary
-from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 from ncc.utils import utils
 from ncc.data import encoders
@@ -129,7 +129,7 @@ def load_langpair_dataset(
 
 
 @register_task('summarization')
-class SummarizationTask(FairseqTask):
+class SummarizationTask(NccTask):
     def __init__(self, args, src_dict, tgt_dict):
         super().__init__(args)
         self.src_dict = src_dict

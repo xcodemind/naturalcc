@@ -10,7 +10,7 @@ from ncc import LOGGER
 from ncc.data.dictionary import Dictionary
 from ncc.data.dictionary import Dictionary_Source
 from ncc.data.dictionary import Dictionary_Target
-from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 from ncc.utils import utils
 from ncc.data.tools import data_utils
@@ -47,7 +47,7 @@ def load_codetype_dataset(
 
 
 @register_task('type_prediction')
-class TypePredictionTask(FairseqTask):
+class TypePredictionTask(NccTask):
     def __init__(self, args, src_dict, tgt_dict):
         super().__init__(args)
         self.src_dict = src_dict

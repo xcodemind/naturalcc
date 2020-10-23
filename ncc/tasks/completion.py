@@ -8,7 +8,7 @@ from ncc import LOGGER
 import torch
 import numpy as np
 from ncc.logging import metrics
-from ncc.tasks.fairseq_task import FairseqTask
+from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 from ncc.utils import utils
 from ncc.data.tools import data_utils
@@ -53,7 +53,7 @@ def load_path_dataset():
 
 
 @register_task('completion')
-class CompletionTask(FairseqTask):
+class CompletionTask(NccTask):
     """Task for training masked language models (e.g., BERT, RoBERTa)."""
 
     def __init__(self, args, dictionary):
