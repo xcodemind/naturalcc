@@ -6,12 +6,12 @@
 import numpy as np
 import torch
 
-# from fairseq.data import FairseqDataset, plasma_utils
-from ncc.data.fairseq_dataset import FairseqDataset
+# from fairseq.data import NccDataset, plasma_utils
+from ncc.data.ncc_dataset import NccDataset
 from ncc.data.tools import plasma_utils
 
 
-class TokenBlockDataset(FairseqDataset):
+class TokenBlockDataset(NccDataset):
     """Break a Dataset of tokens into blocks.
 
     Args:

@@ -7,7 +7,7 @@ import logging
 import numpy as np
 import torch
 from ncc.data.tools import data_utils
-from ncc.data.fairseq_dataset import FairseqDataset
+from ncc.data.ncc_dataset import NccDataset
 from dataset.csn import PATH_NUM
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ def collate(
     return batch
 
 
-class PathDataset(FairseqDataset):
+class PathDataset(NccDataset):
     """
     A pair of torch.utils.data.Datasets.
 

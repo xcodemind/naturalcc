@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from ncc.utils import utils
 from ncc.data.tools import data_utils
-from ncc.data.fairseq_dataset import FairseqDataset
+from ncc.data.ncc_dataset import NccDataset
 
 
 def collate(
@@ -95,7 +95,7 @@ def collate(
     return batch
 
 
-class UniversalDataset(FairseqDataset):
+class UniversalDataset(NccDataset):
     """
     A pair of torch.utils.data.Datasets.
 

@@ -256,7 +256,7 @@ def filter_by_size(indices, dataset, max_positions, raise_exception=False):
 
     Args:
         indices (List[int]): ordered list of dataset indices
-        dataset (FairseqDataset): fairseq dataset instance
+        dataset (NccDataset): fairseq dataset instance
         max_positions (tuple): filter elements larger than this size.
             Comparisons are done component-wise.
         raise_exception (bool, optional): if ``True``, raise an exception if

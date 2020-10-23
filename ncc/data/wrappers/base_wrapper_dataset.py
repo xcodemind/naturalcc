@@ -5,10 +5,10 @@
 
 from torch.utils.data.dataloader import default_collate
 
-from ncc.data.fairseq_dataset import FairseqDataset
+from ncc.data.ncc_dataset import NccDataset
 
 
-class BaseWrapperDataset(FairseqDataset):
+class BaseWrapperDataset(NccDataset):
 
     def __init__(self, dataset):
         super().__init__()

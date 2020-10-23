@@ -3,10 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from .fairseq_dataset import FairseqDataset
+from .ncc_dataset import NccDataset
 
 
-class NumSamplesDataset(FairseqDataset):
+class NumSamplesDataset(NccDataset):
 
     def __getitem__(self, index):
         return 1

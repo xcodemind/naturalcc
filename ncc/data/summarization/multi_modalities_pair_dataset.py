@@ -10,7 +10,7 @@ import random
 from ncc import LOGGER
 from collections import OrderedDict
 from ncc.data.tools import data_utils
-from ncc.data.fairseq_dataset import FairseqDataset
+from ncc.data.ncc_dataset import NccDataset
 from dataset.csn import PATH_NUM
 
 
@@ -87,7 +87,7 @@ def collate(
     return batch
 
 
-class MultiModalitiesPairDataset(FairseqDataset):
+class MultiModalitiesPairDataset(NccDataset):
     """
     A pair of torch.utils.data.Datasets.
 

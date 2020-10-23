@@ -8,10 +8,10 @@ import bisect
 import numpy as np
 from torch.utils.data.dataloader import default_collate
 
-from .fairseq_dataset import FairseqDataset
+from .ncc_dataset import NccDataset
 
 
-class ConcatDataset(FairseqDataset):
+class ConcatDataset(NccDataset):
     @staticmethod
     def cumsum(sequence, sample_ratios):
         r, s = [], 0

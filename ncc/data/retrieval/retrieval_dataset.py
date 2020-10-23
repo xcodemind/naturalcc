@@ -8,7 +8,7 @@
 import torch
 import numpy as np
 from random import randint
-from ncc.data.fairseq_dataset import FairseqDataset
+from ncc.data.ncc_dataset import NccDataset
 from ncc.data.tools import data_utils
 
 
@@ -43,7 +43,7 @@ def collate(samples, pad_idx):
     }
 
 
-class RetrievalDataset(FairseqDataset):
+class RetrievalDataset(NccDataset):
     """
     A pair of torch.utils.data.Datasets.
 

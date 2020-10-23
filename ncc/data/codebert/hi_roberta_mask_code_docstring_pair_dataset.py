@@ -11,7 +11,7 @@ from random import randint, shuffle, choice
 import random
 import torch
 from ncc.data.tools import data_utils
-from ncc.data.fairseq_dataset import FairseqDataset
+from ncc.data.ncc_dataset import NccDataset
 from ncc.data import constants
 from ncc.data.tools.truncate import truncate_seq
 from ncc import LOGGER
@@ -105,7 +105,7 @@ def collate(samples, src_dict, tgt_dict, left_pad_source=True, left_pad_target=F
     return example
 
 
-class HiRobertaMaskCodeDocstringPairDataset(FairseqDataset):
+class HiRobertaMaskCodeDocstringPairDataset(NccDataset):
     """
     A pair of torch.utils.data.Datasets.
 

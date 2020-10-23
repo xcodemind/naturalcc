@@ -5,10 +5,10 @@
 
 import torch
 
-from .fairseq_dataset import FairseqDataset
+from .ncc_dataset import NccDataset
 
 
-class IdDataset(FairseqDataset):
+class IdDataset(NccDataset):
 
     def __getitem__(self, index):
         return index

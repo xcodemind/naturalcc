@@ -224,7 +224,7 @@ class TansformerSummarizationTask(NccTask):
 
         Args:
             sample (dict): the mini-batch. The format is defined by the
-                :class:`~fairseq.data.FairseqDataset`.
+                :class:`~fairseq.data.NccDataset`.
             model (~fairseq.models.BaseNccModel): the model
             criterion (~fairseq.criterions.NccCriterion): the criterion
             optimizer (~fairseq.optim.NccOptimizer): the optimizer

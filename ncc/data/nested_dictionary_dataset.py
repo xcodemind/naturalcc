@@ -8,7 +8,7 @@ from collections import OrderedDict
 import torch
 from torch.utils.data.dataloader import default_collate
 
-from .fairseq_dataset import FairseqDataset
+from .ncc_dataset import NccDataset
 
 
 def _flatten(dico, prefix=None):
@@ -44,7 +44,7 @@ def _unflatten(dico):
     return new_dico
 
 
-class NestedDictionaryDataset(FairseqDataset):
+class NestedDictionaryDataset(NccDataset):
 
     def __init__(self, defn, sizes=None):
         super().__init__()
@@ -53,7 +53,7 @@ class NestedDictionaryDataset(FairseqDataset):
 
         first = None
         for v in self.defn.values():
-            if not isinstance(v, (FairseqDataset, torch.utils.data.Dataset, )):
+            if not isinstance(v, (NccDataset, torch.utils.data.Dataset, )):
                 raise ValueError('Expected Dataset but found: {}'.format(v.__class__))
             first = first or v
             if len(v) > 0:

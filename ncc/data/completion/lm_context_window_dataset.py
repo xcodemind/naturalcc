@@ -8,10 +8,10 @@ import torch
 
 from ncc.data.completion.monolingual_dataset import MonolingualDataset
 
-from ncc.data.fairseq_dataset import FairseqDataset
+from ncc.data.ncc_dataset import NccDataset
 
 
-class LMContextWindowDataset(FairseqDataset):
+class LMContextWindowDataset(NccDataset):
     """Wraps a MonolingualDataset and provides more context for evaluation."""
 
     def __init__(self, dataset, tokens_per_sample, context_window, pad_idx):

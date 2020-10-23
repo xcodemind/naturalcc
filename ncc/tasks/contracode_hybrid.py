@@ -13,7 +13,7 @@ from ncc.data import constants
 from ncc.data.contracode.contracode_dataset import ContraCodeDataset
 from ncc.data.dictionary import Dictionary
 from ncc.data.dictionary import Dictionary_Source
-from ncc.data.fairseq_dataset import FairseqDataset
+from ncc.data.ncc_dataset import NccDataset
 import ujson
 from functools import lru_cache
 import sentencepiece as spm
@@ -33,7 +33,7 @@ def normalize_program(fn: str):
     return fn
 
 
-class IndexedJavascriptAugmentedDataset(FairseqDataset):
+class IndexedJavascriptAugmentedDataset(NccDataset):
     def __init__(self, path, dictionary, sp, append_eos=False, reverse_order=False):
         self.examples_list = []
         self.lines = []

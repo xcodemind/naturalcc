@@ -5,7 +5,7 @@
 
 import numpy as np
 from ncc.data.tools import data_utils
-from ncc.data.fairseq_dataset import FairseqDataset
+from ncc.data.ncc_dataset import NccDataset
 import jsbeautifier
 from dataset.augmented_javascript.utils.util import normalize_program
 import torch
@@ -146,7 +146,7 @@ def _tokenize(js_tokens, labels, sp, tgt_dict, max_length, split_source_targets_
     return js_beautified, subword_ids, label_segments
 
 
-class CodeTypeDataset(FairseqDataset):
+class CodeTypeDataset(NccDataset):
     """
     A pair of torch.utils.data.Datasets.
 

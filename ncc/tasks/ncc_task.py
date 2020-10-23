@@ -11,7 +11,7 @@ from ncc.logging import metrics
 from ncc.data.tools import data_utils
 from ncc.data import iterators
 from ncc.data.dictionary import Dictionary
-from ncc.data.fairseq_dataset import FairseqDataset
+from ncc.data.ncc_dataset import NccDataset
 from ncc.eval import search
 
 
@@ -101,14 +101,14 @@ class NccTask(object):
             split (str): name of the split (e.g., train, valid, test)
 
         Returns:
-            a :class:`~fairseq.data.FairseqDataset` corresponding to *split*
+            a :class:`~fairseq.data.NccDataset` corresponding to *split*
         """
-        # from ncc.data.fairseq_dataset import FairseqDataset
+        # from ncc.data.fairseq_dataset import NccDataset
 
         if split not in self.datasets:
             raise KeyError("Dataset not loaded: " + split)
-        if not isinstance(self.datasets[split], FairseqDataset):
-            raise TypeError("Datasets are expected to be of type FairseqDataset")
+        if not isinstance(self.datasets[split], NccDataset):
+            raise TypeError("Datasets are expected to be of type NccDataset")
         return self.datasets[split]
 
     def get_batch_iterator(
@@ -129,7 +129,7 @@ class NccTask(object):
         Get an iterator that yields batches of data from the given dataset.
 
         Args:
-            dataset (~fairseq.data.FairseqDataset): dataset to batch
+            dataset (~fairseq.data.NccDataset): dataset to batch
             max_tokens (int, optional): max number of tokens in each batch
                 (default: None).
             max_sentences (int, optional): max number of sentences in each
@@ -160,7 +160,7 @@ class NccTask(object):
         # setting.
         if dataset in self.dataset_to_epoch_iter:
             return self.dataset_to_epoch_iter[dataset]
-        assert isinstance(dataset, FairseqDataset)
+        assert isinstance(dataset, NccDataset)
 
         # initialize the dataset with the correct starting epoch
         dataset.set_epoch(epoch)
@@ -395,7 +395,7 @@ class NccTask(object):
 
         Args:
             sample (dict): the mini-batch. The format is defined by the
-                :class:`~fairseq.data.FairseqDataset`.
+                :class:`~fairseq.data.NccDataset`.
             model (~fairseq.models.BaseNccModel): the model
             criterion (~fairseq.criterions.NccCriterion): the criterion
             optimizer (~fairseq.optim.NccOptimizer): the optimizer

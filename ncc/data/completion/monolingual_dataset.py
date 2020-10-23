@@ -6,7 +6,7 @@
 import numpy as np
 import torch
 from ncc.data.tools import data_utils
-from ncc.data.fairseq_dataset import FairseqDataset
+from ncc.data.ncc_dataset import NccDataset
 
 
 def collate(samples, pad_idx, eos_idx):
@@ -47,7 +47,7 @@ def collate(samples, pad_idx, eos_idx):
     }
 
 
-class MonolingualDataset(FairseqDataset):
+class MonolingualDataset(NccDataset):
     """
     A wrapper around torch.utils.data.Dataset for monolingual data.
 

@@ -9,7 +9,7 @@ import shutil
 import struct
 import numpy as np
 import torch
-from .fairseq_dataset import FairseqDataset
+from .ncc_dataset import NccDataset
 import ujson
 from ncc.utils import tokenizer
 import json
@@ -143,7 +143,7 @@ def data_file_path(prefix_path):
     return prefix_path + '.mmap'
 
 
-class IndexedDataset(FairseqDataset):
+class IndexedDataset(NccDataset):
     """Loader for TorchNet IndexedDataset"""
     _HDR_MAGIC = b'TNTIDX\x00\x00'
 
@@ -263,7 +263,7 @@ class IndexedCachedDataset(IndexedDataset):
         return item
 
 
-class IndexedRawTextDataset(FairseqDataset):
+class IndexedRawTextDataset(NccDataset):
     """Takes a text file as input and binarizes it in memory at instantiation.
     Original lines are also kept in memory"""
 
@@ -318,7 +318,7 @@ class IndexedRawTextDataset(FairseqDataset):
         return os.path.exists(path)
 
 
-class IndexedRawASTDataset(FairseqDataset):
+class IndexedRawASTDataset(NccDataset):
     """Takes a text file as input and binarizes it in memory at instantiation.
     Original lines are also kept in memory"""
 
@@ -368,7 +368,7 @@ class IndexedRawASTDataset(FairseqDataset):
         return os.path.exists(path)
 
 
-class IndexedRawNodeIdDataset(FairseqDataset):
+class IndexedRawNodeIdDataset(NccDataset):
     """Takes a text file as input and binarizes it in memory at instantiation.
     Original lines are also kept in memory"""
 
@@ -424,7 +424,7 @@ class IndexedRawNodeIdDataset(FairseqDataset):
         return os.path.exists(path)
 
 
-class IndexedDFSASTDataset(FairseqDataset):
+class IndexedDFSASTDataset(NccDataset):
     """Takes a text file as input and binarizes it in memory at instantiation.
     Original lines are also kept in memory"""
 
@@ -483,7 +483,7 @@ class IndexedDFSASTDataset(FairseqDataset):
         return os.path.exists(path)
 
 
-class IndexedRawPathDataset(FairseqDataset):
+class IndexedRawPathDataset(NccDataset):
     """Takes a text file as input and binarizes it in memory at instantiation.
     Original lines are also kept in memory"""
     PATH_LENGTH = PATH_NUM * 3
@@ -535,7 +535,7 @@ class IndexedRawPathDataset(FairseqDataset):
         return os.path.exists(path)
 
 
-class IndexedTokenDataset(FairseqDataset):
+class IndexedTokenDataset(NccDataset):
     def __init__(self, path, dictionary, append_eos=True, reverse_order=False):
         self.tokens_list = []
         self.lines = []
@@ -588,7 +588,7 @@ class IndexedTokenDataset(FairseqDataset):
         return os.path.exists(path)
 
 
-class IndexedJavascriptDataset(FairseqDataset):
+class IndexedJavascriptDataset(NccDataset):
     def __init__(self, path, dictionary, append_eos=False, reverse_order=False):
         self.examples_list = []
         self.lines = []
@@ -643,7 +643,7 @@ class IndexedJavascriptDataset(FairseqDataset):
         return os.path.exists(path)
 
 # Has been moved to tasks/contracode_hybrid.py
-# class IndexedJavascriptAugmentedDataset(FairseqDataset):
+# class IndexedJavascriptAugmentedDataset(NccDataset):
 #     def __init__(self, path, dictionary, append_eos=False, reverse_order=False):
 #         self.examples_list = []
 #         self.lines = []
@@ -699,7 +699,7 @@ class IndexedJavascriptDataset(FairseqDataset):
 #         return os.path.exists(path)
 #
 
-class IndexedCodeDataset(FairseqDataset):
+class IndexedCodeDataset(NccDataset):
     def __init__(self, path, dictionary, append_eos=False, reverse_order=False):
         self.examples_list = []
         self.lines = []
@@ -761,7 +761,7 @@ class IndexedCodeDataset(FairseqDataset):
         return os.path.exists(path)
 
 
-class IndexedTypeDataset(FairseqDataset):
+class IndexedTypeDataset(NccDataset):
     def __init__(self, path, dictionary, append_eos=False, reverse_order=False):
         self.examples_list = []
         self.lines = []
@@ -809,7 +809,7 @@ class IndexedTypeDataset(FairseqDataset):
         return os.path.exists(path)
 
 
-class BertDataset(FairseqDataset):
+class BertDataset(NccDataset):
     def __init__(self, path, dictionary, tokenizer):
         self.tokens_list = []
         self.lines = []

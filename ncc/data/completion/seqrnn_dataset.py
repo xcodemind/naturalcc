@@ -5,7 +5,7 @@
 
 import numpy as np
 from ncc.data.tools import data_utils
-from ncc.data.fairseq_dataset import FairseqDataset
+from ncc.data.ncc_dataset import NccDataset
 
 
 def collate(samples, pad_idx):
@@ -47,7 +47,7 @@ def collate(samples, pad_idx):
     return batch
 
 
-class SeqRNNDataset(FairseqDataset):
+class SeqRNNDataset(NccDataset):
     """
     A pair of torch.utils.data.Datasets.
 

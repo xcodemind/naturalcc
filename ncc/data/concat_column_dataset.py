@@ -10,13 +10,13 @@ from random import randint, shuffle, choice
 # from random import random as rand
 import random
 import torch
-from ncc.data.fairseq_dataset import FairseqDataset
+from ncc.data.ncc_dataset import NccDataset
 from ncc.data import constants
 from ncc import LOGGER
 import sys
 
 
-class ConcatColumnDataset(FairseqDataset):
+class ConcatColumnDataset(NccDataset):
 
     def __init__(
         self, datasets,

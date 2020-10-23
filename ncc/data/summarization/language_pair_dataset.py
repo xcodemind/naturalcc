@@ -5,7 +5,7 @@
 import numpy as np
 import torch
 from ncc.data.tools import data_utils
-from ncc.data.fairseq_dataset import FairseqDataset
+from ncc.data.ncc_dataset import NccDataset
 from ncc import LOGGER
 
 
@@ -113,7 +113,7 @@ def collate(
     return batch
 
 
-class LanguagePairDataset(FairseqDataset):
+class LanguagePairDataset(NccDataset):
     """
     A pair of torch.utils.data.Datasets.
 

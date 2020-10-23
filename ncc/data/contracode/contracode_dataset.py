@@ -5,7 +5,7 @@
 
 import numpy as np
 import torch
-from ncc.data.fairseq_dataset import FairseqDataset
+from ncc.data.ncc_dataset import NccDataset
 from torch.nn.utils.rnn import pad_sequence
 
 def mask_mlm(seq, pad_id, mask_id, vocab_start_range, vocab_end_range):
@@ -81,7 +81,7 @@ def collate(samples, src_dict,  program_mode='contrastive', left_pad_source=True
     return example
 
 
-class ContraCodeDataset(FairseqDataset):
+class ContraCodeDataset(NccDataset):
     """
     A pair of torch.utils.data.Datasets.
 

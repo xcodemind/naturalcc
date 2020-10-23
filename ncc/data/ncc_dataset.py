@@ -15,7 +15,7 @@ class EpochListening:
         pass
 
 
-class FairseqDataset(torch.utils.data.Dataset, EpochListening):
+class NccDataset(torch.utils.data.Dataset, EpochListening):
     """A dataset that provides helpers for batching."""
 
     def __getitem__(self, index):
@@ -63,7 +63,7 @@ class FairseqDataset(torch.utils.data.Dataset, EpochListening):
         raise NotImplementedError
 
 
-class FairseqIterableDataset(torch.utils.data.IterableDataset, EpochListening):
+class NccIterableDataset(torch.utils.data.IterableDataset, EpochListening):
     """For datasets that need to be read sequentially, usually because the data
     is being streamed or otherwise can't be manipulated on a single machine.
     """
