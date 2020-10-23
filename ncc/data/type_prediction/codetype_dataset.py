@@ -11,6 +11,7 @@ from dataset.augmented_javascript.utils.util import normalize_program
 import torch
 
 TYPED_MARKER_START = "__LS__"
+TYPED_MARKER_MID = "__LM__"
 TYPED_MARKER_END = "__LE__"
 
 
@@ -65,6 +66,7 @@ def _tokenize(js_tokens, labels, sp, tgt_dict, max_length, split_source_targets_
         List of subword IDs
         List of (label_id, label_start, label_end) tuples where label_start/end specify a range of subword IDs"""
     assert TYPED_MARKER_START not in js_tokens
+    assert TYPED_MARKER_MID not in js_tokens
     assert TYPED_MARKER_END not in js_tokens
     cap_length = max_length != -1
     #
@@ -95,7 +97,7 @@ def _tokenize(js_tokens, labels, sp, tgt_dict, max_length, split_source_targets_
     # Normalize program by beautifying
     js_beautified = jsbeautifier.beautify(" ".join(js_tokens_with_markers))
     js_beautified_norm = normalize_program(js_beautified)
-    js_beautified_norm = js_beautified_norm
+    # js_beautified_norm = js_beautified_norm
 
     # Subword tokenize, separately tokenizing each marked identifier
     js_buffer = js_beautified_norm
@@ -136,7 +138,7 @@ def _tokenize(js_tokens, labels, sp, tgt_dict, max_length, split_source_targets_
         start = js_buffer.find(TYPED_MARKER_START, start + 1)
         last_identifier_end = end + len(TYPED_MARKER_END)
         label_i += 1
-
+        # print('len(subword_ids): ', len(subword_ids))
     subword_ids.append(sp.PieceToId("</s>"))
     assert subword_ids[0] == sp.PieceToId("<s>")
     assert subword_ids[-1] == sp.PieceToId("</s>")
@@ -277,3 +279,12 @@ class CodeTypeDataset(FairseqDataset):
         """Return an example's size as a float or tuple. This value is used when
         filtering a dataset with ``--max-positions``."""
         return self.src_sizes[index]
+
+    def ordered_indices(self):
+        """Return an ordered list of indices. Batches will be constructed based
+        on this order."""
+        if self.shuffle:
+            indices = np.random.permutation(len(self))
+        else:
+            indices = np.arange(len(self))
+        return indices#[np.argsort(self.src_sizes[indices], kind='mergesort')] # TODO: debug

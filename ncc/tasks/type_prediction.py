@@ -8,6 +8,8 @@ import numpy as np
 from ncc.logging import metrics
 from ncc import LOGGER
 from ncc.data.dictionary import Dictionary
+from ncc.data.dictionary import Dictionary_Source
+from ncc.data.dictionary import Dictionary_Target
 from ncc.tasks.fairseq_task import FairseqTask
 from ncc.tasks import register_task
 from ncc.utils import utils
@@ -27,18 +29,19 @@ def load_codetype_dataset(
     combine, dataset_impl,
     # upsample_primary,
     # left_pad_source, left_pad_target, max_source_positions,
+    max_source_positions,
     # max_target_positions, prepend_bos=False, load_alignments=False,
     # truncate_source=False, append_source_id=False,
     # append_eos_to_target=False,
 ):
-    src_data_path = os.path.join(data_path, '{}.code'.format(split))
+    src_data_path = os.path.join(data_path, '{}.{}'.format(split, src))
     src_dataset = data_utils.load_indexed_dataset(src_data_path, 'codetype_code', src_dict, dataset_impl)
 
-    tgt_data_path = os.path.join(data_path, '{}.type'.format(split))
+    tgt_data_path = os.path.join(data_path, '{}.{}'.format(split, tgt))
     tgt_dataset = data_utils.load_indexed_dataset(tgt_data_path, 'codetype_type', tgt_dict, dataset_impl)
 
     return CodeTypeDataset(
-        src_dataset, src_dataset.sizes, src_dict, tgt_dataset, tgt_dict, sp,
+        src_dataset, src_dataset.sizes, src_dict, tgt_dataset, tgt_dict, sp, max_source_positions=max_source_positions, shuffle=False,
         # max_target_positions=max_target_positions,
     )
 
@@ -78,11 +81,11 @@ class TypePredictionTask(FairseqTask):
         assert len(paths) > 0
         # load dictionaries
         # src_dict = cls.load_dictionary(os.path.join(paths[0], 'csnjs_8k_9995p_unigram_url.dict.txt'))
-        src_dict = Dictionary(
+        src_dict = Dictionary_Source(
                 extra_special_symbols=[constants.CLS, constants.SEP, constants.MASK,
                                        constants.EOL, constants.URL])
         src_dict.add_from_file(args['dataset']['srcdict'])
-        tgt_dict = Dictionary.load(args['dataset']['tgtdict'])
+        tgt_dict = Dictionary_Target.load(args['dataset']['tgtdict'])
 
         # src_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.txt'.format(args['task']['source_lang'])))
         # tgt_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.txt'.format(args['task']['target_lang'])))
@@ -144,7 +147,7 @@ class TypePredictionTask(FairseqTask):
             # upsample_primary=self.args['task']['upsample_primary'],
             # left_pad_source=self.args['task']['left_pad_source'],
             # left_pad_target=self.args['task']['left_pad_target'],
-            # max_source_positions=self.args['task']['max_source_positions'],
+            max_source_positions=self.args['task']['max_source_positions'],
             # max_target_positions=self.args['task']['max_target_positions'],
             # load_alignments=self.args['task']['load_alignments'],
             # truncate_source=self.args['task']['truncate_source'],
@@ -192,6 +195,7 @@ class TypePredictionTask(FairseqTask):
             loss *= 0
         optimizer.backward(loss)
         return loss, sample_size, logging_output
+
 
     def valid_step(self, sample, model, criterion):
         loss, sample_size, logging_output = super().valid_step(sample, model, criterion)

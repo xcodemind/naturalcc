@@ -40,40 +40,53 @@ class TypePredictionCrossEntropyCriterion(FairseqCriterion):
         return loss, sample_size, logging_output
 
     def compute_loss(self, model, net_output, sample, reduce=True):
-        lprobs = model.get_normalized_probs(net_output, log_probs=True)
-        lprobs = lprobs.view(-1, lprobs.size(-1))
-        target = model.get_targets(sample, net_output).view(-1)
-        # loss = F.nll_loss(
-        #     lprobs,
-        #     target,
-        #     ignore_index=self.task.target_dictionary.index('O'),#self.padding_idx,
-        #     reduction='sum' if reduce else 'none',
-        # )
+        logits = net_output[0]
+        target = model.get_targets(sample, net_output)#.view(-1)
         no_type_id = self.task.target_dictionary.index('O')
-        ignore_any_loss = False
-        if ignore_any_loss:
-            any_id = self.task.target_dictionary.index('$any$')
-            labels_ignore_any = target.clone()
-            labels_ignore_any[labels_ignore_any == any_id] = no_type_id
-            loss = F.nll_loss(
-                lprobs,
-                labels_ignore_any,
-                ignore_index=no_type_id,  # self.padding_idx,
-                reduction='sum' if reduce else 'none',
-            )
-            sample_size = torch.sum(labels_ignore_any.ne(no_type_id))
-        else:
-            loss = F.nll_loss(
-                lprobs,
-                target,
-                ignore_index=no_type_id,  # self.padding_idx,
-                reduction='sum' if reduce else 'none',
-            )
-            sample_size = torch.sum(target.ne(no_type_id))
-
+        loss = F.cross_entropy(logits.transpose(1, 2), target, ignore_index=no_type_id) # , reduction='sum'
+        loss2 = F.cross_entropy(logits.data.transpose(1, 2), target.data, ignore_index=no_type_id)
         # print('loss: ', loss.item())
-        # exit()
+        sample_size = torch.sum(target.ne(no_type_id))
+        # if sample_size == 0:
+        #     sample_size += 1
+        print('sample_size: {}; loss1: {}; loss2: {}'.format(sample_size, float(loss.item()/sample_size), loss2))
+        # print('target: ', target)
         return loss, sample_size
+        # exit()
+        #
+        # lprobs = model.get_normalized_probs(net_output, log_probs=True)
+        # lprobs = lprobs.view(-1, lprobs.size(-1))
+        # target = model.get_targets(sample, net_output).view(-1)
+        # # loss = F.nll_loss(
+        # #     lprobs,
+        # #     target,
+        # #     ignore_index=self.task.target_dictionary.index('O'),#self.padding_idx,
+        # #     reduction='sum' if reduce else 'none',
+        # # )
+        # no_type_id = self.task.target_dictionary.index('O')
+        # ignore_any_loss = False
+        # if ignore_any_loss:
+        #     any_id = self.task.target_dictionary.index('$any$')
+        #     labels_ignore_any = target.clone()
+        #     labels_ignore_any[labels_ignore_any == any_id] = no_type_id
+        #     loss = F.nll_loss(
+        #         lprobs,
+        #         labels_ignore_any,
+        #         ignore_index=no_type_id,  # self.padding_idx,
+        #         reduction='sum' if reduce else 'none',
+        #     )
+        #     sample_size = torch.sum(labels_ignore_any.ne(no_type_id))
+        # else:
+        #     loss = F.nll_loss(
+        #         lprobs,
+        #         target,
+        #         ignore_index=no_type_id,  # self.padding_idx,
+        #         reduction='sum' if reduce else 'none',
+        #     )
+        #     sample_size = torch.sum(target.ne(no_type_id))
+        #
+        #
+        # return loss, sample_size
 
     @staticmethod
     def reduce_metrics(logging_outputs) -> None:
