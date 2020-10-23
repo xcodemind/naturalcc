@@ -3,13 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 from torch import Tensor
-from ncc.modules.seq2seq import FairseqDecoder
+from ncc.modules.seq2seq import NccDecoder
 # from ncc.modules.summarization.incremental_decoding_utils import with_incremental_state
 import uuid
 from typing import Dict, Optional
 
 
-class FairseqIncrementalState(object):
+class NccIncrementalState(object):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -46,12 +46,12 @@ class FairseqIncrementalState(object):
 
 
 def with_incremental_state(cls):
-    cls.__bases__ = (FairseqIncrementalState,) + tuple(b for b in cls.__bases__ if b != FairseqIncrementalState)
+    cls.__bases__ = (NccIncrementalState,) + tuple(b for b in cls.__bases__ if b != NccIncrementalState)
     return cls
 
 
 @with_incremental_state
-class FairseqIncrementalDecoder(FairseqDecoder):
+class NccIncrementalDecoder(NccDecoder):
     """Base class for incremental decoders.
 
     Incremental decoding is a special mode at inference time where the Model
@@ -60,12 +60,12 @@ class FairseqIncrementalDecoder(FairseqDecoder):
     *incrementally*. Thus the model must cache any long-term state that is
     needed about the sequence, e.g., hidden states, convolutional states, etc.
 
-    Compared to the standard :class:`FairseqDecoder` interface, the incremental
+    Compared to the standard :class:`NccDecoder` interface, the incremental
     decoder interface allows :func:`forward` functions to take an extra keyword
     argument (*incremental_state*) that can be used to cache state across
     time-steps.
 
-    The :class:`FairseqIncrementalDecoder` interface also defines the
+    The :class:`NccIncrementalDecoder` interface also defines the
     :func:`reorder_incremental_state` method, which is used during beam search
     to select and reorder the incremental state based on the selection of beams.
 

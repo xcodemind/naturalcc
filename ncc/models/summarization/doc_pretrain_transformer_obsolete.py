@@ -18,7 +18,7 @@ from fairseq.modules import (
     SinusoidalPositionalEmbedding,
 )
 
-from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
+from ncc.modules.seq2seq.ncc_incremental_decoder import NccIncrementalDecoder
 from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.models.ncc_model import NccModel
 from ncc.models import register_model
@@ -245,7 +245,7 @@ def get_sent_end_repr(src_emb, sent_ends):
     return sent_ends_repr
 
 
-class TransformerDecoder(FairseqIncrementalDecoder):
+class TransformerDecoder(NccIncrementalDecoder):
     """Transformer decoder."""
 
     def __init__(self, args, src_dictionary, dictionary, embed_tokens, left_pad=False):

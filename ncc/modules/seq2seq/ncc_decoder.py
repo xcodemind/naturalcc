@@ -10,7 +10,7 @@ from ncc.utils import utils
 from torch import Tensor
 
 
-class FairseqDecoder(nn.Module):
+class NccDecoder(nn.Module):
     """Base class for decoders."""
 
     def __init__(self, dictionary):

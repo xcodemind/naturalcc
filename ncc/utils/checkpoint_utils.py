@@ -14,7 +14,7 @@ import torch
 from .file_io import PathManager
 from torch.serialization import default_restore_location
 from ncc.modules.code2vec.ncc_encoder import NccEncoder
-from ncc.modules.seq2seq.fairseq_decoder import FairseqDecoder
+from ncc.modules.seq2seq.ncc_decoder import NccDecoder
 
 
 logger = logging.getLogger(__name__)
@@ -462,10 +462,10 @@ def prune_state_dict(state_dict, args):
 
 
 def load_pretrained_component_from_model(
-    component: Union[NccEncoder, FairseqDecoder], checkpoint: str
+    component: Union[NccEncoder, NccDecoder], checkpoint: str
 ):
     """
-    Load a pretrained NccEncoder or FairseqDecoder from checkpoint into the
+    Load a pretrained NccEncoder or NccDecoder from checkpoint into the
     provided `component` object. If state_dict fails to load, there may be a
     mismatch in the architecture of the corresponding `component` found in the
     `checkpoint` file.
@@ -475,12 +475,12 @@ def load_pretrained_component_from_model(
     state = load_checkpoint_to_cpu(checkpoint)
     if isinstance(component, NccEncoder):
         component_type = "encoder"
-    elif isinstance(component, FairseqDecoder):
+    elif isinstance(component, NccDecoder):
         component_type = "decoder"
     else:
         raise ValueError(
             "component to load must be either a NccEncoder or "
-            "FairseqDecoder. Loading other component types are not supported."
+            "NccDecoder. Loading other component types are not supported."
         )
     component_state_dict = OrderedDict()
     for key in state["model"].keys():

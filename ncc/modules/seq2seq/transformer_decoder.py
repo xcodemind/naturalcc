@@ -5,16 +5,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 from ncc.modules.common.layer_norm import LayerNorm
-from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
+from ncc.modules.seq2seq.ncc_incremental_decoder import NccIncrementalDecoder
 from ncc.modules.roberta.positional_embedding import PositionalEmbedding
-from ncc.modules.code2vec.fairseq_encoder import EncoderOut
+from ncc.modules.code2vec.ncc_encoder import EncoderOut
 from ncc.modules.roberta.sinusoidal_positional_embedding_hibert import SinusoidalPositionalEmbedding
 from ncc.modules.seq2seq.transformer_decoder_layer import TransformerDecoderLayer
 from ncc.modules.adaptive_softmax import AdaptiveSoftmax
 from ncc.utils import utils
 
 
-class TransformerDecoder(FairseqIncrementalDecoder):
+class TransformerDecoder(NccIncrementalDecoder):
     """
     Transformer decoder consisting of *args.decoder_layers* layers. Each layer
     is a :class:`TransformerDecoderLayer`.

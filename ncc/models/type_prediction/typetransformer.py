@@ -5,7 +5,7 @@ import torch.nn as nn
 
 from ncc.models.type_prediction.encoder import CodeEncoder#, CodeEncoderLSTM
 from ncc.models import FairseqLanguageModel, register_model
-from ncc.modules.seq2seq.fairseq_decoder import FairseqDecoder
+from ncc.modules.seq2seq.ncc_decoder import NccDecoder
 
 
 @register_model('typetransformer')
@@ -48,7 +48,7 @@ class TypeTransformer(FairseqLanguageModel):
         return x, None
 
 
-class RobertaEncoder(FairseqDecoder):
+class RobertaEncoder(NccDecoder):
     def __init__(
         self,
         args,

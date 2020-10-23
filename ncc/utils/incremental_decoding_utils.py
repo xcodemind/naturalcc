@@ -9,7 +9,7 @@ import uuid
 from torch import Tensor
 
 
-class FairseqIncrementalState(object):
+class NccIncrementalState(object):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -46,5 +46,5 @@ class FairseqIncrementalState(object):
 
 
 def with_incremental_state(cls):
-    cls.__bases__ = (FairseqIncrementalState,) + tuple(b for b in cls.__bases__ if b != FairseqIncrementalState)
+    cls.__bases__ = (NccIncrementalState,) + tuple(b for b in cls.__bases__ if b != NccIncrementalState)
     return cls

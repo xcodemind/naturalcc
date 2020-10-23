@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import torch
-from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
+from ncc.modules.seq2seq.ncc_incremental_decoder import NccIncrementalDecoder
 
 
 class SequenceCompletor(object):
@@ -56,7 +56,7 @@ class EnsembleModel(torch.nn.Module):
         super().__init__()
         self.models = torch.nn.ModuleList(models)
         self.incremental_states = None
-        if all(hasattr(m, 'decoder') and isinstance(m.decoder, FairseqIncrementalDecoder) for m in models):
+        if all(hasattr(m, 'decoder') and isinstance(m.decoder, NccIncrementalDecoder) for m in models):
             self.incremental_states = {m: {} for m in models}
 
     @torch.no_grad()

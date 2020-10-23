@@ -10,7 +10,7 @@ import torch
 from ncc.eval import search
 from ncc.utils import utils
 from ncc.data.tools import data_utils
-from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
+from ncc.modules.seq2seq.ncc_incremental_decoder import NccIncrementalDecoder
 
 
 class CodeRetriever(object):
@@ -123,7 +123,7 @@ class EnsembleModel(torch.nn.Module):
         super().__init__()
         self.models = torch.nn.ModuleList(models)
         self.incremental_states = None
-        if all(hasattr(m, 'decoder') and isinstance(m.decoder, FairseqIncrementalDecoder) for m in models):
+        if all(hasattr(m, 'decoder') and isinstance(m.decoder, NccIncrementalDecoder) for m in models):
             self.incremental_states = {m: {} for m in models}
 
     def has_encoder(self):

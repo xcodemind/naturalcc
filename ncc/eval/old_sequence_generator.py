@@ -12,7 +12,7 @@ import torch
 from ncc.eval import search
 from ncc.data.tools import data_utils
 import ncc.utils.checkpoint_utils as utils
-from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
+from ncc.modules.seq2seq.ncc_incremental_decoder import NccIncrementalDecoder
 
 
 class SequenceGenerator(object):
@@ -133,7 +133,7 @@ class SequenceGenerator(object):
         for model in self.models:
             if not self.retain_dropout:
                 model.eval()
-            if isinstance(model.decoder, FairseqIncrementalDecoder):
+            if isinstance(model.decoder, NccIncrementalDecoder):
                 incremental_states[model] = {}
             else:
                 incremental_states[model] = None
@@ -294,7 +294,7 @@ class SequenceGenerator(object):
                     corr = batch_idxs - torch.arange(batch_idxs.numel()).type_as(batch_idxs)
                     reorder_state.view(-1, beam_size).add_(corr.unsqueeze(-1) * beam_size)
                 for i, model in enumerate(self.models):
-                    if isinstance(model.decoder, FairseqIncrementalDecoder):
+                    if isinstance(model.decoder, NccIncrementalDecoder):
                         model.decoder.reorder_incremental_state(incremental_states[model], reorder_state)
                     encoder_outs[i] = model.encoder.reorder_encoder_out(encoder_outs[i], reorder_state)
 

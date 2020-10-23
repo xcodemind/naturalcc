@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from ncc.models.ncc_model import NccEncoderDecoderModel
 from ncc.modules.code2vec.ncc_encoder import NccEncoder
-from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
+from ncc.modules.seq2seq.ncc_incremental_decoder import NccIncrementalDecoder
 from ncc.modules.embedding import Embedding
 from ncc.models import register_model
 from ncc.utils import utils
@@ -124,7 +124,7 @@ class LSTMEncoder(NccEncoder):
         return self.max_source_positions
 
 
-class LSTMDecoder(FairseqIncrementalDecoder):
+class LSTMDecoder(NccIncrementalDecoder):
     """LSTM decoder."""
 
     def __init__(

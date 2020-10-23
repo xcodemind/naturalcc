@@ -19,7 +19,7 @@ from ncc.models import (
     register_model,
     register_model_architecture,
 )
-from ncc.modules.seq2seq.fairseq_decoder import FairseqDecoder
+from ncc.modules.seq2seq.ncc_decoder import NccDecoder
 # from ncc.modules import (
 #     LayerNorm,
 #     TransformerSentenceEncoder,
@@ -253,10 +253,10 @@ class RobertaClassificationHead(nn.Module):
         return x
 
 
-class RobertaEncoder(FairseqDecoder):
+class RobertaEncoder(NccDecoder):
     """RoBERTa encoder.
 
-    Implements the :class:`~fairseq.models.FairseqDecoder` interface required
+    Implements the :class:`~fairseq.models.NccDecoder` interface required
     by :class:`~fairseq.models.FairseqLanguageModel`.
     """
 

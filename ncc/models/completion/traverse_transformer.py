@@ -11,7 +11,7 @@ from ncc.models.fairseq_model import FairseqLanguageModel
 from ncc.modules.completion.transformer_encoder import TransformerEncoder
 from ncc.utils import utils
 from ncc.modules.common.layer_norm import LayerNorm
-from ncc.modules.seq2seq.fairseq_decoder import FairseqDecoder
+from ncc.modules.seq2seq.ncc_decoder import NccDecoder
 from ncc.models.hub_interface import RobertaHubInterface
 
 
@@ -140,7 +140,7 @@ class GPT2LMHead(nn.Module):
         return x
 
 
-class GPT2Encoder(FairseqDecoder):
+class GPT2Encoder(NccDecoder):
     def __init__(self, args, dictionary):
         super().__init__(dictionary)
         self.args = args

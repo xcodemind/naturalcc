@@ -16,7 +16,7 @@ from ncc.utils import utils
 from ncc.utils.checkpoint_utils import prune_state_dict
 from ncc.data import Dictionary
 from ncc.modules.code2vec.ncc_encoder import NccEncoder
-from ncc.modules.seq2seq import FairseqDecoder
+from ncc.modules.seq2seq import NccDecoder
 from torch import Tensor
 
 logger = logging.getLogger(__name__)
@@ -230,7 +230,7 @@ class NccEncoderDecoderModel(BaseNccModel):
 
     Args:
         encoder (NccEncoder): the encoder
-        decoder (FairseqDecoder): the decoder
+        decoder (NccDecoder): the decoder
     """
 
     def __init__(self, encoder, decoder):
@@ -239,7 +239,7 @@ class NccEncoderDecoderModel(BaseNccModel):
         self.encoder = encoder
         self.decoder = decoder
         assert isinstance(self.encoder, NccEncoder)
-        assert isinstance(self.decoder, FairseqDecoder)
+        assert isinstance(self.decoder, NccDecoder)
 
     def forward(self, src_tokens, src_lengths, prev_output_tokens, **kwargs):
         """
@@ -320,7 +320,7 @@ class FairseqMultiModel(BaseNccModel):
         self.keys = list(encoders.keys())
         for key in self.keys:
             assert isinstance(encoders[key], NccEncoder)
-            assert isinstance(decoders[key], FairseqDecoder)
+            assert isinstance(decoders[key], NccDecoder)
 
         self.models = nn.ModuleDict(
             {
@@ -409,13 +409,13 @@ class FairseqLanguageModel(BaseNccModel):
     """Base class for decoder-only models.
 
     Args:
-        decoder (FairseqDecoder): the decoder
+        decoder (NccDecoder): the decoder
     """
 
     def __init__(self, decoder):
         super().__init__()
         self.decoder = decoder
-        assert isinstance(self.decoder, FairseqDecoder)
+        assert isinstance(self.decoder, NccDecoder)
 
     def forward(self, src_tokens, **kwargs):
         """
