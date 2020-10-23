@@ -20,7 +20,7 @@ from ncc.utils import checkpoint_utils, distributed_utils, utils
 from ncc import tasks #, utils #  options,
 from ncc.data import iterators
 from ncc.logging import meters, metrics, progress_bar
-from ncc.trainer.fair_trainer import Trainer
+from ncc.trainer.ncc_trainer import Trainer
 import argparse
 from typing import Callable, List, Optional
 from ncc.data.indexed_dataset import get_available_dataset_impl

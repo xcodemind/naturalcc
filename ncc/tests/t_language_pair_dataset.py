@@ -16,7 +16,7 @@ from ncc.data.summarization.language_pair_dataset import collate
 from ncc.data import iterators
 from ncc.logging import metrics, progress_bar
 from ncc.utils import checkpoint_utils, distributed_utils
-from ncc.trainer.fair_trainer import Trainer
+from ncc.trainer.ncc_trainer import Trainer
 from ncc.utils.file_utils import remove_files
 from ncc.utils import utils
 

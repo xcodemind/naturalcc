@@ -13,7 +13,7 @@ import ujson
 from collections import namedtuple
 import math
 import torch
-from ncc.trainer.fair_trainer import Trainer
+from ncc.trainer.ncc_trainer import Trainer
 from ncc import LOGGER
 from ncc import tasks
 from ncc.eval import bleu_scorer

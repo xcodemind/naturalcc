@@ -21,7 +21,7 @@ torch.multiprocessing.set_sharing_strategy('file_system')
 from ncc import LOGGER
 from ncc import tasks
 from ncc.logging import meters
-from ncc.trainer.fair_trainer import Trainer
+from ncc.trainer.ncc_trainer import Trainer
 from ncc.utils import checkpoint_utils, distributed_utils
 from ncc.utils.util_file import load_yaml
 from ncc.logging import metrics, progress_bar
