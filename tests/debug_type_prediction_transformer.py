@@ -7,7 +7,7 @@ import numpy as np
 from collections import namedtuple
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
-from ncc.tasks.type_prediction import load_codetype_dataset
+from ncc.tasks.type_prediction.type_prediction import load_codetype_dataset
 import sentencepiece as spm
 from ncc import tasks
 import torch

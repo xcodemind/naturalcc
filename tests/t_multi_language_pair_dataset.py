@@ -22,7 +22,7 @@ import sys
 from collections import namedtuple
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
-from ncc.tasks.mm_summarization import load_multimodalpair_dataset
+from ncc.tasks.summarization.mm_summarization import load_multimodalpair_dataset
 from ncc.tasks import NccTask
 from collections import OrderedDict
 from ncc.utils import utils

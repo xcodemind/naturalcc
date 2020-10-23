@@ -7,7 +7,7 @@ import sys
 from collections import namedtuple
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
-from ncc.tasks.masked_code_docstring_unilm import load_masked_code_docstring_dataset_unilm
+from ncc.tasks.codebert.masked_code_docstring_unilm import load_masked_code_docstring_dataset_unilm
 from ncc.tasks import NccTask
 from ncc import tasks
 import torch

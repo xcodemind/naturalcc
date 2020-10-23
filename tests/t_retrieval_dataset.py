@@ -7,7 +7,7 @@ import sys
 from collections import namedtuple
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
-from ncc.tasks.retrieval import load_tokens_dataset
+from ncc.tasks.retrieval.retrieval import load_tokens_dataset
 from ncc.tasks import NccTask
 from ncc import tasks
 import torch

@@ -8,7 +8,7 @@ import numpy as np
 from collections import namedtuple
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
-from ncc.tasks.summarization import load_langpair_dataset
+from ncc.tasks.summarization.summarization import load_langpair_dataset
 from ncc.tasks import NccTask
 from ncc import tasks
 import torch

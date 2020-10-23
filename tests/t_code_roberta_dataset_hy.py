@@ -7,11 +7,11 @@ import sys
 from collections import namedtuple
 from ncc import LOGGER
 from ncc.utils.util_file import load_yaml
-from ncc.tasks.masked_code_docstring import load_masked_code_docstring_dataset
+from ncc.tasks.codebert.masked_code_docstring import load_masked_code_docstring_dataset
 from ncc.tasks import NccTask
 from ncc import tasks
 import torch
-from ncc.data.mask_code_docstring_pair_dataset import collate
+from ncc.data.codebert.mask_code_docstring_pair_dataset import collate
 from ncc.data import iterators
 from ncc.logging import metrics, progress_bar
 from ncc.utils import checkpoint_utils, distributed_utils
