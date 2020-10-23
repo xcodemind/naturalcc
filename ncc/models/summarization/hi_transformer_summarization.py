@@ -23,13 +23,13 @@ from ncc.models.fairseq_model import FairseqEncoderDecoderModel
 from ncc.models import register_model
 from ncc.utils import utils
 # from . import (
-#     FairseqIncrementalDecoder, FairseqEncoder, FairseqModel,
+#     FairseqIncrementalDecoder, FairseqEncoder, NccModel,
 #     register_model, register_model_architecture,
 # )
 
 
 # @register_model('hi_transformer_summarization')
-# class HiTransformerSummarizationModel(FairseqModel):
+# class HiTransformerSummarizationModel(NccModel):
 
 
 def get_sent_end_repr(src_emb, sent_ends):

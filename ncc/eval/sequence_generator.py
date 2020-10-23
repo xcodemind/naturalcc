@@ -74,7 +74,7 @@ class LSTMSequenceGenerator(object):
         """Generate a batch of translations.
 
         Args:
-            models (List[~fairseq.models.FairseqModel]): ensemble of models
+            models (List[~fairseq.models.NccModel]): ensemble of models
             sample (dict): batch
             prefix_tokens (torch.LongTensor, optional): force decoder to begin
                 with these tokens
@@ -288,7 +288,7 @@ class TransformerSequenceGenerator(object):
         """Generate a batch of translations.
 
         Args:
-            models (List[~fairseq.models.FairseqModel]): ensemble of models
+            models (List[~fairseq.models.NccModel]): ensemble of models
             sample (dict): batch
             prefix_tokens (torch.LongTensor, optional): force decoder to begin
                 with these tokens

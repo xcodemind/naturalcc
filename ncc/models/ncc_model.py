@@ -22,7 +22,7 @@ from torch import Tensor
 logger = logging.getLogger(__name__)
 
 
-class BaseFairseqModel(nn.Module):
+class BaseNccModel(nn.Module):
     """Base class for fairseq models."""
 
     def __init__(self):
@@ -62,7 +62,7 @@ class BaseFairseqModel(nn.Module):
             log_probs: bool,
             sample: Optional[Dict[str, Tensor]] = None,
     ):
-        """Scriptable helper function for get_normalized_probs in ~BaseFairseqModel"""
+        """Scriptable helper function for get_normalized_probs in ~BaseNccModel"""
         if hasattr(self, "decoder"):
             return self.decoder.get_normalized_probs(net_output, log_probs, sample)
         elif torch.is_tensor(net_output):
@@ -188,13 +188,13 @@ class BaseFairseqModel(nn.Module):
             **kwargs,
     ):
         """
-        Load a :class:`~fairseq.models.FairseqModel` from a pre-trained model
+        Load a :class:`~fairseq.models.NccModel` from a pre-trained model
         file. Downloads and caches the pre-trained model file if needed.
 
         The base implementation returns a
         :class:`~fairseq.hub_utils.GeneratorHubInterface`, which can be used to
         generate translations or sample from language models. The underlying
-        :class:`~fairseq.models.FairseqModel` can be accessed via the
+        :class:`~fairseq.models.NccModel` can be accessed via the
         *generator.models* attribute.
 
         Other models may override this to implement custom hub interfaces.
@@ -225,7 +225,7 @@ class BaseFairseqModel(nn.Module):
         return {}
 
 
-class FairseqEncoderDecoderModel(BaseFairseqModel):
+class FairseqEncoderDecoderModel(BaseNccModel):
     """Base class for encoder-decoder models.
 
     Args:
@@ -301,17 +301,17 @@ class FairseqEncoderDecoderModel(BaseFairseqModel):
         return self.decoder.max_positions()
 
 
-class FairseqModel(FairseqEncoderDecoderModel):
+class NccModel(FairseqEncoderDecoderModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         utils.deprecation_warning(
-            "FairseqModel is deprecated, please use FairseqEncoderDecoderModel "
-            "or BaseFairseqModel instead",
+            "NccModel is deprecated, please use FairseqEncoderDecoderModel "
+            "or BaseNccModel instead",
             stacklevel=4,
         )
 
 
-class FairseqMultiModel(BaseFairseqModel):
+class FairseqMultiModel(BaseNccModel):
     """Base class for combining multiple encoder-decoder models."""
 
     def __init__(self, encoders, decoders):
@@ -405,7 +405,7 @@ class FairseqMultiModel(BaseFairseqModel):
         return super().load_state_dict(new_state_dict, strict)
 
 
-class FairseqLanguageModel(BaseFairseqModel):
+class FairseqLanguageModel(BaseNccModel):
     """Base class for decoder-only models.
 
     Args:
@@ -466,7 +466,7 @@ class FairseqLanguageModel(BaseFairseqModel):
         return {"future"}
 
 
-class FairseqEncoderModel(BaseFairseqModel):
+class FairseqEncoderModel(BaseNccModel):
     """Base class for encoder-only models.
 
     Args:
@@ -509,7 +509,7 @@ class FairseqEncoderModel(BaseFairseqModel):
         return self.encoder.max_positions()
 
 
-class FairseqRetrievalModel(BaseFairseqModel):
+class FairseqRetrievalModel(BaseNccModel):
     """Base class for a simple encoder-encoder retrieval models.
 
     Args:
@@ -543,7 +543,7 @@ class FairseqRetrievalModel(BaseFairseqModel):
                self.tgt_encoder(tgt_tokens, tgt_tokens_len, tgt_tokens_mask),
 
 
-class FairseqMoCoModel(BaseFairseqModel):
+class FairseqMoCoModel(BaseNccModel):
     """Base class for a simple encoder-encoder retrieval models.
 
     Args:

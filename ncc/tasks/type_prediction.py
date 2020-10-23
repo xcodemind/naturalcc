@@ -175,7 +175,7 @@ class TypePredictionTask(NccTask):
         Args:
             sample (dict): the mini-batch. The format is defined by the
                 :class:`~fairseq.data.FairseqDataset`.
-            model (~fairseq.models.BaseFairseqModel): the model
+            model (~fairseq.models.BaseNccModel): the model
             criterion (~fairseq.criterions.NccCriterion): the criterion
             optimizer (~fairseq.optim.NccOptimizer): the optimizer
             update_num (int): the current update

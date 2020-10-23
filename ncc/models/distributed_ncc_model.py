@@ -8,10 +8,10 @@ import inspect
 import torch.nn as nn
 
 from ncc.models.legacy_distributed_data_parallel import LegacyDistributedDataParallel
-from ncc.models import BaseFairseqModel
+from ncc.models import BaseNccModel
 
 
-def DistributedFairseqModel(args, model):
+def DistributedNccModel(args, model):
     """
     Wrap a *model* to support distributed data parallel training.
 
@@ -22,7 +22,7 @@ def DistributedFairseqModel(args, model):
 
     Args:
         args (argparse.Namespace): fairseq args
-        model (BaseFairseqModel): model to wrap
+        model (BaseNccModel): model to wrap
     """
     # determine which DDP class to extend
     assert isinstance(model, nn.Module)
@@ -50,7 +50,7 @@ def DistributedFairseqModel(args, model):
     else:
         raise ValueError('Unknown --ddp-backend: ' + args['distributed_training']['ddp_backend'])
 
-    class _DistributedFairseqModel(ddp_class):
+    class _DistributedNccModel(ddp_class):
         """Extend DistributedDataParallel to check for missing
         attributes in the wrapped module."""
 
@@ -63,4 +63,4 @@ def DistributedFairseqModel(args, model):
                 return getattr(wrapped_module, name)
             return super().__getattr__(name)
 
-    return _DistributedFairseqModel(**init_kwargs)
+    return _DistributedNccModel(**init_kwargs)

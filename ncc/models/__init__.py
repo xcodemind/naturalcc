@@ -23,18 +23,18 @@ import time
 # from .fairseq_decoder import FairseqDecoder
 # from .fairseq_encoder import FairseqEncoder
 # from .fairseq_incremental_decoder import FairseqIncrementalDecoder
-from .fairseq_model import (
-    BaseFairseqModel,
+from .ncc_model import (
+    BaseNccModel,
     FairseqEncoderModel,
     FairseqEncoderDecoderModel,
     FairseqLanguageModel,
-    FairseqModel,
+    NccModel,
     FairseqMultiModel,
     FairseqMoCoModel,
 )
 
 # from .composite_encoder import CompositeEncoder
-from .distributed_fairseq_model import DistributedFairseqModel
+from .distributed_fairseq_model import DistributedNccModel
 
 
 MODEL_REGISTRY = {}
@@ -45,16 +45,16 @@ MODEL_REGISTRY = {}
 
 __all__ = [
     'datetime', 'time',
-    'BaseFairseqModel',
+    'BaseNccModel',
     # 'CompositeEncoder',
-    'DistributedFairseqModel',
+    'DistributedNccModel',
     # 'FairseqDecoder',
     # 'FairseqEncoder',
     'FairseqEncoderDecoderModel',
     'FairseqEncoderModel',
     # 'FairseqIncrementalDecoder',
     'FairseqLanguageModel',
-    'FairseqModel',
+    'NccModel',
     'FairseqMultiModel',
 ]
 
@@ -74,7 +74,7 @@ def register_model(name):
         class LSTM(FairseqEncoderDecoderModel):
             (...)
 
-    .. note:: All models must implement the :class:`BaseFairseqModel` interface.
+    .. note:: All models must implement the :class:`BaseNccModel` interface.
         Typically you will extend :class:`FairseqEncoderDecoderModel` for
         sequence-to-sequence tasks or :class:`FairseqLanguageModel` for
         language modeling tasks.
@@ -86,8 +86,8 @@ def register_model(name):
     def register_model_cls(cls):
         if name in MODEL_REGISTRY:
             raise ValueError('Cannot register duplicate model ({})'.format(name))
-        if not issubclass(cls, BaseFairseqModel):
-            raise ValueError('Model ({}: {}) must extend BaseFairseqModel'.format(name, cls.__name__))
+        if not issubclass(cls, BaseNccModel):
+            raise ValueError('Model ({}: {}) must extend BaseNccModel'.format(name, cls.__name__))
         MODEL_REGISTRY[name] = cls
         return cls
 

@@ -78,14 +78,14 @@ class HuggingFaceMaskedLMTask(NccTask):
 
     def build_model(self, args, config):
         """
-        Build the :class:`~fairseq.models.BaseFairseqModel` instance for this
+        Build the :class:`~fairseq.models.BaseNccModel` instance for this
         task.
 
         Args:
             args (argparse.Namespace): parsed command-line arguments
 
         Returns:
-            a :class:`~fairseq.models.BaseFairseqModel` instance
+            a :class:`~fairseq.models.BaseNccModel` instance
         """
         from ncc import models
         # assert 0

@@ -99,7 +99,7 @@ class Trainer(object):
                 and self.args['distributed_training']['distributed_world_size'] > 1
                 and not self.args['optimization']['use_bmuf']
             ):
-                self._wrapped_criterion = models.DistributedFairseqModel(
+                self._wrapped_criterion = models.DistributedNccModel(
                     self.args, self._criterion
                 )
             else:
@@ -111,7 +111,7 @@ class Trainer(object):
         if self._wrapped_model is None:
             if self.args['distributed_training']['distributed_world_size'] > 1 and \
                 not self.args['optimization']['use_bmuf']:
-                self._wrapped_model = models.DistributedFairseqModel(
+                self._wrapped_model = models.DistributedNccModel(
                     self.args, self._model
                 )
             else:

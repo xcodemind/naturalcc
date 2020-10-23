@@ -28,16 +28,16 @@ import time
 # from .fairseq_encoder import FairseqEncoder
 # from .fairseq_incremental_decoder import FairseqIncrementalDecoder
 # from .fairseq_model import (
-#     BaseFairseqModel,
+#     BaseNccModel,
 #     FairseqEncoderModel,
 #     FairseqEncoderDecoderModel,
 #     FairseqLanguageModel,
-#     FairseqModel,
+#     NccModel,
 #     FairseqMultiModel,
 # )
 
 # from .composite_encoder import CompositeEncoder
-# from .distributed_fairseq_model import DistributedFairseqModel
+# from .distributed_fairseq_model import DistributedNccModel
 # from ncc.config.bert.configuration_bert import BertConfig
 # from ncc.config.bert.configuration_roberta import RobertaConfig
 from ncc.config.fairseq_config import FairseqConfig
@@ -71,7 +71,7 @@ def register_config(name):
         class LSTM(FairseqEncoderDecoderModel):
             (...)
 
-    .. note:: All models must implement the :class:`BaseFairseqModel` interface.
+    .. note:: All models must implement the :class:`BaseNccModel` interface.
         Typically you will extend :class:`FairseqEncoderDecoderModel` for
         sequence-to-sequence tasks or :class:`FairseqLanguageModel` for
         language modeling tasks.
@@ -84,7 +84,7 @@ def register_config(name):
         if name in CONFIG_REGISTRY:
             raise ValueError('Cannot register duplicate model ({})'.format(name))
         if not issubclass(cls, FairseqConfig):
-            raise ValueError('Model ({}: {}) must extend BaseFairseqModel'.format(name, cls.__name__))
+            raise ValueError('Model ({}: {}) must extend BaseNccModel'.format(name, cls.__name__))
         CONFIG_REGISTRY[name] = cls
         return cls
 
