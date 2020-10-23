@@ -16,18 +16,7 @@ import json
 from dataset.csn import PATH_NUM
 # from ncc.utils.util_graph import (build_graph, tree2graph)
 from ncc import LOGGER
-import re
 
-_newline_regex = re.compile(r"\n")
-_whitespace_regex = re.compile(r"[ \t\n]+")
-
-
-def normalize_program(fn: str):
-    if not isinstance(fn, (str, bytes)):
-        LOGGER.error(f"normalize_program got non-str: {type(fn)}, {fn}")
-    fn = _newline_regex.sub(r" [EOL]", fn)
-    fn = _whitespace_regex.sub(" ", fn)
-    return fn
 
 
 def __best_fitting_dtype(vocab_size=None):
@@ -85,8 +74,8 @@ def make_dataset(path, impl, modality='text', fix_lua_indexing=False, dictionary
             return IndexedDFSASTDataset(path, dictionary, append_eos=False)
         elif modality in ['tok', 'code', 'code_tokens', 'docstring_tokens', 'ast_tokens']:
             return IndexedTokenDataset(path, dictionary)
-        elif modality == 'javascript_augmented':
-            return IndexedJavascriptAugmentedDataset(path, dictionary, append_eos=False)
+        # elif modality == 'javascript_augmented':
+        #     return IndexedJavascriptAugmentedDataset(path, dictionary, append_eos=False)
         elif modality == 'javascript':
             return IndexedJavascriptDataset(path, dictionary, append_eos=False)
         elif modality == 'codetype_code':
@@ -653,62 +642,62 @@ class IndexedJavascriptDataset(FairseqDataset):
     def exists(path):
         return os.path.exists(path)
 
-
-class IndexedJavascriptAugmentedDataset(FairseqDataset):
-    def __init__(self, path, dictionary, append_eos=False, reverse_order=False):
-        self.examples_list = []
-        self.lines = []
-        self.sizes = []
-        self.append_eos = append_eos
-        self.reverse_order = reverse_order
-        self.read_data(path, dictionary)
-        self.size = len(self.examples_list)
-
-    def read_data(self, path, dictionary, max_source_positions=1024):
-        with open(path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = ujson.loads(line)
-                programs = []
-                for program in line:
-                    # TODO
-                    program = [dictionary.bos_word] + program[: max_source_positions - 2] + [dictionary.eos_word]
-                    program = dictionary.encode_line(program, line_tokenizer=None, add_if_not_exist=False,
-                                                     append_eos=self.append_eos,
-                                                     reverse_order=self.reverse_order).long()
-                    programs.append(program)
-
-                self.examples_list.append(programs)
-                self.sizes.append(len(programs[0]))
-
-    def check_index(self, i):
-        if i < 0 or i >= self.size:
-            raise IndexError('index out of range')
-
-    @lru_cache(maxsize=8)
-    def __getitem__(self, i):
-        self.check_index(i)
-        return self.examples_list[i]
-
-    # def get_original_text(self, i):
-    #     self.check_index(i)
-    #     return self.lines[i]
-
-    def __del__(self):
-        pass
-
-    def __len__(self):
-        return self.size
-
-    def num_tokens(self, index):
-        return self.sizes[index]
-
-    def size(self, index):
-        return self.sizes[index]
-
-    @staticmethod
-    def exists(path):
-        return os.path.exists(path)
-
+# Has been moved to tasks/contracode_hybrid.py
+# class IndexedJavascriptAugmentedDataset(FairseqDataset):
+#     def __init__(self, path, dictionary, append_eos=False, reverse_order=False):
+#         self.examples_list = []
+#         self.lines = []
+#         self.sizes = []
+#         self.append_eos = append_eos
+#         self.reverse_order = reverse_order
+#         self.read_data(path, dictionary)
+#         self.size = len(self.examples_list)
+#
+#     def read_data(self, path, dictionary, max_source_positions=1024):
+#         with open(path, 'r', encoding='utf-8') as f:
+#             for line in f:
+#                 line = ujson.loads(line)
+#                 programs = []
+#                 for program in line:
+#                     # TODO
+#                     program = [dictionary.bos_word] + program[: max_source_positions - 2] + [dictionary.eos_word]
+#                     program = dictionary.encode_line(program, line_tokenizer=None, add_if_not_exist=False,
+#                                                      append_eos=self.append_eos,
+#                                                      reverse_order=self.reverse_order).long()
+#                     programs.append(program)
+#
+#                 self.examples_list.append(programs)
+#                 self.sizes.append(len(programs[0]))
+#
+#     def check_index(self, i):
+#         if i < 0 or i >= self.size:
+#             raise IndexError('index out of range')
+#
+#     @lru_cache(maxsize=8)
+#     def __getitem__(self, i):
+#         self.check_index(i)
+#         return self.examples_list[i]
+#
+#     # def get_original_text(self, i):
+#     #     self.check_index(i)
+#     #     return self.lines[i]
+#
+#     def __del__(self):
+#         pass
+#
+#     def __len__(self):
+#         return self.size
+#
+#     def num_tokens(self, index):
+#         return self.sizes[index]
+#
+#     def size(self, index):
+#         return self.sizes[index]
+#
+#     @staticmethod
+#     def exists(path):
+#         return os.path.exists(path)
+#
 
 class IndexedCodeDataset(FairseqDataset):
     def __init__(self, path, dictionary, append_eos=False, reverse_order=False):

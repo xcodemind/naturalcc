@@ -8,6 +8,32 @@ import torch
 from ncc.data.fairseq_dataset import FairseqDataset
 from torch.nn.utils.rnn import pad_sequence
 
+def mask_mlm(seq, pad_id, mask_id, vocab_start_range, vocab_end_range):
+    # The training data generator chooses 15% of the token positions at random for prediction.
+    # If the i-th token is chosen, we replace the i-th token with
+    # (0) not masked
+    # (1) the [MASK] token 80% of the time (0.12)
+    # (2) a random token 10% of the time (0.015)
+    # (3) the unchanged i-th token 10% of the time (0.015)
+    #
+    # https://github.com/codertimo/BERT-pytorch/blob/master/bert_pytorch/dataset/dataset.py#L63
+    torch.manual_seed(1)
+    rand_replacements = torch.zeros_like(seq, dtype=torch.long).random_(vocab_start_range, vocab_end_range)
+    torch.manual_seed(1)
+    masked_tokens = (torch.rand_like(seq, dtype=torch.float) < 0.15) & (seq != pad_id)
+    mask_type_prob = torch.rand_like(seq, dtype=torch.float)
+    mask_token_prob = (mask_type_prob < 0.8) & masked_tokens
+    random_token_prob = (mask_type_prob < 0.9) & (mask_type_prob >= 0.8) & masked_tokens
+    identity_token_prob = (mask_type_prob >= 0.9) & masked_tokens
+    assert torch.sum(masked_tokens) == torch.sum(mask_token_prob | random_token_prob | identity_token_prob)
+
+    targets = torch.zeros_like(seq).fill_(pad_id)
+    targets[masked_tokens] = seq[masked_tokens]
+
+    seq[mask_token_prob] = mask_id
+    seq[random_token_prob] = rand_replacements[random_token_prob]
+    return seq, targets
+
 
 def collate(samples, src_dict,  program_mode='contrastive', left_pad_source=True, left_pad_target=False):
     if len(samples) == 0:
@@ -39,8 +65,9 @@ def collate(samples, src_dict,  program_mode='contrastive', left_pad_source=True
 
     id = torch.LongTensor([s['id'] for s in samples])
 
-    tokens_k, tokens_q = tokens[:, 0, :], tokens[:, 1, :]
-    lengths_k, lengths_q = lengths[:, 0], lengths[:, 1]
+    tokens_q, tokens_k = tokens[:, 0, :], tokens[:, 1, :]
+    lengths_q, lengths_k = lengths[:, 0], lengths[:, 1]
+    tokens_k, mlm_targets = mask_mlm(tokens_k, pad_id=src_dict.pad(), mask_id=src_dict.indices['[MASK]'], vocab_start_range=0, vocab_end_range=7999)
     example = {
         'id': id,
         'net_input': {
@@ -49,6 +76,7 @@ def collate(samples, src_dict,  program_mode='contrastive', left_pad_source=True
             'lengths_q': lengths_q,
             'lengths_k': lengths_k,
         },
+        'mlm_targets': mlm_targets,
     }
     return example
 
@@ -129,6 +157,7 @@ class ContraCodeDataset(FairseqDataset):
                 'code_q': src_item[i]
             }
         elif self.program_mode == "contrastive":
+            np.random.seed(1) # TODO debug
             i = np.random.randint(n_alt)
             j = i
             if n_alt > 1:

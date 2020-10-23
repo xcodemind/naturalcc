@@ -19,7 +19,7 @@ from ncc.modules.seq2seq.fairseq_decoder import FairseqDecoder
 from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.roberta.transformer_sentence_encoder import TransformerSentenceEncoder
 from ncc.models.hub_interface import RobertaHubInterface
-from ncc.modules.code2vec.contracode_encoder import CodeEncoder, CodeEncoderLSTM
+from ncc.modules.code2vec.contracode_encoder import CodeEncoderLSTM, CodeEncoderTransformer
 from ncc import LOGGER
 
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
@@ -48,6 +48,7 @@ class ContraCodeMoCo(FairseqMoCoModel):
             param_k.data.copy_(param_q.data)  # initialize
             param_k.requires_grad = False  # not update by gradient
 
+        torch.manual_seed(1)
         self.register_buffer("queue", torch.randn(128, self.K)) #args['model']['encoder_hidden_size_q']
         self.queue = nn.functional.normalize(self.queue, dim=0)
         self.register_buffer("queue_ptr", torch.zeros(1, dtype=torch.long))
@@ -65,7 +66,14 @@ class ContraCodeMoCo(FairseqMoCoModel):
             args['model']['max_positions'] = args['task']['tokens_per_sample']
 
         if args['model']['encoder_type'] == "transformer":
-            pass
+            encoder_q = CodeEncoderTransformer(
+                task.source_dictionary,
+                project=True,
+            )
+            encoder_k = CodeEncoderTransformer(
+                task.source_dictionary,
+                project=True,
+            )
 
         elif args['model']['encoder_type'] == "lstm":
             encoder_q = CodeEncoderLSTM(
@@ -120,7 +128,7 @@ class ContraCodeMoCo(FairseqMoCoModel):
     def embed(self, img):
         return self.encoder_q(img)
 
-    def forward(self, tokens_q, tokens_k, lengths_q, lengths_k):
+    def forward(self, tokens_q, tokens_k, lengths_k, lengths_q): # TODO: Note: not lengths_q, lengths_k
         """
         Input:
             tokens_q: a batch of query images
@@ -130,8 +138,8 @@ class ContraCodeMoCo(FairseqMoCoModel):
         """
 
         # compute query features
-        output_q = self.encoder_q(tokens_q, lengths_q)  # queries: NxC
-        q = output_q['encoder_out'][0]
+        q = self.encoder_q(tokens_q, lengths_q)  # queries: NxC
+        # q = output_q    # ['encoder_out'][0]
         q = nn.functional.normalize(q, dim=1)
 
         # compute key features
@@ -141,8 +149,8 @@ class ContraCodeMoCo(FairseqMoCoModel):
             # shuffle for making use of BN
             # tokens_k, idx_unshuffle = self._batch_shuffle_ddp(tokens_k)
 
-            output_k = self.encoder_k(tokens_k, lengths_k)  # keys: NxC
-            k = output_k['encoder_out'][0]
+            k = self.encoder_k(tokens_k, lengths_k)  # keys: NxC
+            # k = output_k    # ['encoder_out'][0]
             k = nn.functional.normalize(k, dim=1)
 
             # undo shuffle
