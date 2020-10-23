@@ -1,5 +1,5 @@
 # NaturalCC
-Naturalcode is a sequence modeling toolkit that allows researchers and developers to train custom models for many software engineering tasks, e.g., code summarization, code retrieval and code clone detection. Our vision is to bridge the gap between programming language and natural language via some machine learning techniques.
+NaturalCC is a sequence modeling toolkit that allows researchers and developers to train custom models for many software engineering tasks, e.g., code summarization, code retrieval and code clone detection. Our vision is to bridge the gap between programming language and natural language via some machine learning techniques.
 
 ## Note
 This copy of code is private now, please do not distribute it. Thanks.
@@ -23,20 +23,20 @@ Sep. 2020: support CodeBert.
 - For training new models, you'll also need an NVIDIA GPU and NCCL
 - For faster training install NVIDIA's apex library with the --cuda_ext and --deprecated_fused_adam options
 
-<!-- To install naturalcode: -->
+<!-- To install naturalcc: -->
 
 <!-- ``` -->
-<!-- pip install naturalcode -->
+<!-- pip install naturalcc -->
 <!-- ``` -->
 #### Step 1: Clone it
 ```
-git clone https://github.com/whatsmyname/naturalcodev3
+git clone https://github.com/xcodemind/naturalcc
 ```
 
-#### Step 2: To install naturalcode from source and develop locally
+#### Step 2: To install naturalcc from source and develop locally
 
 ```
-cd naturalcodev3
+cd naturalcc
 pip install --editable .
 pip install -r requirements.txt
 ```
@@ -52,8 +52,8 @@ Currently, we have processed the following datasets:
 
 
 ## Runing
-> All the running commands here should be executed in the root of project folder (the path of your `naturalcodev3`).
-For example, in my environment I will stay at `/data/wanyao/Dropbox/ghproj-titan/naturalcodev3`.
+> All the running commands here should be executed in the root of project folder (the path of your `naturalcc`).
+For example, in my environment I will stay at `/data/wanyao/Dropbox/ghproj-titan/naturalcc`.
 
 
 
@@ -62,12 +62,12 @@ For example, in my environment I will stay at `/data/wanyao/Dropbox/ghproj-titan
 #### Step 1: Download the raw dataset and process it into data that can be fed to models.
 For our current SCodeBert task, we mainly use the CodeSearchNet dataset to fairly compare with CodeBert.
 
-Please refer to [dataset/csn/readme.md](https://github.com/whatsmyname/naturalcodev3/tree/master/dataset/csn) to process the CodeSearchNet dataset.
+Please refer to [dataset/csn/readme.md](https://github.com/whatsmyname/naturalcc/tree/master/dataset/csn) to process the CodeSearchNet dataset.
 After this step, we will obtain the preprocessed data in `~/.ncc/` folder.
 
 #### Step 2: Pre-training
 
-##### Model 1 ([code-roberta](https://github.com/whatsmyname/naturalcodev3/tree/master/run/codebert/code_roberta)): only code tokens, Roberta architecture
+##### Model 1 ([code-roberta](https://github.com/xcodemind/naturalcc/tree/master/run/codebert/code_roberta)): only code tokens, Roberta architecture
 
 ```
 python -m run.codebert.code_roberta.train
@@ -78,13 +78,13 @@ python -m run.codebert.code_roberta.train
 python -m run.codebert.code_docstring_roberta.train
 ```
 
-##### Model 3 ([traverse-roberta](https://github.com/whatsmyname/naturalcodev3/tree/master/run/codebert/traverse_roberta)): only code structure (AST traverse), Roberta architecture
+##### Model 3 ([traverse-roberta](https://github.com/xcodemind/naturalcc/tree/master/run/codebert/traverse_roberta)): only code structure (AST traverse), Roberta architecture
 
 ```
 python -m run.codebert.traverse_roberta.train
 ```
 
-To verify the model, first process the [augmented_javascript](https://github.com/whatsmyname/naturalcodev3/tree/master/dataset/augmented_javascript).
+To verify the model, first process the [augmented_javascript](https://github.com/xcodemind/naturalcc/tree/master/dataset/augmented_javascript).
 
 ##### Model 4 (traverse-docstring-roberta): code structure (AST traverse) and comment tokens, Roberta architecture
 
@@ -132,7 +132,7 @@ TODO
 
 
 ## License
-naturalcode is MIT-licensed. The license applies to the pre-trained models as well.
+naturalcc is MIT-licensed. The license applies to the pre-trained models as well.
 
 ## Citation
 Please cite as:
