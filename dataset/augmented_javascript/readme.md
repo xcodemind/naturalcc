@@ -20,14 +20,8 @@ python -m dataset.augmented_javascript.cast_pkl2json
 ```
 
 ## Step 2: before you run sentencepiece, you have gunzip raw data
-- For Yao & Yang
 ```
 cd ~/.ncc/augmented_javascript/raw
-gunzip javascript_dedupe_definitions_nonoverlap_v2_train.jsonl.gz
-```
-- For Jian-Guo
-```
-cd /export/share/jianguo/scodebert/augmented_javascript/raw
 gunzip javascript_dedupe_definitions_nonoverlap_v2_train.jsonl.gz
 ```
 
@@ -37,14 +31,8 @@ Run the sentencepiece
 python -m dataset.augmented_javascript.run_sentencepiece
 ```
 Cast the sentencepiece vocab to the format of NCC Dictionary.
-- For Yao & Yang
 ```
 cd ~/.ncc/augmented_javascript/codebert/code_roberta/data-mmap 
-cut -f1 csnjs_8k_9995p_unigram_url.vocab | tail -n +10 | sed "s/$/ 100/g" > csnjs_8k_9995p_unigram_url.dict.txt
-```
-- For Jian-Guo
-```
-cd /export/share/jianguo/scodebert/augmented_javascript/codebert/code_roberta/data-mmap 
 cut -f1 csnjs_8k_9995p_unigram_url.vocab | tail -n +10 | sed "s/$/ 100/g" > csnjs_8k_9995p_unigram_url.dict.txt
 ```
 
