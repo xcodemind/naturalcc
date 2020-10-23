@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from ncc.utils import utils
 from ncc.models import register_model
-from ncc.models.fairseq_model import FairseqEncoderDecoderModel
+from ncc.models.ncc_model import NccEncoderDecoderModel
 from ncc.modules.embedding import Embedding
 from ncc.modules.code2vec.path_encoder import PathEncoder
 from ncc.modules.seq2seq.path_decoder import LSTMDecoder
@@ -12,7 +12,7 @@ DEFAULT_MAX_TARGET_POSITIONS = 1e5
 
 
 @register_model('code2seq')
-class Code2Seq(FairseqEncoderDecoderModel):
+class Code2Seq(NccEncoderDecoderModel):
     def __init__(self, encoder, decoder):
         super().__init__(encoder, decoder)
 

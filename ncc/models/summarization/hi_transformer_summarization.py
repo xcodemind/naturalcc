@@ -19,7 +19,7 @@ from ncc.modules.attention.multihead_attention import MultiheadAttention
 from ncc.modules.roberta.sinusoidal_positional_embedding_hibert import SinusoidalPositionalEmbedding
 from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
 from ncc.modules.code2vec.ncc_encoder import NccEncoder
-from ncc.models.fairseq_model import FairseqEncoderDecoderModel
+from ncc.models.ncc_model import NccEncoderDecoderModel
 from ncc.models import register_model
 from ncc.utils import utils
 # from . import (
@@ -44,7 +44,7 @@ def get_sent_end_repr(src_emb, sent_ends):
     return sent_ends_repr
 
 @register_model('hi_transformer_summarization')
-class HiTransformerSummarizationModel(FairseqEncoderDecoderModel):
+class HiTransformerSummarizationModel(NccEncoderDecoderModel):
     def __init__(self, encoder, decoder):
         super().__init__(encoder, decoder)
 

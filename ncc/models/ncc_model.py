@@ -225,7 +225,7 @@ class BaseNccModel(nn.Module):
         return {}
 
 
-class FairseqEncoderDecoderModel(BaseNccModel):
+class NccEncoderDecoderModel(BaseNccModel):
     """Base class for encoder-decoder models.
 
     Args:
@@ -301,11 +301,11 @@ class FairseqEncoderDecoderModel(BaseNccModel):
         return self.decoder.max_positions()
 
 
-class NccModel(FairseqEncoderDecoderModel):
+class NccModel(NccEncoderDecoderModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         utils.deprecation_warning(
-            "NccModel is deprecated, please use FairseqEncoderDecoderModel "
+            "NccModel is deprecated, please use NccEncoderDecoderModel "
             "or BaseNccModel instead",
             stacklevel=4,
         )
@@ -324,7 +324,7 @@ class FairseqMultiModel(BaseNccModel):
 
         self.models = nn.ModuleDict(
             {
-                key: FairseqEncoderDecoderModel(encoders[key], decoders[key])
+                key: NccEncoderDecoderModel(encoders[key], decoders[key])
                 for key in self.keys
             }
         )

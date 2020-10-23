@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import torch
 import torch.nn as nn
-from ncc.models.fairseq_model import FairseqEncoderDecoderModel
+from ncc.models.ncc_model import NccEncoderDecoderModel
 from ncc.modules.embedding import Embedding
 from ncc.modules.code2vec.mm_encoder import MMEncoder
 from ncc.modules.seq2seq.mm_decoder import MMLSTMDecoder
@@ -12,7 +12,7 @@ DEFAULT_MAX_TARGET_POSITIONS = None #1e5
 
 
 @register_model('mm2seq')
-class MM2SeqModel(FairseqEncoderDecoderModel):
+class MM2SeqModel(NccEncoderDecoderModel):
     def __init__(self, encoder, decoder):
         super().__init__(encoder, decoder)
     #

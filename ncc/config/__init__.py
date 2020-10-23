@@ -30,7 +30,7 @@ import time
 # from .fairseq_model import (
 #     BaseNccModel,
 #     FairseqEncoderModel,
-#     FairseqEncoderDecoderModel,
+#     NccEncoderDecoderModel,
 #     FairseqLanguageModel,
 #     NccModel,
 #     FairseqMultiModel,
@@ -68,11 +68,11 @@ def register_config(name):
     For example::
 
         @register_model('lstm')
-        class LSTM(FairseqEncoderDecoderModel):
+        class LSTM(NccEncoderDecoderModel):
             (...)
 
     .. note:: All models must implement the :class:`BaseNccModel` interface.
-        Typically you will extend :class:`FairseqEncoderDecoderModel` for
+        Typically you will extend :class:`NccEncoderDecoderModel` for
         sequence-to-sequence tasks or :class:`FairseqLanguageModel` for
         language modeling tasks.
 

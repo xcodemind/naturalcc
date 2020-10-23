@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ncc.models.fairseq_model import FairseqEncoderDecoderModel
+from ncc.models.ncc_model import NccEncoderDecoderModel
 from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.modules.seq2seq.fairseq_incremental_decoder import FairseqIncrementalDecoder
 from ncc.modules.embedding import Embedding
@@ -213,7 +213,7 @@ class LSTMDecoder(FairseqIncrementalDecoder):
 
 
 @register_model('codenn')
-class CodeNNModel(FairseqEncoderDecoderModel):
+class CodeNNModel(NccEncoderDecoderModel):
     def __init__(self, encoder: NBOWEncoder, decoder: LSTMDecoder):
         super().__init__(encoder, decoder)
 

@@ -1,4 +1,4 @@
-from ncc.models.fairseq_model import FairseqEncoderDecoderModel
+from ncc.models.ncc_model import NccEncoderDecoderModel
 from ncc.modules.embedding import Embedding
 from ncc.modules.code2vec.transformer_encoder import TransformerEncoder
 from ncc.modules.seq2seq.transformer_decoder import TransformerDecoder
@@ -9,7 +9,7 @@ DEFAULT_MAX_TARGET_POSITIONS = 1e5
 
 
 @register_model('transformer_summarization')
-class TransformerModel(FairseqEncoderDecoderModel):
+class TransformerModel(NccEncoderDecoderModel):
     """
         Transformer model from `"Attention Is All You Need" (Vaswani, et al, 2017)
         <https://arxiv.org/abs/1706.03762>`_.
