@@ -10,11 +10,11 @@ import torch.nn.functional as F
 
 # from fairseq import utils
 from ncc.utils import utils
-from ncc.criterions import FairseqCriterion, register_criterion
+from ncc.criterions import NccCriterion, register_criterion
 
 
 @register_criterion('binary_cross_entropy')
-class BinaryCrossEntropyCriterion(FairseqCriterion):
+class BinaryCrossEntropyCriterion(NccCriterion):
 
     def __init__(self, task, infonce=False, loss_weights=None, log_keys=None):
         super().__init__(task)

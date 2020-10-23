@@ -10,7 +10,7 @@ import torch.nn.functional as F
 
 # from fairseq import utils
 from ncc.utils import utils
-from ncc.criterions import FairseqCriterion, register_criterion
+from ncc.criterions import NccCriterion, register_criterion
 
 
 def compute_cross_entropy_loss(logits, targets, ignore_index=-100):
@@ -32,7 +32,7 @@ def compute_cross_entropy_loss(logits, targets, ignore_index=-100):
 
 
 @register_criterion('legacy_masked_lm_loss')
-class LegacyMaskedLmLoss(FairseqCriterion):
+class LegacyMaskedLmLoss(NccCriterion):
     """
     Implementation for the loss used in masked language model (MLM) training.
     This optionally also computes the next sentence prediction (NSP) loss and

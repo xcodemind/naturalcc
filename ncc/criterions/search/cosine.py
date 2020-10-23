@@ -7,11 +7,11 @@ import torch.nn.functional as F
 
 from ncc.utils import utils
 from ncc.logging import metrics
-from ncc.criterions import FairseqCriterion, register_criterion
+from ncc.criterions import NccCriterion, register_criterion
 
 
 @register_criterion('search_softmax')
-class SearchSoftmaxCriterion(FairseqCriterion):
+class SearchSoftmaxCriterion(NccCriterion):
     def __init__(self, task, sentence_avg):
         super().__init__(task)
         self.sentence_avg = sentence_avg

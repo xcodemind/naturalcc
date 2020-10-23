@@ -12,11 +12,11 @@ from torch import Tensor
 # from fairseq import metrics, utils
 from ncc.logging import metrics
 from ncc.utils import utils
-from ncc.criterions import FairseqCriterion, register_criterion
+from ncc.criterions import NccCriterion, register_criterion
 
 
 @register_criterion("nat_loss")
-class LabelSmoothedDualImitationCriterion(FairseqCriterion):
+class LabelSmoothedDualImitationCriterion(NccCriterion):
 
     def __init__(self, task, label_smoothing):
         super().__init__(task)

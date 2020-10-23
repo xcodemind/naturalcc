@@ -10,11 +10,11 @@ import torch.nn.functional as F
 # from fairseq import metrics, utils
 from ncc.logging import metrics
 from ncc.utils import utils
-from ncc.criterions import FairseqCriterion, register_criterion
+from ncc.criterions import NccCriterion, register_criterion
 
 
 @register_criterion('adaptive_loss')
-class AdaptiveLoss(FairseqCriterion):
+class AdaptiveLoss(NccCriterion):
     """This is an implementation of the loss function accompanying the adaptive softmax approximation for
     graphical processing units (GPU), described in the paper "Efficient softmax approximation for GPUs"
     (http://arxiv.org/abs/1609.04309)."""

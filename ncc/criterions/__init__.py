@@ -7,12 +7,12 @@ import importlib
 import os
 
 from ncc import registry
-from ncc.criterions.fairseq_criterion import FairseqCriterion, LegacyFairseqCriterion
+from ncc.criterions.ncc_criterion import NccCriterion, LegacyNccCriterion
 
 
 build_criterion, register_criterion, CRITERION_REGISTRY = registry.setup_registry(
     'criterion',
-    base_class=FairseqCriterion,
+    base_class=NccCriterion,
     default='cross_entropy',
 )
 

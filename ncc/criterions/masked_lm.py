@@ -11,12 +11,12 @@ import torch.nn.functional as F
 # from fairseq import metrics, utils
 from ncc.logging import metrics
 from ncc.utils import utils
-from ncc.criterions import FairseqCriterion, register_criterion
+from ncc.criterions import NccCriterion, register_criterion
 from ncc.modules.cross_entropy import cross_entropy
 
 
 @register_criterion('masked_lm')
-class MaskedLmLoss(FairseqCriterion):
+class MaskedLmLoss(NccCriterion):
     """
     Implementation for the loss used in masked language model (MLM) training.
     """

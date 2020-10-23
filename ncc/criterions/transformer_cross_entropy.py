@@ -7,11 +7,11 @@ import math
 import torch.nn.functional as F
 from ncc.logging import metrics
 from ncc.utils import utils
-from ncc.criterions import FairseqCriterion, register_criterion
+from ncc.criterions import NccCriterion, register_criterion
 
 
 @register_criterion('transformer_cross_entropy')
-class TransformerCrossEntropyCriterion(FairseqCriterion):
+class TransformerCrossEntropyCriterion(NccCriterion):
 
     def __init__(self, task, sentence_avg):
         super().__init__(task)

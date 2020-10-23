@@ -8,7 +8,7 @@ import math
 # from fairseq import metrics, utils
 from ncc.logging import metrics
 from ncc.utils import utils
-from ncc.criterions import FairseqCriterion, register_criterion
+from ncc.criterions import NccCriterion, register_criterion
 
 
 def label_smoothed_nll_loss(lprobs, target, epsilon, ignore_index=None, reduce=True):
@@ -32,7 +32,7 @@ def label_smoothed_nll_loss(lprobs, target, epsilon, ignore_index=None, reduce=T
 
 
 @register_criterion('label_smoothed_cross_entropy')
-class LabelSmoothedCrossEntropyCriterion(FairseqCriterion):
+class LabelSmoothedCrossEntropyCriterion(NccCriterion):
 
     def __init__(self, task, sentence_avg, label_smoothing):
         super().__init__(task)

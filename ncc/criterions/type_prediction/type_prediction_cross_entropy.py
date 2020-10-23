@@ -10,11 +10,11 @@ import numpy as np
 # from fairseq import metrics, utils
 from ncc.logging import metrics
 from ncc.utils import utils
-from ncc.criterions import FairseqCriterion, register_criterion
+from ncc.criterions import NccCriterion, register_criterion
 
 
 @register_criterion('type_predicition_cross_entropy')
-class TypePredictionCrossEntropyCriterion(FairseqCriterion):
+class TypePredictionCrossEntropyCriterion(NccCriterion):
 
     def __init__(self, task, sentence_avg):
         super().__init__(task)

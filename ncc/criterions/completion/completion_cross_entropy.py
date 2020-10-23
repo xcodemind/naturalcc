@@ -10,11 +10,11 @@ import numpy as np
 # from fairseq import metrics, utils
 from ncc.logging import metrics
 from ncc.utils import utils
-from ncc.criterions import FairseqCriterion, register_criterion
+from ncc.criterions import NccCriterion, register_criterion
 
 
 @register_criterion('completion_cross_entropy')
-class CompletionCrossEntropyCriterion(FairseqCriterion):
+class CompletionCrossEntropyCriterion(NccCriterion):
 
     def __init__(self, task, sentence_avg):
         super().__init__(task)

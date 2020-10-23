@@ -223,14 +223,14 @@ class NccTask(object):
 
     def build_criterion(self, args):
         """
-        Build the :class:`~fairseq.criterions.FairseqCriterion` instance for
+        Build the :class:`~fairseq.criterions.NccCriterion` instance for
         this task.
 
         Args:
             args (argparse.Namespace): parsed command-line arguments
 
         Returns:
-            a :class:`~fairseq.criterions.FairseqCriterion` instance
+            a :class:`~fairseq.criterions.NccCriterion` instance
         """
         from ncc import criterions
 
@@ -238,14 +238,14 @@ class NccTask(object):
 
     def build_tokenizer(self, args):
         """
-        Build the :class:`~fairseq.criterions.FairseqCriterion` instance for
+        Build the :class:`~fairseq.criterions.NccCriterion` instance for
         this task.
 
         Args:
             args (argparse.Namespace): parsed command-line arguments
 
         Returns:
-            a :class:`~fairseq.criterions.FairseqCriterion` instance
+            a :class:`~fairseq.criterions.NccCriterion` instance
         """
         from ncc.data import tokenizer
 
@@ -397,7 +397,7 @@ class NccTask(object):
             sample (dict): the mini-batch. The format is defined by the
                 :class:`~fairseq.data.FairseqDataset`.
             model (~fairseq.models.BaseFairseqModel): the model
-            criterion (~fairseq.criterions.FairseqCriterion): the criterion
+            criterion (~fairseq.criterions.NccCriterion): the criterion
             optimizer (~fairseq.optim.NccOptimizer): the optimizer
             update_num (int): the current update
             ignore_grad (bool): multiply loss by 0 if this is set to True

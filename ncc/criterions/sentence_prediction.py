@@ -11,11 +11,11 @@ import torch.nn.functional as F
 # from fairseq import metrics, utils
 from ncc.logging import metrics
 from ncc.utils import utils
-from ncc.criterions import FairseqCriterion, register_criterion
+from ncc.criterions import NccCriterion, register_criterion
 
 
 @register_criterion('sentence_prediction')
-class SentencePredictionCriterion(FairseqCriterion):
+class SentencePredictionCriterion(NccCriterion):
 
     def __init__(self, task, classification_head_name, regression_target):
         super().__init__(task)

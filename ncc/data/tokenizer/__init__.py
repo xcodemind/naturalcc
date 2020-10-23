@@ -5,7 +5,7 @@
 # import os
 # import importlib
 # from ncc import registry
-# from ncc.data.tokenizer.pretrained_tokenizer import PreTrainedTokenizer # , LegacyFairseqCriterion
+# from ncc.data.tokenizer.pretrained_tokenizer import PreTrainedTokenizer # , LegacyNccCriterion
 #
 # print('PreTrainedTokenizer: ', PreTrainedTokenizer)
 #

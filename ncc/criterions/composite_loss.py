@@ -7,11 +7,11 @@ from torch import nn
 
 # from fairseq import utils
 from ncc.utils import utils
-from ncc.criterions import FairseqCriterion, register_criterion
+from ncc.criterions import NccCriterion, register_criterion
 
 
 @register_criterion('composite_loss')
-class CompositeLoss(FairseqCriterion):
+class CompositeLoss(NccCriterion):
     """This is a composite loss that, given a list of model outputs and a list of targets,
     computes an average of losses for each output-target pair"""
 
@@ -61,7 +61,7 @@ class CompositeLoss(FairseqCriterion):
             def decoder(self):
                 return self.model.decoder
 
-        class _CompositeLoss(FairseqCriterion):
+        class _CompositeLoss(NccCriterion):
 
             def __init__(self, task, underlying_criterion):
                 super().__init__(task)

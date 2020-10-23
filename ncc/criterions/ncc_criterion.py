@@ -13,7 +13,7 @@ from ncc.logging import metrics
 from ncc.utils import utils
 
 
-class FairseqCriterion(_Loss):
+class NccCriterion(_Loss):
 
     def __init__(self, task):
         super().__init__()
@@ -108,7 +108,7 @@ class FairseqCriterion(_Loss):
         return False
 
 
-class LegacyFairseqCriterion(FairseqCriterion):
+class LegacyNccCriterion(NccCriterion):
 
     def __init__(self, args, task):
         super().__init__(task=task)
@@ -117,7 +117,7 @@ class LegacyFairseqCriterion(FairseqCriterion):
         utils.deprecation_warning(
             'Criterions should take explicit arguments instead of an '
             'argparse.Namespace object, please update your criterion by '
-            'extending FairseqCriterion instead of LegacyFairseqCriterion.'
+            'extending NccCriterion instead of LegacyNccCriterion.'
         )
 
     @classmethod

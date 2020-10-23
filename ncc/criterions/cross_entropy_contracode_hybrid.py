@@ -6,12 +6,12 @@
 import torch.nn.functional as F
 
 from ncc.logging import metrics
-from ncc.criterions import FairseqCriterion, register_criterion
+from ncc.criterions import NccCriterion, register_criterion
 import torch
 
 
 @register_criterion('cross_entropy_contracode_hybrid')
-class CrossEntropyContraCodeHybridCriterion(FairseqCriterion):
+class CrossEntropyContraCodeHybridCriterion(NccCriterion):
 
     def __init__(self, task, sentence_avg):
         super().__init__(task)
