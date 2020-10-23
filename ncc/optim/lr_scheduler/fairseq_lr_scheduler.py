@@ -3,15 +3,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from .. import FairseqOptimizer
+from .. import NccOptimizer
 
 
 class FairseqLRScheduler(object):
 
     def __init__(self, args, optimizer):
         super().__init__()
-        if not isinstance(optimizer, FairseqOptimizer):
-            raise ValueError('optimizer must be an instance of FairseqOptimizer')
+        if not isinstance(optimizer, NccOptimizer):
+            raise ValueError('optimizer must be an instance of NccOptimizer')
         self.args = args
         self.optimizer = optimizer
         self.best = None

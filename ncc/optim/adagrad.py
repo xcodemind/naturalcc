@@ -5,11 +5,11 @@
 
 import torch.optim
 
-from . import FairseqOptimizer, register_optimizer
+from . import NccOptimizer, register_optimizer
 
 
 @register_optimizer('adagrad')
-class Adagrad(FairseqOptimizer):
+class Adagrad(NccOptimizer):
     def __init__(self, args, params):
         super().__init__(args)
         self._optimizer = torch.optim.Adagrad(params, **self.optimizer_config)

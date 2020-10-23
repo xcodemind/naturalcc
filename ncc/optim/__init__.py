@@ -7,13 +7,13 @@ import importlib
 import os
 
 from ncc import registry
-from ncc.optim.fairseq_optimizer import FairseqOptimizer
+from ncc.optim.ncc_optimizer import NccOptimizer
 from ncc.optim.fp16_optimizer import FP16Optimizer, MemoryEfficientFP16Optimizer
 from ncc.optim.bmuf import FairseqBMUF  # noqa
 
 
 __all__ = [
-    'FairseqOptimizer',
+    'NccOptimizer',
     'FP16Optimizer',
     'MemoryEfficientFP16Optimizer',
 ]
@@ -21,7 +21,7 @@ __all__ = [
 
 build_optimizer, register_optimizer, OPTIMIZER_REGISTRY = registry.setup_registry(
     'optimizer',
-    base_class=FairseqOptimizer,
+    base_class=NccOptimizer,
     default='nag',
 )
 

@@ -88,7 +88,7 @@ class _FP16OptimizerMixin(object):
     def backward(self, loss):
         """Computes the sum of gradients of the given tensor w.r.t. graph leaves.
 
-        Compared to :func:`fairseq.optim.FairseqOptimizer.backward`, this
+        Compared to :func:`fairseq.optim.NccOptimizer.backward`, this
         function additionally dynamically scales the loss to avoid gradient
         underflow.
         """
@@ -208,7 +208,7 @@ class _FP16OptimizerMixin(object):
             self._multiply_factor = 1. / float(self.scaler.loss_scale)
 
 
-class FP16Optimizer(_FP16OptimizerMixin, optim.FairseqOptimizer):
+class FP16Optimizer(_FP16OptimizerMixin, optim.NccOptimizer):
     """
     Wrap an *optimizer* to support FP16 (mixed precision) training.
     """
@@ -337,7 +337,7 @@ class _MemoryEfficientFP16OptimizerMixin(object):
     def backward(self, loss):
         """Computes the sum of gradients of the given tensor w.r.t. graph leaves.
 
-        Compared to :func:`fairseq.optim.FairseqOptimizer.backward`, this
+        Compared to :func:`fairseq.optim.NccOptimizer.backward`, this
         function additionally dynamically scales the loss to avoid gradient
         underflow.
         """
@@ -391,7 +391,7 @@ class _MemoryEfficientFP16OptimizerMixin(object):
             self._multiply_factor = 1. / float(self.scaler.loss_scale)
 
 
-class MemoryEfficientFP16Optimizer(_MemoryEfficientFP16OptimizerMixin, optim.FairseqOptimizer):
+class MemoryEfficientFP16Optimizer(_MemoryEfficientFP16OptimizerMixin, optim.NccOptimizer):
     """
     Wrap an *optimizer* to support FP16 (mixed precision) training.
 

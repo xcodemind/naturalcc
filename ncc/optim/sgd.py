@@ -5,11 +5,11 @@
 
 import torch.optim
 
-from . import FairseqOptimizer, register_optimizer
+from . import NccOptimizer, register_optimizer
 
 
 @register_optimizer('sgd')
-class SGD(FairseqOptimizer):
+class SGD(NccOptimizer):
     def __init__(self, args, params):
         super().__init__(args)
         self._optimizer = torch.optim.SGD(params, **self.optimizer_config)

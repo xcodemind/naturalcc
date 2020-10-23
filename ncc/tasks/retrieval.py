@@ -141,7 +141,7 @@ class RetrievalTask(NccTask):
                 :class:`~fairseq.data.FairseqDataset`.
             model (~fairseq.models.BaseFairseqModel): the model
             criterion (~fairseq.criterions.FairseqCriterion): the criterion
-            optimizer (~fairseq.optim.FairseqOptimizer): the optimizer
+            optimizer (~fairseq.optim.NccOptimizer): the optimizer
             update_num (int): the current update
             ignore_grad (bool): multiply loss by 0 if this is set to True
 

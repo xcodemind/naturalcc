@@ -11,14 +11,14 @@ import torch
 import torch.optim
 import torch.distributed as dist
 
-from ncc.optim import FairseqOptimizer, register_optimizer
+from ncc.optim import NccOptimizer, register_optimizer
 from ncc.optim.fused_adam import get_fused_adam_class
 
 logger = logging.getLogger(__name__)
 
 
 @register_optimizer('adam_simple')
-class FairseqAdamSimple(FairseqOptimizer):
+class FairseqAdamSimple(NccOptimizer):
     """Adam optimizer for fairseq.
 
     Important note: this optimizer corresponds to the "AdamW" variant of

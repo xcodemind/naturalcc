@@ -6,11 +6,11 @@
 import torch
 import torch.optim
 
-from . import FairseqOptimizer, register_optimizer
+from . import NccOptimizer, register_optimizer
 
 
 @register_optimizer('adamax')
-class FairseqAdamax(FairseqOptimizer):
+class FairseqAdamax(NccOptimizer):
     def __init__(self, args, params):
         super().__init__(args)
         self._optimizer = Adamax(params, **self.optimizer_config)

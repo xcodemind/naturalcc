@@ -8,7 +8,7 @@ import torch
 from ncc.utils import utils
 
 
-class FairseqOptimizer(object):
+class NccOptimizer(object):
 
     def __init__(self, args):
         super().__init__()

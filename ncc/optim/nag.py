@@ -6,11 +6,11 @@
 import torch
 from torch.optim.optimizer import Optimizer, required
 
-from . import FairseqOptimizer, register_optimizer
+from . import NccOptimizer, register_optimizer
 
 
 @register_optimizer('nag')
-class FairseqNAG(FairseqOptimizer):
+class FairseqNAG(NccOptimizer):
     def __init__(self, args, params):
         super().__init__(args)
         self._optimizer = NAG(params, **self.optimizer_config)
