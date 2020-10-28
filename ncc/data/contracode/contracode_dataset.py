@@ -81,6 +81,7 @@ def collate(samples, src_dict,  program_mode='contrastive', loss_mode='hybrid', 
                 'lengths_k': lengths_k,
             },
             'mlm_targets': mlm_targets,
+            'loss_mode': loss_mode,
         }
     elif program_mode == "identity":
         id = torch.LongTensor([s['id'] for s in samples])
@@ -98,6 +99,7 @@ def collate(samples, src_dict,  program_mode='contrastive', loss_mode='hybrid', 
                 'lengths': lengths,
             },
             'mlm_targets': mlm_targets,
+            'loss_mode': loss_mode,
         }
 
     return example
