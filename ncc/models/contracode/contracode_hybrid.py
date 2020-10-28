@@ -5,7 +5,6 @@
 """
 RoBERTa: A Robustly Optimized BERT Pretraining Approach.
 """
-import sys
 import torch
 import torch.nn as nn
 from ncc.models import register_model

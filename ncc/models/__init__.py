@@ -1,16 +1,3 @@
-# -*- coding: utf-8 -*-
-
-# import sys
-#
-# sys.path.append('.')
-#
-# import datetime
-# import time
-#
-# __all__ = [
-#     'datetime', 'time',
-# ]
-
 # Copyright (c) Facebook, Inc. and its affiliates.
 #
 # This source code is licensed under the MIT license found in the
@@ -19,10 +6,6 @@ import importlib
 import os
 import datetime
 import time
-
-# from .fairseq_decoder import NccDecoder
-# from .fairseq_encoder import NccEncoder
-# from .fairseq_incremental_decoder import NccIncrementalDecoder
 from .ncc_model import (
     BaseNccModel,
     NccEncoderModel,
@@ -33,9 +16,7 @@ from .ncc_model import (
     NccMoCoModel,
 )
 
-# from .composite_encoder import CompositeEncoder
 from .distributed_ncc_model import DistributedNccModel
-
 
 MODEL_REGISTRY = {}
 # ARCH_MODEL_REGISTRY = {}
@@ -154,6 +135,3 @@ for file in os.listdir(models_dir):
         #     group_args = parser.add_argument_group('Additional command-line arguments')
         #     MODEL_REGISTRY[model_name].add_args(group_args)
         #     globals()[model_name + '_parser'] = parser
-
-# print('MODEL_REGISTRY: ', MODEL_REGISTRY)
-# print('ARCH_MODEL_REGISTRY: ', ARCH_MODEL_REGISTRY)

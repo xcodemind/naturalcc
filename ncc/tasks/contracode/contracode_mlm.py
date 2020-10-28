@@ -170,10 +170,6 @@ class IndexedJavascriptAugmentedDataset(NccDataset):
         self.check_index(i)
         return self.examples_list[i]
 
-    # def get_original_text(self, i):
-    #     self.check_index(i)
-    #     return self.lines[i]
-
     def __del__(self):
         pass
 
@@ -194,15 +190,6 @@ class IndexedJavascriptAugmentedDataset(NccDataset):
 def load_code_dataset_mlm(args, epoch, data_path, split, source_dictionary, combine,):
     # split_path = os.path.join(data_path, 'javascript_augmented_debug.sp.json') # '{}.code'.format(split)
     split_path = os.path.join(data_path, 'javascript_augmented_debug.pickle') # '{}.code'.format(split)
-
-    # dataset = data_utils.load_indexed_dataset(
-    #     path=split_path,
-    #     modality='javascript_augmented',
-    #     dictionary=source_dictionary,
-    #     # tokenizer=sp.EncodeAsPieces,
-    #     dataset_impl=args['dataset']['dataset_impl'],
-    #     combine=combine,
-    # )
     sp = spm.SentencePieceProcessor()
     sp.load(args['dataset']['src_sp'])
     dataset = IndexedJavascriptAugmentedDataset(path=split_path, dictionary=source_dictionary, sp=sp, append_eos=False)
@@ -213,6 +200,7 @@ def load_code_dataset_mlm(args, epoch, data_path, split, source_dictionary, comb
         dataset, dataset.sizes, source_dictionary, program_mode='identity', loss_mode='mlm',
         shuffle=False,
     )
+
 
 @register_task('contracode_mlm')
 class ContraCodeMLM(NccTask):
@@ -248,8 +236,8 @@ class ContraCodeMLM(NccTask):
     def setup_task(cls, args, **kwargs):
         paths = utils.split_paths(args['task']['data'])
         assert len(paths) > 0
-        # dictionary = cls.load_dictionary(os.path.join(paths[0], 'csnjs_8k_9995p_unigram_url.dict.txt'))
-        dictionary = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.json'.format(args['task']['source_lang'])))
+        dictionary = cls.load_dictionary(os.path.join(paths[0], 'csnjs_8k_9995p_unigram_url.dict.txt'))
+        # dictionary = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.json'.format(args['task']['source_lang'])))
         LOGGER.info('dictionary: {} types'.format(len(dictionary)))
         # sp = spm.SentencePieceProcessor()
         # sp.Load(os.path.join(paths[0], 'csnjs_8k_9995p_unigram_url.model'))

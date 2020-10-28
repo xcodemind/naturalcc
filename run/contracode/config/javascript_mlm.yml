@@ -1,5 +1,5 @@
 #registry
-criterion: cross_entropy_contracode_mlm
+criterion: cross_entropy_contracode
 optimizer: 'adam_simple'
 lr_scheduler: 'polynomial_decay'
 tokenizer: ~ # default=None
@@ -25,7 +25,7 @@ common:
   user_dir: ~ # default=None, help='path to a python module containing custom extensions (tasks and/or architectures)'
   empty_cache_freq: 0 # type=int, help='how often to clear the PyTorch CUDA cache (0 to disable)'
   all_gather_list_size: 16384 # default=16384, type=int, help='number of bytes reserved for gathering stats from workers'
-  task: contracode_hybrid # masked_lm # task
+  task: contracode_mlm # masked_lm # task
 
 dataset:
   num_workers: 0 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
@@ -168,7 +168,7 @@ model:
 optimization:
   max_epoch: 0 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
   max_update: 12500 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
-  clip_norm: 25 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
+  clip_norm: 0 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
   sentence_avg: ~ # action='store_true', help='normalize gradients by the number of sentences in a batch (default is to normalize by number of tokens)'
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
     - 1

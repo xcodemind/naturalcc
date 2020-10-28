@@ -293,12 +293,12 @@ def cli_main():
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        "--config", "-c", default='javascript_contracode', type=str, help="load {language}.yml for train",
+        "--config", "-c", default='javascript_mlm', type=str, help="load {config}.yml for train",
     )
     args = parser.parse_args()
     # Argues = namedtuple('Argues', 'yaml')
     # args_ = Argues('ruby.yml')
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.language))
+    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.config))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)

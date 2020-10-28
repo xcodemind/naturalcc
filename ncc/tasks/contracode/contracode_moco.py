@@ -84,10 +84,6 @@ class IndexedJavascriptAugmentedDataset(NccDataset):
         self.check_index(i)
         return self.examples_list[i]
 
-    # def get_original_text(self, i):
-    #     self.check_index(i)
-    #     return self.lines[i]
-
     def __del__(self):
         pass
 
@@ -108,15 +104,6 @@ class IndexedJavascriptAugmentedDataset(NccDataset):
 def load_augmented_code_dataset_moco(args, epoch, data_path, split, source_dictionary, combine,):
     # split_path = os.path.join(data_path, 'javascript_augmented_debug.sp.json') # '{}.code'.format(split)
     split_path = os.path.join(data_path, 'javascript_augmented_debug.pickle') # '{}.code'.format(split)
-
-    # dataset = data_utils.load_indexed_dataset(
-    #     path=split_path,
-    #     modality='javascript_augmented',
-    #     dictionary=source_dictionary,
-    #     # tokenizer=sp.EncodeAsPieces,
-    #     dataset_impl=args['dataset']['dataset_impl'],
-    #     combine=combine,
-    # )
     sp = spm.SentencePieceProcessor()
     sp.load(args['dataset']['src_sp'])
     dataset = IndexedJavascriptAugmentedDataset(path=split_path, dictionary=source_dictionary, sp=sp, append_eos=False)
