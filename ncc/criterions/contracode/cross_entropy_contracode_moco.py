@@ -10,8 +10,8 @@ from ncc.criterions import NccCriterion, register_criterion
 import torch
 
 
-@register_criterion('cross_entropy_contracode_hybrid')
-class CrossEntropyContraCodeHybridCriterion(NccCriterion):
+@register_criterion('cross_entropy_contracode_moco')
+class CrossEntropyContraCodeMOCOCriterion(NccCriterion):
 
     def __init__(self, task, sentence_avg):
         super().__init__(task)
@@ -26,14 +26,14 @@ class CrossEntropyContraCodeHybridCriterion(NccCriterion):
         3) logging outputs to display while training
         """
         # net_output = model(**sample['net_input'])
-        net_output = model(sample['net_input']['tokens_q'], sample['net_input']['tokens_k'], sample['net_input']['lengths_q'], sample['net_input']['lengths_k'])
+        net_output = model(sample['net_input']['tokens_q'], sample['net_input']['tokens_k'],
+                           sample['net_input']['lengths_q'], sample['net_input']['lengths_k'])
         # output, target = net_output
-        predicted_masked_tokens, moco_logits, moco_targets = net_output
+        moco_logits, moco_targets = net_output
         # moco_loss = F.cross_entropy(moco_logits, moco_targets, reduction='sum' if reduce else 'none')
-        moco_loss = F.cross_entropy(moco_logits, moco_targets)
-        mlm_loss = F.cross_entropy(predicted_masked_tokens.flatten(end_dim=1), sample['mlm_targets'].flatten(),
-                                   ignore_index=self.padding_idx)
-        loss = 4 * moco_loss + mlm_loss
+        loss = F.cross_entropy(moco_logits, moco_targets)
+        # mlm_loss = F.cross_entropy(predicted_masked_tokens.flatten(end_dim=1), sample['mlm_targets'].flatten(),
+        #                            ignore_index=self.padding_idx)
         print('loss: ', loss)
         sample_size = sample['id'].size(0)
         logging_output = {
@@ -44,18 +44,6 @@ class CrossEntropyContraCodeHybridCriterion(NccCriterion):
         }
         return loss, sample_size, logging_output
 
-    # def compute_loss(self, model, net_output, sample, reduce=True):
-    #     lprobs = model.get_normalized_probs(net_output, log_probs=True)
-    #     lprobs = lprobs.view(-1, lprobs.size(-1))
-    #     target = model.get_targets(sample, net_output).view(-1)
-    #     loss = F.nll_loss(
-    #         lprobs,
-    #         target,
-    #         ignore_index=self.padding_idx,
-    #         reduction='sum' if reduce else 'none',
-    #     )
-    #     return loss, loss
-
     @staticmethod
     def reduce_metrics(logging_outputs) -> None:
         """Aggregate logging outputs from data parallel training."""
@@ -63,7 +51,7 @@ class CrossEntropyContraCodeHybridCriterion(NccCriterion):
         # ntokens = sum(log.get('ntokens', 0) for log in logging_outputs)
         sample_size = sum(log.get('sample_size', 0) for log in logging_outputs)
 
-        metrics.log_scalar('loss', loss_sum/sample_size)
+        metrics.log_scalar('loss', loss_sum / sample_size)
         # if sample_size != ntokens:
         #     metrics.log_scalar('nll_loss', loss_sum / ntokens / math.log(2), ntokens, round=3)
         #     metrics.log_derived('ppl', lambda meters: utils.get_perplexity(meters['nll_loss'].avg))

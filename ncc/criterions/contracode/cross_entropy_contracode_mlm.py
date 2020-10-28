@@ -27,8 +27,6 @@ class CrossEntropyContraCodeMLMCriterion(NccCriterion):
         """
         # net_output = model(**sample['net_input'])
         predicted_masked_tokens = model(sample['net_input']['tokens'], sample['net_input']['lengths'])
-        # output, target = net_output
-        # moco_logits, moco_targets = net_output
         # # moco_loss = F.cross_entropy(moco_logits, moco_targets, reduction='sum' if reduce else 'none')
         # loss = F.cross_entropy(moco_logits, moco_targets)
         loss = F.cross_entropy(predicted_masked_tokens.flatten(end_dim=1), sample['mlm_targets'].flatten(),
@@ -43,17 +41,6 @@ class CrossEntropyContraCodeMLMCriterion(NccCriterion):
         }
         return loss, sample_size, logging_output
 
-    # def compute_loss(self, model, net_output, sample, reduce=True):
-    #     lprobs = model.get_normalized_probs(net_output, log_probs=True)
-    #     lprobs = lprobs.view(-1, lprobs.size(-1))
-    #     target = model.get_targets(sample, net_output).view(-1)
-    #     loss = F.nll_loss(
-    #         lprobs,
-    #         target,
-    #         ignore_index=self.padding_idx,
-    #         reduction='sum' if reduce else 'none',
-    #     )
-    #     return loss, loss
 
     @staticmethod
     def reduce_metrics(logging_outputs) -> None:
@@ -63,11 +50,6 @@ class CrossEntropyContraCodeMLMCriterion(NccCriterion):
         sample_size = sum(log.get('sample_size', 0) for log in logging_outputs)
 
         metrics.log_scalar('loss', loss_sum / sample_size)
-        # if sample_size != ntokens:
-        #     metrics.log_scalar('nll_loss', loss_sum / ntokens / math.log(2), ntokens, round=3)
-        #     metrics.log_derived('ppl', lambda meters: utils.get_perplexity(meters['nll_loss'].avg))
-        # else:
-        #     metrics.log_derived('ppl', lambda meters: utils.get_perplexity(meters['loss'].avg))
 
     @staticmethod
     def logging_outputs_can_be_summed() -> bool:
