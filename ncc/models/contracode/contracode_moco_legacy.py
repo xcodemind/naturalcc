@@ -20,8 +20,8 @@ from ncc.modules.code2vec.contracode_encoder import CodeEncoderLSTM, CodeEncoder
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
 
 
-@register_model('contracode_moco')
-class ContraCodeMoCo(NccMoCoModel):
+@register_model('contracode_moco_legacy')
+class ContraCodeMoCoLegacy(NccMoCoModel):
 
     @classmethod
     def hub_models(cls):
@@ -44,25 +44,14 @@ class ContraCodeMoCo(NccMoCoModel):
             param_k.requires_grad = False  # not update by gradient
 
         torch.manual_seed(1)
-        self.register_buffer("queue", torch.randn(128, self.K))  # args['model']['encoder_hidden_size_q']
+        self.register_buffer("queue", torch.randn(128, self.K)) #args['model']['encoder_hidden_size_q']
         self.queue = nn.functional.normalize(self.queue, dim=0)
         self.register_buffer("queue_ptr", torch.zeros(1, dtype=torch.long))
 
     @classmethod
     def build_model(cls, args, config, task):
         """Build a new model instance."""
-        # cls.n_tokens = len(task.source_dictionary)
 
-        # make sure all arguments are present
-        # base_architecture(args)
-
-        # # if not hasattr(args, 'max_positions'):
-        # if 'max_positions' not in args['model']:
-        #     args['model']['max_positions'] = args['task']['tokens_per_sample']
-        #
-        # encoder_params = {}
-        # q_encoder = cls.make_encoder(**encoder_params)
-        # k_encoder = cls.make_encoder(**encoder_params)
         # make sure all arguments are present
         # base_architecture(args)
         max_source_positions = args['model']['max_source_positions'] if args['model'][
@@ -104,6 +93,7 @@ class ContraCodeMoCo(NccMoCoModel):
                 # pretrained_embed=pretrained_encoder_embed,
                 max_source_positions=max_source_positions
             )
+
         return cls(args, encoder_q, encoder_k)
 
     @torch.no_grad()
@@ -133,7 +123,7 @@ class ContraCodeMoCo(NccMoCoModel):
     def embed(self, img):
         return self.encoder_q(img)
 
-    def forward(self, tokens_q, tokens_k, lengths_k, lengths_q):  # TODO: Note: not lengths_q, lengths_k
+    def forward(self, tokens_q, tokens_k, lengths_k, lengths_q): # TODO: Note: not lengths_q, lengths_k
         """
         Input:
             tokens_q: a batch of query images
@@ -144,6 +134,7 @@ class ContraCodeMoCo(NccMoCoModel):
 
         # compute query features
         q = self.encoder_q(tokens_q, lengths_q)  # queries: NxC
+        # q = output_q    # ['encoder_out'][0]
         q = nn.functional.normalize(q, dim=1)
 
         # compute key features
@@ -154,6 +145,7 @@ class ContraCodeMoCo(NccMoCoModel):
             # tokens_k, idx_unshuffle = self._batch_shuffle_ddp(tokens_k)
 
             k = self.encoder_k(tokens_k, lengths_k)  # keys: NxC
+            # k = output_k    # ['encoder_out'][0]
             k = nn.functional.normalize(k, dim=1)
 
             # undo shuffle
@@ -181,6 +173,17 @@ class ContraCodeMoCo(NccMoCoModel):
 
         return logits, labels
 
+    def forward_(self, src_tokens, features_only=False, return_all_hiddens=False, classification_head_name=None,
+                 **kwargs):
+        if classification_head_name is not None:
+            features_only = True
+
+        x, extra = self.decoder(src_tokens, features_only, return_all_hiddens, **kwargs)
+
+        if classification_head_name is not None:
+            x = self.classification_heads[classification_head_name](x)
+        return x, extra
+
     @classmethod
     def from_pretrained(cls, model_name_or_path, checkpoint_file='model.pt', data_name_or_path='.', bpe='gpt2',
                         **kwargs):
@@ -195,6 +198,7 @@ class ContraCodeMoCo(NccMoCoModel):
             **kwargs,
         )
         return RobertaHubInterface(x['args'], x['task'], x['models'][0])
+
 
 @torch.no_grad()
 def concat_all_gather(tensor):

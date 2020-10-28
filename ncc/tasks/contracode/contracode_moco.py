@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import torch
 from ncc.data.tools import data_utils
 from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
@@ -14,10 +15,8 @@ from ncc.data.contracode.contracode_dataset import ContraCodeDataset
 from ncc.data.dictionary import Dictionary
 from ncc.data.dictionary import Dictionary_Source
 from ncc.data.ncc_dataset import NccDataset
-import ujson
 from functools import lru_cache
 import sentencepiece as spm
-import torch
 import pickle
 from ncc.utils.code_process import normalize_program
 
@@ -106,7 +105,7 @@ class IndexedJavascriptAugmentedDataset(NccDataset):
         return os.path.exists(path)
 
 
-def load_augmented_code_dataset_hybrid(args, epoch, data_path, split, source_dictionary, combine,):
+def load_augmented_code_dataset_moco(args, epoch, data_path, split, source_dictionary, combine,):
     # split_path = os.path.join(data_path, 'javascript_augmented_debug.sp.json') # '{}.code'.format(split)
     split_path = os.path.join(data_path, 'javascript_augmented_debug.pickle') # '{}.code'.format(split)
 
@@ -125,13 +124,13 @@ def load_augmented_code_dataset_hybrid(args, epoch, data_path, split, source_dic
         raise FileNotFoundError('Dataset not found: {} ({})'.format(split, split_path))
 
     return ContraCodeDataset(
-        dataset, dataset.sizes, source_dictionary, program_mode='contrastive',
+        dataset, dataset.sizes, source_dictionary, program_mode='contrastive', loss_mode='infonce',
         shuffle=False,
     )
 
 
-@register_task('contracode_hybrid')
-class ContraCodeHybrid(NccTask):
+@register_task('contracode_moco')
+class ContraCodeMOCO(NccTask):
     """Task for training masked language models (e.g., BERT, RoBERTa)."""
 
     def __init__(self, args, dictionary):
@@ -181,7 +180,7 @@ class ContraCodeHybrid(NccTask):
         assert len(paths) > 0
         data_path = paths[(epoch - 1) % len(paths)]
 
-        self.datasets[split] = load_augmented_code_dataset_hybrid(self.args, epoch, data_path, split, self.source_dictionary, combine) #, self.sp,
+        self.datasets[split] = load_augmented_code_dataset_moco(self.args, epoch, data_path, split, self.source_dictionary, combine) #, self.sp,
 
     @property
     def source_dictionary(self):

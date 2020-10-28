@@ -27,6 +27,7 @@ class PositionalEncoding(nn.Module):
 
     def forward(self, x):
         x = x + self.pe[: x.size(0), :]
+        torch.manual_seed(1)
         return self.dropout(x)
 
     def _load_from_state_dict(self, *args):

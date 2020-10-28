@@ -35,7 +35,7 @@ def mask_mlm(seq, pad_id, mask_id, vocab_start_range, vocab_end_range):
     return seq, targets
 
 
-def collate(samples, src_dict,  program_mode='contrastive', left_pad_source=True, left_pad_target=False):
+def collate(samples, src_dict,  program_mode='contrastive', loss_mode='hybrid', left_pad_source=True, left_pad_target=False):
     if len(samples) == 0:
         return {}
 
@@ -63,21 +63,43 @@ def collate(samples, src_dict,  program_mode='contrastive', left_pad_source=True
         lengths = torch.reshape(lengths, (2, B)).transpose(0, 1)
         assert lengths.shape == (B, 2)
 
-    id = torch.LongTensor([s['id'] for s in samples])
+        id = torch.LongTensor([s['id'] for s in samples])
 
-    tokens_q, tokens_k = tokens[:, 0, :], tokens[:, 1, :]
-    lengths_q, lengths_k = lengths[:, 0], lengths[:, 1]
-    tokens_k, mlm_targets = mask_mlm(tokens_k, pad_id=src_dict.pad(), mask_id=src_dict.indices['[MASK]'], vocab_start_range=0, vocab_end_range=7999)
-    example = {
-        'id': id,
-        'net_input': {
-            'tokens_q': tokens_q,
-            'tokens_k': tokens_k,
-            'lengths_q': lengths_q,
-            'lengths_k': lengths_k,
-        },
-        'mlm_targets': mlm_targets,
-    }
+        tokens_q, tokens_k = tokens[:, 0, :], tokens[:, 1, :]
+        lengths_q, lengths_k = lengths[:, 0], lengths[:, 1]
+        if loss_mode == 'hybrid':
+            tokens_k, mlm_targets = mask_mlm(tokens_k, pad_id=src_dict.pad(), mask_id=src_dict.indices['[MASK]'], vocab_start_range=0, vocab_end_range=7999)
+        else:
+            mlm_targets = None
+
+        example = {
+            'id': id,
+            'net_input': {
+                'tokens_q': tokens_q,
+                'tokens_k': tokens_k,
+                'lengths_q': lengths_q,
+                'lengths_k': lengths_k,
+            },
+            'mlm_targets': mlm_targets,
+        }
+    elif program_mode == "identity":
+        id = torch.LongTensor([s['id'] for s in samples])
+
+        if loss_mode == 'mlm':
+            tokens, mlm_targets = mask_mlm(tokens, pad_id=src_dict.pad(), mask_id=src_dict.indices['[MASK]'],
+                                             vocab_start_range=8, vocab_end_range=7999)
+        else:
+            mlm_targets = None
+
+        example = {
+            'id': id,
+            'net_input': {
+                'tokens': tokens,
+                'lengths': lengths,
+            },
+            'mlm_targets': mlm_targets,
+        }
+
     return example
 
 
@@ -115,26 +137,23 @@ class ContraCodeDataset(NccDataset):
     """
 
     def __init__(
-            self, src, src_sizes, src_dict, program_mode='contrastive',
-            # tgt=None, tgt_sizes=None, tgt_dict=None,
+            self, src, src_sizes, src_dict, program_mode='contrastive', loss_mode='hybrid',
             left_pad_source=True, left_pad_target=False,
             max_source_positions=1024, max_target_positions=1024,
-            shuffle=True, input_feeding=True,
+            shuffle=True,
             remove_eos_from_source=False, append_eos_to_target=False,
-            align_dataset=None,
             append_bos=False, eos=None,
     ):
         self.src = src
         self.src_sizes = np.array(src_sizes)
-        # self.tgt_sizes = np.array(tgt_sizes) if tgt_sizes is not None else None
         self.src_dict = src_dict
         self.program_mode = program_mode
+        self.loss_mode = loss_mode
         self.left_pad_source = left_pad_source
         self.left_pad_target = left_pad_target
         self.max_source_positions = max_source_positions
         self.max_target_positions = max_target_positions
         self.shuffle = shuffle
-        # self.input_feeding = input_feeding
         self.remove_eos_from_source = remove_eos_from_source
         self.append_eos_to_target = append_eos_to_target
         self.append_bos = append_bos
@@ -147,7 +166,7 @@ class ContraCodeDataset(NccDataset):
             # return self.program2tensor(src_item[0])
             example = {
                 'id': index,
-                'code_q': src_item#[0]
+                'code_q': src_item[0]
             }
         elif self.program_mode == "augmentation":
             i = np.random.randint(n_alt)
@@ -157,7 +176,7 @@ class ContraCodeDataset(NccDataset):
                 'code_q': src_item[i]
             }
         elif self.program_mode == "contrastive":
-            np.random.seed(1) # TODO debug
+            np.random.seed(1)   # TODO debug
             i = np.random.randint(n_alt)
             j = i
             if n_alt > 1:
@@ -208,9 +227,8 @@ class ContraCodeDataset(NccDataset):
         """
 
         return collate(
-            samples, src_dict=self.src_dict, program_mode='contrastive',
+            samples, src_dict=self.src_dict, program_mode=self.program_mode, loss_mode=self.loss_mode,
             left_pad_source=self.left_pad_source, left_pad_target=self.left_pad_target,
-            # input_feeding=self.input_feeding,
         )
 
     def num_tokens(self, index):
@@ -238,7 +256,7 @@ class ContraCodeDataset(NccDataset):
             indices = np.arange(len(self))
         # if self.tgt_sizes is not None:
         #     indices = indices[np.argsort(self.tgt_sizes[indices], kind='mergesort')]
-        return indices #[np.argsort(self.src_sizes[indices], kind='mergesort')] # TODO
+        return indices  # [np.argsort(self.src_sizes[indices], kind='mergesort')] # TODO
 
     @property
     def supports_prefetch(self):
