@@ -30,27 +30,20 @@ class CrossEntropyContraCodeCriterion(NccCriterion):
             predicted_masked_tokens, moco_logits, moco_targets = \
                 model(sample['net_input']['tokens_q'], sample['net_input']['tokens_k'],
                       sample['net_input']['lengths_q'], sample['net_input']['lengths_k'])
-            # predicted_masked_tokens, moco_logits, moco_targets = net_output
-            # moco_loss = F.cross_entropy(moco_logits, moco_targets, reduction='sum' if reduce else 'none')
-            moco_loss = F.cross_entropy(moco_logits, moco_targets)
+            moco_loss = F.cross_entropy(moco_logits, moco_targets, reduction='sum' if reduce else 'none')
             mlm_loss = F.cross_entropy(predicted_masked_tokens.flatten(end_dim=1), sample['mlm_targets'].flatten(),
-                                       ignore_index=self.padding_idx)
+                                       ignore_index=self.padding_idx, reduction='sum' if reduce else 'none')
             loss = 4 * moco_loss + mlm_loss
 
         elif sample['loss_mode'] == 'moco':
             moco_logits, moco_targets = model(sample['net_input']['tokens_q'], sample['net_input']['tokens_k'],
                                sample['net_input']['lengths_q'], sample['net_input']['lengths_k'])
-            # output, target = net_output
-            # moco_logits, moco_targets = net_output
-            # moco_loss = F.cross_entropy(moco_logits, moco_targets, reduction='sum' if reduce else 'none')
-            loss = F.cross_entropy(moco_logits, moco_targets)
+            loss = F.cross_entropy(moco_logits, moco_targets, reduction='sum' if reduce else 'none')
 
         elif sample['loss_mode'] == 'mlm':
             predicted_masked_tokens = model(sample['net_input']['tokens'], sample['net_input']['lengths'])
-            # # moco_loss = F.cross_entropy(moco_logits, moco_targets, reduction='sum' if reduce else 'none')
-            # loss = F.cross_entropy(moco_logits, moco_targets)
             loss = F.cross_entropy(predicted_masked_tokens.flatten(end_dim=1), sample['mlm_targets'].flatten(),
-                                   ignore_index=self.padding_idx)
+                                   ignore_index=self.padding_idx, reduction='sum' if reduce else 'none')
 
         print('loss: ', loss)
         sample_size = sample['id'].size(0)

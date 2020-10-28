@@ -408,67 +408,68 @@ class Trainer(object):
             # already normalizes by the number of GPUs. Thus we get
             # (sum_of_gradients / sample_size).
             if not self.args['optimization']['use_bmuf']:
-                # self.optimizer.multiply_grads(
-                #     self.args['distributed_training']['distributed_world_size'] / sample_size
-                # )
-                pass
+                self.optimizer.multiply_grads(
+                    self.args['distributed_training']['distributed_world_size'] / sample_size
+                )
+                # pass
             elif sample_size > 0:  # BMUF needs to check sample size
                 num = self.args['distributed_training']['distributed_world_size'] if self._sync_stats() else 1
-                self.optimizer.multiply_grads(num / sample_size)
-        except:
-            pass
-            # with torch.autograd.profiler.record_function("clip-grads"):
-            #     # clip grads
-            #     grad_norm = self.clip_grad_norm(self.args['optimization']['clip_norm'])
-            #
-            # # check that grad norms are consistent across workers
-            # if not self.args['optimization']['use_bmuf']:
-            #     self._check_grad_norms(grad_norm)
+                self.optimizer.multiply_grads(num / sample_size)  # TODO: Warning, currently we have commented the multiply_grads, it does nothing.
+                # pass
 
-        #     # take an optimization step
-        #     self.optimizer.step()
-        #     self.set_num_updates(self.get_num_updates() + 1)
-        #
-        #     # log stats
-        #     logging_output = self._reduce_and_log_stats(
-        #         logging_outputs, sample_size, grad_norm,
-        #     )
-        #
-        #     # clear CUDA cache to reduce memory fragmentation
-        #     if (
-        #         self.args['common']['empty_cache_freq'] > 0
-        #         and (
-        #         (self.get_num_updates() + self.args['common']['empty_cache_freq'] - 1)
-        #         % self.args['common']['empty_cache_freq']
-        #     ) == 0
-        #         and torch.cuda.is_available()
-        #         and not self.args['common']['cpu']
-        #     ):
-        #         torch.cuda.empty_cache()
-        # except FloatingPointError:
-        #     # re-run the forward and backward pass with hooks attached to print out where it fails
-        #     with NanDetector(self.model):
-        #         self.task.train_step(
-        #             sample, self.model, self.criterion, self.optimizer, self.get_num_updates(),
-        #             ignore_grad=False
-        #         )
-        #     raise
-        # except OverflowError as e:
-        #     logger.info("NOTE: overflow detected, " + str(e))
-        #     self.zero_grad()
-        #     logging_output = None
-        # except RuntimeError as e:
-        #     if "out of memory" in str(e):
-        #         self._log_oom(e)
-        #         logger.error("OOM during optimization, irrecoverable")
-        #     raise e
-        #
-        # if self.args['common']['fp16']:
-        #     metrics.log_scalar("loss_scale", self.optimizer.scaler.loss_scale, priority=700, round=4)
-        #
-        # metrics.log_stop_time("train_wall")
-        #
-        # return logging_output
+            with torch.autograd.profiler.record_function("clip-grads"):
+                # clip grads
+                grad_norm = self.clip_grad_norm(self.args['optimization']['clip_norm'])
+
+            # check that grad norms are consistent across workers
+            if not self.args['optimization']['use_bmuf']:
+                self._check_grad_norms(grad_norm)
+
+            # take an optimization step
+            self.optimizer.step()
+            # self.set_num_updates(self.get_num_updates() + 1)    # TODO: Warning, the learning rate will be updated by its scheduler here, commented currently
+
+            # log stats
+            logging_output = self._reduce_and_log_stats(
+                logging_outputs, sample_size, grad_norm,
+            )
+
+            # clear CUDA cache to reduce memory fragmentation
+            if (
+                self.args['common']['empty_cache_freq'] > 0
+                and (
+                (self.get_num_updates() + self.args['common']['empty_cache_freq'] - 1)
+                % self.args['common']['empty_cache_freq']
+            ) == 0
+                and torch.cuda.is_available()
+                and not self.args['common']['cpu']
+            ):
+                torch.cuda.empty_cache()
+
+        except FloatingPointError:
+            # re-run the forward and backward pass with hooks attached to print out where it fails
+            with NanDetector(self.model):
+                self.task.train_step(
+                    sample, self.model, self.criterion, self.optimizer, self.get_num_updates(),
+                    ignore_grad=False
+                )
+            raise
+        except OverflowError as e:
+            logger.info("NOTE: overflow detected, " + str(e))
+            self.zero_grad()
+            logging_output = None
+        except RuntimeError as e:
+            if "out of memory" in str(e):
+                self._log_oom(e)
+                logger.error("OOM during optimization, irrecoverable")
+            raise e
+
+        if self.args['common']['fp16']:
+            metrics.log_scalar("loss_scale", self.optimizer.scaler.loss_scale, priority=700, round=4)
+
+        metrics.log_stop_time("train_wall")
+
+        return logging_output
 
     def clip_grad_norm(self, clip_norm):
         return self.optimizer.clip_grad_norm(clip_norm, aggregate_norm_fn=None)
