@@ -11,7 +11,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ncc.utils import utils
-from ncc.models import NccLanguageModel, register_model
+from ncc.models import (
+    NccLanguageModel,
+    register_model,
+    # register_model_architecture,
+)
 from ncc.modules.seq2seq.ncc_decoder import NccDecoder
 from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.roberta.transformer_sentence_encoder import init_bert_params
@@ -21,7 +25,6 @@ from ncc.modules.embedding import Embedding
 from ncc.models.hub_interface import RobertaHubInterface
 from ncc import LOGGER
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
-from ncc.modules.code2vec.contracode_encoder import CodeEncoderLSTM, CodeEncoderTransformer
 
 
 @register_model('code_roberta')
@@ -40,8 +43,8 @@ class CodeRobertaModel(NccLanguageModel):
         super().__init__(encoder)
         self.args = args
 
-        # # We follow BERT's random weight initialization
-        # self.apply(init_bert_params)  # TODO: Warning, currently commented for debug
+        # We follow BERT's random weight initialization
+        self.apply(init_bert_params)
 
         self.classification_heads = nn.ModuleDict()
 
@@ -82,13 +85,13 @@ class CodeRobertaModel(NccLanguageModel):
                         name, num_classes, prev_num_classes, inner_dim, prev_inner_dim
                     )
                 )
-        # self.classification_heads[name] = RobertaClassificationHead(
-        #     self.args['model']['encoder_embed_dim'],
-        #     inner_dim or self.args['model']['encoder_embed_dim'],
-        #     num_classes,
-        #     self.args['task']['pooler_activation_fn'],
-        #     self.args['model']['pooler_dropout'],
-        # )
+        self.classification_heads[name] = RobertaClassificationHead(
+            self.args['model']['encoder_embed_dim'],
+            inner_dim or self.args['model']['encoder_embed_dim'],
+            num_classes,
+            self.args['task']['pooler_activation_fn'],
+            self.args['model']['pooler_dropout'],
+        )
 
     @property
     def supported_targets(self):
@@ -207,21 +210,19 @@ class CodeRobertaModel(NccLanguageModel):
                     LOGGER.info('Overwriting ' + prefix + 'classification_heads.' + k)
                     state_dict[prefix + 'classification_heads.' + k] = v
 
-
 class RobertaLMHead(nn.Module):
     """Head for masked language modeling."""
 
     def __init__(self, embed_dim, output_dim, activation_fn, weight=None):
         super().__init__()
-        torch.manual_seed(1)
         self.dense = nn.Linear(embed_dim, embed_dim)
-        self.activation_fn = nn.ReLU() #utils.get_activation_fn(activation_fn) TODO
-        self.layer_norm = nn.LayerNorm(embed_dim) # LayerNorm(embed_dim) # TODO
+        self.activation_fn = utils.get_activation_fn(activation_fn)
+        self.layer_norm = LayerNorm(embed_dim)
 
         if weight is None:
             weight = nn.Linear(embed_dim, output_dim, bias=False).weight
         self.weight = weight
-        # self.bias = nn.Parameter(torch.zeros(output_dim)) # TODO
+        self.bias = nn.Parameter(torch.zeros(output_dim))
 
     def forward(self, features, masked_tokens=None, **kwargs):
         # Only project the unmasked tokens while training,
@@ -233,7 +234,27 @@ class RobertaLMHead(nn.Module):
         x = self.activation_fn(x)
         x = self.layer_norm(x)
         # project back to size of vocabulary with bias
-        x = F.linear(x, self.weight) # + self.bias # TODO
+        x = F.linear(x, self.weight) + self.bias
+        return x
+
+
+class RobertaClassificationHead(nn.Module):
+    """Head for sentence-level classification tasks."""
+
+    def __init__(self, input_dim, inner_dim, num_classes, activation_fn, pooler_dropout):
+        super().__init__()
+        self.dense = nn.Linear(input_dim, inner_dim)
+        self.activation_fn = utils.get_activation_fn(activation_fn)
+        self.dropout = nn.Dropout(p=pooler_dropout)
+        self.out_proj = nn.Linear(inner_dim, num_classes)
+
+    def forward(self, features, **kwargs):
+        x = features[:, 0, :]  # take <s> token (equiv. to [CLS])
+        x = self.dropout(x)
+        x = self.dense(x)
+        x = self.activation_fn(x)
+        x = self.dropout(x)
+        x = self.out_proj(x)
         return x
 
 
@@ -276,29 +297,26 @@ class RobertaEncoder(NccDecoder):
         if args['model']['max_source_positions'] is None:
             args['model']['max_source_positions'] = DEFAULT_MAX_SOURCE_POSITIONS
 
-        # def build_embedding(dictionary, embed_dim, path=None):
-        #     num_embeddings = len(dictionary)
-        #     padding_idx = dictionary.pad()
-        #     emb = Embedding(num_embeddings, embed_dim, padding_idx)
-        #     # if provided, load from preloaded dictionaries
-        #     if path:
-        #         embed_dict = utils.parse_embedding(path)
-        #         utils.load_embedding(embed_dict, dictionary, emb)
-        #     return emb
+        def build_embedding(dictionary, embed_dim, path=None):
+            num_embeddings = len(dictionary)
+            padding_idx = dictionary.pad()
+            emb = Embedding(num_embeddings, embed_dim, padding_idx)
+            # if provided, load from preloaded dictionaries
+            if path:
+                embed_dict = utils.parse_embedding(path)
+                utils.load_embedding(embed_dict, dictionary, emb)
+            return emb
 
-        # embed_tokens = build_embedding(
-        #     dictionary, args['model']['encoder_embed_dim'], args['model']['encoder_embed_path']
-        # )
-        # self.sentence_encoder = TransformerSentenceEncoder(args, dictionary, embed_tokens, num_segments=0)
-        self.sentence_encoder = CodeEncoderTransformer(
-                dictionary,
-                project=False,
-            )
+        embed_tokens = build_embedding(
+            dictionary, args['model']['encoder_embed_dim'], args['model']['encoder_embed_path']
+        )
+
+        self.sentence_encoder = TransformerSentenceEncoder(args, dictionary, embed_tokens, num_segments=0)
         self.lm_head = RobertaLMHead(
             embed_dim=args['model']['encoder_embed_dim'],
             output_dim=len(dictionary),
             activation_fn=args['model']['activation_fn'],
-            weight=self.sentence_encoder.embedding.weight, #embed_tokens
+            weight=self.sentence_encoder.embed_tokens.weight,
         )
 
     def forward(self, src_tokens, features_only=False, return_all_hiddens=False, masked_tokens=None, **unused):
@@ -324,17 +342,12 @@ class RobertaEncoder(NccDecoder):
         return x, extra
 
     def extract_features(self, src_tokens, return_all_hiddens=False, **unused):
-        # inner_states, _ = self.sentence_encoder(
-        #     src_tokens,
-        #     # last_state_only=not return_all_hiddens,
-        # )
-        # features = inner_states[-1].transpose(0, 1)  # T x B x C -> B x T x C
-        features = self.sentence_encoder(
+        inner_states, _ = self.sentence_encoder(
             src_tokens,
-            # last_state_only=not return_all_hiddens,
+            last_state_only=not return_all_hiddens,
         )
-        features = features.transpose(0, 1)
-        return features, None     #, {'inner_states': inner_states if return_all_hiddens else None}
+        features = inner_states[-1].transpose(0, 1)  # T x B x C -> B x T x C
+        return features, {'inner_states': inner_states if return_all_hiddens else None}
 
     def output_layer(self, features, masked_tokens=None, **unused):
         return self.lm_head(features, masked_tokens)

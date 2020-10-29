@@ -43,7 +43,7 @@ class ContraCodeMLM(NccEncoderModel):
         if args['model']['encoder_type'] == "transformer":
             encoder = CodeEncoderTransformer(
                 task.source_dictionary,
-                project=True,
+                project=False,
             )
 
         elif args['model']['encoder_type'] == "lstm":
@@ -62,7 +62,7 @@ class ContraCodeMLM(NccEncoderModel):
         return cls(args, encoder)
 
     def forward(self, tokens, lengths):  # predicted masked tokens
-        features = self.encoder(tokens, lengths, no_project_override=True)  # L x B x D
+        features = self.encoder(tokens, lengths)  # L x B x D #, no_project_override=True
         assert len(features.shape) == 3, str(features.shape)
         L, B, D = features.shape
         # assert D == self.d_model

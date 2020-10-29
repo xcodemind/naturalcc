@@ -106,7 +106,7 @@ class CodeEncoderTransformer(NccEncoder):
         if project:
             self.project_layer = nn.Sequential(nn.Linear(d_model, d_model), nn.ReLU(), nn.Linear(d_model, d_rep))
 
-    def forward(self, src_tokens, lengths, no_project_override=False):
+    def forward(self, src_tokens, lengths=None, no_project_override=False):
         # output = self.encoder(src_tokens, lengths, no_project_override)
         # return output
         src_emb = self.embedding(src_tokens).transpose(0, 1) * math.sqrt(self.config["d_model"])

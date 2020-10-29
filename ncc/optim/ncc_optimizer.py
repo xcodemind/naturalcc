@@ -82,10 +82,10 @@ class NccOptimizer(object):
 
     def multiply_grads(self, c):
         """Multiplies grads by a constant *c*."""
-        # pass
-        for p in self.params:
-            if p.grad is not None:
-                p.grad.data.mul_(c)
+        pass
+        # for p in self.params:
+        #     if p.grad is not None:
+        #         p.grad.data.mul_(c)
 
     def clip_grad_norm(self, max_norm):
         """Clips gradient norm."""

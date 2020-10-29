@@ -293,7 +293,7 @@ def cli_main():
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        "--language", "-l", default='javascript', type=str, help="load {language}.yml for train",
+        "--language", "-l", default='javascript_mlm', type=str, help="load {language}.yml for train",
     )
     args = parser.parse_args()
     # Argues = namedtuple('Argues', 'yaml')
