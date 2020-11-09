@@ -43,9 +43,16 @@ class SinusoidalPositionalEmbedding(nn.Module):
         emb = torch.arange(num_embeddings, dtype=torch.float).unsqueeze(
             1
         ) * emb.unsqueeze(0)
-        emb = torch.cat([torch.sin(emb), torch.cos(emb)], dim=1).view(
-            num_embeddings, -1
-        )
+        # Option 1
+        # emb = torch.cat([torch.sin(emb), torch.cos(emb)], dim=1).view(
+        #     num_embeddings, -1
+        # )
+        # Option 2
+        pe = torch.zeros(num_embeddings, embedding_dim)
+        pe[:, 0::2] = torch.sin(emb)
+        pe[:, 1::2] = torch.cos(emb)
+        emb = pe
+
         if embedding_dim % 2 == 1:
             # zero pad
             emb = torch.cat([emb, torch.zeros(num_embeddings, 1)], dim=1)
