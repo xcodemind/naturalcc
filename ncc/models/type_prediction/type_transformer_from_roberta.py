@@ -1,13 +1,13 @@
 from ncc.modules.code2vec.transformer_encoder import TransformerEncoder
 from ncc.modules.seq2seq.transformer_decoder import TransformerDecoder
 from ncc.models import register_model
-from ncc.models.type_prediction.type_transformer import TypePredictionTransformerModel
+from ncc.models.type_prediction.typetransformer import TypeTransformer
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
 DEFAULT_MAX_TARGET_POSITIONS = 1e5
 
 
 @register_model('type_prediction_transformer_from_roberta')
-class TypePredictionTransformerFromRobertaModel(TypePredictionTransformerModel):
+class TypePredictionTransformerFromRobertaModel(TypeTransformer):
     """
         Transformer model from `"Attention Is All You Need" (Vaswani, et al, 2017)
         <https://arxiv.org/abs/1706.03762>`_.

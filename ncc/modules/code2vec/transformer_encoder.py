@@ -5,9 +5,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 from ncc.modules.code2vec.transformer_encoder_layer import TransformerEncoderLayer
-from ncc.modules.common.layer_norm import LayerNorm
+from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.code2vec.ncc_encoder import NccEncoder
-from ncc.modules.roberta.positional_embedding import PositionalEmbedding
+from ncc.modules.roberta.positional_embedding_bak import PositionalEmbedding
 from ncc.modules.code2vec.ncc_encoder import EncoderOut
 from ncc.modules.roberta.sinusoidal_positional_embedding import SinusoidalPositionalEmbedding
 from ncc.utils import utils

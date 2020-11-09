@@ -18,8 +18,8 @@ from ncc.models import (
 )
 from ncc.modules.seq2seq.ncc_decoder import NccDecoder
 from ncc.modules.roberta.layer_norm import LayerNorm
-from ncc.modules.roberta.transformer_sentence_encoder import init_bert_params
-from ncc.modules.roberta.transformer_sentence_encoder import TransformerSentenceEncoder
+# from ncc.modules.roberta.transformer_sentence_encoder import init_bert_params
+# from ncc.modules.roberta.transformer_sentence_encoder import TransformerSentenceEncoder
 from ncc.models.hub_interface import RobertaHubInterface
 from ncc import LOGGER
 

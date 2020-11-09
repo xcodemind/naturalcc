@@ -1,3 +1,4 @@
+from typing import Optional, Tuple
 import math
 
 import torch
@@ -6,111 +7,155 @@ from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.modules.code2vec.lstm_encoder import LSTMEncoder
 import torch.nn.functional as F
 from ncc.utils import utils
-
+from ncc.modules.attention.multihead_attention import MultiheadAttention
+from ncc.modules.code2vec.transformer_encoder_layer import TransformerEncoderLayer
+from ncc.modules.roberta.positional_embedding_bak import PositionalEmbedding
+from ncc.modules.roberta.layer_norm import LayerNorm
+import random
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
+from ncc.modules.code2vec.ncc_encoder import EncoderOut
 
 
-class PositionalEncoding(nn.Module):
-    """From https://pytorch.org/tutorials/beginner/transformer_tutorial.html"""
+def init_bert_params(module):
+    """
+    Initialize the weights specific to the BERT Model.
+    This overrides the default initializations depending on the specified arguments.
+        1. If normal_init_linear_weights is set then weights of linear
+           layer will be initialized using the normal distribution and
+           bais will be set to the specified value.
+        2. If normal_init_embed_weights is set then weights of embedding
+           layer will be initialized using the normal distribution.
+        3. If normal_init_proj_weights is set then weights of
+           in_project_weight for MultiHeadAttention initialized using
+           the normal distribution (to be validated).
+    """
 
-    def __init__(self, d_model, dropout=0.1, max_len=9000):
-        super(PositionalEncoding, self).__init__()
-        self.dropout = nn.Dropout(p=dropout)
-
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        pe = pe.unsqueeze(0).transpose(0, 1)
-        self.register_buffer("pe", pe)
-
-    def forward(self, x):
-        x = x + self.pe[: x.size(0), :]
-        torch.manual_seed(1)
-        return self.dropout(x)
-
-    def _load_from_state_dict(self, *args):
-        print("PositionalEncoding: doing nothing on call to _load_from_state_dict")
-
-
-# class CodeEncoder(nn.Module):
-#     def __init__(
-#         self,
-#         n_tokens,
-#         d_model=512,
-#         d_rep=256,
-#         n_head=8,
-#         n_encoder_layers=6,
-#         d_ff=2048,
-#         dropout=0.1,
-#         activation="relu",
-#         norm=True,
-#         pad_id=None,
-#         project=False,
-#     ):
-#         super().__init__()
-#         self.config = {k: v for k, v in locals().items() if k != "self"}
-#         self.embedding = nn.Embedding(n_tokens, d_model)
-#         self.pos_encoder = PositionalEncoding(d_model, dropout, max_len=9000)
-#         norm_fn = nn.LayerNorm(d_model) if norm else None
-#         encoder_layer = nn.TransformerEncoderLayer(d_model, n_head, d_ff, dropout, activation)
-#         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=n_encoder_layers, norm=norm_fn)
-#         if project:
-#             self.project_layer = nn.Sequential(nn.Linear(d_model, d_model), nn.ReLU(), nn.Linear(d_model, d_rep))
-#         # NOTE: We use the default PyTorch intialization, so no need to reset parameters.
-#
-#     def forward(self, x, lengths=None, no_project_override=False):
-#         src_emb = self.embedding(x).transpose(0, 1) * math.sqrt(self.config["d_model"])
-#         src_emb = self.pos_encoder(src_emb)
-#         if self.config["pad_id"] is not None:
-#             src_key_padding_mask = x == self.config["pad_id"]
-#         else:
-#             src_key_padding_mask = None
-#         out = self.encoder(src_emb, src_key_padding_mask=src_key_padding_mask)  # TxBxD
-#         if not no_project_override and self.config["project"]:
-#             return self.project_layer(out.mean(dim=0))
-#         else:
-#             return out
+    if isinstance(module, nn.Linear):
+        module.weight.data.normal_(mean=0.0, std=0.02)
+        if module.bias is not None:
+            module.bias.data.zero_()
+    if isinstance(module, nn.Embedding):
+        module.weight.data.normal_(mean=0.0, std=0.02)
+        if module.padding_idx is not None:
+            module.weight.data[module.padding_idx].zero_()
+    if isinstance(module, MultiheadAttention):
+        module.q_proj.weight.data.normal_(mean=0.0, std=0.02)
+        module.k_proj.weight.data.normal_(mean=0.0, std=0.02)
+        module.v_proj.weight.data.normal_(mean=0.0, std=0.02)
 
 
 class CodeEncoderTransformer(NccEncoder):
-    def __init__(self,
-                 # args,
-                 source_dictionary,
-                 d_model=512,
-                 d_rep=128,
-                 n_head=8,
-                 n_encoder_layers=6,
-                 d_ff=2048,
-                 dropout=0.1,
-                 activation="relu",
-                 norm=True,
-                 # pad_id=None,
-                 # encoder_type="transformer"
-                 project=False,
-                 ):
-        super().__init__(source_dictionary)
-        self.n_tokens = len(source_dictionary)
-        self.pad_id = source_dictionary.pad()
-        self.project = project
-        # self.encoder = CodeEncoder(len(source_dictionary), d_model, d_rep, n_head, n_encoder_layers, d_ff, dropout,
-        #                            activation, norm, padding_idx, project=project)
-        self.config = {k: v for k, v in locals().items() if k != "self"}
-        torch.manual_seed(1)
-        self.embedding = nn.Embedding(self.n_tokens, d_model)
-        self.pos_encoder = PositionalEncoding(d_model, dropout, max_len=9000)
-        norm_fn = nn.LayerNorm(d_model) if norm else None
-        encoder_layer = nn.TransformerEncoderLayer(d_model, n_head, d_ff, dropout, activation)
-        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=n_encoder_layers, norm=norm_fn)
-        if project:
-            self.project_layer = nn.Sequential(nn.Linear(d_model, d_model), nn.ReLU(), nn.Linear(d_model, d_rep))
+    def __init__(
+            self,
+            args,
+            dictionary,
+            embed_tokens,
+            num_segments: int = 2,
+            offset_positions_by_padding: bool = False, # True,
+            apply_bert_init: bool = False,
+            freeze_embeddings: bool = False,
+            n_trans_layers_to_freeze: int = 0,
+            export: bool = False,
+            traceable: bool = False,
+    ):
+        super().__init__(dictionary)
+        self.register_buffer("version", torch.Tensor([3]))
+        self.args = args
+        self.dropout = args['model']['dropout']
+        self.encoder_layerdrop = args['model']['encoder_layerdrop']
 
-    def forward(self, src_tokens, lengths=None, no_project_override=False):
+        self.embed_dim = embed_tokens.embedding_dim
+        self.padding_idx = dictionary.pad() # embed_tokens.padding_idx TODO
+        # self.vocab_size = vocab_size
+        self.max_source_positions = args['model']['max_source_positions']
+
+        self.embed_tokens = embed_tokens
+        self.embed_scale = 1.0 if args['model']['no_scale_embedding'] else math.sqrt(self.embed_dim)
+
+        # Option 1
+        if args['model']['position_encoding_version'] == 'ncc_sinusoidal':
+            from ncc.modules.roberta.sinusoidal_positional_embedding import SinusoidalPositionalEmbedding
+            self.embed_positions = SinusoidalPositionalEmbedding(
+                self.embed_dim,
+                padding_idx= self.padding_idx, #(self.padding_idx if offset_positions_by_padding else None),
+                init_size=args['model']['max_source_positions'] + self.padding_idx + 1 if offset_positions_by_padding else args['model']['max_source_positions'],  #  + 1 why?
+            )
+        # Option 2
+        elif args['model']['position_encoding_version'] == 'ncc_learned':
+            from ncc.modules.roberta.learned_positional_embedding import LearnedPositionalEmbedding
+            if self.padding_idx is not None:
+                num_embeddings = args['model']['max_source_positions'] + self.padding_idx + 1
+            m = LearnedPositionalEmbedding(num_embeddings, self.embed_dim, self.padding_idx)
+            nn.init.normal_(m.weight, mean=0, std=self.embed_dim ** -0.5)
+            if self.padding_idx is not None:
+                nn.init.constant_(m.weight[self.padding_idx], 0)
+            self.embed_positions = m
+        # Option 3
+        elif args['model']['position_encoding_version'] == 'contracode':
+            from ncc.modules.roberta.sinusoidal_positional_embedding_simple import SinusoidalPositionalEmbedding_Simple
+            self.embed_positions = SinusoidalPositionalEmbedding_Simple(self.embed_dim, args['model']['dropout'], max_len=args['model']['max_source_positions'])
+
+        self.num_segments = num_segments
+        self.segment_embeddings = (
+            nn.Embedding(self.num_segments, self.embed_dim, padding_idx=None)
+            if self.num_segments > 0
+            else None
+        )
+        torch.manual_seed(1)
+        # Option 1 (The NCC Option 2 has been the same as Option 1 in logistic)
+        # encoder_layer = nn.TransformerEncoderLayer(self.embed_dim, args['model']['encoder_attention_heads'],
+        #                                            args['model']['encoder_ffn_embed_dim'], 0, args['model']['activation_fn']) # args['model']['dropout']
+        encoder_layer = TransformerEncoderLayer(args)
+        self.layers = nn.ModuleList([encoder_layer for i in range(args['model']['encoder_layers'])])
+        # Option 2
+        # self.layers = nn.ModuleList([TransformerEncoderLayer(args) for i in range(args['model']['encoder_layers'])])
+
+        self.num_layers = len(self.layers)
+        # if args['model']['encoder_normalize_before']:
+        self.layer_norm = nn.LayerNorm(self.embed_dim)  # LayerNorm(self.embed_dim) TODO
+        # else:
+        #     self.layer_norm = None
+        if args['model']['layernorm_embedding']:  # getattr(args, "layernorm_embedding", False):
+            self.layernorm_embedding = nn.LayerNorm(self.embed_dim)     # LayerNorm(self.embed_dim, export=export) TODO
+        else:
+            self.layernorm_embedding = None
+
+        self.traceable = traceable
+
+    def forward_embedding(self, src_tokens, positions, segment_labels, padding_mask):
+        x = self.embed_tokens(src_tokens)
+
+        if self.embed_scale is not None:
+            x = embed = x * self.embed_scale
+
+        if self.embed_positions is not None:
+            # x += self.embed_positions(src_tokens, positions=positions)
+            # x += self.embed_positions(src_tokens)  # TODO, position里面如果已经+=了，这里就没必要了
+            if self.args['model']['position_encoding_version'] == 'contracode':
+                x += self.embed_positions(x)
+            elif self.args['model']['position_encoding_version'] == 'ncc_sinusoidal':
+                # x += self.embed_positions(src_tokens, positions=positions)
+                pe = self.embed_positions(src_tokens, positions=positions)
+                x += pe
+        if self.segment_embeddings is not None and segment_labels is not None:
+            x += self.segment_embeddings(segment_labels)
+
+        if self.layernorm_embedding is not None:
+            x = self.layernorm_embedding(x)
+
+        # x = F.dropout(x, p=self.dropout, training=self.training) #TODO, position里面如果已经dropout了，这里就没必要了
+
+        # # account for padding while computing the representation
+        # if padding_mask is not None:
+        #     x *= 1 - padding_mask.unsqueeze(-1).type_as(x)
+
+        return x, embed
+
+    def forward_(self, src_tokens, lengths=None, no_project_override=False):
         # output = self.encoder(src_tokens, lengths, no_project_override)
         # return output
         src_emb = self.embedding(src_tokens).transpose(0, 1) * math.sqrt(self.config["d_model"])
-        src_emb = self.pos_encoder(src_emb)
+        src_emb = self.embed_positions(src_emb)
         if self.pad_id is not None:
             src_key_padding_mask = src_tokens == self.pad_id #.config["pad_id"]
         else:
@@ -121,111 +166,58 @@ class CodeEncoderTransformer(NccEncoder):
         else:
             return out
 
+    def forward(
+            self,
+            src_tokens: torch.Tensor,
+            segment_labels: torch.Tensor = None,
+            last_state_only: bool = False,
+            positions: Optional[torch.Tensor] = None,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
 
-class CodeEncoderLSTM(LSTMEncoder):
-    def __init__(
-        self, dictionary, embed_dim=512, hidden_size=512, num_layers=1,
-        dropout_in=0.1, dropout_out=0.1, bidirectional=False,
-        left_pad=True, pretrained_embed=None, padding_idx=None,
-        max_source_positions=DEFAULT_MAX_SOURCE_POSITIONS, project='hidden',
-    ):
-        super().__init__(dictionary, embed_dim, hidden_size, num_layers,
-        dropout_in, dropout_out, bidirectional,
-        left_pad, pretrained_embed, padding_idx,
-        max_source_positions)
+        # compute padding mask. This is needed for multi-head attention
+        encoder_padding_mask = src_tokens.eq(self.padding_idx)
+        if not self.traceable and not encoder_padding_mask.any():
+            encoder_padding_mask = None
 
-        self.project = project
-        if project:
-            if project == "sequence_mean" or project == "sequence_mean_nonpad":
-                project_in = 2 * hidden_size
-                self.project_layer = nn.Sequential(nn.Linear(project_in, hidden_size), nn.ReLU(), nn.Linear(embed_dim, 128)) # 218->hidden_size
-            elif project == "hidden":
-                project_in = num_layers * 2 * hidden_size
-                self.project_layer = nn.Sequential(nn.Linear(project_in, hidden_size), nn.ReLU(), nn.Linear(embed_dim, 128))
-            # elif project == "hidden_identity":
-            #     pass
-            else:
-                raise ValueError(f"Unknown value '{project}' for CodeEncoderLSTM project argument")
-        # NOTE: We use the default PyTorch intialization, so no need to reset parameters.
-
-    def forward(self, src_tokens, src_lengths, no_project_override=False):
-        self.lstm.flatten_parameters()
-        if self.left_pad:
-            # nn.utils.rnn.pack_padded_sequence requires right-padding;
-            # convert left-padding to right-padding
-            src_tokens = utils.convert_padding_direction(
-                src_tokens,
-                self.padding_idx,
-                left_to_right=True,
-            )
-
-        bsz, seqlen = src_tokens.size()
-
-        # embed tokens
-        x = self.embed_tokens(src_tokens)
-        # x = self.pos_encoder(x) # TODO
-
-        x = F.dropout(x, p=self.dropout_in, training=self.training)
+        x, encoder_embedding = self.forward_embedding(src_tokens, positions, segment_labels, encoder_padding_mask)
 
         # B x T x C -> T x B x C
         x = x.transpose(0, 1)
 
-        # pack embedded source tokens into a PackedSequence
-        packed_x = nn.utils.rnn.pack_padded_sequence(x, src_lengths.data.tolist(), enforce_sorted=False)
+        encoder_states = []
+        # if not last_state_only:
+        #     encoder_states.append(x)
 
-        # apply LSTM
-        if self.bidirectional:
-            state_size = 2 * self.num_layers, bsz, self.hidden_size
-        else:
-            state_size = self.num_layers, bsz, self.hidden_size
-        h0 = x.new_zeros(*state_size)
-        c0 = x.new_zeros(*state_size)
-        packed_outs, (final_hiddens, final_cells) = self.lstm(packed_x, (h0, c0))
+        for layer in self.layers:
+            # add LayerDrop (see https://arxiv.org/abs/1909.11556 for description)
+            # dropout_probability = random.uniform(0, 1)
+            # if not self.training or (dropout_probability > self.encoder_layerdrop):
+            x = layer(x, encoder_padding_mask) # TODO
+            # x = layer(x, src_mask=None, src_key_padding_mask=encoder_padding_mask)
+            if not last_state_only:
+                encoder_states.append(x)
 
-        # unpack outputs and apply dropout
-        x, _ = nn.utils.rnn.pad_packed_sequence(packed_outs, padding_value=self.padding_idx)
-        x = F.dropout(x, p=self.dropout_out, training=self.training)
-        # assert list(x.size()) == [seqlen, bsz, self.output_units]  # TODO
+        # if self.layer_norm is not None:
+        x = self.layer_norm(x)
 
-        if self.bidirectional:
-            def combine_bidir(outs):
-                out = outs.view(self.num_layers, 2, bsz, -1).transpose(1, 2).contiguous()
-                return out.view(self.num_layers, bsz, -1)
+        return EncoderOut(
+            encoder_out=x,  # T x B x C
+            encoder_padding_mask=encoder_padding_mask,  # B x T
+            encoder_embedding=encoder_embedding,  # B x T x C
+            encoder_states=encoder_states,  # List[T x B x C]
+        )
 
-            final_hiddens = combine_bidir(final_hiddens)
-            final_cells = combine_bidir(final_cells)
 
-        encoder_padding_mask = src_tokens.eq(self.padding_idx).t()
+        # sentence_rep = x[0, :, :]  # <CLS> presentation
+        #
+        # if last_state_only:
+        #     encoder_states = [x]
+        #
+        # if self.traceable:
+        #     return torch.stack(encoder_states), sentence_rep
+        # else:
+        #     return encoder_states, sentence_rep
 
-        if not no_project_override and self.project:
-            if self.project == "sequence_mean":
-                # out is T x B x n_directions*d_model
-                rep = x.mean(dim=0)  # B x n_directions*d_model
-            elif self.project == "sequence_mean_nonpad":
-                out_ = x.transpose(0, 1)  # B x T x n_directions*d_model
-                mask = torch.arange(out_.size(1), device=out_.device).unsqueeze(0).unsqueeze(-1).expand_as(
-                    out_) < src_lengths.unsqueeze(1).unsqueeze(2)
-                rep = (out_ * mask.float()).sum(dim=1)  # B x n_directions*d_model
-                rep = rep / src_lengths.unsqueeze(1).float()
-            elif self.project == "hidden":
-                # h_n is n_layers*n_directions x B x d_model
-                rep = torch.flatten(final_hiddens.transpose(0, 1), start_dim=1)
-            # elif self.config["project"] == "hidden_identity"
-            #     return torch.flatten(h_n.transpose(0, 1), start_dim=1)
-            else:
-                raise ValueError
-            # return self.project_layer(rep)
-            return {
-                'encoder_out': (self.project_layer(rep), final_hiddens, final_cells),
-                'encoder_padding_mask': encoder_padding_mask if encoder_padding_mask.any() else None
-            }
 
-        # return out
-        return {
-            'encoder_out': (x, final_hiddens, final_cells),
-            'encoder_padding_mask': encoder_padding_mask if encoder_padding_mask.any() else None
-        }
-
-    def max_positions(self):
-        """Maximum input length supported by the encoder."""
-        return self.max_source_positions
+class CodeEncoderLSTM(NccEncoder):
+    pass

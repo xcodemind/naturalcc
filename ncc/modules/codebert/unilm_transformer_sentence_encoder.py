@@ -17,7 +17,7 @@ import torch.nn.functional as F
 from ncc.data.constants import INF
 from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.attention.unilm_multihead_attention import UnilmMultiheadAttention
-from ncc.modules.roberta.positional_embedding import PositionalEmbedding
+from ncc.modules.roberta.positional_embedding_bak import PositionalEmbedding
 from ncc.modules.codebert.unilm_transformer_sentence_encoder_layer import UnilmTransformerSentenceEncoderLayer
 
 import random
