@@ -15,8 +15,8 @@ from ncc.utils.incremental_decoding_utils import with_incremental_state
 
 
 @with_incremental_state
-class MultiheadAttention(nn.Module):
-    """Multi-headed attention.
+class RelativeMultiheadAttention(nn.Module):
+    """Relative Multi-headed attention.
 
     See "Attention Is All You Need" for more details.
     """
@@ -33,6 +33,7 @@ class MultiheadAttention(nn.Module):
         add_zero_attn=False,
         self_attention=False,
         encoder_decoder_attention=False,
+        maximum_relative_position=None,
     ):
         super().__init__()
         self.embed_dim = embed_dim
@@ -69,15 +70,72 @@ class MultiheadAttention(nn.Module):
 
         self.add_zero_attn = add_zero_attn
 
+        # relative position
+        # reference:
+        # https://github.com/OpenNMT/OpenNMT-tf/blob/7ef62c8781e7f582af33ea278cb9f03223f2a455/opennmt/layers/transformer.py
+        self.maximum_relative_position = maximum_relative_position
+        # self.maximum_relative_position = 5 # for debug
+        if self.maximum_relative_position:
+            self.relative_position_keys = nn.Embedding(2 * self.maximum_relative_position + 1, self.head_dim)
+            self.relative_position_values = nn.Embedding(2 * self.maximum_relative_position + 1, self.head_dim)
+
         self.reset_parameters()
 
         self.onnx_trace = False
 
-        self.enable_torch_version = False
         if hasattr(F, "multi_head_attention_forward"):
             self.enable_torch_version = True
         else:
             self.enable_torch_version = False
+        # use our defined multi-head-attention
+        self.enable_torch_version = False
+
+    def relative_positions(self, length: int, max_position: int) -> torch.Tensor:
+        '''
+        References:
+            Self-Attention with Relative Position Representations
+            https://medium.com/@_init_/how-self-attention-with-relative-position-representations-works-28173b8c245a
+
+        build a position list, as follow
+        [...(all are 0), 0, 1, ..., 2k, ...(all are 2k)]
+        move a window on this list from right to left
+
+        Examples:
+            length=3, max_len=10
+        Returns:
+            tensor([[3, 4, 5, 6, 6, 6, 6, 6, 6, 6],
+                    [2, 3, 4, 5, 6, 6, 6, 6, 6, 6],
+                    [1, 2, 3, 4, 5, 6, 6, 6, 6, 6],
+                    [0, 1, 2, 3, 4, 5, 6, 6, 6, 6],
+                    [0, 0, 1, 2, 3, 4, 5, 6, 6, 6],
+                    [0, 0, 0, 1, 2, 3, 4, 5, 6, 6],
+                    [0, 0, 0, 0, 1, 2, 3, 4, 5, 6],
+                    [0, 0, 0, 0, 0, 1, 2, 3, 4, 5],
+                    [0, 0, 0, 0, 0, 0, 1, 2, 3, 4],
+                    [0, 0, 0, 0, 0, 0, 0, 1, 2, 3]])
+        '''
+        arange = torch.arange(length)
+        distance = torch.unsqueeze(arange, dim=0) - torch.unsqueeze(arange, dim=1)
+        distance = torch.clamp(distance, -max_position, max_position)
+        distance = distance + max_position
+        return distance
+
+    def matmul_with_relative_representations(self, query: torch.Tensor, relative_pos: torch.Tensor,
+                                             transpose=True):
+        """
+
+        Args:
+            query: [bsz * head, tgt_len, head_dim]
+            relative_pos: [bsz * head, tgt_len, head_dim]
+
+        Returns:
+            [bsz * head, tgt_len, tgt_len]
+        """
+        if transpose:
+            relative_pos = relative_pos.transpose(1, 2)
+        Q_RP = torch.matmul(query.transpose(0, 1), relative_pos)
+        Q_RP = Q_RP.transpose(0, 1)
+        return Q_RP
 
     def prepare_for_onnx_export_(self):
         self.onnx_trace = True
@@ -136,8 +194,40 @@ class MultiheadAttention(nn.Module):
             need_weights = True
 
         tgt_len, bsz, embed_dim = query.size()
+        # src_len = value.size(0)
         assert embed_dim == self.embed_dim
         assert list(query.size()) == [tgt_len, bsz, embed_dim]
+
+        if (
+            self.enable_torch_version
+            and not self.onnx_trace
+            and incremental_state is None
+            and not static_kv
+        ):
+            assert key is not None and value is not None
+            return F.multi_head_attention_forward(
+                query,
+                key,
+                value,
+                self.embed_dim,
+                self.num_heads,
+                torch.empty([0]),
+                torch.cat((self.q_proj.bias, self.k_proj.bias, self.v_proj.bias)),
+                self.bias_k,
+                self.bias_v,
+                self.add_zero_attn,
+                self.dropout,
+                self.out_proj.weight,
+                self.out_proj.bias,
+                self.training,
+                key_padding_mask,
+                need_weights,
+                attn_mask,
+                use_separate_proj_weight=True,
+                q_proj_weight=self.q_proj.weight,
+                k_proj_weight=self.k_proj.weight,
+                v_proj_weight=self.v_proj.weight,
+            )
 
         if incremental_state is not None:
             saved_state = self._get_input_buffer(incremental_state)
@@ -190,20 +280,20 @@ class MultiheadAttention(nn.Module):
 
         q = (
             q.contiguous()
-            .view(tgt_len, bsz * self.num_heads, self.head_dim)
-            .transpose(0, 1)
+                .view(tgt_len, bsz * self.num_heads, self.head_dim)
+                .transpose(0, 1)
         )
         if k is not None:
             k = (
                 k.contiguous()
-                .view(-1, bsz * self.num_heads, self.head_dim)
-                .transpose(0, 1)
+                    .view(-1, bsz * self.num_heads, self.head_dim)
+                    .transpose(0, 1)
             )
         if v is not None:
             v = (
                 v.contiguous()
-                .view(-1, bsz * self.num_heads, self.head_dim)
-                .transpose(0, 1)
+                    .view(-1, bsz * self.num_heads, self.head_dim)
+                    .transpose(0, 1)
             )
 
         if saved_state is not None:
@@ -230,7 +320,7 @@ class MultiheadAttention(nn.Module):
             if "prev_key_padding_mask" in saved_state:
                 prev_key_padding_mask = saved_state["prev_key_padding_mask"]
             assert k is not None and v is not None
-            key_padding_mask = MultiheadAttention._append_prev_key_padding_mask(
+            key_padding_mask = RelativeMultiheadAttention._append_prev_key_padding_mask(
                 key_padding_mask=key_padding_mask,
                 prev_key_padding_mask=prev_key_padding_mask,
                 batch_size=bsz,
@@ -246,7 +336,6 @@ class MultiheadAttention(nn.Module):
             incremental_state = self._set_input_buffer(incremental_state, saved_state)
         assert k is not None
         src_len = k.size(1)
-
         # This is part of a workaround to get around fork/join parallelism
         # not supporting Optional types.
         if key_padding_mask is not None and key_padding_mask.dim() == 0:
@@ -276,8 +365,20 @@ class MultiheadAttention(nn.Module):
                     dim=1,
                 )
 
-        attn_weights = torch.bmm(q, k.transpose(1, 2))
-        attn_weights = MultiheadAttention.apply_sparse_mask(attn_weights, tgt_len, src_len, bsz)
+        attn_weights = torch.bmm(q, k.transpose(1, 2))  # [bsz * head, tgt_len, tgt_len]
+
+        # relative position
+        if self.maximum_relative_position and self.self_attention:
+            keys_length = k.size(1)
+            relative_pos = self.relative_positions(keys_length, self.maximum_relative_position).to(k.device)
+            relative_repr_keys = self.relative_position_keys(relative_pos)
+            relative_repr_values = self.relative_position_values(relative_pos)
+            attn_weights += self.matmul_with_relative_representations(q, relative_repr_keys)
+        else:
+            relative_repr_keys = relative_repr_values = None
+
+        # # TODO: sparse operation, need to be implemented later
+        # attn_weights = MultiheadAttention.apply_sparse_mask(attn_weights, tgt_len, src_len, bsz)
 
         assert list(attn_weights.size()) == [bsz * self.num_heads, tgt_len, src_len]
 
@@ -301,7 +402,7 @@ class MultiheadAttention(nn.Module):
         attn_weights_float = utils.softmax(
             attn_weights, dim=-1, onnx_trace=self.onnx_trace
         )
-        attn_weights = attn_weights_float.type_as(attn_weights)
+        # attn_weights = attn_weights_float.type_as(attn_weights) # useless
         attn_probs = F.dropout(
             attn_weights_float.type_as(attn_weights),
             p=self.dropout,
@@ -309,6 +410,11 @@ class MultiheadAttention(nn.Module):
         )
         assert v is not None
         attn = torch.bmm(attn_probs, v)
+
+        # relative position
+        if relative_repr_values is not None:
+            attn += self.matmul_with_relative_representations(attn_probs, relative_repr_values, transpose=False)
+
         assert list(attn.size()) == [bsz * self.num_heads, tgt_len, self.head_dim]
         if self.onnx_trace and attn.size(1) == 1:
             # when ONNX tracing a single decoder step (sequence length == 1)
@@ -408,8 +514,8 @@ class MultiheadAttention(nn.Module):
                 # in_proj_weight used to be q + k + v with same dimensions
                 dim = int(state_dict[k].shape[0] / 3)
                 items_to_add[prefix + "q_proj.weight"] = state_dict[k][:dim]
-                items_to_add[prefix + "k_proj.weight"] = state_dict[k][dim : 2 * dim]
-                items_to_add[prefix + "v_proj.weight"] = state_dict[k][2 * dim :]
+                items_to_add[prefix + "k_proj.weight"] = state_dict[k][dim: 2 * dim]
+                items_to_add[prefix + "v_proj.weight"] = state_dict[k][2 * dim:]
 
                 keys_to_remove.append(k)
 
@@ -418,9 +524,9 @@ class MultiheadAttention(nn.Module):
                     dim = int(state_dict[k].shape[0] / 3)
                     items_to_add[prefix + "q_proj.bias"] = state_dict[k_bias][:dim]
                     items_to_add[prefix + "k_proj.bias"] = state_dict[k_bias][
-                        dim : 2 * dim
-                    ]
-                    items_to_add[prefix + "v_proj.bias"] = state_dict[k_bias][2 * dim :]
+                                                           dim: 2 * dim
+                                                           ]
+                    items_to_add[prefix + "v_proj.bias"] = state_dict[k_bias][2 * dim:]
 
                     keys_to_remove.append(prefix + "in_proj_bias")
 
