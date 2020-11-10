@@ -174,24 +174,24 @@ def main(args):
             )
         )
 
-    # def make_graph_binary_dataset(vocab: Dictionary, input_file, output_file):
-    #     import torch
-    #     from dgl.data.graph_serialize import GraphData
-    #     from dgl.data.utils import save_graphs
-    #     from tqdm import tqdm
-    #
-    #     graph_batch, ids = [], []
-    #     with open(input_file, 'r') as reader:
-    #         num_lines = sum(1 for _ in reader)
-    #         reader.seek(0)
-    #         for idx, line in tqdm(enumerate(reader), total=num_lines):
-    #             ast = ujson.loads(line)
-    #             graph = tree2dgl(ast, dict)
-    #             graph = GraphData.create(graph)
-    #             graph_batch.append(graph)
-    #             ids.append(idx)
-    #     graph_labels = {"glabel": torch.IntTensor(ids)}
-    #     save_graphs(output_file + '.mmap', graph_batch, graph_labels)
+    def make_graph_binary_dataset(vocab: Dictionary, input_file, output_file):
+        import torch
+        from dgl.data.graph_serialize import GraphData
+        from dgl.data.utils import save_graphs
+        from tqdm import tqdm
+
+        graph_batch, ids = [], []
+        with open(input_file, 'r') as reader:
+            num_lines = sum(1 for _ in reader)
+            reader.seek(0)
+            for idx, line in tqdm(enumerate(reader), total=num_lines):
+                ast = ujson.loads(line)
+                graph = tree2dgl(ast, dict)
+                graph = GraphData.create(graph)
+                graph_batch.append(graph)
+                ids.append(idx)
+        graph_labels = {"glabel": torch.IntTensor(ids)}
+        save_graphs(output_file + '.mmap', graph_batch, graph_labels)
 
     def make_dataset(vocab, input_prefix, output_prefix, lang, num_workers=1):
         if args['preprocess']['dataset_impl'] == "raw":
@@ -229,7 +229,7 @@ def cli_main():
         description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
         "--yaml_file", "-f", default='code_tokens_docstring_tokens/individual', type=str,
-        help="load {yaml_file}.yml for train",
+        help="load python_wan/tokenization/config/{yaml_file}.yml for train",
     )
     args = parser.parse_args()
     LOGGER.info(args)
