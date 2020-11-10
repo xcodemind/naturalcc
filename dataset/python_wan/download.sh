@@ -14,7 +14,7 @@ mkdir -p ${DIR}
 for (( idx = 0 ; idx < ${#data_urls[@]} ; idx++ )); do
 
 FILE=${DIR}${data_names[idx]}
-echo "Downloading augmented_javascript dataset file from ${data_urls[idx]}"
+echo "Downloading python_wan dataset file from ${data_urls[idx]}"
 gdown ${data_urls[idx]} -O ${FILE} --no-cookies
 unzip ${FILE} -d ${DIR} # && rm ${FILE}
 
