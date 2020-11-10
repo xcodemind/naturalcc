@@ -28,11 +28,9 @@ class TransformerEncoderLayer(nn.Module):
         super().__init__()
         self.embed_dim = args['model']['encoder_embed_dim']
         if args['model']['multihead_attention_version'] == 'pytorch':
-            # from ncc.modules.attention.multihead_attention_pytorch import MultiheadAttention
-            # self.self_attn = MultiheadAttention(self.embed_dim, args['model']['encoder_attention_heads'],
-            #                                     dropout=args['model']['attention_dropout'])
-            from torch.nn.modules.activation import MultiheadAttention
-            self.self_attn = MultiheadAttention(self.embed_dim, args['model']['encoder_attention_heads'], dropout=args['model']['attention_dropout'])
+            from ncc.modules.attention.multihead_attention_pytorch import MultiheadAttention
+            self.self_attn = MultiheadAttention(self.embed_dim, args['model']['encoder_attention_heads'],
+                                                dropout=args['model']['attention_dropout'])
         elif args['model']['multihead_attention_version'] == 'ncc':
             from ncc.modules.attention.multihead_attention import MultiheadAttention
             self.self_attn = MultiheadAttention(
@@ -77,14 +75,8 @@ class TransformerEncoderLayer(nn.Module):
         residual = x
         if self.normalize_before:
             x = self.self_attn_layer_norm(x)
-        # x, _ = self.self_attn(
-        #     query=x,
-        #     key=x,
-        #     value=x,
-        #     key_padding_mask=encoder_padding_mask,
-        #     attn_mask=attn_mask,
-        # )
-        x, _ = self.self_attn(x, x, x, attn_mask=attn_mask,
+
+        x, _ = self.self_attn(query=x, key=x, value=x, attn_mask=attn_mask,
                               key_padding_mask=encoder_padding_mask)#[0]
 
         x = F.dropout(x, p=self.dropout, training=self.training)

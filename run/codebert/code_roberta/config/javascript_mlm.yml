@@ -167,8 +167,8 @@ model:
   layernorm_embedding: 0 # action='store_true', help='add layernorm to embedding'
   no_scale_embedding: 0 # action='store_true', help='if True, dont scale embeddings'
 
-  multihead_attention_version: pytorch # ncc
-  position_encoding_version: ncc_sinusoidal # ncc, contracode
+  multihead_attention_version: pytorch # ncc, pytorch
+  position_encoding_version: ncc_sinusoidal # ncc_sinusoidal, contracode
 
 optimization:
   max_epoch: 0 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'

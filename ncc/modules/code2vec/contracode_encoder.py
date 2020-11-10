@@ -52,10 +52,10 @@ class CodeEncoderTransformer(NccEncoder):
             embed_tokens,
             num_segments: int = 2,
             offset_positions_by_padding: bool = False, # True,
-            apply_bert_init: bool = False,
-            freeze_embeddings: bool = False,
-            n_trans_layers_to_freeze: int = 0,
-            export: bool = False,
+            # apply_bert_init: bool = False,
+            # freeze_embeddings: bool = False,
+            # n_trans_layers_to_freeze: int = 0,
+            # export: bool = False,
             traceable: bool = False,
     ):
         super().__init__(dictionary)
@@ -77,7 +77,7 @@ class CodeEncoderTransformer(NccEncoder):
             from ncc.modules.roberta.sinusoidal_positional_embedding import SinusoidalPositionalEmbedding
             self.embed_positions = SinusoidalPositionalEmbedding(
                 self.embed_dim,
-                padding_idx= self.padding_idx, #(self.padding_idx if offset_positions_by_padding else None),
+                padding_idx= self.padding_idx, # (self.padding_idx if offset_positions_by_padding else None),
                 init_size=args['model']['max_source_positions'] + self.padding_idx + 1 if offset_positions_by_padding else args['model']['max_source_positions'],  #  + 1 why?
             )
         # Option 2
@@ -102,12 +102,14 @@ class CodeEncoderTransformer(NccEncoder):
             else None
         )
         torch.manual_seed(1)
-        # Option 1 (The NCC Option 2 has been the same as Option 1 in logistic)
+        # Option 1
         # encoder_layer = nn.TransformerEncoderLayer(self.embed_dim, args['model']['encoder_attention_heads'],
         #                                            args['model']['encoder_ffn_embed_dim'], 0, args['model']['activation_fn']) # args['model']['dropout']
+        # self.layers = nn.ModuleList([encoder_layer for i in range(args['model']['encoder_layers'])])
+        # Option 2
         encoder_layer = TransformerEncoderLayer(args)
         self.layers = nn.ModuleList([encoder_layer for i in range(args['model']['encoder_layers'])])
-        # Option 2
+        # Option 3: This will create different TransformerEncoderLayer for different i
         # self.layers = nn.ModuleList([TransformerEncoderLayer(args) for i in range(args['model']['encoder_layers'])])
 
         self.num_layers = len(self.layers)
@@ -115,8 +117,8 @@ class CodeEncoderTransformer(NccEncoder):
         self.layer_norm = nn.LayerNorm(self.embed_dim)  # LayerNorm(self.embed_dim) TODO
         # else:
         #     self.layer_norm = None
-        if args['model']['layernorm_embedding']:  # getattr(args, "layernorm_embedding", False):
-            self.layernorm_embedding = nn.LayerNorm(self.embed_dim)     # LayerNorm(self.embed_dim, export=export) TODO
+        if args['model']['layernorm_embedding']:
+            self.layernorm_embedding = nn.LayerNorm(self.embed_dim)  # LayerNorm(self.embed_dim, export=export) TODO
         else:
             self.layernorm_embedding = None
 
@@ -129,14 +131,11 @@ class CodeEncoderTransformer(NccEncoder):
             x = embed = x * self.embed_scale
 
         if self.embed_positions is not None:
-            # x += self.embed_positions(src_tokens, positions=positions)
-            # x += self.embed_positions(src_tokens)  # TODO, position里面如果已经+=了，这里就没必要了
             if self.args['model']['position_encoding_version'] == 'contracode':
-                x += self.embed_positions(x)
+                x += self.embed_positions(src_tokens)
             elif self.args['model']['position_encoding_version'] == 'ncc_sinusoidal':
-                # x += self.embed_positions(src_tokens, positions=positions)
-                pe = self.embed_positions(src_tokens, positions=positions)
-                x += pe
+                x += self.embed_positions(src_tokens, positions=positions)
+
         if self.segment_embeddings is not None and segment_labels is not None:
             x += self.segment_embeddings(segment_labels)
 
@@ -144,27 +143,12 @@ class CodeEncoderTransformer(NccEncoder):
             x = self.layernorm_embedding(x)
 
         # x = F.dropout(x, p=self.dropout, training=self.training) #TODO, position里面如果已经dropout了，这里就没必要了
-
         # # account for padding while computing the representation
         # if padding_mask is not None:
         #     x *= 1 - padding_mask.unsqueeze(-1).type_as(x)
 
         return x, embed
 
-    def forward_(self, src_tokens, lengths=None, no_project_override=False):
-        # output = self.encoder(src_tokens, lengths, no_project_override)
-        # return output
-        src_emb = self.embedding(src_tokens).transpose(0, 1) * math.sqrt(self.config["d_model"])
-        src_emb = self.embed_positions(src_emb)
-        if self.pad_id is not None:
-            src_key_padding_mask = src_tokens == self.pad_id #.config["pad_id"]
-        else:
-            src_key_padding_mask = None
-        out = self.encoder(src_emb, src_key_padding_mask=src_key_padding_mask)  # TxBxD
-        if not no_project_override and self.project:  #.config["project"]:
-            return self.project_layer(out.mean(dim=0))
-        else:
-            return out
 
     def forward(
             self,
