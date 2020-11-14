@@ -35,14 +35,14 @@ common:
   server_port: '' # type=str, default="", help="For distant debugging."
 
 dataset:
-  num_workers: 5 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
+  num_workers: 0 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
   skip_invalid_size_inputs_valid_test: 1 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
-  max_sentences: 128 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  max_sentences: 4 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
 #  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
-  dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
-  train_subset: train # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
+  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
+  train_subset: test # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
   valid_subset: valid # default='valid', metavar='SPLIT', help='comma separated list of data subsets to use for validation (e.g. train, valid, test)'
   validate_interval: 1 # type=int, default=1, metavar='N', help='validate every N epochs'
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
@@ -62,7 +62,7 @@ dataset:
 #  per_gpu_eval_batch_size: 4 # default=4, type=int, help="Batch size per GPU/CPU for evaluation."
 
 distributed_training:
-  distributed_world_size: 3 # default=max(1, torch.cuda.device_count()
+  distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
   distributed_rank: 0 # default=0, type=int, help='rank of the current worker'
   distributed_backend: nccl # default='nccl', type=str, help='distributed backend'
   distributed_init_method: ~ # default=None, type=str,help='typically tcp://hostname:port that will be used to establish initial connetion'
@@ -86,7 +86,7 @@ distributed_training:
 
 
 task:
-  data: ~/.ncc/python_wan/individual/code_tokens_docstring_tokens/data-mmap/python # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
+  data: ~/.ncc/python_wan/summarization/data-raw # help='colon separated path to data directories list, will be iterated upon during epochs in round-robin manner'
 
   # for summarization
   source_lang: code_tokens
@@ -188,6 +188,9 @@ model:
   max_source_positions: 400
   max_target_positions: 30
 
+  multihead_attention_version: pytorch # ncc, pytorch
+  position_encoding_version: ncc_sinusoidal # ncc_sinusoidal, contracode
+
 optimization:
   max_epoch: 200 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
   max_update: 0 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
@@ -248,7 +251,7 @@ checkpoint:
   best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
   maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
   patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
-  save_dir: ~/.ncc/python_wan/individual/code_tokens_docstring_tokens/data-mmap/python/transformer/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
+  save_dir: ~/.ncc/python_wan/summarization/transformer/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
   model_name_or_path: ~ # default=None, type=str, help="The model checkpoint for weights initialization. Leave None if you want to train a model from scratch.",
   cache_dir: ~ # default=None, type=str, help="Optional directory to store the pre-trained models downloaded from s3 (instead of the default one)",
@@ -260,7 +263,7 @@ checkpoint:
 
 
 eval:
-  path: ~/.ncc/python_wan/individual/code_tokens_docstring_tokens/data-mmap/python/transformer/checkpoints/checkpoint200.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  path: ~/.ncc/python_wan/summarization/transformer/checkpoints/checkpoint200.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
 #  path: ~/.ncc/csn_icse21/summarization/data-mmap/ruby/seq2seq/transformer/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
   quiet: 1 # ', action='store_true', help='only print final scores'
