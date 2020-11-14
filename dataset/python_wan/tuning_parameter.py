@@ -10,6 +10,10 @@ def file_line_num(filename):
         return sum(1 for line in reader)
 
 
+def var_pottion():
+    pass    # please move the logic here.
+
+
 if __name__ == '__main__':
     import argparse
 
