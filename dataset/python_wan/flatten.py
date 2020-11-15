@@ -6,7 +6,7 @@ import ujson
 import os
 
 
-def code(raw_code_file, refined_code_file, dst_file):
+def flatten_code(raw_code_file, refined_code_file, dst_file):
     with open(raw_code_file, 'r') as raw_reader:
         raw_codes = {}
         for line in raw_reader:
@@ -23,7 +23,7 @@ def code(raw_code_file, refined_code_file, dst_file):
             print(raw_code, file=writer)
 
 
-def code_tokens(src_file, dst_file, uncase=True):
+def flatten_code_tokens(src_file, dst_file, uncase=True):
     with open(src_file, 'r') as reader, open(dst_file, 'w') as writer:
         for line in reader:
             if uncase:
@@ -31,13 +31,13 @@ def code_tokens(src_file, dst_file, uncase=True):
             print(ujson.dumps(line.split()), file=writer)
 
 
-def docstring(src_file, dst_file):
+def flatten_docstring(src_file, dst_file):
     with open(src_file, 'r') as reader, open(dst_file, 'w') as writer:
         for line in reader:
             print(ujson.dumps(line.rstrip('\n')), file=writer)
 
 
-def docstring_tokens(src_file, dst_file, uncase=True):
+def flatten_docstring_tokens(src_file, dst_file, uncase=True):
     with open(src_file, 'r') as reader, open(dst_file, 'w') as writer:
         for line in reader:
             if uncase:
@@ -47,25 +47,24 @@ def docstring_tokens(src_file, dst_file, uncase=True):
 
 
 if __name__ == '__main__':
-    lang = 'python'
     for mode in MODES:
-        # code
+        # flattern code
         raw_code_file = os.path.join(RAW_DATA_DIR, 'code.json')
         refined_code_file = os.path.join(RAW_DATA_DIR, mode, 'code.original')
-        dst_file = os.path.join(FLATTEN_DIR, lang, '{}.code'.format(mode))
-        code(raw_code_file, refined_code_file, dst_file)
+        dst_file = os.path.join(FLATTEN_DIR, '{}.code'.format(mode))
+        flatten_code(raw_code_file, refined_code_file, dst_file)
 
-        # code_tokens
+        # flattern code_tokens
         src_file = os.path.join(RAW_DATA_DIR, mode, 'code.original_subtoken')
-        dst_file = os.path.join(FLATTEN_DIR, lang, '{}.code_tokens'.format(mode))
-        code_tokens(src_file, dst_file)
+        dst_file = os.path.join(FLATTEN_DIR, '{}.code_tokens'.format(mode))
+        flatten_code_tokens(src_file, dst_file)
 
-        # docstring
+        # flattern docstring
         src_file = os.path.join(RAW_DATA_DIR, mode, 'javadoc.original')
-        dst_file = os.path.join(FLATTEN_DIR, lang, '{}.docstring'.format(mode))
-        docstring(src_file, dst_file)
+        dst_file = os.path.join(FLATTEN_DIR, '{}.docstring'.format(mode))
+        flatten_docstring(src_file, dst_file)
 
-        # docstring_tokens
+        # flattern docstring_tokens
         src_file = os.path.join(RAW_DATA_DIR, mode, 'javadoc.original')
-        dst_file = os.path.join(FLATTEN_DIR, lang, '{}.docstring_tokens'.format(mode))
-        docstring_tokens(src_file, dst_file)
+        dst_file = os.path.join(FLATTEN_DIR, '{}.docstring_tokens'.format(mode))
+        flatten_docstring_tokens(src_file, dst_file)

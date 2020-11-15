@@ -15,7 +15,7 @@ from ncc.models import (
 )
 
 from ncc.models.hub_interface import RobertaHubInterface
-from ncc.modules.code2vec.contracode_encoder import CodeEncoderLSTM, CodeEncoderTransformer
+from ncc.modules.code2vec.contracode_encoder_bak import CodeEncoderLSTM, CodeEncoderTransformer
 
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
 

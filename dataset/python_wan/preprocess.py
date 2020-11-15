@@ -64,51 +64,116 @@ def main(args):
     def dict_path(lang):
         return dest_path(lang, "dict") + ".json"
 
-    def build_dictionary(filenames, modality, src=False, tgt=False):
-        assert src ^ tgt
-        if modality in ['binary_ast']:
-            tokenize_func = tokenizer.tokenize_tree
-        elif modality in ['code_tokens', 'docstring_tokens', 'sbt', 'sbtao', 'path', 'path.terminals', 'traversal']:
-            tokenize_func = tokenizer.tokenize_list
-        else:
-            raise NotImplementedError("{}".format(modality))
+    # def build_dictionary(filenames, modality, src=False, tgt=False):
+    #     assert src ^ tgt
+    #     if modality in ['binary_ast']:
+    #         tokenize_func = tokenizer.tokenize_tree
+    #     elif modality in ['code_tokens', 'docstring_tokens', 'sbt', 'sbtao', 'path', 'path.terminals', 'traversal']:
+    #         tokenize_func = tokenizer.tokenize_list
+    #     else:
+    #         raise NotImplementedError("{}".format(modality))
+    #
+    #     return task.build_dictionary(
+    #         filenames,
+    #         tokenize_func=tokenize_func,
+    #         workers=args['preprocess']['workers'],
+    #         threshold=args['preprocess']['thresholdsrc'],
+    #         nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
+    #         padding_factor=args['preprocess']['padding_factor'],
+    #     )
 
-        return task.build_dictionary(
-            filenames,
-            tokenize_func=tokenize_func,
-            workers=args['preprocess']['workers'],
-            threshold=args['preprocess']['thresholdsrc'],
-            nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
-            padding_factor=args['preprocess']['padding_factor'],
-        )
+    # # 1. build vocabulary
+    # LOGGER.info('Build vocabularies...')
+    # src_dict = OrderedDict()
+    # for attr in args['preprocess']['source_lang']:
+    #     if args['preprocess']['srcdict']:
+    #         attr_dict = task.load_dictionary(args['preprocess']['srcdict'])
+    #     else:
+    #         dict_filename = dict_path(attr)
+    #         if os.path.exists(dict_filename):
+    #             attr_dict = task.load_dictionary(dict_filename)
+    #         else:
+    #             assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
+    #             if attr == 'code_tokens':
+    #                 attr_dict = build_dictionary([train_path(attr), valid_path(attr)], attr, src=True)
+    #             elif attr == 'docstring_tokens':
+    #                 attr_dict = build_dictionary([train_path(attr), valid_path(attr)], attr, tgt=True)
+    #             else:
+    #                 raise NotImplementedError
+    #     LOGGER.info('dict_path: {}'.format(dict_path(attr)))
+    #     attr_dict.save_json(dict_path(attr))
+    #     src_dict[attr] = attr_dict
+    # exit()
+    target = not args['preprocess']['only_source']
 
-    # 1. build vocabulary
-    LOGGER.info('Build vocabularies...')
-    src_dict = OrderedDict()
-    for attr in args['preprocess']['source_lang']:
+    if not args['preprocess']['srcdict'] and os.path.exists(dict_path(args['preprocess']['source_lang'])):
+        raise FileExistsError(dict_path(args['preprocess']['source_lang']))
+    if target and not args['preprocess']['tgtdict'] and os.path.exists(dict_path(args['preprocess']['target_lang'])):
+        raise FileExistsError(dict_path(args['preprocess']['target_lang']))
+
+    if args['preprocess']['joined_dictionary']:
+        assert not args['preprocess']['srcdict'] or not args['preprocess']['tgtdict'], \
+            "cannot use both --srcdict and --tgtdict with --joined-dictionary"
         if args['preprocess']['srcdict']:
-            attr_dict = task.load_dictionary(args['preprocess']['srcdict'])
+            src_dict = task.load_dictionary(args['preprocess']['srcdict'])
+        elif args['preprocess']['tgtdict']:
+            src_dict = task.load_dictionary(args['preprocess']['tgtdict'])
         else:
-            dict_filename = dict_path(attr)
-            if os.path.exists(dict_filename):
-                attr_dict = task.load_dictionary(dict_filename)
+            assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
+            src_dict = task.build_dictionary(
+                [train_path(args['preprocess']['source_lang'])],
+                tokenize_func=tokenizer.tokenize_list,
+                workers=args['preprocess']['workers'],
+                threshold=args['preprocess']['thresholdsrc'],
+                # nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
+                # padding_factor=args['preprocess']['padding_factor'],
+            )
+
+        tgt_dict = src_dict
+
+    else:
+        if args['preprocess']['srcdict']:
+            src_dict = task.load_dictionary(args['preprocess']['srcdict'])
+        else:
+            assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
+            # src_dict = build_dictionary([train_path(args['preprocess']['source_lang'])],
+            #                             args['preprocess']['source_lang'], src=True)
+            src_dict = task.build_dictionary(
+                [train_path(args['preprocess']['source_lang'])],
+                tokenize_func=tokenizer.tokenize_list,
+                workers=args['preprocess']['workers'],
+                threshold=args['preprocess']['thresholdsrc'],
+                # nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
+                # padding_factor=args['preprocess']['padding_factor'],
+            )
+        if target:
+            if args['preprocess']['tgtdict']:
+                tgt_dict = task.load_dictionary(args['preprocess']['tgtdict'])
             else:
-                assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
-                if attr == 'code_tokens':
-                    attr_dict = build_dictionary([train_path(attr), valid_path(attr)], attr, src=True)
-                elif attr == 'docstring_tokens':
-                    attr_dict = build_dictionary([train_path(attr), valid_path(attr)], attr, tgt=True)
-                else:
-                    raise NotImplementedError
-        LOGGER.info('dict_path: {}'.format(dict_path(attr)))
-        attr_dict.save_json(dict_path(attr))
-        src_dict[attr] = attr_dict
+                # assert args['preprocess']['trainpref'], "--trainpref must be set if --tgtdict is not specified"
+                # tgt_dict = build_dictionary([train_path(args['preprocess']['target_lang'])], tgt=True)
+                assert args['preprocess']['trainpref'], "--trainpref must be set if --tgtdict is not specified"
+                tgt_dict = task.build_dictionary(
+                    [train_path(args['preprocess']['target_lang'])],
+                    tokenize_func=tokenizer.tokenize_list,
+                    workers=args['preprocess']['workers'],
+                    threshold=args['preprocess']['thresholdsrc'],
+                    # nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
+                    # padding_factor=args['preprocess']['padding_factor'],
+                )
+        else:
+            tgt_dict = None
+            # tgt_sp = None
+    src_dict.save_json(dict_path(args['preprocess']['source_lang']))  # save spm dict to ncc.dictionary
+    if target and tgt_dict is not None:
+        tgt_dict.save_json(dict_path(args['preprocess']['target_lang']))
+
 
     # 2. ***************build dataset********************
     def make_binary_dataset(vocab: Dictionary, input_file, output_file,
-                            attr: str, num_workers: int):
+                            num_workers: int):
         """make binary dataset"""
-        LOGGER.info("[{}] Dictionary: {} types".format(attr, len(vocab) - 1))
+        # LOGGER.info("[{}] Dictionary: {} types".format(attr, len(vocab) - 1))
         n_seq_tok = [0, 0]
         replaced = Counter()  # save un-recorded tokens
 
@@ -134,7 +199,7 @@ def main(args):
                         input_file,
                         vocab,
                         prefix,
-                        attr,
+                        # attr, TODO: please delete this paprameter
                         offsets[worker_id],
                         offsets[worker_id + 1]
                     ),
@@ -164,8 +229,8 @@ def main(args):
         ds.finalize('{}.idx'.format(output_file))
 
         LOGGER.info(
-            "[{}] {}: {} sents, {} tokens, {:.3}% replaced by {}".format(
-                attr,
+            "{}: {} sents, {} tokens, {:.3}% replaced by {}".format(
+                # attr,
                 input_file,
                 n_seq_tok[0],
                 n_seq_tok[1],
@@ -219,8 +284,10 @@ def main(args):
                 outprefix = "test{}".format(k) if k > 0 else "test"
                 make_dataset(vocab, testpref, outprefix, lang, num_workers=args['preprocess']['workers'])
 
-    for attr in args['preprocess']['source_lang']:
-        make_all(attr, src_dict[attr])
+    # for attr in args['preprocess']['source_lang']:
+    make_all(args['preprocess']['source_lang'], src_dict)
+    if target:
+        make_all(args['preprocess']['target_lang'], tgt_dict)
 
 
 def cli_main():
@@ -228,12 +295,12 @@ def cli_main():
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        "--yaml_file", "-f", default='code_tokens_docstring_tokens/individual', type=str,
+        "--yaml_file", "-f", default='preprocess', type=str,
         help="load {yaml_file}.yml for train",
     )
     args = parser.parse_args()
     LOGGER.info(args)
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.yaml_file))
+    yaml_file = os.path.join(os.path.dirname(__file__), 'summarization/config', '{}.yml'.format(args.yaml_file))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)

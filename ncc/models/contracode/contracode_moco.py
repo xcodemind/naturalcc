@@ -15,7 +15,7 @@ from ncc.models import (
 )
 
 from ncc.models.hub_interface import RobertaHubInterface
-from ncc.modules.code2vec.contracode_encoder import CodeEncoderLSTM, CodeEncoderTransformer
+from ncc.modules.code2vec.transformer_encoder import TransformerEncoder # CodeEncoderLSTM
 
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
 
@@ -72,38 +72,39 @@ class ContraCodeMoCo(NccMoCoModel):
             args['model']['max_positions'] = args['task']['tokens_per_sample']
 
         if args['model']['encoder_type'] == "transformer":
-            encoder_q = CodeEncoderTransformer(
+            encoder_q = TransformerEncoder(
                 task.source_dictionary,
                 project=True,
             )
-            encoder_k = CodeEncoderTransformer(
+            encoder_k = TransformerEncoder(
                 task.source_dictionary,
                 project=True,
             )
 
         elif args['model']['encoder_type'] == "lstm":
-            encoder_q = CodeEncoderLSTM(
-                dictionary=task.source_dictionary,
-                embed_dim=args['model']['encoder_embed_dim_q'],
-                hidden_size=args['model']['encoder_hidden_size_q'],
-                num_layers=args['model']['encoder_layers_q'],
-                dropout_in=args['model']['encoder_dropout_in_q'],
-                dropout_out=args['model']['encoder_dropout_out_q'],
-                bidirectional=bool(args['model']['encoder_bidirectional_q']),
-                # pretrained_embed=pretrained_encoder_embed,
-                max_source_positions=max_source_positions
-            )
-            encoder_k = CodeEncoderLSTM(
-                dictionary=task.source_dictionary,
-                embed_dim=args['model']['encoder_embed_dim_k'],
-                hidden_size=args['model']['encoder_hidden_size_k'],
-                num_layers=args['model']['encoder_layers_k'],
-                dropout_in=args['model']['encoder_dropout_in_k'],
-                dropout_out=args['model']['encoder_dropout_out_k'],
-                bidirectional=bool(args['model']['encoder_bidirectional_k']),
-                # pretrained_embed=pretrained_encoder_embed,
-                max_source_positions=max_source_positions
-            )
+            # encoder_q = CodeEncoderLSTM(
+            #     dictionary=task.source_dictionary,
+            #     embed_dim=args['model']['encoder_embed_dim_q'],
+            #     hidden_size=args['model']['encoder_hidden_size_q'],
+            #     num_layers=args['model']['encoder_layers_q'],
+            #     dropout_in=args['model']['encoder_dropout_in_q'],
+            #     dropout_out=args['model']['encoder_dropout_out_q'],
+            #     bidirectional=bool(args['model']['encoder_bidirectional_q']),
+            #     # pretrained_embed=pretrained_encoder_embed,
+            #     max_source_positions=max_source_positions
+            # )
+            # encoder_k = CodeEncoderLSTM(
+            #     dictionary=task.source_dictionary,
+            #     embed_dim=args['model']['encoder_embed_dim_k'],
+            #     hidden_size=args['model']['encoder_hidden_size_k'],
+            #     num_layers=args['model']['encoder_layers_k'],
+            #     dropout_in=args['model']['encoder_dropout_in_k'],
+            #     dropout_out=args['model']['encoder_dropout_out_k'],
+            #     bidirectional=bool(args['model']['encoder_bidirectional_k']),
+            #     # pretrained_embed=pretrained_encoder_embed,
+            #     max_source_positions=max_source_positions
+            # )
+            pass
         return cls(args, encoder_q, encoder_k)
 
     @torch.no_grad()

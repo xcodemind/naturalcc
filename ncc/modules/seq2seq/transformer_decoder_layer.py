@@ -38,7 +38,7 @@ class TransformerDecoderLayer(nn.Module):
             add_bias_kv=add_bias_kv,
             add_zero_attn=add_zero_attn,
             self_attention=not self.cross_self_attention,
-            maximum_relative_position=args['model']['decoder_max_relative_len'],
+            # maximum_relative_position=args['model']['decoder_max_relative_len'],
         )
         self.dropout = args['model']['dropout']
         self.activation_fn = utils.get_activation_fn(
