@@ -23,10 +23,10 @@ class LSTMModel(NccEncoderDecoderModel):
         if args['model']['encoder_layers'] != args['model']['decoder_layers']:
             raise ValueError('--encoder-layers must match --decoder-layers')
 
-        max_source_positions = args['model']['max_source_positions'] if args['model'][
-            'max_source_positions'] else DEFAULT_MAX_SOURCE_POSITIONS
-        max_target_positions = args['model']['max_target_positions'] if args['model'][
-            'max_target_positions'] else DEFAULT_MAX_TARGET_POSITIONS
+        max_source_positions = args['model']['max_source_positions'] if args['model']['max_source_positions'] \
+            else DEFAULT_MAX_SOURCE_POSITIONS
+        max_target_positions = args['model']['max_target_positions'] if args['model']['max_target_positions'] \
+            else DEFAULT_MAX_TARGET_POSITIONS
 
         def load_pretrained_embedding_from_file(embed_path, dictionary, embed_dim):
             num_embeddings = len(dictionary)

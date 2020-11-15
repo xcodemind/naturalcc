@@ -16,12 +16,14 @@ import torch.nn.functional as F
 # )
 from ncc.modules.roberta.learned_positional_embedding import LearnedPositionalEmbedding
 from ncc.modules.attention.multihead_attention import MultiheadAttention
-from ncc.modules.roberta.sinusoidal_positional_embedding_hibert import SinusoidalPositionalEmbedding
+from ncc.modules.roberta.sinusoidal_positional_embedding import SinusoidalPositionalEmbedding
 from ncc.modules.seq2seq.ncc_incremental_decoder import NccIncrementalDecoder
 from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.models.ncc_model import NccEncoderDecoderModel
 from ncc.models import register_model
 from ncc.utils import utils
+
+
 # from . import (
 #     NccIncrementalDecoder, NccEncoder, NccModel,
 #     register_model, register_model_architecture,
@@ -36,12 +38,13 @@ def get_sent_end_repr(src_emb, sent_ends):
     bsz, nsent = sent_ends.size()
     assert bsz == src_emb.size(0)
     seqlen = src_emb.size(1)
-    offset = torch.linspace(0, (bsz-1)*seqlen, bsz).type(sent_ends.type())
+    offset = torch.linspace(0, (bsz - 1) * seqlen, bsz).type(sent_ends.type())
     sent_ends_abs = sent_ends + offset.view(-1, 1)
-    sent_ends_repr = src_emb.contiguous().view(bsz*seqlen, -1)[sent_ends_abs]
+    sent_ends_repr = src_emb.contiguous().view(bsz * seqlen, -1)[sent_ends_abs]
     sent_ends_repr = sent_ends_repr.view(bsz, nsent, -1)
 
     return sent_ends_repr
+
 
 @register_model('hi_transformer_summarization')
 class HiTransformerSummarizationModel(NccEncoderDecoderModel):
@@ -116,7 +119,7 @@ class HiTransformerSummarizationModel(NccEncoderDecoderModel):
                 raise RuntimeError(
                     '--share-all-embeddings requires --encoder-embed-dim to match --decoder-embed-dim')
             if args['model']['decoder_embed_path'] and (
-                    args['model']['decoder_embed_path'] != args['model']['encoder_embed_path']):
+                args['model']['decoder_embed_path'] != args['model']['encoder_embed_path']):
                 raise RuntimeError('--share-all-embeddings not compatible with --decoder-embed-path')
             encoder_embed_tokens = build_embedding(
                 src_dict, args['model']['encoder_embed_dim'], args['model']['encoder_embed_path']
@@ -322,7 +325,6 @@ class TransformerDecoder(NccIncrementalDecoder):
         return state_dict
 
 
-
 class TransformerDecoder_(NccIncrementalDecoder):
     """Transformer decoder."""
 
@@ -332,7 +334,6 @@ class TransformerDecoder_(NccIncrementalDecoder):
 
         embed_dim = args['model']['decoder_embed_dim']
         self.out_proj = Linear(embed_dim, len(dictionary))
-
 
     def forward(self, encoder_out, incremental_state=None):
         x = encoder_out['encoder_out']
@@ -448,7 +449,7 @@ class TransformerDecoderLayer(nn.Module):
             query=x,
             key=x,
             value=x,
-            #mask_future_timesteps=True,
+            # mask_future_timesteps=True,
             incremental_state=incremental_state,
             need_weights=False,
         )

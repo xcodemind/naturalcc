@@ -195,8 +195,10 @@ def single_main(args, init_distributed=False):
     # 0. Initialize CUDA and distributed training
     if torch.cuda.is_available() and not args['common']['cpu']:
         torch.cuda.set_device(args['distributed_training']['device_id'])
+    random.seed(args['common']['seed'])
     np.random.seed(args['common']['seed'])
     torch.manual_seed(args['common']['seed'])
+    torch.cuda.manual_seed(args['common']['seed'])
     if init_distributed:
         args['distributed_training']['distributed_rank'] = distributed_utils.distributed_init(args)
 
@@ -213,8 +215,7 @@ def single_main(args, init_distributed=False):
     task = tasks.setup_task(args)
 
     # 2. Load valid dataset (we load training data below, based on the latest checkpoint)
-    for valid_sub_split in args['dataset']['valid_subset'].split(','):
-        task.load_dataset(valid_sub_split, combine=False, epoch=1)
+    task.load_dataset(args['dataset']['valid_subset'], combine=False, epoch=1)
 
     # 3. Build model and criterion
     model = task.build_model(args)
@@ -293,12 +294,13 @@ def cli_main():
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing code_search_net dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        "--language", "-l", default='python_wan', type=str, help="load {language}.yml for train",
+        "--yaml_file", "-f", default='config/python_wan', type=str, help="load {yaml_file}.yml for train",
+        # "--yaml_file", "-f", default='config/python_wan.fp16', type=str, help="load {yaml_file}.yml for train",
     )
     args = parser.parse_args()
     # Argues = namedtuple('Argues', 'yaml')
     # args_ = Argues('ruby.yml')
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.language))
+    yaml_file = os.path.join(os.path.dirname(__file__), '{}.yml'.format(args.yaml_file))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)
@@ -335,4 +337,8 @@ def cli_main():
 
 
 if __name__ == '__main__':
+    """
+    Examples:
+        CUDA_VISIBALE_DEVICES=0,1,2,3 python -m run.summarization.seq2seq.train -f config/python_wan
+    """
     cli_main()

@@ -89,74 +89,36 @@ class IndexedRawTextDataset(NccDataset):
         return os.path.exists(path)
 
 
+def _load_dataset(path, impl, dict):
+    if impl == 'raw':
+        src_dataset = IndexedRawTextDataset(path=path, dictionary=dict)
+    elif impl == 'mmap':
+        # mmap dataset has been numberized, no need for dict
+        src_dataset = indexed_dataset.MMapIndexedDataset(path=path)
+    else:
+        raise NotImplementedError("No such {} dataset implementation.".format(impl))
+    return src_dataset
+
+
 def load_langpair_dataset(
     data_path, split,
     src, src_dict,
     tgt, tgt_dict,
+    dataset_impl,
     # combine, dataset_impl, upsample_primary,
-    left_pad_source, left_pad_target, max_source_positions,
-    max_target_positions,
+    left_pad_source, left_pad_target,
+    max_source_positions, max_target_positions,
     prepend_bos=False, load_alignments=False,
     truncate_source=False, append_source_id=False,
+    truncate_target=False,
     append_eos_to_target=False,
 ):
-    # def split_exists(split, src, data_path):
-    #     filename = os.path.join(data_path, '{}.{}'.format(split, src))  # -{}.{} , tgt, lang
-    #     return indexed_dataset.dataset_exists(filename, impl=dataset_impl)
-
-    # src_datasets = []
-    # tgt_datasets = []
-
-    # for k in itertools.count():
-    #     split_k = split + (str(k) if k > 0 else '')
-    #
-    #     # infer langcode
-    #     if split_exists(split_k, src, data_path):
-    #         prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , src, tgt
-    #     elif split_exists(split_k, tgt, data_path):
-    #         prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , tgt, src
-    #
-    #     else:
-    #         if k > 0:
-    #             break
-    #         else:
-    #             raise FileNotFoundError('Dataset not found: {} ({})'.format(split, data_path))
-    #
-    #     src_dataset = data_utils.load_indexed_dataset(prefix + src, 'text', src_dict, dataset_impl)
-    #     if truncate_source:
-    #         src_dataset = AppendTokenDataset(
-    #             TruncateDataset(
-    #                 StripTokenDataset(src_dataset, src_dict.eos()),
-    #                 max_source_positions - 1,
-    #             ),
-    #             src_dict.eos(),
-    #         )
-    #     src_datasets.append(src_dataset)
-    #
-    #     tgt_dataset = data_utils.load_indexed_dataset(prefix + tgt, 'text', tgt_dict, dataset_impl)
-    #     if tgt_dataset is not None:
-    #         tgt_datasets.append(tgt_dataset)
-    #
-    #     if not combine:
-    #         break
-
-    # assert len(src_datasets) == len(tgt_datasets) or len(tgt_datasets) == 0
-    #
-    # if len(src_datasets) == 1:
-    #     src_dataset = src_datasets[0]
-    #     tgt_dataset = tgt_datasets[0] if len(tgt_datasets) > 0 else None
-    # else:
-    #     sample_ratios = [1] * len(src_datasets)
-    #     sample_ratios[0] = upsample_primary
-    #     src_dataset = ConcatDataset(src_datasets, sample_ratios)
-    #     if len(tgt_datasets) > 0:
-    #         tgt_dataset = ConcatDataset(tgt_datasets, sample_ratios)
-    #     else:
-    #         tgt_dataset = None
     # load source dataset
-    split_path_src = os.path.join(data_path, '{}.{}'.format(split, src))
-    src_dataset = IndexedRawTextDataset(path=split_path_src, dictionary=src_dict)
+    src_path = os.path.join(data_path, '{}.{}'.format(split, src))
+    src_dataset = _load_dataset(path=src_path, impl=dataset_impl, dict=src_dict)
+
     if truncate_source:
+        # sntn => sntn[:max_source_positions - 1] + <eos>
         src_dataset = AppendTokenDataset(
             TruncateDataset(
                 StripTokenDataset(src_dataset, src_dict.eos()),
@@ -164,9 +126,13 @@ def load_langpair_dataset(
             ),
             src_dict.eos(),
         )
+
     # load target dataset
-    split_path_tgt = os.path.join(data_path, '{}.{}'.format(split, tgt))
-    tgt_dataset = IndexedRawTextDataset(path=split_path_tgt, dictionary=tgt_dict)
+    tgt_path = os.path.join(data_path, '{}.{}'.format(split, tgt))
+    tgt_dataset = _load_dataset(path=tgt_path, impl=dataset_impl, dict=tgt_dict)
+    if truncate_target:
+        # sntn => sntn[:max_target_positions]
+        tgt_dataset = TruncateDataset(tgt_dataset, max_target_positions)
 
     if prepend_bos:
         assert hasattr(src_dict, "bos_index") and hasattr(tgt_dict, "bos_index")
@@ -198,12 +164,22 @@ def load_langpair_dataset(
         align_dataset=None, eos=eos,
         remove_eos_from_source=True,
         append_eos_to_target=append_eos_to_target,
-        shuffle=True,  # TODO debug: shuffle=False
+        # shuffle=True,
+        shuffle=False,  # debug
     )
 
 
 @register_task('summarization')
 class SummarizationTask(NccTask):
+    """
+    This task`SummarizationTask` will handle file as follows:
+        1) truncate source/target sentence
+        2) append eos/bos
+        3) move eos of target sentence to the head of it, e.g.
+            decoder input: a b c <eos>
+            ground truth: <eos> a b c
+    """
+
     def __init__(self, args, src_dict, tgt_dict):
         super().__init__(args)
         self.src_dict = src_dict
@@ -221,8 +197,6 @@ class SummarizationTask(NccTask):
         # load dictionaries
         src_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['source_lang'])))
         tgt_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['target_lang'])))
-        # src_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.txt'.format(args['task']['source_lang'])))
-        # tgt_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.txt'.format(args['task']['target_lang'])))
         assert src_dict.pad() == tgt_dict.pad()
         assert src_dict.eos() == tgt_dict.eos()
         assert src_dict.unk() == tgt_dict.unk()
@@ -273,14 +247,14 @@ class SummarizationTask(NccTask):
 
         self.datasets[split] = load_langpair_dataset(
             data_path, split, src, self.src_dict, tgt, self.tgt_dict,
-            combine=combine, dataset_impl=self.args['dataset']['dataset_impl'],
-            upsample_primary=self.args['task']['upsample_primary'],
+            dataset_impl=self.args['dataset']['dataset_impl'],
             left_pad_source=self.args['task']['left_pad_source'],
             left_pad_target=self.args['task']['left_pad_target'],
             max_source_positions=self.args['task']['max_source_positions'],
             max_target_positions=self.args['task']['max_target_positions'],
             load_alignments=self.args['task']['load_alignments'],
             truncate_source=self.args['task']['truncate_source'],
+            truncate_target=self.args['task']['truncate_target'],
             append_eos_to_target=self.args['task']['append_eos_to_target'],
         )
 
@@ -344,6 +318,7 @@ class SummarizationTask(NccTask):
 
     def valid_step(self, sample, model, criterion):
         loss, sample_size, logging_output = super().valid_step(sample, model, criterion)
+
         def decode(toks, escape_unk=False, trunc_eos=True):
             s = self.tgt_dict.string(
                 toks.int().cpu(),
@@ -406,4 +381,3 @@ class SummarizationTask(NccTask):
         bleu, rouge_l, meteor = eval_utils.eval_accuracies(hypotheses, references, filename='pred.txt')
 
         return bleu, rouge_l, meteor
-
