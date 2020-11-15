@@ -8,11 +8,11 @@ preprocess:
   testpref:  ~/.ncc/python_wan/flatten/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
   # raw dataset
-  dataset_impl: raw #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
-  destdir: ~/.ncc/python_wan/summarization/data-raw #", metavar="DIR", default="data-bin", help="destination dir"
+#  dataset_impl: raw #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
+#  destdir: ~/.ncc/python_wan/summarization/data-raw #", metavar="DIR", default="data-bin", help="destination dir"
   # bin dataset
-#  dataset_impl: mmap #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
-#  destdir: ~/.ncc/python_wan/summarization/data-mmap #", metavar="DIR", default="data-bin", help="destination dir"
+  dataset_impl: mmap #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
+  destdir: ~/.ncc/python_wan/summarization/data-mmap #", metavar="DIR", default="data-bin", help="destination dir"
 
   only_train: 0 # if set false, generate dictionaries with additional validation datasets. e.g. neural-transformer
 

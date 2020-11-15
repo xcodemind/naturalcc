@@ -106,10 +106,10 @@ def main(args):
                 tokenize_func=tokenizer.tokenize_list,
                 workers=args['preprocess']['workers'],
                 threshold=args['preprocess']['thresholdsrc'],
-                # nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
+                # set max len for joint dictionaries
+                nwords=max(args['preprocess']['nwordssrc'], args['preprocess']['nwordstgt']),
                 # padding_factor=args['preprocess']['padding_factor'],
             )
-
         tgt_dict = src_dict
 
     else:
@@ -126,7 +126,7 @@ def main(args):
                 tokenize_func=tokenizer.tokenize_list,
                 workers=args['preprocess']['workers'],
                 threshold=args['preprocess']['thresholdsrc'],
-                # nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
+                nwords=args['preprocess']['nwordssrc'],
                 # padding_factor=args['preprocess']['padding_factor'],
             )
         if target:
@@ -142,7 +142,7 @@ def main(args):
                     tokenize_func=tokenizer.tokenize_list,
                     workers=args['preprocess']['workers'],
                     threshold=args['preprocess']['thresholdsrc'],
-                    # nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
+                    nwords=args['preprocess']['nwordstgt'],
                     # padding_factor=args['preprocess']['padding_factor'],
                 )
         else:
