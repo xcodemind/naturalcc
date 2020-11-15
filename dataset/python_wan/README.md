@@ -92,14 +92,12 @@ Once run this command, you will have python_wan directory like
 ```
 
 # Step 4
-## Option 1: generate raw data
+Generating raw/bin data with multi-processing. 
+Before generating datasets, plz make sure [config file](./config/preprocess.yml) is set correctly.
 ```shell script
 # code_tokens/docstring_tokens
-
+python -m dataset.python_wan.preprocess
 ```
-
-## Option 2: generate bin data (TBC)
-
 
 <!--
 # step 4
