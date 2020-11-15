@@ -16,7 +16,7 @@ from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.embedding import Embedding
 from ncc.models.hub_interface import RobertaHubInterface
 from ncc import LOGGER
-from ncc.modules.code2vec.contracode_encoder import CodeEncoderTransformer
+from ncc.modules.code2vec.transformer_encoder import TransformerEncoder
 DEFAULT_MAX_SOURCE_POSITIONS = 1e5
 
 
@@ -286,7 +286,7 @@ class RobertaEncoder(NccDecoder):
         embed_tokens = build_embedding(
             dictionary, args['model']['encoder_embed_dim'], args['model']['encoder_embed_path']
         )
-        self.code_encoder = CodeEncoderTransformer(args, dictionary, embed_tokens, num_segments=0)
+        self.code_encoder = TransformerEncoder(args, dictionary, embed_tokens, num_segments=0)
         # self.code_encoder = CodeEncoderTransformer(
         #         dictionary,
         #         project=False,

@@ -11,6 +11,7 @@ from ncc.logging import metrics
 import itertools
 from ncc import LOGGER
 from ncc.data.dictionary import Dictionary
+from ncc.data.ncc_dataset import NccDataset
 from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 from ncc.utils import utils
@@ -27,72 +28,145 @@ from ncc.data.summarization.path_dataset import PathDataset
 from ncc.data.summarization.bin_ast_dataset import BinaryASTDataset
 from ncc.utils.tokenizer import tokenize_string
 from ncc.eval import eval_utils
+from ncc.utils import tokenizer
+from functools import lru_cache
+
 EVAL_BLEU_ORDER = 4
+
+
+class IndexedRawTextDataset(NccDataset):
+    """Takes a text file as input and binarizes it in memory at instantiation.
+    Original lines are also kept in memory"""
+
+    def __init__(self, path, dictionary, append_eos=True, reverse_order=False):
+        self.tokens_list = []
+        self.lines = []
+        self.sizes = []
+        self.append_eos = append_eos
+        self.reverse_order = reverse_order
+        self.read_data(path, dictionary)
+        self.size = len(self.tokens_list)
+
+    def read_data(self, path, dictionary):
+        with open(path, 'r', encoding='utf-8') as f:
+            for line in f:
+                self.lines.append(line.strip('\n'))
+                tokens = dictionary.encode_line(
+                    line, tokenizer.tokenize_list, add_if_not_exist=False,
+                    append_eos=self.append_eos, reverse_order=self.reverse_order,
+                ).long()
+                self.tokens_list.append(tokens)
+                self.sizes.append(len(tokens))
+        self.sizes = np.array(self.sizes)
+
+    def check_index(self, i):
+        if i < 0 or i >= self.size:
+            raise IndexError('index out of range')
+
+    @lru_cache(maxsize=8)
+    def __getitem__(self, i):
+        self.check_index(i)
+        return self.tokens_list[i]
+
+    def get_original_text(self, i):
+        self.check_index(i)
+        return self.lines[i]
+
+    def __del__(self):
+        pass
+
+    def __len__(self):
+        return self.size
+
+    def num_tokens(self, index):
+        return self.sizes[index]
+
+    def size(self, index):
+        return self.sizes[index]
+
+    @staticmethod
+    def exists(path):
+        return os.path.exists(path)
 
 
 def load_langpair_dataset(
     data_path, split,
     src, src_dict,
     tgt, tgt_dict,
-    combine, dataset_impl, upsample_primary,
+    # combine, dataset_impl, upsample_primary,
     left_pad_source, left_pad_target, max_source_positions,
-    max_target_positions, prepend_bos=False, load_alignments=False,
+    max_target_positions,
+    prepend_bos=False, load_alignments=False,
     truncate_source=False, append_source_id=False,
     append_eos_to_target=False,
 ):
-    def split_exists(split, src, data_path):
-        filename = os.path.join(data_path, '{}.{}'.format(split, src))  # -{}.{} , tgt, lang
-        return indexed_dataset.dataset_exists(filename, impl=dataset_impl)
+    # def split_exists(split, src, data_path):
+    #     filename = os.path.join(data_path, '{}.{}'.format(split, src))  # -{}.{} , tgt, lang
+    #     return indexed_dataset.dataset_exists(filename, impl=dataset_impl)
 
-    src_datasets = []
-    tgt_datasets = []
+    # src_datasets = []
+    # tgt_datasets = []
 
-    for k in itertools.count():
-        split_k = split + (str(k) if k > 0 else '')
+    # for k in itertools.count():
+    #     split_k = split + (str(k) if k > 0 else '')
+    #
+    #     # infer langcode
+    #     if split_exists(split_k, src, data_path):
+    #         prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , src, tgt
+    #     elif split_exists(split_k, tgt, data_path):
+    #         prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , tgt, src
+    #
+    #     else:
+    #         if k > 0:
+    #             break
+    #         else:
+    #             raise FileNotFoundError('Dataset not found: {} ({})'.format(split, data_path))
+    #
+    #     src_dataset = data_utils.load_indexed_dataset(prefix + src, 'text', src_dict, dataset_impl)
+    #     if truncate_source:
+    #         src_dataset = AppendTokenDataset(
+    #             TruncateDataset(
+    #                 StripTokenDataset(src_dataset, src_dict.eos()),
+    #                 max_source_positions - 1,
+    #             ),
+    #             src_dict.eos(),
+    #         )
+    #     src_datasets.append(src_dataset)
+    #
+    #     tgt_dataset = data_utils.load_indexed_dataset(prefix + tgt, 'text', tgt_dict, dataset_impl)
+    #     if tgt_dataset is not None:
+    #         tgt_datasets.append(tgt_dataset)
+    #
+    #     if not combine:
+    #         break
 
-        # infer langcode
-        if split_exists(split_k, src, data_path):
-            prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , src, tgt
-        elif split_exists(split_k, tgt, data_path):
-            prefix = os.path.join(data_path, '{}.'.format(split_k))  # {}-{}. , tgt, src
-
-        else:
-            if k > 0:
-                break
-            else:
-                raise FileNotFoundError('Dataset not found: {} ({})'.format(split, data_path))
-
-        src_dataset = data_utils.load_indexed_dataset(prefix + src, 'text', src_dict, dataset_impl)
-        if truncate_source:
-            src_dataset = AppendTokenDataset(
-                TruncateDataset(
-                    StripTokenDataset(src_dataset, src_dict.eos()),
-                    max_source_positions - 1,
-                ),
-                src_dict.eos(),
-            )
-        src_datasets.append(src_dataset)
-
-        tgt_dataset = data_utils.load_indexed_dataset(prefix + tgt, 'text', tgt_dict, dataset_impl)
-        if tgt_dataset is not None:
-            tgt_datasets.append(tgt_dataset)
-
-        if not combine:
-            break
-
-    assert len(src_datasets) == len(tgt_datasets) or len(tgt_datasets) == 0
-
-    if len(src_datasets) == 1:
-        src_dataset = src_datasets[0]
-        tgt_dataset = tgt_datasets[0] if len(tgt_datasets) > 0 else None
-    else:
-        sample_ratios = [1] * len(src_datasets)
-        sample_ratios[0] = upsample_primary
-        src_dataset = ConcatDataset(src_datasets, sample_ratios)
-        if len(tgt_datasets) > 0:
-            tgt_dataset = ConcatDataset(tgt_datasets, sample_ratios)
-        else:
-            tgt_dataset = None
+    # assert len(src_datasets) == len(tgt_datasets) or len(tgt_datasets) == 0
+    #
+    # if len(src_datasets) == 1:
+    #     src_dataset = src_datasets[0]
+    #     tgt_dataset = tgt_datasets[0] if len(tgt_datasets) > 0 else None
+    # else:
+    #     sample_ratios = [1] * len(src_datasets)
+    #     sample_ratios[0] = upsample_primary
+    #     src_dataset = ConcatDataset(src_datasets, sample_ratios)
+    #     if len(tgt_datasets) > 0:
+    #         tgt_dataset = ConcatDataset(tgt_datasets, sample_ratios)
+    #     else:
+    #         tgt_dataset = None
+    # load source dataset
+    split_path_src = os.path.join(data_path, '{}.{}'.format(split, src))
+    src_dataset = IndexedRawTextDataset(path=split_path_src, dictionary=src_dict)
+    if truncate_source:
+        src_dataset = AppendTokenDataset(
+            TruncateDataset(
+                StripTokenDataset(src_dataset, src_dict.eos()),
+                max_source_positions - 1,
+            ),
+            src_dict.eos(),
+        )
+    # load target dataset
+    split_path_tgt = os.path.join(data_path, '{}.{}'.format(split, tgt))
+    tgt_dataset = IndexedRawTextDataset(path=split_path_tgt, dictionary=tgt_dict)
 
     if prepend_bos:
         assert hasattr(src_dict, "bos_index") and hasattr(tgt_dict, "bos_index")
