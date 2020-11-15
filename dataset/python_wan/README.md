@@ -34,21 +34,74 @@ Once run this command, you will have python_wan directory like
 
 3 directories, 11 files
 ```  
-
-
-# step 2
-Replace ununnable original **codes/docstrings** with these from raw dataset (python_wan).
+##### examples
+code.original
+```shell script
+def get_flashed_messages with_categories False category_filter [] flashes _request_ctx_stack top flashesif flashes is None _request_ctx_stack top flashes flashes session pop '_flashes' if '_flashes' in session else [] if category_filter flashes list filter lambda f f[0] in category_filter flashes if not with_categories return [x[1] for x in flashes]return flashes
 ```
-python -m dataset.python_wan.src_code
+code.original_subtoken
+```shell script
+def get flashed messages with categories False category filter [] flashes request ctx stack top flashesif flashes is None request ctx stack top flashes flashes session pop ' flashes' if ' flashes' in session else [] if category filter flashes list filter lambda f f[ 0 ] in category filter flashes if not with categories return [x[ 1 ] for x in flashes]return flashes
+```
+javadoc.original
+```shell script
+pulls all flashed messages from the session and returns them .
+```
+data_ps.declbodies
+```shell script
+def get_flashed_messages(with_categories=False, category_filter=[]): DCNL  DCSP flashes = _request_ctx_stack.top.flashes DCNL DCSP if (flashes is None): DCNL DCSP  DCSP _request_ctx_stack.top.flashes = flashes = (session.pop('_flashes') if ('_flashes' in session) else []) DCNL DCSP if category_filter: DCNL DCSP  DCSP flashes = list(filter((lambda f: (f[0] in category_filter)), flashes)) DCNL DCSP if (not with_categories): DCNL DCSP  DCSP return [x[1] for x in flashes] DCNL DCSP return flashes
 ```
 
-# step 3
-Move code/code_tokens/docstring/docstring_tokens to ```~/.ncc/python_wan/flatten/*```.
-*you can download our flatten data [here](https://drive.google.com/drive/folders/1BCeLXVmUM5NTwLzdqf3zuiMQFhVPeg5S?usp=sharing)*
+# Step 2
+Clean raw code files.
+```shell script
+python -m dataset.python_wan.clean
 ```
+##### examples
+code with noise
+```shell script
+def get_flashed_messages(with_categories=False, category_filter=[]): DCNL  DCSP flashes = _request_ctx_stack.top.flashes DCNL DCSP if (flashes is None): DCNL DCSP  DCSP _request_ctx_stack.top.flashes = flashes = (session.pop('_flashes') if ('_flashes' in session) else []) DCNL DCSP if category_filter: DCNL DCSP  DCSP flashes = list(filter((lambda f: (f[0] in category_filter)), flashes)) DCNL DCSP if (not with_categories): DCNL DCSP  DCSP return [x[1] for x in flashes] DCNL DCSP return flashes
+```
+after clean and save cleaned codes at ```~/.ncc/python_wan/raw/code.json``` 
+```shell script
+def get_flashed_messages(with_categories=False, category_filter=[]):\n\tflashes = _request_ctx_stack.top.flashes\n\tif (flashes is None):\n\t\t_request_ctx_stack.top.flashes = flashes = (session.pop('_flashes') if ('_flashes' in session) else [])\n\tif category_filter:\n\t\tflashes = list(filter((lambda f: (f[0] in category_filter)), flashes))\n\tif (not with_categories):\n\t\treturn [x[1] for x in flashes]\n\treturn flashes\n
+```
+
+# Step 3
+Move **code/code_tokens/docstring/docstring_tokens** to ```~/.ncc/python_wan/flatten/*```.
+```shell script
 python -m dataset.python_wan.flatten
 ```
+Once run this command, you will have python_wan directory like
+```shell script
+~/.ncc/python_wan/flatten
+├── test.code
+├── test.code_tokens
+├── test.docstring
+├── test.docstring_tokens
+├── train.code
+├── train.code_tokens
+├── train.docstring
+├── train.docstring_tokens
+├── valid.code
+├── valid.code_tokens
+├── valid.docstring
+└── valid.docstring_tokens
 
+0 directories, 12 files
+```
+
+# Step 4
+## Option 1: generate raw data
+```shell script
+# code_tokens/docstring_tokens
+
+```
+
+## Option 2: generate bin data (TBC)
+
+
+<!--
 # step 4
 ```
 python -m dataset.csn_feng.feature_extract -l python -f ~/.ncc/python_wan/flatten -r ~/.ncc/python_wan/refine -s ~/.ncc/python_wan/libs 
@@ -58,3 +111,4 @@ python -m dataset.csn_feng.feature_extract -l python -f ~/.ncc/python_wan/flatte
 ```
 python -m dataset.csn_feng.filter -l python -r ~/.ncc/python_wan/refine -f ~/.ncc/python_wan/filter
 ```
+->

@@ -25,8 +25,20 @@ from ncc.utils.util_file import load_yaml
 from ncc import LOGGER
 from collections import OrderedDict
 
+"""
+binarize,
+(
+args,
+input_file,
+vocab,
+prefix,
+offsets[worker_id],
+offsets[worker_id + 1]
+),
+"""
 
-def binarize(args: Dict, filename: str, dict: Dictionary, in_file: str, attr: str,
+
+def binarize(args: Dict, filename: str, dict: Dictionary, in_file: str,
              offset: int, end: int, append_eos: bool = False):
     """binarize function for multi-processing"""
     ds_file = '{}.mmap'.format(in_file)
@@ -43,7 +55,7 @@ def binarize(args: Dict, filename: str, dict: Dictionary, in_file: str, attr: st
 
 def main(args):
     task = tasks.get_task(args['preprocess']['task'])
-    LOGGER.info('mkdir for {} task'.format(args['preprocess']['task']))
+    LOGGER.info('mkdir {} for {} task'.format(args['preprocess']['destdir'], args['preprocess']['task']))
     os.makedirs(args['preprocess']['destdir'], exist_ok=True)
 
     def train_path(lang):
@@ -64,52 +76,17 @@ def main(args):
     def dict_path(lang):
         return dest_path(lang, "dict") + ".json"
 
-    # def build_dictionary(filenames, modality, src=False, tgt=False):
-    #     assert src ^ tgt
-    #     if modality in ['binary_ast']:
-    #         tokenize_func = tokenizer.tokenize_tree
-    #     elif modality in ['code_tokens', 'docstring_tokens', 'sbt', 'sbtao', 'path', 'path.terminals', 'traversal']:
-    #         tokenize_func = tokenizer.tokenize_list
-    #     else:
-    #         raise NotImplementedError("{}".format(modality))
-    #
-    #     return task.build_dictionary(
-    #         filenames,
-    #         tokenize_func=tokenize_func,
-    #         workers=args['preprocess']['workers'],
-    #         threshold=args['preprocess']['thresholdsrc'],
-    #         nwords=args['preprocess']['nwordssrc'] if src else args['preprocess']['nwordstgt'],
-    #         padding_factor=args['preprocess']['padding_factor'],
-    #     )
-
-    # # 1. build vocabulary
-    # LOGGER.info('Build vocabularies...')
-    # src_dict = OrderedDict()
-    # for attr in args['preprocess']['source_lang']:
-    #     if args['preprocess']['srcdict']:
-    #         attr_dict = task.load_dictionary(args['preprocess']['srcdict'])
-    #     else:
-    #         dict_filename = dict_path(attr)
-    #         if os.path.exists(dict_filename):
-    #             attr_dict = task.load_dictionary(dict_filename)
-    #         else:
-    #             assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
-    #             if attr == 'code_tokens':
-    #                 attr_dict = build_dictionary([train_path(attr), valid_path(attr)], attr, src=True)
-    #             elif attr == 'docstring_tokens':
-    #                 attr_dict = build_dictionary([train_path(attr), valid_path(attr)], attr, tgt=True)
-    #             else:
-    #                 raise NotImplementedError
-    #     LOGGER.info('dict_path: {}'.format(dict_path(attr)))
-    #     attr_dict.save_json(dict_path(attr))
-    #     src_dict[attr] = attr_dict
-    # exit()
     target = not args['preprocess']['only_source']
 
     if not args['preprocess']['srcdict'] and os.path.exists(dict_path(args['preprocess']['source_lang'])):
         raise FileExistsError(dict_path(args['preprocess']['source_lang']))
     if target and not args['preprocess']['tgtdict'] and os.path.exists(dict_path(args['preprocess']['target_lang'])):
         raise FileExistsError(dict_path(args['preprocess']['target_lang']))
+
+    if args['preprocess']['only_train']:
+        LOGGER.info('Generating dictionaries with Train data files.')
+    else:
+        LOGGER.info('Generating dictionaries with Train/Validation data files.')
 
     if args['preprocess']['joined_dictionary']:
         assert not args['preprocess']['srcdict'] or not args['preprocess']['tgtdict'], \
@@ -120,8 +97,12 @@ def main(args):
             src_dict = task.load_dictionary(args['preprocess']['tgtdict'])
         else:
             assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
+            filenames = [train_path(args['preprocess']['source_lang']), train_path(args['preprocess']['target_lang'])]
+            if not args['preprocess']['only_train']:
+                filenames.extend( \
+                    [valid_path(args['preprocess']['source_lang']), valid_path(args['preprocess']['target_lang'])])
             src_dict = task.build_dictionary(
-                [train_path(args['preprocess']['source_lang'])],
+                filenames,
                 tokenize_func=tokenizer.tokenize_list,
                 workers=args['preprocess']['workers'],
                 threshold=args['preprocess']['thresholdsrc'],
@@ -136,10 +117,12 @@ def main(args):
             src_dict = task.load_dictionary(args['preprocess']['srcdict'])
         else:
             assert args['preprocess']['trainpref'], "--trainpref must be set if --srcdict is not specified"
-            # src_dict = build_dictionary([train_path(args['preprocess']['source_lang'])],
-            #                             args['preprocess']['source_lang'], src=True)
+
+            filenames = [train_path(args['preprocess']['source_lang'])]
+            if not args['preprocess']['only_train']:
+                filenames.append(valid_path(args['preprocess']['source_lang']))
             src_dict = task.build_dictionary(
-                [train_path(args['preprocess']['source_lang'])],
+                filenames,
                 tokenize_func=tokenizer.tokenize_list,
                 workers=args['preprocess']['workers'],
                 threshold=args['preprocess']['thresholdsrc'],
@@ -150,11 +133,12 @@ def main(args):
             if args['preprocess']['tgtdict']:
                 tgt_dict = task.load_dictionary(args['preprocess']['tgtdict'])
             else:
-                # assert args['preprocess']['trainpref'], "--trainpref must be set if --tgtdict is not specified"
-                # tgt_dict = build_dictionary([train_path(args['preprocess']['target_lang'])], tgt=True)
                 assert args['preprocess']['trainpref'], "--trainpref must be set if --tgtdict is not specified"
+                filenames = [train_path(args['preprocess']['target_lang'])]
+                if not args['preprocess']['only_train']:
+                    filenames.append(valid_path(args['preprocess']['target_lang']))
                 tgt_dict = task.build_dictionary(
-                    [train_path(args['preprocess']['target_lang'])],
+                    filenames,
                     tokenize_func=tokenizer.tokenize_list,
                     workers=args['preprocess']['workers'],
                     threshold=args['preprocess']['thresholdsrc'],
@@ -163,15 +147,13 @@ def main(args):
                 )
         else:
             tgt_dict = None
-            # tgt_sp = None
+
     src_dict.save_json(dict_path(args['preprocess']['source_lang']))  # save spm dict to ncc.dictionary
     if target and tgt_dict is not None:
         tgt_dict.save_json(dict_path(args['preprocess']['target_lang']))
 
-
     # 2. ***************build dataset********************
-    def make_binary_dataset(vocab: Dictionary, input_file, output_file,
-                            num_workers: int):
+    def make_binary_dataset(vocab: Dictionary, input_file, output_file, num_workers: int):
         """make binary dataset"""
         # LOGGER.info("[{}] Dictionary: {} types".format(attr, len(vocab) - 1))
         n_seq_tok = [0, 0]
@@ -199,7 +181,6 @@ def main(args):
                         input_file,
                         vocab,
                         prefix,
-                        # attr, TODO: please delete this paprameter
                         offsets[worker_id],
                         offsets[worker_id + 1]
                     ),
@@ -239,25 +220,6 @@ def main(args):
             )
         )
 
-    # def make_graph_binary_dataset(vocab: Dictionary, input_file, output_file):
-    #     import torch
-    #     from dgl.data.graph_serialize import GraphData
-    #     from dgl.data.utils import save_graphs
-    #     from tqdm import tqdm
-    #
-    #     graph_batch, ids = [], []
-    #     with open(input_file, 'r') as reader:
-    #         num_lines = sum(1 for _ in reader)
-    #         reader.seek(0)
-    #         for idx, line in tqdm(enumerate(reader), total=num_lines):
-    #             ast = ujson.loads(line)
-    #             graph = tree2dgl(ast, dict)
-    #             graph = GraphData.create(graph)
-    #             graph_batch.append(graph)
-    #             ids.append(idx)
-    #     graph_labels = {"glabel": torch.IntTensor(ids)}
-    #     save_graphs(output_file + '.mmap', graph_batch, graph_labels)
-
     def make_dataset(vocab, input_prefix, output_prefix, lang, num_workers=1):
         if args['preprocess']['dataset_impl'] == "raw":
             in_file = file_name(input_prefix, lang)
@@ -269,7 +231,7 @@ def main(args):
             in_file = file_name(input_prefix, lang)
             out_file = dest_path(output_prefix, lang)
             os.makedirs(os.path.dirname(out_file), exist_ok=True)
-            make_binary_dataset(vocab, in_file, out_file, lang, num_workers)
+            make_binary_dataset(vocab, in_file, out_file, num_workers)
 
     def make_all(lang, vocab):
         if args['preprocess']['trainpref']:
@@ -300,7 +262,7 @@ def cli_main():
     )
     args = parser.parse_args()
     LOGGER.info(args)
-    yaml_file = os.path.join(os.path.dirname(__file__), 'summarization/config', '{}.yml'.format(args.yaml_file))
+    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.yaml_file))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)

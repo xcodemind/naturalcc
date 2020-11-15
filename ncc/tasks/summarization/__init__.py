@@ -1,6 +1,6 @@
-from .hi_transformer_summarization import HiTransformerSummarizationTask
+# from .hi_transformer_summarization import HiTransformerSummarizationTask
 from .ml_summarization import TransferLearningSummarizationTask
-from .mm_summarization import MMSummarizationTask
+# from .mm_summarization import MMSummarizationTask
 from .summarization import SummarizationTask
 from .transformer_summarization import TansformerSummarizationTask
 from .universal_summarization import UniversalSummarizationTask

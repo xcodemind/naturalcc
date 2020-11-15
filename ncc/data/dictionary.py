@@ -422,17 +422,13 @@ class Dictionary(object):
     def encode_line(
         self,
         line,
-        line_tokenizer,  # =tokenizer.tokenize_line
+        line_tokenizer,
         add_if_not_exist=True,
         consumer=None,
         append_eos=True,
         reverse_order=False,
     ):
         words = line_tokenizer(line) if line_tokenizer is not None else line
-        # if isinstance(line_tokenizer, xxs):
-        #     words = line_tokenizer(line)
-        # else:
-        #     words = line_tokenizer(line)
         if reverse_order:
             words = list(reversed(words))
         nwords = len(words)
@@ -655,6 +651,7 @@ class Dictionary(object):
                     filename, tokenize, dict.eos_word
                 )
             )
+
 
 class Dictionary_Source(object):
     """A mapping from symbols to consecutive integers"""
@@ -1291,6 +1288,7 @@ class Dictionary_Source(object):
                 )
             )
 
+
 class Dictionary_Target(object):
     """A mapping from symbols to consecutive integers"""
 
@@ -1916,7 +1914,6 @@ class Dictionary_Target(object):
                     filename, tokenize, dict.eos_word
                 )
             )
-
 
 
 class TruncatedDictionary(object):
