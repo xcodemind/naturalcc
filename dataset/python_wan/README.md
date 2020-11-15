@@ -98,6 +98,40 @@ Before generating datasets, plz make sure [config file](./config/preprocess.yml)
 # code_tokens/docstring_tokens
 python -m dataset.python_wan.preprocess
 ```
+```shell script
+# raw data directory
+~/.ncc/python_wan/summarization/data-raw/
+├── code_tokens.dict.json
+├── docstring_tokens.dict.json
+├── test.code_tokens
+├── test.docstring_tokens
+├── train.code_tokens
+├── train.docstring_tokens
+├── valid.code_tokens
+└── valid.docstring_tokens
+
+0 directories, 8 files
+```
+```shell script
+# bin data directory
+~/.ncc/python_wan/summarization/data-mmap/
+├── code_tokens.dict.json
+├── docstring_tokens.dict.json
+├── test.code_tokens.idx
+├── test.code_tokens.mmap
+├── test.docstring_tokens.idx
+├── test.docstring_tokens.mmap
+├── train.code_tokens.idx
+├── train.code_tokens.mmap
+├── train.docstring_tokens.idx
+├── train.docstring_tokens.mmap
+├── valid.code_tokens.idx
+├── valid.code_tokens.mmap
+├── valid.docstring_tokens.idx
+└── valid.docstring_tokens.mmap
+
+0 directories, 14 files
+```
 
 <!--
 # step 4
