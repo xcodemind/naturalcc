@@ -252,7 +252,7 @@ class NccTask(object):
         return tokenizer.build_tokenization(args, self)
 
     def build_generator(self, args, extra_gen_cls_kwargs=None):
-        if args['model']['arch'] == 'transformer_summarization':
+        if args['model']['arch'] in ['neural_transformer_summarization']:
             from ncc.eval.sequence_generator import TransformerSequenceGenerator
             return TransformerSequenceGenerator(
                 self.target_dictionary,
@@ -269,7 +269,7 @@ class NccTask(object):
                 # search_strategy=search_strategy,
                 # **extra_gen_cls_kwargs,
             )
-        elif args['model']['arch'] == 'lstm':
+        elif args['model']['arch'] in ['seq2seq']:
             from ncc.eval.sequence_generator import LSTMSequenceGenerator
             return LSTMSequenceGenerator(
                 self.target_dictionary,
@@ -425,7 +425,7 @@ class NccTask(object):
 
     def inference_step(self, generator, models, sample, prefix_tokens=None):
         with torch.no_grad():
-            return generator.generate(models, sample) #, prefix_tokens=prefix_tokens
+            return generator.generate(models, sample)  # , prefix_tokens=prefix_tokens
 
     def begin_epoch(self, epoch, model):
         """Hook function called before the start of each epoch."""

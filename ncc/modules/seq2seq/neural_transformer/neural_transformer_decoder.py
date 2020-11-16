@@ -14,7 +14,7 @@ from ncc.modules.adaptive_softmax import AdaptiveSoftmax
 from ncc.utils import utils
 
 
-class TransformerDecoder(NccIncrementalDecoder):
+class NeuralTransformerDecoder(NccIncrementalDecoder):
     """
     Transformer decoder consisting of *args.decoder_layers* layers. Each layer
     is a :class:`TransformerDecoderLayer`.
@@ -45,6 +45,9 @@ class TransformerDecoder(NccIncrementalDecoder):
         self.max_target_positions = args['task']['max_target_positions']
 
         self.embed_tokens = embed_tokens
+        # neural transformer additioanl bias
+        self.out_proj_bias = nn.Parameter(torch.Tensor(len(dictionary)))
+        nn.init.constant_(self.out_proj_bias, 0.0)
 
         self.embed_scale = 1.0 if args['model']['no_scale_embedding'] else math.sqrt(embed_dim)
 
@@ -83,7 +86,7 @@ class TransformerDecoder(NccIncrementalDecoder):
             elif args['model']['decoder_position_encoding_version'] == 'ncc_learned':
                 from ncc.modules.roberta.learned_positional_embedding import LearnedPositionalEmbedding
                 if self.padding_idx is not None:
-                    num_embeddings = args['model']['max_source_positions'] + self.padding_idx + 1
+                    num_embeddings = args['model']['max_target_positions'] + self.padding_idx + 1
                 m = LearnedPositionalEmbedding(num_embeddings, self.embed_dim, self.padding_idx)
                 nn.init.normal_(m.weight, mean=0, std=self.embed_dim ** -0.5)
                 if self.padding_idx is not None:
@@ -300,7 +303,7 @@ class TransformerDecoder(NccIncrementalDecoder):
         if self.adaptive_softmax is None:
             # project back to size of vocabulary
             if self.share_input_output_embed:
-                return F.linear(features, self.embed_tokens.weight)
+                return F.linear(features, self.embed_tokens.weight, bias=self.out_proj_bias)
             else:
                 return F.linear(features, self.embed_out)
         else:

@@ -10,8 +10,8 @@ from ncc.utils import utils
 from ncc.criterions import NccCriterion, register_criterion
 
 
-@register_criterion('transformer_cross_entropy')
-class TransformerCrossEntropyCriterion(NccCriterion):
+@register_criterion('be_cross_entropy')
+class BECrossEntropyCriterion(NccCriterion):
 
     def __init__(self, task, sentence_avg):
         super().__init__(task)

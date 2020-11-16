@@ -23,9 +23,7 @@ from ncc.data.wrappers.truncate_dataset import TruncateDataset
 from ncc.data.wrappers.strip_token_dataset import StripTokenDataset
 from ncc.data.concat_dataset import ConcatDataset
 from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
-from ncc.data.summarization.language_pair_dataset import LanguagePairDataset
-from ncc.data.summarization.path_dataset import PathDataset
-from ncc.data.summarization.bin_ast_dataset import BinaryASTDataset
+from ncc.data.summarization.be_language_pair_dataset import BELanguagePairDataset
 from ncc.utils.tokenizer import tokenize_string
 from ncc.eval import eval_utils
 from ncc.utils import tokenizer
@@ -34,64 +32,9 @@ from functools import lru_cache
 EVAL_BLEU_ORDER = 4
 
 
-class IndexedRawTextDataset(NccDataset):
-    """Takes a text file as input and binarizes it in memory at instantiation.
-    Original lines are also kept in memory"""
-
-    def __init__(self, path, dictionary, append_eos=True, reverse_order=False):
-        self.tokens_list = []
-        self.lines = []
-        self.sizes = []
-        self.append_eos = append_eos
-        self.reverse_order = reverse_order
-        self.read_data(path, dictionary)
-        self.size = len(self.tokens_list)
-
-    def read_data(self, path, dictionary):
-        with open(path, 'r', encoding='utf-8') as f:
-            for line in f:
-                self.lines.append(line.strip('\n'))
-                tokens = dictionary.encode_line(
-                    line, tokenizer.tokenize_list, add_if_not_exist=False,
-                    append_eos=self.append_eos, reverse_order=self.reverse_order,
-                ).long()
-                self.tokens_list.append(tokens)
-                self.sizes.append(len(tokens))
-        self.sizes = np.array(self.sizes)
-
-    def check_index(self, i):
-        if i < 0 or i >= self.size:
-            raise IndexError('index out of range')
-
-    @lru_cache(maxsize=8)
-    def __getitem__(self, i):
-        self.check_index(i)
-        return self.tokens_list[i]
-
-    def get_original_text(self, i):
-        self.check_index(i)
-        return self.lines[i]
-
-    def __del__(self):
-        pass
-
-    def __len__(self):
-        return self.size
-
-    def num_tokens(self, index):
-        return self.sizes[index]
-
-    def size(self, index):
-        return self.sizes[index]
-
-    @staticmethod
-    def exists(path):
-        return os.path.exists(path)
-
-
 def _load_dataset(path, impl, dict):
     if impl == 'raw':
-        src_dataset = IndexedRawTextDataset(path=path, dictionary=dict)
+        src_dataset = indexed_dataset.IndexedRawTextDataset(path=path, dictionary=dict)
     elif impl == 'mmap':
         # mmap dataset has been numberized, no need for dict
         src_dataset = indexed_dataset.MMapIndexedDataset(path=path)
@@ -125,37 +68,23 @@ def load_langpair_dataset(
     tgt_path = os.path.join(data_path, '{}.{}'.format(split, tgt))
     tgt_dataset = _load_dataset(path=tgt_path, impl=dataset_impl, dict=tgt_dict)
     if truncate_target:
-        # sntn => sntn[:max_target_positions]
-        tgt_dataset = TruncateDataset(tgt_dataset, max_target_positions)
-
-    if prepend_bos:
-        assert hasattr(src_dict, "bos_index") and hasattr(tgt_dict, "bos_index")
-        src_dataset = PrependTokenDataset(src_dataset, src_dict.bos())
-        if tgt_dataset is not None:
-            tgt_dataset = PrependTokenDataset(tgt_dataset, tgt_dict.bos())
-
-    eos = None
-    if append_source_id:
-        src_dataset = AppendTokenDataset(src_dataset, src_dict.index('[{}]'.format(src)))
-        if tgt_dataset is not None:
-            tgt_dataset = AppendTokenDataset(tgt_dataset, tgt_dict.index('[{}]'.format(tgt)))
-        eos = tgt_dict.index('[{}]'.format(tgt))
-
-    # align_dataset = None
-    # if load_alignments:
-    #     align_path = os.path.join(data_path, '{}.align.{}-{}'.format(split, src, tgt))
-    #     if indexed_dataset.dataset_exists(align_path, impl=dataset_impl):
-    #         align_dataset = data_utils.load_indexed_dataset(align_path, None, dataset_impl)
+        # sntn => sntn[:max_target_positions-2]
+        tgt_dataset = TruncateDataset(tgt_dataset, max_target_positions - 2)  # 2 for BOS and EOS
+    # sntn[:max_target_positions-2] => <bos> sntn[:max_target_positions-2] <eos>
+    tgt_dataset = PrependTokenDataset(
+        AppendTokenDataset(tgt_dataset, token=tgt_dict.eos()),
+        tgt_dict.bos()
+    )
 
     tgt_dataset_sizes = tgt_dataset.sizes if tgt_dataset is not None else None
-    return LanguagePairDataset(
+    return BELanguagePairDataset(
         src_dataset, src_dataset.sizes, src_dict,
         tgt_dataset, tgt_dataset_sizes, tgt_dict,
         left_pad_source=left_pad_source,
         left_pad_target=left_pad_target,
         max_source_positions=max_source_positions,
         max_target_positions=max_target_positions,
-        align_dataset=None, eos=eos,
+        align_dataset=None, eos=src_dict.eos(),
         remove_eos_from_source=True,
         append_eos_to_target=append_eos_to_target,
         # shuffle=True,
@@ -163,15 +92,15 @@ def load_langpair_dataset(
     )
 
 
-@register_task('summarization')
-class SummarizationTask(NccTask):
+@register_task('be_summarization')
+class BESummarizationTask(NccTask):
     """
     This task`SummarizationTask` will handle file as follows:
         1) truncate source/target sentence
-        2) append eos for target sentence for offset
+        2) append <eos>/<bos>
         3) move eos of target sentence to the head of it, e.g.
-            decoder input: a b c
-            ground truth: <eos> a b c
+            decoder input: <bos> a b c <eos>
+            ground truth: a b c <eos>
     """
 
     def __init__(self, args, src_dict, tgt_dict):
@@ -249,11 +178,10 @@ class SummarizationTask(NccTask):
             load_alignments=self.args['task']['load_alignments'],
             truncate_source=self.args['task']['truncate_source'],
             truncate_target=self.args['task']['truncate_target'],
-            append_eos_to_target=self.args['task']['append_eos_to_target'],
         )
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
-        return LanguagePairDataset(src_tokens, src_lengths, self.source_dictionary)
+        return BELanguagePairDataset(src_tokens, src_lengths, self.source_dictionary)
 
     def build_model(self, args):
         model = super().build_model(args)
