@@ -9,8 +9,8 @@ DEFAULT_MAX_SOURCE_POSITIONS = 1e5
 DEFAULT_MAX_TARGET_POSITIONS = 1e5
 
 
-@register_model('lstm')
-class LSTMModel(NccEncoderDecoderModel):
+@register_model('seq2seq')
+class Seq2SeqModel(NccEncoderDecoderModel):
     def __init__(self, encoder, decoder):
         super().__init__(encoder, decoder)
 
