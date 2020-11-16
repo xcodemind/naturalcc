@@ -7,6 +7,7 @@
 """
 Evaluate the perplexity of a trained language model.
 """
+import os
 import re
 import torch
 from ncc import tasks
@@ -29,6 +30,7 @@ def main(model_path, input):
         model.cuda()
     model.eval()
 
+    # TODO: source tensor should be handled in corresponding task scripts. here we only use seq2seq pipeline for instance.
     src_input_ids = task.src_dict.encode_line(input, line_tokenizer=None, add_if_not_exist=False)
     src_input_ids = torch.cat(
         [src_input_ids[:args['task']['max_source_positions'] - 1], torch.Tensor([task.src_dict.eos()]).long()]
@@ -58,7 +60,7 @@ def cli_main():
 
     parser.add_argument(
         "--model", "-m", type=str, help="pytorch model path",
-        default="/home/yang/.ncc/python_wan/summarization/data-mmap/seq2seq/checkpoints/checkpoint_best.pt"
+        default=os.path.expanduser("~/.ncc/demo/summarization/seq2seq/python_wan.pt")
     )
     code = "def resource_patch(context, data_dict):\n\t_check_access('resource_patch', context, data_dict)\n\tshow_context = {'model': context['model'], 'session': context['session'], 'user': context['user'], 'auth_user_obj': context['auth_user_obj']}\n\tresource_dict = _get_action('resource_show')(show_context, {'id': _get_or_bust(data_dict, 'id')})\n\tpatched = dict(resource_dict)\n\tpatched.update(data_dict)\n\treturn _update.resource_update(context, patched)\n"
 
