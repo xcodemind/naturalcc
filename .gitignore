@@ -15,7 +15,7 @@ src/test.py
 build/*
 ncc/data/tools/token_block_utils_fast.cpp
 ncc/data/tools/data_utils_fast.cpp
-*.log
+#*.log
 *.cpython-37m-x86_64-linux-gnu.so
 
 # yang igore pattern
