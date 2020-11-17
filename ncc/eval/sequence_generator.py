@@ -118,7 +118,7 @@ class LSTMSequenceGenerator(object):
 
         device = encoder_out[0].device
 
-        prev_output_tokens = torch.zeros(bsz, 1).long().fill_(2).to(device)
+        prev_output_tokens = torch.zeros(bsz, 1).long().fill_(self.eos).to(device)  # <eos>
         incremental_state = None
 
         # get outputs from encoder
@@ -140,18 +140,23 @@ class LSTMSequenceGenerator(object):
             if model.decoder.encoder_hidden_proj is not None:
                 prev_hiddens = [model.decoder.encoder_hidden_proj(x) for x in prev_hiddens]
                 prev_cells = [model.decoder.encoder_cell_proj(x) for x in prev_cells]
-            input_feed = torch.zeros(bsz, model.decoder.hidden_size).to(device)
+            # equals to torch.zeros(bsz, model.decoder.hidden_size).to(device).type_as(encoder_out[0]),
+            # but for support float16, we recommend such implementation
+            input_feed = encoder_out[0].new(bsz, model.decoder.hidden_size).fill_(0)
         else:
             # setup zero cells, since there is no encoder
             num_layers = len(model.decoder.layers)
-            zero_state = torch.zeros(bsz, model.decoder.hidden_size).to(device)
+            # for support float16
+            # zero_state = torch.zeros(bsz, model.decoder.hidden_size).to(device).type_as(encoder_out[0])
+            zero_state = encoder_out[0].new(bsz, model.decoder.hidden_size).fill_(0)
             prev_hiddens = [zero_state for i in range(num_layers)]
             prev_cells = [zero_state for i in range(num_layers)]
             input_feed = None
 
         assert srclen is not None or model.decoder.attention is None, \
             "attention is not supported if there are no encoder outputs"
-        attn_scores = torch.zeros(srclen, max_len, bsz).to(device) if model.decoder.attention is not None else None
+        # attn_scores = torch.zeros(srclen, max_len, bsz).to(device) if model.decoder.attention is not None else None
+        attn_scores = encoder_out[0].new(srclen, max_len, bsz).fill_(0) if model.decoder.attention is not None else None
         dec_preds = []
 
         # 2. generate
