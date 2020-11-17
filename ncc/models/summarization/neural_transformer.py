@@ -12,8 +12,7 @@ DEFAULT_MAX_TARGET_POSITIONS = 1e5
 @register_model('neural_transformer_summarization')
 class NeuralTransformerModel(NccEncoderDecoderModel):
     """
-        Transformer model from `"Attention Is All You Need" (Vaswani, et al, 2017)
-        <https://arxiv.org/abs/1706.03762>`_.
+        Neural Transformer model
 
         Args:
             encoder (TransformerEncoder): the encoder

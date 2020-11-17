@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from ncc.modules.code2vec.transformer_encoder_layer import TransformerEncoderLayer
 from ncc.modules.code2vec.neural_transformer.neural_transformer_encoder_layer import NeuralTransformerEncoderLayer
 from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.code2vec.ncc_encoder import NccEncoder
@@ -28,47 +27,38 @@ class NeuralTransformerEncoder(NccEncoder):
         embed_tokens (torch.nn.Embedding): input embedding
     """
 
-    def __init__(
-        self,
-        args,
-        dictionary,
-        embed_tokens,
-        num_segments: int = 0,
-        offset_positions_by_padding: bool = False,  # True,
-        # apply_bert_init: bool = False,
-        # freeze_embeddings: bool = False,
-        # n_trans_layers_to_freeze: int = 0,
-        # export: bool = False,
-        traceable: bool = False,
-    ):
+    def __init__(self, args, dictionary, embed_tokens):
         super().__init__(dictionary)
         self.register_buffer("version", torch.Tensor([3]))
-        self.args = args
+
         self.dropout = args['model']['dropout']
         self.encoder_layerdrop = args['model']['encoder_layerdrop']
 
-        self.embed_dim = embed_tokens.embedding_dim
-        self.padding_idx = dictionary.pad()  # embed_tokens.padding_idx TODO
-        # self.vocab_size = vocab_size
+        embed_dim = embed_tokens.embedding_dim
+        self.padding_idx = embed_tokens.padding_idx
         self.max_source_positions = args['model']['max_source_positions']
 
         self.embed_tokens = embed_tokens
-        self.embed_scale = 1.0 if args['model']['no_scale_embedding'] else math.sqrt(self.embed_dim)
+
+        # log: args['model']['no_scale_embedding']=1 => false
+        self.embed_scale = 1.0 if args['model']['no_scale_embedding'] else math.sqrt(embed_dim)
 
         if args['model']['encoder_positional_embeddings']:
             self.embed_positions = None
         else:
             # Option 1
-            if args['model']['encoder_position_encoding_version'] == 'ncc_sinusoidal':
+            if args['model']['position_encoding_version'] == 'ncc_sinusoidal':
                 from ncc.modules.roberta.sinusoidal_positional_embedding import SinusoidalPositionalEmbedding
+                offset_positions_by_padding = False
                 self.embed_positions = SinusoidalPositionalEmbedding(
                     self.embed_dim,
                     padding_idx=self.padding_idx,  # (self.padding_idx if offset_positions_by_padding else None),
-                    init_size=args['model']['max_source_positions'] + self.padding_idx + 1 \
-                        if offset_positions_by_padding else args['model']['max_source_positions'],  # + 1 why?
+                    init_size=args['model'][
+                                  'max_source_positions'] + self.padding_idx + 1 if offset_positions_by_padding else
+                    args['model']['max_source_positions'],  # + 1 why?
                 )
             # Option 2
-            elif args['model']['encoder_position_encoding_version'] == 'ncc_learned':
+            elif args['model']['position_encoding_version'] == 'ncc_learned':
                 from ncc.modules.roberta.learned_positional_embedding import LearnedPositionalEmbedding
                 if self.padding_idx is not None:
                     num_embeddings = args['model']['max_source_positions'] + self.padding_idx + 1
@@ -77,89 +67,81 @@ class NeuralTransformerEncoder(NccEncoder):
                 if self.padding_idx is not None:
                     nn.init.constant_(m.weight[self.padding_idx], 0)
                 self.embed_positions = m
-            # Option 3
-            elif args['model']['encoder_position_encoding_version'] == 'contracode':
-                from ncc.modules.roberta.sinusoidal_positional_embedding_simple import \
-                    SinusoidalPositionalEmbedding_Simple
-                self.embed_positions = SinusoidalPositionalEmbedding_Simple(
-                    self.embed_dim, args['model']['dropout'], max_len=args['model']['max_source_positions'])
 
-        self.num_segments = num_segments
-        self.segment_embeddings = (
-            nn.Embedding(self.num_segments, self.embed_dim, padding_idx=None)
-            if self.num_segments > 0
-            else None
+        self.layer_wise_attention = args['model']['layer_wise_attention']
+
+        self.layers = nn.ModuleList([])
+        self.layers.extend(
+            [NeuralTransformerEncoderLayer(args) for i in range(args['model']['encoder_layers'])]
         )
-        self.layers = nn.ModuleList([NeuralTransformerEncoderLayer(args) \
-                                     for _ in range(args['model']['encoder_layers'])])
-
         self.num_layers = len(self.layers)
+
         if args['model']['encoder_normalize_before']:
-            self.layer_norm = nn.LayerNorm(self.embed_dim)  # LayerNorm(self.embed_dim) TODO
+            self.layer_norm = LayerNorm(embed_dim)
         else:
             self.layer_norm = None
-        if args['model']['layernorm_embedding']:
-            self.layernorm_embedding = nn.LayerNorm(self.embed_dim)  # LayerNorm(self.embed_dim, export=export) TODO
+        if args['model']['layernorm_embedding']:  # getattr(args, "layernorm_embedding", False):
+            self.layernorm_embedding = LayerNorm(embed_dim)
         else:
             self.layernorm_embedding = None
 
-        self.traceable = traceable
-
-    def forward_embedding(self, src_tokens, positions, segment_labels, padding_mask):
-        x = self.embed_tokens(src_tokens)
-
-        if self.embed_scale is not None:
-            x = embed = x * self.embed_scale
-
+    def forward_embedding(self, src_tokens):
+        # embed tokens and positions
+        x = embed = self.embed_scale * self.embed_tokens(src_tokens)
         if self.embed_positions is not None:
-            if self.args['model']['position_encoding_version'] == 'contracode':
-                x += self.embed_positions(src_tokens)
-            elif self.args['model']['position_encoding_version'] == 'ncc_sinusoidal':
-                x += self.embed_positions(src_tokens, positions=positions)
-
-        if self.segment_embeddings is not None and segment_labels is not None:
-            x += self.segment_embeddings(segment_labels)
-
+            x = embed + self.embed_positions(src_tokens)
         if self.layernorm_embedding is not None:
             x = self.layernorm_embedding(x)
-
-        # x = F.dropout(x, p=self.dropout, training=self.training) #TODO, position里面如果已经dropout了，这里就没必要了
-        # # account for padding while computing the representation
-        # if padding_mask is not None:
-        #     x *= 1 - padding_mask.unsqueeze(-1).type_as(x)
-
+        x = F.dropout(x, p=self.dropout, training=self.training)
         return x, embed
 
     def forward(
         self,
-        src_tokens: torch.Tensor,
-        src_lengths: torch.Tensor = None,
-        segment_labels: torch.Tensor = None,
-        last_state_only: bool = False,
-        positions: Optional[torch.Tensor] = None,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        src_tokens,
+        src_lengths,
+        cls_input: Optional[Tensor] = None,
+        return_all_hiddens: bool = False,
+    ):
+        """
+        Args:
+            src_tokens (LongTensor): tokens in the source language of shape
+                `(batch, src_len)`
+            src_lengths (torch.LongTensor): lengths of each source sentence of
+                shape `(batch)`
+            return_all_hiddens (bool, optional): also return all of the
+                intermediate hidden states (default: False).
 
-        # compute padding mask. This is needed for multi-head attention
-        encoder_padding_mask = src_tokens.eq(self.padding_idx)
-        if not self.traceable and not encoder_padding_mask.any():
-            encoder_padding_mask = None
+        Returns:
+            namedtuple:
+                - **encoder_out** (Tensor): the last encoder layer's output of
+                  shape `(src_len, batch, embed_dim)`
+                - **encoder_padding_mask** (ByteTensor): the positions of
+                  padding elements of shape `(batch, src_len)`
+                - **encoder_embedding** (Tensor): the (scaled) embedding lookup
+                  of shape `(batch, src_len, embed_dim)`
+                - **encoder_states** (List[Tensor]): all intermediate
+                  hidden states of shape `(src_len, batch, embed_dim)`.
+                  Only populated if *return_all_hiddens* is True.
+        """
+        if self.layer_wise_attention:
+            return_all_hiddens = True
 
-        x, encoder_embedding = self.forward_embedding(src_tokens, positions, segment_labels, encoder_padding_mask)
+        x, encoder_embedding = self.forward_embedding(src_tokens)
 
         # B x T x C -> T x B x C
         x = x.transpose(0, 1)
 
-        encoder_states = []
-        # if not last_state_only:
-        #     encoder_states.append(x)
+        # compute padding mask
+        encoder_padding_mask = src_tokens.eq(self.padding_idx)
 
+        encoder_states = [] if return_all_hiddens else None
+
+        # encoder layers
         for layer in self.layers:
             # add LayerDrop (see https://arxiv.org/abs/1909.11556 for description)
-            # dropout_probability = random.uniform(0, 1)
-            # if not self.training or (dropout_probability > self.encoder_layerdrop):
-            x = layer(x, encoder_padding_mask)  # TODO
-            # x = layer(x, src_mask=None, src_key_padding_mask=encoder_padding_mask)
-            if not last_state_only:
+            x = layer(x, encoder_padding_mask)
+            if return_all_hiddens:
+                assert encoder_states is not None
                 encoder_states.append(x)
 
         if self.layer_norm is not None:

@@ -206,7 +206,7 @@ def single_main(args, init_distributed=False):
     if distributed_utils.is_master(args):
         save_dir = args['checkpoint']['save_dir']
         checkpoint_utils.verify_checkpoint_directory(save_dir)
-        # remove_files(save_dir, 'pt')  # this code will remove pre-trained models
+        remove_files(save_dir, 'pt')  # this code will remove pre-trained models
 
     # Print args
     LOGGER.info(args)
@@ -298,8 +298,6 @@ def cli_main():
         "--yaml_file", "-f", default='config/python_wan.fp16', type=str, help="load {yaml_file}.yml for train",
     )
     args = parser.parse_args()
-    # Argues = namedtuple('Argues', 'yaml')
-    # args_ = Argues('ruby.yml')
     yaml_file = os.path.join(os.path.dirname(__file__), '{}.yml'.format(args.yaml_file))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)

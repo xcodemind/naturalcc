@@ -1,5 +1,4 @@
-# Seq2Seq for code summarization task
-This 
+# NeuralTransformer for code summarization task
 
 running with float32
 ```shell script

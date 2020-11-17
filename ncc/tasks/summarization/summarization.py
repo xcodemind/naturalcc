@@ -148,6 +148,9 @@ def load_langpair_dataset(
     #         align_dataset = data_utils.load_indexed_dataset(align_path, None, dataset_impl)
 
     tgt_dataset_sizes = tgt_dataset.sizes if tgt_dataset is not None else None
+
+    LOGGER.info('loaded {} examples from: {}'.format(len(src_dataset), src_path))
+    LOGGER.info('loaded {} examples from: {}'.format(len(tgt_dataset), tgt_path))
     return LanguagePairDataset(
         src_dataset, src_dataset.sizes, src_dict,
         tgt_dataset, tgt_dataset_sizes, tgt_dict,

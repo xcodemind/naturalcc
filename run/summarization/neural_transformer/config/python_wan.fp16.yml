@@ -12,7 +12,6 @@ common:
   log_interval: 100 # type=int, default=100, metavar='N', help='log progress every N batches (when progress bar is disabled)'
   log_format: simple # default=None, help='log format to use', choices=['json', 'none', 'simple', 'tqdm']
   tensorboard_logdir: '' # default='', help='path to save logs for tensorboard, should match --logdir of running tensorboard (default: no tensorboard logging)'
-#  fp16_fair: 1 # action='store_true', help='use FP16'
   memory_efficient_fp16: 1 # action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
   fp16_no_flatten_grads: 1 # action='store_true', help='don\'t flatten FP16 grads tensor'
   fp16_init_scale: 128 # default=2 ** 7, type=int, help='default FP16 loss scale'
@@ -110,7 +109,6 @@ task:
   eval_rouge_print_samples: 0 #', action='store_true', help='print sample generations during validation'
 
 model:
-  #  arch: neural_summarization
   arch: neural_transformer_summarization
   pooler_dropout: 0.2 # type=float, metavar='D', help='dropout probability in the masked_lm pooler layers'
   activation_fn: relu # choices=utils.get_available_activation_fns(), help='activation function to use'
@@ -190,8 +188,12 @@ optimization:
   use_bmuf: 0 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
 
   force_anneal: ~ # \'--fa', type=int, metavar='N', help='force annealing at specified epoch'
-  warmup_updates: 500 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
-#  warmup_updates: 0 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
+
+  # single gpu
+#  warmup_updates: 500 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
+  # mutli gpus
+  warmup_updates: 0 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
+
   end_learning_rate: 0.0 # default=0.0, type=float
   power: 1.0 # default=1.0, type=float
   total_num_update: 1000000 # default=1000000, type=int
@@ -204,15 +206,6 @@ optimization:
     adam_eps: 1e-8 # type=float, default=1e-8, metavar='D', help='epsilon for Adam optimizer'
     weight_decay: 0.0 # '--wd', default=0.0, type=float, metavar='WD', help='weight decay'
     use_old_adam: 0 # action='store_true', default=False, help="Use fairseq.optim.adam.Adam"
-
-#  learning_rate: 1e-4 # default=1e-4, type=float, help="The initial learning rate for Adam."
-#  weight_decay: 0.0 # default=0.0, type=float, help="Weight decay if we apply some."
-#  adam_epsilon: 1e-8 # default=1e-8, type=float, help="Epsilon for Adam optimizer."
-#  max_grad_norm: 1.0 # default=1.0, type=float, help="Max gradient norm."
-#  num_train_epochs: 5 # default=5, type=float, help="Total number of training epochs to perform."
-#  max_steps: -1 # default=-1, type=int, help="If > 0: set total number of training steps to perform. Override num_train_epochs.",
-#  warmup_steps: 0 # default=0, type=int, help="Linear warmup over warmup_steps."
-#  gradient_accumulation_steps: 10 # type=int, default=1, help="Number of updates steps to accumulate before performing a backward/update pass."
 
 
 checkpoint:

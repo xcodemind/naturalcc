@@ -6,26 +6,25 @@ import torch.nn.functional as F
 from torch import Tensor
 from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.seq2seq.ncc_incremental_decoder import NccIncrementalDecoder
-from ncc.modules.roberta.positional_embedding_bak import PositionalEmbedding
 from ncc.modules.code2vec.ncc_encoder import EncoderOut
 from ncc.modules.roberta.sinusoidal_positional_embedding import SinusoidalPositionalEmbedding
-from ncc.modules.seq2seq.transformer_decoder_layer import TransformerDecoderLayer
+from ncc.modules.seq2seq.neural_transformer.neural_transformer_decoder_layer import NueralTransformerDecoderLayer
 from ncc.modules.adaptive_softmax import AdaptiveSoftmax
 from ncc.utils import utils
 
 
 class NeuralTransformerDecoder(NccIncrementalDecoder):
     """
-    Transformer decoder consisting of *args.decoder_layers* layers. Each layer
-    is a :class:`TransformerDecoderLayer`.
+        Transformer decoder consisting of *args.decoder_layers* layers. Each layer
+        is a :class:`TransformerDecoderLayer`.
 
-    Args:
-        args (argparse.Namespace): parsed command-line arguments
-        dictionary (~fairseq.data.Dictionary): decoding dictionary
-        embed_tokens (torch.nn.Embedding): output embedding
-        no_encoder_attn (bool, optional): whether to attend to encoder outputs
-            (default: False).
-    """
+        Args:
+            args (argparse.Namespace): parsed command-line arguments
+            dictionary (~fairseq.data.Dictionary): decoding dictionary
+            embed_tokens (torch.nn.Embedding): output embedding
+            no_encoder_attn (bool, optional): whether to attend to encoder outputs
+                (default: False).
+        """
 
     def __init__(self, args, dictionary, embed_tokens, no_encoder_attn=False):
         super().__init__(dictionary)
@@ -41,11 +40,10 @@ class NeuralTransformerDecoder(NccIncrementalDecoder):
         self.embed_dim = embed_dim
         self.output_embed_dim = args['model']['decoder_output_dim']
 
-        self.padding_idx = dictionary.pad()  # embed_tokens.padding_idx TODO
+        self.padding_idx = embed_tokens.padding_idx
         self.max_target_positions = args['task']['max_target_positions']
 
         self.embed_tokens = embed_tokens
-        # neural transformer additioanl bias
         self.out_proj_bias = nn.Parameter(torch.Tensor(len(dictionary)))
         nn.init.constant_(self.out_proj_bias, 0.0)
 
@@ -56,17 +54,6 @@ class NeuralTransformerDecoder(NccIncrementalDecoder):
             if embed_dim != input_embed_dim
             else None
         )
-
-        # self.embed_positions = (
-        #     PositionalEmbedding(
-        #         args['task']['max_target_positions'],
-        #         embed_dim,
-        #         self.padding_idx,
-        #         learned=args['model']['decoder_learned_pos'],
-        #     )
-        #     if not args['model']['no_token_positional_embeddings']
-        #     else None
-        # )
 
         if args['model']['decoder_positional_embeddings']:
             self.embed_positions = None
@@ -96,10 +83,13 @@ class NeuralTransformerDecoder(NccIncrementalDecoder):
         self.cross_self_attention = args['model']['cross_self_attention']
         self.layer_wise_attention = args['model']['layer_wise_attention']
 
-        self.layers = nn.ModuleList([
-            TransformerDecoderLayer(args, no_encoder_attn)
-            for _ in range(args['model']['decoder_layers'])
-        ])
+        self.layers = nn.ModuleList([])
+        self.layers.extend(
+            [
+                NueralTransformerDecoderLayer(args, no_encoder_attn)
+                for _ in range(args['model']['decoder_layers'])
+            ]
+        )
         self.num_layers = len(self.layers)
 
         self.adaptive_softmax = None
@@ -160,7 +150,6 @@ class NeuralTransformerDecoder(NccIncrementalDecoder):
                 :ref:`Incremental decoding`
             features_only (bool, optional): only return features without
                 applying output layer (default: False).
-
         Returns:
             tuple:
                 - the decoder's output of shape `(batch, tgt_len, vocab)`
@@ -186,12 +175,28 @@ class NeuralTransformerDecoder(NccIncrementalDecoder):
         alignment_layer: Optional[int] = None,
         alignment_heads: Optional[int] = None,
     ):
+        return self.extract_features_scriptable(
+            prev_output_tokens,
+            encoder_out,
+            incremental_state,
+            full_context_alignment,
+            alignment_layer,
+            alignment_heads,
+        )
+
+    def extract_features_scriptable(
+        self,
+        prev_output_tokens,
+        encoder_out: Optional[EncoderOut] = None,
+        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
+        full_context_alignment: bool = False,
+        alignment_layer: Optional[int] = None,
+        alignment_heads: Optional[int] = None,
+    ):
         """
         Similar to *forward* but only return features.
-
         Includes several features from "Jointly Learning to Align and
         Translate with Transformer Models" (Garg et al., EMNLP 2019).
-
         Args:
             full_context_alignment (bool, optional): don't apply
                 auto-regressive mask to self-attention (default: False).
@@ -199,7 +204,6 @@ class NeuralTransformerDecoder(NccIncrementalDecoder):
                 heads at this layer (default: last layer).
             alignment_heads (int, optional): only average alignment over
                 this many heads (default: all heads).
-
         Returns:
             tuple:
                 - the decoder's features of shape `(batch, tgt_len, embed_dim)`
@@ -247,38 +251,24 @@ class NeuralTransformerDecoder(NccIncrementalDecoder):
         attn: Optional[Tensor] = None
         inner_states: List[Optional[Tensor]] = [x]
         for idx, layer in enumerate(self.layers):
-            encoder_state: Optional[Tensor] = None
-            if encoder_out is not None:
-                if self.layer_wise_attention:
-                    encoder_states = encoder_out.encoder_states
-                    assert encoder_states is not None
-                    encoder_state = encoder_states[idx]
-                else:
-                    encoder_state = encoder_out.encoder_out
-
             if incremental_state is None and not full_context_alignment:
                 self_attn_mask = self.buffered_future_mask(x)
             else:
                 self_attn_mask = None
 
-            # add LayerDrop (see https://arxiv.org/abs/1909.11556 for description)
-            dropout_probability = torch.empty(1).uniform_()
-            if not self.training or (dropout_probability > self.decoder_layerdrop):
-                x, layer_attn, _ = layer(
-                    x,
-                    encoder_state,
-                    encoder_out.encoder_padding_mask
-                    if encoder_out is not None
-                    else None,
-                    incremental_state,
-                    self_attn_mask=self_attn_mask,
-                    self_attn_padding_mask=self_attn_padding_mask,
-                    need_attn=bool((idx == alignment_layer)),
-                    need_head_weights=bool((idx == alignment_layer)),
-                )
-                inner_states.append(x)
-                if layer_attn is not None and idx == alignment_layer:
-                    attn = layer_attn.float().to(x)
+            x, layer_attn, _ = layer(
+                x,
+                encoder_out.encoder_out if encoder_out is not None else None,
+                encoder_out.encoder_padding_mask if encoder_out is not None else None,
+                incremental_state,
+                self_attn_mask=self_attn_mask,
+                self_attn_padding_mask=self_attn_padding_mask,
+                need_attn=bool((idx == alignment_layer)),
+                need_head_weights=bool((idx == alignment_layer)),
+            )
+            inner_states.append(x)
+            if layer_attn is not None and idx == alignment_layer:
+                attn = layer_attn.float().to(x)
 
         if attn is not None:
             if alignment_heads is not None:
@@ -296,7 +286,7 @@ class NeuralTransformerDecoder(NccIncrementalDecoder):
         if self.project_out_dim is not None:
             x = self.project_out_dim(x)
 
-        return x, {"attn": [attn], "inner_states": inner_states}
+        return x, {"attn": attn, "inner_states": inner_states}
 
     def output_layer(self, features):
         """Project features to the vocabulary size."""

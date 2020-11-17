@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 from ncc.modules.roberta.layer_norm import LayerNorm
+from ncc.modules.attention.relative_multihead_attention import RelativeMultiheadAttention
 
 import torch.nn.functional as F
 from ncc.utils import utils
@@ -26,7 +27,6 @@ class NeuralTransformerEncoderLayer(nn.Module):
     def __init__(self, args):
         super().__init__()
         self.embed_dim = args['model']['encoder_embed_dim']
-        from ncc.modules.attention.relative_multihead_attention import RelativeMultiheadAttention
         self.self_attn = RelativeMultiheadAttention(
             self.embed_dim,
             args['model']['encoder_attention_heads'],
@@ -34,10 +34,11 @@ class NeuralTransformerEncoderLayer(nn.Module):
             self_attention=True,
             maximum_relative_position=args['model']['encoder_max_relative_len']
         )
-
-        self.self_attn_layer_norm = nn.LayerNorm(self.embed_dim)  # LayerNorm(self.embed_dim)
+        self.self_attn_layer_norm = LayerNorm(self.embed_dim)
         self.dropout = args['model']['dropout']
-        self.activation_fn = utils.get_activation_fn(activation=args['model']['activation_fn'])
+        self.activation_fn = utils.get_activation_fn(
+            activation=args['model']['activation_fn']
+        )
         self.activation_dropout = args['model']['activation_dropout']  # getattr(args, "activation_dropout", 0)
         if self.activation_dropout == 0:
             # for backwards compatibility with models that use args.relu_dropout
@@ -45,7 +46,21 @@ class NeuralTransformerEncoderLayer(nn.Module):
         self.normalize_before = args['model']['encoder_normalize_before']
         self.fc1 = Linear(self.embed_dim, args['model']['encoder_ffn_embed_dim'])
         self.fc2 = Linear(args['model']['encoder_ffn_embed_dim'], self.embed_dim)
-        self.final_layer_norm = nn.LayerNorm(self.embed_dim)  # LayerNorm(self.embed_dim)
+        self.final_layer_norm = LayerNorm(self.embed_dim)
+
+    def upgrade_state_dict_named(self, state_dict, name):
+        """
+        Rename layer norm states from `...layer_norms.0.weight` to
+        `...self_attn_layer_norm.weight` and `...layer_norms.1.weight` to
+        `...final_layer_norm.weight`
+        """
+        layer_norm_map = {"0": "self_attn_layer_norm", "1": "final_layer_norm"}
+        for old, new in layer_norm_map.items():
+            for m in ("weight", "bias"):
+                k = "{}.layer_norms.{}.{}".format(name, old, m)
+                if k in state_dict:
+                    state_dict["{}.{}.{}".format(name, new, m)] = state_dict[k]
+                    del state_dict[k]
 
     def forward(self, x, encoder_padding_mask, attn_mask: Optional[Tensor] = None):
         """
@@ -69,10 +84,13 @@ class NeuralTransformerEncoderLayer(nn.Module):
         residual = x
         if self.normalize_before:
             x = self.self_attn_layer_norm(x)
-
-        x, _ = self.self_attn(query=x, key=x, value=x, attn_mask=attn_mask,
-                              key_padding_mask=encoder_padding_mask)  # [0]
-
+        x, _ = self.self_attn(
+            query=x,
+            key=x,
+            value=x,
+            key_padding_mask=encoder_padding_mask,
+            attn_mask=attn_mask,
+        )
         x = F.dropout(x, p=self.dropout, training=self.training)
         x = residual + x
         if not self.normalize_before:
@@ -91,24 +109,10 @@ class NeuralTransformerEncoderLayer(nn.Module):
             x = self.final_layer_norm(x)
         return x
 
-    def upgrade_state_dict_named(self, state_dict, name):
-        """
-        Rename layer norm states from `...layer_norms.0.weight` to
-        `...self_attn_layer_norm.weight` and `...layer_norms.1.weight` to
-        `...final_layer_norm.weight`
-        """
-        layer_norm_map = {"0": "self_attn_layer_norm", "1": "final_layer_norm"}
-        for old, new in layer_norm_map.items():
-            for m in ("weight", "bias"):
-                k = "{}.layer_norms.{}.{}".format(name, old, m)
-                if k in state_dict:
-                    state_dict["{}.{}.{}".format(name, new, m)] = state_dict[k]
-                    del state_dict[k]
-
 
 def Linear(in_features, out_features, bias=True):
     m = nn.Linear(in_features, out_features, bias)
-    # nn.init.xavier_uniform_(m.weight) # TODO: warning, commented to be consistent with the nn.torch.Transformer version
-    # if bias:
-    #     nn.init.constant_(m.bias, 0.0)
+    nn.init.xavier_uniform_(m.weight)
+    if bias:
+        nn.init.constant_(m.bias, 0.0)
     return m

@@ -75,8 +75,10 @@ def load_langpair_dataset(
         AppendTokenDataset(tgt_dataset, token=tgt_dict.eos()),
         tgt_dict.bos()
     )
-
     tgt_dataset_sizes = tgt_dataset.sizes if tgt_dataset is not None else None
+
+    LOGGER.info('loaded {} examples from: {}'.format(len(src_dataset), src_path))
+    LOGGER.info('loaded {} examples from: {}'.format(len(tgt_dataset), tgt_path))
     return BELanguagePairDataset(
         src_dataset, src_dataset.sizes, src_dict,
         tgt_dataset, tgt_dataset_sizes, tgt_dict,
