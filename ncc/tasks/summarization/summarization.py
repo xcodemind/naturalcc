@@ -374,6 +374,6 @@ class SummarizationTask(NccTask):
             hypotheses[key] = [pred]
             references[key] = tgt if isinstance(tgt, list) else [tgt]
 
-        bleu, rouge_l, meteor = eval_utils.eval_accuracies(hypotheses, references, filename='pred.txt')
+        bleu, rouge_l, meteor = eval_utils.eval_accuracies(hypotheses, references)
 
         return bleu, rouge_l, meteor
