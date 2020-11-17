@@ -32,7 +32,7 @@ dataset:
   num_workers: 3 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
   skip_invalid_size_inputs_valid_test: 1 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
-  max_sentences: 8 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  max_sentences: 512 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
 #  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
   dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
@@ -42,14 +42,14 @@ dataset:
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
   disable_validation: 0 # action='store_true',help='disable validation'
   max_tokens_valid: ~ # type=int, metavar='N', help='maximum number of tokens in a validation batch (defaults to --max-tokens)'
-  max_sentences_valid: 256 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
+  max_sentences_valid: 512 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
   curriculum: 0 # default=0, type=int, metavar='N', help='don\'t shuffle batches for first N epochs'
   gen_subset: test # default='test', metavar='SPLIT', help='data subset to generate (train, valid, test)'
   num_shards: 1 # default=1, type=int, metavar='N', help='shard generation over N shards'
   shard_id: 0 # default=0, type=int, metavar='ID', help='id of the shard to generate (id < num_shards)'
 
 distributed_training:
-  distributed_world_size: 1 # default=max(1, torch.cuda.device_count()
+  distributed_world_size: 4 # default=max(1, torch.cuda.device_count()
   distributed_rank: 0 # default=0, type=int, help='rank of the current worker'
   distributed_backend: nccl # default='nccl', type=str, help='distributed backend'
   distributed_init_method: ~ # default=None, type=str,help='typically tcp://hostname:port that will be used to establish initial connetion'
@@ -141,7 +141,12 @@ optimization:
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
     - 1
   lr: # '--learning-rate', default='0.25', type=eval_str_list, metavar='LR_1,LR_2,...,LR_N', help='learning rate for the first N epochs; all epochs >N using LR_N (note: this may be interpreted differently depending on --lr-scheduler)'
-    - 4e-4
+# fp32
+#    - 4e-4 # bleu: 18
+#    - 1e-3 # bleu: 16
+# fp16
+    - 4e-4 # bleu: 14
+#    - 1e-4 # bleu: 14+
   min_lr: -1 # default=-1, type=float, metavar='LR', help='stop training when the learning rate reaches this minimum'
   use_bmuf: 0 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
 
@@ -181,7 +186,7 @@ checkpoint:
   keep_last_epochs: -1 # type=int, default=-1, metavar='N', help='keep last N epoch checkpoints'
   keep_best_checkpoints: -1 # type=int, default=-1, metavar='N', help='keep best N checkpoints based on scores'
   no_save: 0 # action='store_true', help='don\'t save models or checkpoints'
-  no_epoch_checkpoints: 0 # action='store_true', help='only store last and best checkpoints'
+  no_epoch_checkpoints: 1 # action='store_true', help='only store last and best checkpoints'
   no_last_checkpoints: 0 # action='store_true', help='don\'t store last checkpoints'
   no_save_optimizer_state: ~ # action='store_true', help='don\'t save optimizer-state as part of checkpoint'
   best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
