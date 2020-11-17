@@ -1,5 +1,17 @@
 # NaturalCC
-NaturalCC is a sequence modeling toolkit that allows researchers and developers to train custom models for many software engineering tasks, e.g., code summarization, code retrieval and code clone detection. Our vision is to bridge the gap between programming language and natural language via some machine learning techniques.
+NaturalCC is a sequence modeling toolkit that allows researchers and developers to train custom models for many software engineering tasks, e.g., code summarization, code retrieval and code clone detection. 
+Our vision is to bridge the gap between programming language and natural language via some machine learning techniques.
+
+<p align="center">
+    <img src="https://img.shields.io/badge/ncc-0.4.0-green" alt="Version">
+</p>
+
+
+
+Version: 0.4.0
+<hr>
+
+
 
 ## Note
 This copy of code is private now, please do not distribute it. Thanks.
