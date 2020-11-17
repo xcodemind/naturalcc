@@ -98,7 +98,7 @@ if 'clean' in sys.argv[1:]:
 
 setup(
     name='ncc',
-    version='3.0',
+    version='0.4.0',
     description='NaturalCode: A Benchmark towards Understanding theNaturalness of Source Code and Comment',
     url='https://github.com/whatsmyname/naturalcodev3',
     classifiers=[
