@@ -411,11 +411,9 @@ class Trainer(object):
                 self.optimizer.multiply_grads(
                     self.args['distributed_training']['distributed_world_size'] / sample_size
                 )
-                # pass
             elif sample_size > 0:  # BMUF needs to check sample size
                 num = self.args['distributed_training']['distributed_world_size'] if self._sync_stats() else 1
-                self.optimizer.multiply_grads(num / sample_size)  # TODO: Warning, currently we have commented the multiply_grads, it does nothing.
-                # pass
+                self.optimizer.multiply_grads(num / sample_size)
 
             with torch.autograd.profiler.record_function("clip-grads"):
                 # clip grads
@@ -427,7 +425,9 @@ class Trainer(object):
 
             # take an optimization step
             self.optimizer.step()
-            # self.set_num_updates(self.get_num_updates() + 1)    # TODO: Warning, the learning rate will be updated by its scheduler here, commented currently
+            # TODO: Warning, the learning rate will be updated by its scheduler here, commented currently
+            # must set. plz, update learning rate by other methods
+            self.set_num_updates(self.get_num_updates() + 1)
 
             # log stats
             logging_output = self._reduce_and_log_stats(
