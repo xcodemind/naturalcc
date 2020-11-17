@@ -14,7 +14,15 @@ This copy of code is private now, please do not distribute it. Thanks.
 
 
 ## Features
+- mixed precision training
+- multi-gpus training
+- raw/bin data reading/writing
+
+## Code Tasks
 - [Code Summarization](run/summarization)
+    - [Seq2Seq](run/summarization/seq2seq/README.md) [\[pdf\]](https://arxiv.org/pdf/1409.3215.pdf)
+    - [vanilla Transformer](run/summarization//README.md) [\[pdf\]](https://arxiv.org/pdf/1706.03762.pdf)
+    - [NeuralTransformer](run/summarization/neural_transformer/README.md) [\[pdf\]](https://arxiv.org/pdf/2005.00653.pdf)
 - [Code Retrieval](run/retrieval)
 - [Type Inference](run/type_prediction)
 - [Code Prediction](run/)
@@ -24,7 +32,6 @@ Currently, we have processed the following datasets:
 
 - [Python_wan](dataset/python_wan/README.md)
 
-*NCC supports Raw/Binarinzed dataset generation/loading*
 
 ## TBC:
 
