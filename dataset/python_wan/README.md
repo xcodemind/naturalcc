@@ -132,15 +132,3 @@ python -m dataset.python_wan.preprocess
 
 0 directories, 14 files
 ```
-
-<!--
-# step 4
-```
-python -m dataset.csn_feng.feature_extract -l python -f ~/.ncc/python_wan/flatten -r ~/.ncc/python_wan/refine -s ~/.ncc/python_wan/libs 
-```
-
-# step 5
-```
-python -m dataset.csn_feng.filter -l python -r ~/.ncc/python_wan/refine -f ~/.ncc/python_wan/filter
-```
-->
