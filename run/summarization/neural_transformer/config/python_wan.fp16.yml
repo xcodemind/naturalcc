@@ -12,6 +12,7 @@ common:
   log_interval: 100 # type=int, default=100, metavar='N', help='log progress every N batches (when progress bar is disabled)'
   log_format: simple # default=None, help='log format to use', choices=['json', 'none', 'simple', 'tqdm']
   tensorboard_logdir: '' # default='', help='path to save logs for tensorboard, should match --logdir of running tensorboard (default: no tensorboard logging)'
+#  fp16_fair: 1 # action='store_true', help='use FP16'
   memory_efficient_fp16: 1 # action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
   fp16_no_flatten_grads: 1 # action='store_true', help='don\'t flatten FP16 grads tensor'
   fp16_init_scale: 128 # default=2 ** 7, type=int, help='default FP16 loss scale'
@@ -129,8 +130,6 @@ model:
   encoder_position_encoding_version: ~
   decoder_position_encoding_version: ncc_learned
 
-  multihead_attention_version: pytorch # 1) pytorch (built-in), 2) ncc; multi-head attention
-
   decoder_embed_path: '' # type=str, metavar='STR', help='path to pre-trained decoder embedding'
   decoder_positional_embeddings: 0 # default=False, action='store_true', help='if set, disables positional embeddings (outside self attention)'
   decoder_learned_pos: 1 # ', action='store_true', help='use learned positional embeddings in the decoder')
@@ -186,14 +185,14 @@ optimization:
     - 1e-4
   min_lr: -1 # default=-1, type=float, metavar='LR', help='stop training when the learning rate reaches this minimum'
   use_bmuf: 0 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
-
   force_anneal: ~ # \'--fa', type=int, metavar='N', help='force annealing at specified epoch'
 
   # single gpu
-#  warmup_updates: 500 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
+  warmup_updates: 500 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
   # mutli gpus
-  warmup_updates: 0 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
+#  warmup_updates: 100 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
 
+  #  warmup_updates: 0 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
   end_learning_rate: 0.0 # default=0.0, type=float
   power: 1.0 # default=1.0, type=float
   total_num_update: 1000000 # default=1000000, type=int
@@ -207,6 +206,15 @@ optimization:
     weight_decay: 0.0 # '--wd', default=0.0, type=float, metavar='WD', help='weight decay'
     use_old_adam: 0 # action='store_true', default=False, help="Use fairseq.optim.adam.Adam"
 
+#  learning_rate: 1e-4 # default=1e-4, type=float, help="The initial learning rate for Adam."
+#  weight_decay: 0.0 # default=0.0, type=float, help="Weight decay if we apply some."
+#  adam_epsilon: 1e-8 # default=1e-8, type=float, help="Epsilon for Adam optimizer."
+#  max_grad_norm: 1.0 # default=1.0, type=float, help="Max gradient norm."
+#  num_train_epochs: 5 # default=5, type=float, help="Total number of training epochs to perform."
+#  max_steps: -1 # default=-1, type=int, help="If > 0: set total number of training steps to perform. Override num_train_epochs.",
+#  warmup_steps: 0 # default=0, type=int, help="Linear warmup over warmup_steps."
+#  gradient_accumulation_steps: 10 # type=int, default=1, help="Number of updates steps to accumulate before performing a backward/update pass."
+
 
 checkpoint:
   restore_file: checkpoint_last.pt # default='checkpoint_last.pt', help='filename from which to load checkpoint (default: <save-dir>/checkpoint_last.pt'
@@ -215,7 +223,7 @@ checkpoint:
   reset_meters: ~ # action='store_true', help='if set, does not load meters from the checkpoint'
   reset_optimizer: ~ # action='store_true', help='if set, does not load optimizer state from the checkpoint'
   optimizer_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override optimizer args when loading a checkpoint'
-  save_interval: 10 # type=int, default=1, metavar='N', help='save a checkpoint every N epochs'
+  save_interval: 1 # type=int, default=1, metavar='N', help='save a checkpoint every N epochs'
   save_interval_updates: 0 # type=int, default=0, metavar='N', help='save a checkpoint (and validate) every N updates'
   keep_interval_updates: 0 # type=int, default=-1, metavar='N', help='keep the last N checkpoints saved with --save-interval-updates'
   keep_last_epochs: -1 # type=int, default=-1, metavar='N', help='keep last N epoch checkpoints'
@@ -224,8 +232,8 @@ checkpoint:
   no_epoch_checkpoints: 1 # action='store_true', help='only store last and best checkpoints'
   no_last_checkpoints: 0 # action='store_true', help='don\'t store last checkpoints'
   no_save_optimizer_state: ~ # action='store_true', help='don\'t save optimizer-state as part of checkpoint'
-  best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
-  maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
+  best_checkpoint_metric: bleu # type=str, default='loss', help='metric to use for saving "best" checkpoints'
+  maximize_best_checkpoint_metric: 1 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
   patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
   save_dir: ~/.ncc/python_wan/python_wan/summarization/data-mmap/neural_transformer/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"

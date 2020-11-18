@@ -89,8 +89,8 @@ def load_langpair_dataset(
         align_dataset=None, eos=src_dict.eos(),
         remove_eos_from_source=True,
         append_eos_to_target=append_eos_to_target,
-        # shuffle=True,
-        shuffle=False,  # debug
+        shuffle=True,
+        # shuffle=False,  # debug
     )
 
 

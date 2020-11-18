@@ -181,10 +181,10 @@ def cli_main():
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        "--language", "-l", default='ruby.bpe', type=str, help="load {language}.yml for train",
+        "--yaml_file", "-f", type=str, help="load {yaml_file}.yml for train",
     )
     args = parser.parse_args()
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.language))
+    yaml_file = os.path.join(os.path.dirname(__file__), '{}.yml'.format(args.yaml_file))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)

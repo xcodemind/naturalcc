@@ -36,7 +36,7 @@ dataset:
   num_workers: 3 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
   skip_invalid_size_inputs_valid_test: 1 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
-  max_sentences: 100 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  max_sentences: 110 # default = 512 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
 #  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
   dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
@@ -46,7 +46,7 @@ dataset:
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
   disable_validation: 0 # action='store_true',help='disable validation'
   max_tokens_valid: ~ # type=int, metavar='N', help='maximum number of tokens in a validation batch (defaults to --max-tokens)'
-  max_sentences_valid: 100 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
+  max_sentences_valid: 110 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
   curriculum: 0 # default=0, type=int, metavar='N', help='don\'t shuffle batches for first N epochs'
   gen_subset: test # default='test', metavar='SPLIT', help='data subset to generate (train, valid, test)'
   num_shards: 1 # default=1, type=int, metavar='N', help='shard generation over N shards'
@@ -225,7 +225,7 @@ checkpoint:
   reset_meters: ~ # action='store_true', help='if set, does not load meters from the checkpoint'
   reset_optimizer: ~ # action='store_true', help='if set, does not load optimizer state from the checkpoint'
   optimizer_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override optimizer args when loading a checkpoint'
-  save_interval: 10 # type=int, default=1, metavar='N', help='save a checkpoint every N epochs'
+  save_interval: 1 # type=int, default=1, metavar='N', help='save a checkpoint every N epochs'
   save_interval_updates: 0 # type=int, default=0, metavar='N', help='save a checkpoint (and validate) every N updates'
   keep_interval_updates: 0 # type=int, default=-1, metavar='N', help='keep the last N checkpoints saved with --save-interval-updates'
   keep_last_epochs: -1 # type=int, default=-1, metavar='N', help='keep last N epoch checkpoints'
@@ -234,8 +234,8 @@ checkpoint:
   no_epoch_checkpoints: 1 # action='store_true', help='only store last and best checkpoints'
   no_last_checkpoints: 0 # action='store_true', help='don\'t store last checkpoints'
   no_save_optimizer_state: ~ # action='store_true', help='don\'t save optimizer-state as part of checkpoint'
-  best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
-  maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
+  best_checkpoint_metric: bleu # type=str, default='loss', help='metric to use for saving "best" checkpoints'
+  maximize_best_checkpoint_metric: 1 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
   patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
   save_dir: ~/.ncc/python_wan/python_wan/summarization/data-mmap/neural_transformer/checkpoints # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
