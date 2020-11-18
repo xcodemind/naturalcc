@@ -1,6 +1,5 @@
 # CodeSearchNet dataset
 
-**we recommend to run this repository on linux/macOS**
 
 ### step 1. download CSN raw dataset (```~/.ncc/raw```) and parse files (```~/.ncc/libs```), and unzip them. <br>
 ```
@@ -15,12 +14,6 @@ after you run this command, your directories ```~/.ncc/code_search_net/raw``` an
 ```
 (base) yang@GS65:~/.ncc/code_search_net/raw$ ls
 go  go.zip  java  javascript  javascript.zip  java.zip  php  php.zip  python  python.zip  ruby  ruby.zip
-
-(base) yang@GS65:~/.ncc/code_search_net/libs$ ls
-go.so           java.so   python.so   tree-sitter-c-sharp-master.zip  tree-sitter-java-master.zip        tree-sitter-php-master.zip     tree-sitter-ruby-master.zip
-go.zip          java.zip  python.zip  tree-sitter-go-master           tree-sitter-javascript-master      tree-sitter-python-master
-javascript.so   php.so    ruby.so     tree-sitter-go-master.zip       tree-sitter-javascript-master.zip  tree-sitter-python-master.zip
-javascript.zip  php.zip   ruby.zip    tree-sitter-java-master         tree-sitter-php-master             tree-sitter-ruby-master
 ```
 
 
