@@ -294,8 +294,7 @@ def cli_main():
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing code_search_net dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        # "--yaml_file", "-f", default='config/python_wan', type=str, help="load {yaml_file}.yml for train",
-        "--yaml_file", "-f", default='config/python_wan.fp16', type=str, help="load {yaml_file}.yml for train",
+        "--yaml_file", "-f", type=str, help="load {yaml_file}.yml for train",
     )
     args = parser.parse_args()
     yaml_file = os.path.join(os.path.dirname(__file__), '{}.yml'.format(args.yaml_file))
