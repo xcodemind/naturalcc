@@ -82,7 +82,6 @@ def train(args, trainer, task, epoch_itr):
         if num_updates >= max_update:
             break
 
-
     # log end-of-epoch stats
     stats = get_training_stats(metrics.get_smoothed_values('train'))
     progress.print(stats, tag='train', step=num_updates)
@@ -133,7 +132,6 @@ def validate(args, trainer, task, epoch_itr, subsets):
         with metrics.aggregate(new_root=True) as agg:
             for sample in progress:
                 trainer.valid_step(sample)
-                # break # TODO: only for debug
 
         # log validation stats
         stats = get_valid_stats(args, trainer, agg.get_smoothed_values())
@@ -183,7 +181,8 @@ def should_stop_early(args, valid_loss):
     else:
         should_stop_early.num_runs += 1
         if should_stop_early.num_runs >= args['checkpoint']['patience']:
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(args['checkpoint']['patience']))
+            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
+                args['checkpoint']['patience']))
 
         return should_stop_early.num_runs >= args['checkpoint']['patience']
 
@@ -196,8 +195,10 @@ def single_main(args, init_distributed=False):
     # 0. Initialize CUDA and distributed training
     if torch.cuda.is_available() and not args['common']['cpu']:
         torch.cuda.set_device(args['distributed_training']['device_id'])
+    random.seed(args['common']['seed'])
     np.random.seed(args['common']['seed'])
     torch.manual_seed(args['common']['seed'])
+    torch.cuda.manual_seed(args['common']['seed'])
     if init_distributed:
         args['distributed_training']['distributed_rank'] = distributed_utils.distributed_init(args)
 
@@ -205,7 +206,7 @@ def single_main(args, init_distributed=False):
     if distributed_utils.is_master(args):
         save_dir = args['checkpoint']['save_dir']
         checkpoint_utils.verify_checkpoint_directory(save_dir)
-        remove_files(save_dir, 'pt')
+        remove_files(save_dir, 'pt')  # this code will remove pre-trained models
 
     # Print args
     LOGGER.info(args)
@@ -214,8 +215,7 @@ def single_main(args, init_distributed=False):
     task = tasks.setup_task(args)
 
     # 2. Load valid dataset (we load training data below, based on the latest checkpoint)
-    for valid_sub_split in args['dataset']['valid_subset'].split(','):
-        task.load_dataset(valid_sub_split, combine=False, epoch=1)
+    task.load_dataset(args['dataset']['valid_subset'], combine=False, epoch=1)
 
     # 3. Build model and criterion
     model = task.build_model(args)
@@ -267,12 +267,13 @@ def single_main(args, init_distributed=False):
 
         # early stop
         if should_stop_early(args, valid_losses[0]):
-            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(args['checkpoint']['patience']))
+            LOGGER.info('early stop since valid performance hasn\'t improved for last {} runs'.format(
+                args['checkpoint']['patience']))
             break
 
         epoch_itr = trainer.get_train_iterator(
             epoch_itr.next_epoch_idx,
-            combine=False, # TODO to be checked
+            combine=False,  # TODO to be checked
             # sharded data: get train iterator for next epoch
             load_dataset=(os.pathsep in args['task']['data']),
         )
@@ -289,10 +290,14 @@ def distributed_main(i, args, start_rank=0):
 
 
 def cli_main():
-    Argues = namedtuple('Argues', 'yaml')
-    args_ = Argues('py150.yml')
-    LOGGER.info(args_)
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', args_.yaml)
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Downloading/Decompressing code_search_net dataset(s) or Tree-Sitter Library(ies)")
+    parser.add_argument(
+        "--yaml_file", "-f", default='config/py150.fp16', type=str, help="load {yaml_file}.yml for train",
+    )
+    args = parser.parse_args()
+    yaml_file = os.path.join(os.path.dirname(__file__), '{}.yml'.format(args.yaml_file))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)
@@ -329,5 +334,8 @@ def cli_main():
 
 
 if __name__ == '__main__':
-    """nohup python -m run.completion.seqrnn.main > log.txt 2>&1 &"""
+    """
+    Examples:
+        CUDA_VISIBALE_DEVICES=0,1,2,3 python -m run.summarization.seq2seq.train -f config/python_wan
+    """
     cli_main()

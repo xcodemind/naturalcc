@@ -40,14 +40,20 @@ class CompletionCrossEntropyCriterion(NccCriterion):
         return loss, sample_size, logging_output
 
     def compute_loss(self, model, net_output, sample, reduce=True):
+        # ignore pad
+        idx = sample['net_input']['src_tokens'].view(-1) != sample['pad']
+        # ignore UNK in tgt because predict UNK is meaningless
+        # while feed UNK into modle and predict non-UNK tokens still make sense
+        idx[sample['target'].view(-1) == sample['unk']] = 0
+
+        # ignore overlapping tokens
         max_len = sample['target'].size(-1)
-        ids = []
         for i, ext_i in enumerate(sample['extends']):
-            ids += [i * max_len + j for j in range(ext_i, max_len)]
+            idx[i * max_len:i * max_len + ext_i] = 0
 
         lprobs = model.get_normalized_probs(net_output, log_probs=True)
-        lprobs = lprobs.view(-1, lprobs.size(-1))[ids]
-        target = model.get_targets(sample, net_output).view(-1)[ids]
+        lprobs = lprobs.view(-1, lprobs.size(-1))[idx]
+        target = model.get_targets(sample, net_output).view(-1)[idx]
 
         loss = F.nll_loss(
             lprobs,

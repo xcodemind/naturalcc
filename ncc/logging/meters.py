@@ -86,7 +86,7 @@ class AverageMeter(Meter):
 
     @property
     def avg(self):
-        return self.sum / self.count if self.count > 0 else self.val
+        return 1. * self.sum / self.count if self.count > 0 else self.val
 
     @property
     def smoothed_value(self) -> float:

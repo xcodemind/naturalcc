@@ -10,7 +10,7 @@ from ncc.logging import metrics
 from ncc.criterions import NccCriterion, register_criterion
 
 
-@register_criterion('search_softmax')
+@register_criterion('search_cosine')
 class SearchSoftmaxCriterion(NccCriterion):
     def __init__(self, task, sentence_avg):
         super().__init__(task)

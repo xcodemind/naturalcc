@@ -21,18 +21,19 @@ def collate(samples, pad_idx):
 
     src_tokens = merge('source')
     tgt_tokens = merge('target')
-    node_ids = {name: [] for name in samples[0]['node_id'].keys()}
+    if samples[0]['node_id'] is None:
+        node_ids = None
+    else:
+        node_ids = {name: [] for name in samples[0]['node_id'].keys()}
+
     extends = []
-    # max_len = max(len(sample['source']) for sample in samples)
-    # max_len = max(max_len, 2)
+    for i, s in enumerate(samples):
+        extends.append(s['extend'])
+        if node_ids is not None:
+            for name, lst in s['node_id'].items():
+                node_ids[name].append([j - 1 for j in lst if j > 1])
 
-    for i, sample in enumerate(samples):
-        extends.append(sample['extend'])
-        for name, lst in sample['node_id'].items():
-            # node_ids[name] += [j - 1 + (max_len - 1) * i for j in lst]
-            node_ids[name].append([j - 1 for j in lst if j > 1])
-
-    ntokens = sum(sum(s['target']!=pad_idx) for s in samples)
+    ntokens = sum(sum(s['target'] != pad_idx) for s in samples)
 
     batch = {
         'net_input': {
@@ -43,6 +44,12 @@ def collate(samples, pad_idx):
         'extends': extends,
         'ntokens': ntokens,
         'id': [s['id'] for s in samples],
+
+        'pad': samples[0]['pad'],
+        'unk': samples[0]['unk'],
+
+        'src_last_idx': [s['src_last_idx'] for s in samples],
+        'tgt_last_idx': [s['tgt_last_idx'] for s in samples],
     }
     return batch
 
@@ -81,10 +88,11 @@ class SeqRNNDataset(NccDataset):
     """
 
     def __init__(
-            self, tgt, tgt_sizes, tgt_dict, node_ids, extends,
-            left_pad_source=False, left_pad_target=False,
-            max_target_positions=1024,
-            shuffle=True,
+        self, tgt, tgt_sizes, tgt_dict,
+        node_ids=None, extends=None,
+        left_pad_source=False, left_pad_target=False,
+        max_target_positions=1024,
+        shuffle=True,
     ):
         self.tgt = tgt
         self.tgt_sizes = np.array(tgt_sizes)
@@ -104,14 +112,21 @@ class SeqRNNDataset(NccDataset):
         src_item = self.tgt[index][:-1]
         tgt_item = self.tgt[index][1:]
 
-        node_id = self.node_ids[index]
-        extend = self.extends[index]
+        node_id = None if self.node_ids is None else self.node_ids[index]
+        extend = None if self.extends is None else self.extends[index][0].item()
+
         example = {
             'id': index,
             'source': src_item,
             'target': tgt_item,
             'node_id': node_id,
             'extend': extend,
+
+            'pad': self.tgt_dict.pad(),
+            'unk': self.tgt_dict.unk(),
+
+            'src_last_idx': len(src_item) - 1,
+            'tgt_last_idx': len(tgt_item) - 1,
         }
         return example
 

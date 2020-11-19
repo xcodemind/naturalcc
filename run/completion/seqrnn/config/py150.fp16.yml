@@ -1,7 +1,7 @@
 #registry
 criterion: completion_cross_entropy
 optimizer: 'adam'
-lr_scheduler: 'polynomial_decay'
+lr_scheduler: 'fixed'
 tokenizer: ~ # default=None
 bpe: ~ # default=None
 
@@ -15,8 +15,8 @@ common:
   #  seed: 42 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
   #  cpu: 0 # action='store_true', help='use CPU instead of CUDA'
   #  fp16_fair: 1 # action='store_true', help='use FP16'
-  memory_efficient_fp16: 0 # action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
-  fp16_no_flatten_grads: 0 # action='store_true', help='don\'t flatten FP16 grads tensor'
+  memory_efficient_fp16: 1 # action='store_true', help='use a memory-efficient version of FP16 training; implies --fp16'
+  fp16_no_flatten_grads: 1 # action='store_true', help='don\'t flatten FP16 grads tensor'
   fp16_init_scale: 128 # 2 ** 7 # default=2 ** 7, type=int, help='default FP16 loss scale'
   fp16_scale_window: ~ # type=int, help='number of updates before increasing loss scale'
   fp16_scale_tolerance: 0.0 # default=0.0, type=float, help='pct of updates that can overflow before decreasing the loss scale'
@@ -29,7 +29,7 @@ common:
 
   seed: 666 # default=1, type=int, metavar='N', help='pseudo random number generator seed'
   cpu: 0 # action='store_true', help='use CPU instead of CUDA'
-  fp16: 0 # action='store_true', help='use FP16'
+  fp16: 1 # action='store_true', help='use FP16'
   fp16_opt_level: '01' # type=str, default="O1", help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']. See details at https://nvidia.github.io/apex/amp.html",
   server_ip: '' # type=str, default="", help="For distant debugging."
   server_port: '' # type=str, default="", help="For distant debugging."
@@ -38,7 +38,7 @@ dataset:
   num_workers: 3 # default=1, type=int, metavar='N', help='how many subprocesses to use for data loading'
   skip_invalid_size_inputs_valid_test: 0 # action='store_true', help='ignore too long or too short lines in valid and test set'
   max_tokens: 1e5 # type=int, metavar='N', help='maximum number of tokens in a batch'
-  max_sentences: 64 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
+  max_sentences: 170 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
   dataset_impl: mmap # choices=get_available_dataset_impl(), help='output dataset implementation'
   train_subset: train #test # default='train', metavar='SPLIT', help='data subset to use for training (e.g. train, valid, test)'
@@ -47,7 +47,7 @@ dataset:
   fixed_validation_seed: ~ # default=None, type=int, metavar='N', help='specified random seed for validation'
   disable_validation: 0 # 1 # action='store_true',help='disable validation'
   max_tokens_valid: ~ # type=int, metavar='N', help='maximum number of tokens in a validation batch (defaults to --max-tokens)'
-  max_sentences_valid: 64 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
+  max_sentences_valid: 200 # type=int, metavar='N', help='maximum number of sentences in a validation batch (defaults to --max-sentences)'
   curriculum: 5 # default=0, type=int, metavar='N', help='don\'t shuffle batches for first N epochs'
   n_ctx: 1000 # py150 split ast with a max length
   gen_subset: test # default='test', metavar='SPLIT', help='data subset to generate (train, valid, test)'
@@ -62,7 +62,7 @@ distributed_training:
   distributed_port: -1 # default=-1, type=int, help='port number (not required if using --distributed-init-method)'
   device_id: 0 # '--local_rank', default=0, type=int, help='which GPU to use (usually configured automatically)'
   distributed_no_spawn: 0 # action='store_true', help='do not spawn multiple processes even if multiple GPUs are visible'
-  ddp_backend: c10d # default='c10d', type=str, choices=['c10d', 'no_c10d'], help='DistributedDataParallel backend'
+  ddp_backend: no_c10d # default='c10d', type=str, choices=['c10d', 'no_c10d'], help='DistributedDataParallel backend'
   bucket_cap_mb: 25 # default=25, type=int, metavar='MB', help='bucket size for reduction'
   fix_batches_to_gpus: ~ # action='store_true', help='don\'t shuffle batches between GPUs; this reduces overall randomness and may affect precision but avoids the cost of re-reading the data'
   find_unused_parameters: 0 # default=False, action='store_true', help='disable unused parameter detection (not applicable to no_c10d ddp-backend'
@@ -111,6 +111,7 @@ task:
   eval_bleu_print_samples: 0 #', action='store_true', help='print sample generations during validation'
 
   eval_accuracy: 1
+  eval_last_accuracy: 1
   eval_mrr: 1
 
 
@@ -150,15 +151,15 @@ model:
 
 optimization:
   max_epoch: 100 # '--me', default=0, type=int, metavar='N', help='force stop training at specified epoch'
-  max_update: 1 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
+  max_update: 0 # '--mu', default=0, type=int, metavar='N', help='force stop training at specified update'
   clip_norm: 25 # default=25, type=float, metavar='NORM', help='clip threshold of gradients'
   update_freq: # default='1', metavar='N1,N2,...,N_K', type=lambda uf: eval_str_list(uf, type=int), help='update parameters every N_i batches, when in epoch i'
     - 1
   lr: # '--learning-rate', default='0.25', type=eval_str_list, metavar='LR_1,LR_2,...,LR_N', help='learning rate for the first N epochs; all epochs >N using LR_N (note: this may be interpreted differently depending on --lr-scheduler)'
-#    - 0.0005
     - 1e-3
+#    - 4e-4
   min_lr: -1 # default=-1, type=float, metavar='LR', help='stop training when the learning rate reaches this minimum'
-  use_bmuf: 1 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
+  use_bmuf: 0 # default=False, action='store_true', help='specify global optimizer for syncing models on different GPUs/shards'
   #
   force_anneal: ~ # '--fa', type=int, metavar='N', help='force annealing at specified epoch'
   warmup_updates: 0 # 10000 # default=0, type=int, metavar='N', help='warmup the learning rate linearly for the first N updates'
@@ -206,8 +207,8 @@ checkpoint:
   no_epoch_checkpoints: 0 # action='store_true', help='only store last and best checkpoints'
   no_last_checkpoints: 0 # action='store_true', help='don\'t store last checkpoints'
   no_save_optimizer_state: ~ # action='store_true', help='don\'t save optimizer-state as part of checkpoint'
-  best_checkpoint_metric: loss # type=str, default='loss', help='metric to use for saving "best" checkpoints'
-  maximize_best_checkpoint_metric: 0 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
+  best_checkpoint_metric: last_accuracy # type=str, default='loss', help='metric to use for saving "best" checkpoints'
+  maximize_best_checkpoint_metric: 1 # action='store_true', help='select the largest metric value for saving "best" checkpoints'
   patience: -1 # type=int, default=-1, metavar='N', help=('early stop training if valid performance doesn\'t improve for N consecutive validation runs; note that this is influenced by --validate-interval')
   #  save_dir: /tmp/pycharm_project_429/checkpoint/result # type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",
   should_continue: 0 # action="store_true", help="Whether to continue from latest checkpoint in output_dir"
@@ -220,7 +221,7 @@ checkpoint:
   overwrite_cache: 0 # action="store_true", help="Overwrite the cached training and evaluation sets"
 
 eval:
-  path: ~/.ncc/py150/completion/data-mmap/seqrnn/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  path: ~/.ncc/py150/completion/data-mmap/seqrnn/checkpoints/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
   model_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override model args at generation '
   checkpoint_suffix: '' # default='', help='Suffix to add to the checkpoint file name'
   predict_type: 'leaf_ids'

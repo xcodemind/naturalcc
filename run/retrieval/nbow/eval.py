@@ -23,6 +23,17 @@ from ncc.utils import utils
 from ncc.utils.util_file import load_yaml
 from ncc.logging.meters import StopwatchMeter
 from ncc.eval.com2cod_retrieval import Com2CodeRetrievalScorer
+from scipy.spatial.distance import cdist
+
+
+def compute_ranks(src_representations: np.ndarray,
+                  tgt_representations: np.ndarray,
+                  distance_metric: str):
+    distances = cdist(src_representations, tgt_representations,
+                      metric=distance_metric)
+    # By construction the diagonal contains the correct elements
+    correct_elements = np.expand_dims(np.diag(distances), axis=-1)
+    return np.sum(distances <= correct_elements, axis=-1), distances
 
 
 def main(args, **unused_kwargs):
@@ -86,6 +97,7 @@ def main(args, **unused_kwargs):
             continue
         sample = utils.move_to_cuda(sample) if use_cuda else sample
         batch_code_reprs, batch_query_reprs = models[0](**sample['net_input'])
+
         code_reprs.extend(batch_code_reprs.tolist())
         query_reprs.extend(batch_query_reprs.tolist())
     code_reprs = np.asarray(code_reprs, dtype=np.float32)
@@ -107,9 +119,10 @@ def main(args, **unused_kwargs):
             else:
                 batch_ids = list(batch_ids)
                 gt_idx = batch_ids.index(idx)
-        batch_code_reprs = torch.from_numpy(code_reprs[batch_ids, :])
-        batch_query_reprs = torch.from_numpy(query_reprs[batch_ids, :])
-        similarity_scores = F.cosine_similarity(batch_code_reprs, batch_query_reprs)
+        batch_code_reprs = torch.from_numpy(code_reprs[batch_ids, :]).cuda()
+        batch_query_reprs = torch.from_numpy(query_reprs[batch_ids, :]).cuda()
+        # similarity_scores = F.cosine_similarity(batch_code_reprs, batch_query_reprs)
+        logits = batch_query_reprs @ batch_code_reprs.t()
         gt_sim = similarity_scores[gt_idx]
         MRR.append(
             (1 / (similarity_scores >= gt_sim).sum(dim=-1).float()).item()
@@ -122,10 +135,10 @@ def cli_main():
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        "--language", "-l", default='javascript', type=str, help="load {language}.yml for train",
+        "--language", "-l", default='config/ruby', type=str, help="load {language}.yml for train",
     )
     args = parser.parse_args()
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.language))
+    yaml_file = os.path.join(os.path.dirname(__file__), '{}.yml'.format(args.language))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)

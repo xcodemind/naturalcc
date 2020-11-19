@@ -14,42 +14,46 @@ from ncc.utils import utils
 from ncc.data.tools import data_utils
 from ncc.data.completion.traverse_transformer_dataset import TraverseTransformerDataset
 from ncc.data.completion.seqrnn_dataset import SeqRNNDataset
-from ncc.data.dictionary import Dictionary
+from ncc.data.completion.completion_dictionary import CompletionDictionary as Dictionary
 from ncc.utils import tokenizer
+from ncc.data import indexed_dataset
 import json
 
 
-def load_token_dataset(data_path, split, tgt_dict, dataset_impl, max_target_positions):
-    target_path = os.path.join(data_path, '{}.tok'.format(split))
-    tgt_dataset = data_utils.load_indexed_dataset(target_path, 'dfs', tgt_dict, dataset_impl)
+def _load_dataset(path, impl, dict=None):
+    if impl == 'raw':
+        raise NotImplementedError(impl)
+    elif impl == 'mmap':
+        # mmap dataset has been numberized, no need for dict
+        src_dataset = indexed_dataset.MMapIndexedDataset(path=path)
+    else:
+        raise NotImplementedError("No such {} dataset implementation.".format(impl))
+    return src_dataset
 
-    node_id_path = os.path.join(data_path, '{}.ids'.format(split))
-    with open(node_id_path, 'r', encoding='utf-8') as f:
-        node_ids = [json.loads(ids_line) for ids_line in f]
+
+def load_token_dataset(data_path, split, tgt, tgt_dict, ext, dataset_impl, max_target_positions):
+    # target_path = os.path.join(data_path, '{}.tok'.format(split))
+    # tgt_dataset = data_utils.load_indexed_dataset(target_path, 'dfs', tgt_dict, dataset_impl)
+    #
+    # node_id_path = os.path.join(data_path, '{}.ids'.format(split))
+    # with open(node_id_path, 'r', encoding='utf-8') as f:
+    #     node_ids = [json.loads(ids_line) for ids_line in f]
+
+    tgt_path = os.path.join(data_path, '{}.{}'.format(split, tgt))
+    tgt_dataset = _load_dataset(tgt_path, dataset_impl)
+    LOGGER.info('loaded {} examples from: {}'.format(len(tgt_dataset), tgt_path))
+
+    if ext is not None:
+        ext_path = os.path.join(data_path, '{}.{}'.format(split, ext))
+        ext_dataset = _load_dataset(ext_path, dataset_impl)
+        LOGGER.info('loaded {} examples from: {}'.format(len(ext_dataset), ext_path))
+    else:
+        ext_dataset = None
 
     return SeqRNNDataset(
-        tgt_dataset, tgt_dataset.sizes, tgt_dict, node_ids, tgt_dataset.extends,
+        tgt_dataset, tgt_dataset.sizes, tgt_dict, extends=ext_dataset,
         max_target_positions=max_target_positions,
     )
-
-
-# Currently, this function is same as load_token_dataset, it can be abstracted later.
-def load_traverse_dataset(data_path, split, tgt_dict, dataset_impl, max_target_positions):
-    target_path = os.path.join(data_path, '{}.ast_trav_df'.format(split))
-    tgt_dataset = data_utils.load_indexed_dataset(target_path, 'dfs', tgt_dict, dataset_impl)
-
-    node_id_path = os.path.join(data_path, '{}.ids'.format(split))
-    with open(node_id_path, 'r', encoding='utf-8') as f:
-            node_ids = [json.loads(ids_line) for ids_line in f]
-
-    return TraverseTransformerDataset(
-        tgt_dataset, tgt_dataset.sizes, tgt_dict, node_ids, tgt_dataset.extends,
-        max_target_positions=max_target_positions,
-    )
-
-
-def load_path_dataset():
-    raise NotImplementedError
 
 
 @register_task('completion')
@@ -71,14 +75,14 @@ class CompletionTask(NccTask):
         paths = utils.split_paths(args['task']['data'])
         assert len(paths) > 0
         # load dictionaries
-        dictionary = cls.load_dictionary(os.path.join(paths[0], 'dict.{}.json'.format(args['task']['source_lang'])))
-        LOGGER.info('[{}] dictionary: {} types'.format(args['task']['source_lang'], len(dictionary)))
+        dictionary = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['target_lang'])))
+        LOGGER.info('[{}] dictionary: {} types'.format(args['task']['target_lang'], len(dictionary)))
         return cls(args, dictionary)
 
     @classmethod
     def build_dictionary(
-            cls, filenames, tokenize_func=tokenizer.tokenize_list,
-            workers=1, threshold=-1, nwords=-1, padding_factor=8
+        cls, filenames, tokenize_func=tokenizer.tokenize_list,
+        workers=1, threshold=-1, nwords=-1, padding_factor=8
     ):
         """Build the dictionary
 
@@ -112,19 +116,19 @@ class CompletionTask(NccTask):
         assert len(paths) > 0
         data_path = paths[(epoch - 1) % len(paths)]
 
-
         if self.args['model']['arch'] == 'seqrnn':
-            self.datasets[split] = load_token_dataset(data_path, split, self.target_dictionary,
-                                                    dataset_impl=self.args['dataset']['dataset_impl'],
-                                                    max_target_positions=self.max_positions())
-        elif self.args['model']['arch'] == 'traverse_transformer':
-            self.datasets[split] = load_traverse_dataset(data_path, split, self.target_dictionary,
-                                                     dataset_impl=self.args['dataset']['dataset_impl'],
-                                                     max_target_positions=self.max_positions())
-        elif self.args['model']['arch'] == 'path_transformer':
-            self.datasets[split] = load_path_dataset(data_path, split, self.target_dictionary,
-                                                     dataset_impl=self.args['dataset']['dataset_impl'],
-                                                     max_target_positions=self.max_positions())
+            self.datasets[split] = load_token_dataset(
+                data_path, split, self.args['task']['target_lang'], self.target_dictionary,
+                dataset_impl=self.args['dataset']['dataset_impl'], ext=self.args['task']['ext'],
+                max_target_positions=self.max_positions())
+        # elif self.args['model']['arch'] == 'traverse_transformer':
+        #     self.datasets[split] = load_traverse_dataset(data_path, split, self.target_dictionary,
+        #                                                  dataset_impl=self.args['dataset']['dataset_impl'],
+        #                                                  max_target_positions=self.max_positions())
+        # elif self.args['model']['arch'] == 'path_transformer':
+        #     self.datasets[split] = load_path_dataset(data_path, split, self.target_dictionary,
+        #                                              dataset_impl=self.args['dataset']['dataset_impl'],
+        #                                              max_target_positions=self.max_positions())
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
         return SeqRNNDataset(src_tokens, src_lengths, self.target_dictionary)  # TODO: bug
@@ -132,34 +136,41 @@ class CompletionTask(NccTask):
     def build_model(self, args):
         model = super().build_model(args)
 
-        if args['task']['eval_accuracy'] or args['task']['eval_mrr']:
+        if args['task']['eval_accuracy'] or args['task']['eval_last_accuracy'] or args['task']['eval_mrr']:
             self.sequence_completor = self.build_completor([model], args)
 
         return model
 
     def valid_step(self, sample, model, criterion):
-        print('valid_step...')
+        # print('valid_step...')
         loss, sample_size, logging_output = super().valid_step(sample, model, criterion)
         with torch.no_grad():
             net_output = self.sequence_completor.complete([model], sample, prefix_tokens=None)
 
-        selected = sample['node_ids']['leaf_ids']
+        # ignore pad
+        idx = sample['net_input']['src_tokens'].view(-1) != self.target_dictionary.pad()
+        # ignore UNK in tgt because predict UNK is meaningless
+        # while feed UNK into modle and predict non-UNK tokens still make sense
+        idx[sample['target'].view(-1) == self.target_dictionary.unk()] = 0
+        # ignore overlapping tokens
         max_len = sample['target'].size(-1)
-        node_ids = []
-        for i, lst in enumerate(selected):
-            node_ids += [j + (max_len - 1) * i for j in lst]
+        for i, ext_i in enumerate(sample['extends']):
+            idx[i * max_len:i * max_len + ext_i] = 0
 
         lprobs = model.get_normalized_probs(net_output, log_probs=True)
-        lprobs = lprobs.view(-1, lprobs.size(-1))[node_ids]
-        target = model.get_targets(sample, net_output).view(-1)[node_ids]
+        last_lprobs = torch.stack([lprobs[idx, last_idx, :] for idx, last_idx in enumerate(sample['src_last_idx'])])
+        lprobs = lprobs.view(-1, lprobs.size(-1))[idx]
+        target = model.get_targets(sample, net_output).view(-1)[idx]
 
-        rank = torch.argmax(lprobs, 1)
-        mrr = np.mean([1. / (r.item() + 1) for r in rank.view(-1)])
-
-        ncorrect = torch.sum(rank == target)
-
-        accuracy = ncorrect / sample['ntokens']
+        rank = torch.argmax(lprobs, dim=-1)
+        last_rank = torch.argmax(last_lprobs, dim=-1)
+        accuracy = 1. * torch.sum(rank == target) / sample['ntokens']
+        last_gt = torch.stack([sample['target'][idx, last_idx] for idx, last_idx in enumerate(sample['tgt_last_idx'])])
+        last_accuracy = 1. * torch.sum(last_rank == last_gt) / len(last_rank)
         logging_output['accuracy'] = accuracy
+        logging_output['last_accuracy'] = last_accuracy
+
+        mrr = np.mean([1. / (r.item() + 1) for r in rank.view(-1)])
         logging_output['mrr'] = mrr
 
         return loss, sample_size, logging_output
@@ -173,6 +184,9 @@ class CompletionTask(NccTask):
         if self.args['task']['eval_accuracy']:
             if sum_logs('accuracy') > 0:  # ==0: no accuracy items in the logging outputs, it means the training stage
                 metrics.log_scalar('accuracy', sum_logs('accuracy'))
+        if self.args['task']['eval_last_accuracy']:
+            if sum_logs('last_accuracy') > 0:  # ==0: no accuracy items in the logging outputs, it means the training stage
+                metrics.log_scalar('last_accuracy', sum_logs('last_accuracy'))
         if self.args['task']['eval_mrr']:
             if sum_logs('mrr') > 0:
                 metrics.log_scalar('mrr', sum_logs('mrr'))
@@ -185,3 +199,15 @@ class CompletionTask(NccTask):
     def target_dictionary(self):
         """Return the target :class:`~fairseq.data.Dictionary`."""
         return self.dictionary
+
+    @classmethod
+    def load_dictionary(cls, filename):
+        """Load the dictionary from the filename
+
+        Args:
+            filename (str): the filename
+        """
+        if filename.endswith('.txt'):
+            return Dictionary.load(filename)
+        else:
+            return Dictionary.load_json(filename)

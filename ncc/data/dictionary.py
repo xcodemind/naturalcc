@@ -629,7 +629,7 @@ class Dictionary(object):
                 results.append(
                     pool.apply_async(
                         Dictionary._add_tok_to_dictionary_single_worker,
-                        (filename, tokenize, dict.eos_word, worker_id, num_workers),
+                        (filename, tokenize, None, worker_id, num_workers),
                     )
                 )
             pool.close()
@@ -639,7 +639,7 @@ class Dictionary(object):
         else:
             merge_result(
                 Dictionary._add_tok_to_dictionary_single_worker(
-                    filename, tokenize, dict.eos_word
+                    filename, tokenize, None
                 )
             )
 
