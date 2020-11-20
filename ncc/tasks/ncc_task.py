@@ -492,3 +492,19 @@ class NccTask(object):
         """Return the target :class:`~fairseq.data.Dictionary` (if applicable
         for this task)."""
         raise NotImplementedError
+
+    def encode_input(self, input):
+        """Return the processed input to be fed into task (for interface).
+        Examples:
+            in Seq2Seq model of summarization task, users input "def addition ..."
+            encode the input into [index("def"), index("addition"), ..., <eos>]
+        """
+        raise NotImplementedError(f"encode_input function of {self} has not been implemented.")
+
+    def decode_output(self, output):
+        """Return the output (for interface)
+        Examples:
+            in Seq2Seq model of summarization task, the model return of the output [xx, xx, xx] of the code "def addition ..."
+            decode the outputput into "addition operator"
+        """
+        raise NotImplementedError(f"decode_output function of {self} has not been implemented.")

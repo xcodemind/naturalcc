@@ -205,8 +205,9 @@ checkpoint:
 
 eval:
   path: ~/.ncc/python_wan/summarization/data-mmap/seq2seq/checkpoints/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  result_path: ~
   remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
-  quiet: 1 # ', action='store_true', help='only print final scores'
+  quiet: 0 # ', action='store_true', help='only print final scores'
   model_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override model args at generation '
 
   max_sentences: 2048 # evaluation batch size, because while evaluation, it will not cost much ram, we can increase the batch size

@@ -15,79 +15,73 @@ from ncc.utils import utils
 from ncc.utils.checkpoint_utils import load_checkpoint_to_cpu
 
 
-def main(model_path, input):
+def load_state(model_path):
     state = load_checkpoint_to_cpu(model_path, arg_overrides={})
     args = state["args"]
     task = tasks.setup_task(args)  # load src/tgt dicts
     model = task.build_model(args)
     model.load_state_dict(state["model"])
-    if args['common']['fp16']:
-        model.half()
     use_cuda = torch.cuda.is_available() and not args['common']['cpu']
+    if args['common']['fp16'] and use_cuda:
+        model.half()
     if use_cuda:
         torch.cuda.empty_cache()
         torch.cuda.set_device(torch.cuda.device_count() - 1)
         model.cuda()
     model.eval()
+    del state
+    return args, task, model, use_cuda
 
-    # TODO: source tensor should be handled in corresponding task scripts. here we only use seq2seq pipeline for instance.
-    src_input_ids = task.src_dict.encode_line(input, line_tokenizer=None, add_if_not_exist=False)
-    src_input_ids = torch.cat(
-        [src_input_ids[:args['task']['max_source_positions'] - 1], torch.Tensor([task.src_dict.eos()]).long()]
-    )
-    padding_size = args['task']['max_source_positions'] - len(src_input_ids)
-    if padding_size > 0:
-        src_input_ids = torch.cat([src_input_ids, torch.Tensor([task.src_dict.pad()] * padding_size).long()])
+
+def main(model_path, input):
+    args, task, model, use_cuda = load_state(model_path)
+    # encode input (and feed into gpu)
+    input = task.encode_input(input)
     if use_cuda:
-        src_input_ids = src_input_ids.unsqueeze(dim=0).cuda()
-    sample = {
-        'net_input': {
-            'src_tokens': src_input_ids,
-            'src_lengths': torch.LongTensor([s.numel() for s in src_input_ids]),
-        },
-    }
-    sample = utils.move_to_cuda(sample) if use_cuda else sample
+        input = utils.move_to_cuda(input)
+    # feed input into model
     generator = task.build_generator(args)
-    pred_sentence_ids = generator.generate(models=[model], sample=sample)
-    pred_sentence = task.tgt_dict.string(pred_sentence_ids[0][0]['tokens'])
-    return pred_sentence
+    # from ipdb import set_trace
+    # set_trace()
+    output = generator.generate(models=[model], sample=input)
+    # decode
+    output = task.decode_output(output)
+    return output
 
 
 def cli_main():
-    import argparse
-    parser = argparse.ArgumentParser(
-        description="Command Interface")
+    # code summarization
+    codes = [
+        "def positional(max_positional_args):\n\tdef positional_decorator(wrapped):\n\t\t@functools.wraps(wrapped)\n\t\tdef positional_wrapper(*args, **kwargs):\n\t\t\tif (len(args) > max_posi      tional_args):\n\t\t\t\tplural_s = ''\n\t\t\t\tif (max_positional_args != 1):\n\t\t\t\t\tplural_s = 's'\n\t\t\t\tmessage = ('%s()\ttakes\tat\tmost\t%d\tpositional\targument%s\t(%d\tgive      n)' % (wrapped.__name__, max_positional_args, plural_s, len(args)))\n\t\t\t\tif (positional_parameters_enforcement == POSITIONAL_EXCEPTION):\n\t\t\t\t\traise TypeError(message)\n\t\t\t      \telif (positional_parameters_enforcement == POSITIONAL_WARNING):\n\t\t\t\t\tlogger.warning(message)\n\t\t\t\telse:\n\t\t\t\t\tpass\n\t\t\treturn wrapped(*args, **kwargs)\n\t\treturn p      ositional_wrapper\n\tif isinstance(max_positional_args, six.integer_types):\n\t\treturn positional_decorator\n\telse:\n\t\t(args, _, _, defaults) = inspect.getargspec(max_positional_ar      gs)\n\t\treturn positional((len(args) - len(defaults)))(max_positional_args)\n",
+        "def getCarveIntersectionFromEdge(edge, vertexes, z):\n\tfirstVertex = vertexes[edge.vertexIndexes[0]]\n\tfirstVertexComplex = firstVertex.dropAxis(2)\n\tsecondVertex = vertexes[edge.v      ertexIndexes[1]]\n\tsecondVertexComplex = secondVertex.dropAxis(2)\n\tzMinusFirst = (z - firstVertex.z)\n\tup = (secondVertex.z - firstVertex.z)\n\treturn (((zMinusFirst * (secondVerte      xComplex - firstVertexComplex)) \/ up) + firstVertexComplex)\n",
+        "def MessageEncoder(field_number, is_repeated, is_packed):\n\ttag = TagBytes(field_number, wire_format.WIRETYPE_LENGTH_DELIMITED)\n\tlocal_EncodeVarint = _EncodeVarint\n\tassert (not i      s_packed)\n\tif is_repeated:\n\t\tdef EncodeRepeatedField(write, value):\n\t\t\tfor element in value:\n\t\t\t\twrite(tag)\n\t\t\t\tlocal_EncodeVarint(write, element.ByteSize())\n\t\t\t      \telement._InternalSerialize(write)\n\t\treturn EncodeRepeatedField\n\telse:\n\t\tdef EncodeField(write, value):\n\t\t\twrite(tag)\n\t\t\tlocal_EncodeVarint(write, value.ByteSize())\n\      t\t\treturn value._InternalSerialize(write)\n\t\treturn EncodeField\n",
+        "def service_delete(service_id=None, name=None, profile=None, **connection_args):\n\tkstone = auth(profile, **connection_args)\n\tif name:\n\t\tservice_id = service_get(name=name, prof      ile=profile, **connection_args)[name]['id']\n\tkstone.services.delete(service_id)\n\treturn 'Keystone\tservice\tID\t\"{0}\"\tdeleted'.format(service_id)\n",
+        "def verify(user, password):\n\tdef verify_user(user_name, user_password):\n\t\tif ((user_name == user) and (user_password == password)):\n\t\t\treturn user_name\n\t\treturn False\n\tr      eturn verify_user\n",
+    ]
+    gts = [
+        "a decorator to declare that only the first n arguments my be positional.",
+        "get the complex where the carve intersects the edge .",
+        "returns an encoder for a message field .",
+        "service delete .",
+        "verifies that the signature matches the message .",
+    ]
 
+    import argparse
+    parser = argparse.ArgumentParser(description="Command Interface")
     parser.add_argument(
         "--model", "-m", type=str, help="pytorch model path",
-        default=os.path.expanduser("~/.ncc/demo/summarization/seq2seq/python_wan.pt")
+        # default=os.path.expanduser("~/.ncc/demo/summarization/seq2seq/python_wan.pt")
+        default=os.path.expanduser("~/.ncc/demo/summarization/neural_transformer/python_wan.pt")
     )
-    code = "def resource_patch(context, data_dict):\n\t_check_access('resource_patch', context, data_dict)\n\tshow_context = {'model': context['model'], 'session': context['session'], 'user': context['user'], 'auth_user_obj': context['auth_user_obj']}\n\tresource_dict = _get_action('resource_show')(show_context, {'id': _get_or_bust(data_dict, 'id')})\n\tpatched = dict(resource_dict)\n\tpatched.update(data_dict)\n\treturn _update.resource_update(context, patched)\n"
-
-    pattern = re.compile(r"\s+")
-    tokenized_code = pattern.sub("_", code).lower().split("_")
-    print(tokenized_code)
-    from dataset.csn.utils.util import split_identifier
-    import itertools
-    tokenized_code = [split_identifier(token) for token in tokenized_code if len(token) > 0]
-    tokenized_code = list(itertools.chain(*tokenized_code))
-    print(tokenized_code)
-
-    code_tokens = ["def", "resource", "patch", "context", "data", "dict", "check", "access", "'resource", "patch'",
-                   "context", "data", "dict", "show", "context", "{'model'", "context['model']", "'session'",
-                   "context['session']", "'user'", "context['user']", "'auth", "user", "obj'", "context['auth", "user",
-                   "obj']}resource", "dict", "get", "action", "'resource", "show'", "show", "context", "{'id'", "get",
-                   "or", "bust", "data", "dict", "'id'", "}", "patched", "dict", "resource", "dict", "patched",
-                   "update", "data", "dict", "return", "update", "resource", "update", "context", "patched"]
-    docstring = "patch a resource ."
-    parser.add_argument(
-        "--input", "-i", type=str, help="model input",
-        # default=code_tokens
-        default=tokenized_code,
-    )
+    parser.add_argument("--input", "-i", type=str, help="model input")
     args = parser.parse_args()
-    pred_sentence = main(args.model, args.input)
-    print(pred_sentence)
+    for code, gt in zip(codes, gts):
+        args.input = code
+        model_output = main(args.model, args.input)
+        # print(f"==> code <==\n{code}\n==> gt <==\n{model_output}")
+        print(f"==> gt <== {gt}")
+        print(f"==> pr <== {model_output}")
+        # exit()
 
 
 if __name__ == '__main__':

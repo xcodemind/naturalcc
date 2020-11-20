@@ -27,17 +27,16 @@ from ncc.eval import eval_utils
 
 
 def main(args):
-    assert args['eval']['path'] is not None, '--path required for generation!'
+    result_path = getattr(args['eval'], "result_path", os.path.dirname(__file__))
     assert not args['eval']['sampling'] or args['eval']['nbest'] == args['eval']['beam'], \
         '--sampling requires --nbest to be equal to --beam'
     assert args['eval']['replace_unk'] is None or args['dataset']['dataset_impl'] == 'raw', \
         '--replace-unk requires a raw text dataset (--dataset-impl=raw)'
 
     torch.cuda.set_device(args['distributed_training']['device_id'])
-    if args['eval']['results_path'] is not None:
-        os.makedirs(args['eval']['results_path'], exist_ok=True)
-        output_path = os.path.join(args['eval']['results_path'],
-                                   'generate-{}.txt'.format(args['dataset']['gen_subset']))
+    if result_path is not None:
+        os.makedirs(result_path, exist_ok=True)
+        output_path = os.path.join(result_path, 'generate-{}.json'.format(args['dataset']['gen_subset']))
         with open(output_path, 'w', buffering=1) as h:
             return _main(args, h)
     else:
@@ -128,6 +127,8 @@ def _main(args, output_file):
         #     prefix_tokens = sample['target'][:, :args['eval']['prefix_size']]
 
         gen_timer.start()
+        from ipdb import set_trace
+        set_trace()
         hypos = task.inference_step(generator, models, sample)
         # gen_out = task.sequence_generator.generate(model, sample)
         num_generated_tokens = sum(len(h[0]['tokens']) for h in hypos)  # TODO: warning
@@ -170,7 +171,7 @@ def _main(args, output_file):
 
                 print('H-{}\t{}'.format(sample_id, hypo_str), file=output_file)
 
-    filename = os.path.join(os.path.dirname(__file__), 'config', 'predict.txt')
+    filename = os.path.join(os.path.dirname(__file__), 'config', 'predict.json')
     LOGGER.info('write predicted file at {}'.format(filename))
     bleu, rouge_l, meteor = eval_utils.eval_accuracies(hypotheses, references, filename=filename, mode='test')
     LOGGER.info('BLEU: {:.2f}\t ROUGE-L: {:.2f}\t METEOR: {:.2f}'.format(bleu, rouge_l, meteor))

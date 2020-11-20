@@ -13,7 +13,17 @@ from ncc.data.constants import (
     PAD, CLS, P_SEP,
 )
 
+from dpu_utils.codeutils import split_identifier_into_parts
+
 SPACE_NORMALIZER = re.compile(r"\s+")
+IDENTIFIER_TOKEN_REGEX = re.compile('[_a-zA-Z][_a-zA-Z0-9]*')
+
+
+def tokenize_string(line: str) -> List[str]:
+    tokens = SPACE_NORMALIZER.sub(" ", line).strip().split()
+    tokens = [split_identifier_into_parts(tok) if IDENTIFIER_TOKEN_REGEX.match(tok) else [tok] for tok in tokens]
+    tokens = list(itertools.chain(*tokens))
+    return tokens
 
 
 # For compatibility
@@ -24,11 +34,11 @@ def tokenize_line(line: str) -> List[str]:
     return line.split()
 
 
-def tokenize_string(line: str) -> List[str]:
-    """split string by regrex [\s+]"""
-    line = SPACE_NORMALIZER.sub(" ", line)
-    line = line.strip()
-    return line.split()
+# def tokenize_string(line: str) -> List[str]:
+#     """split string by regrex [\s+]"""
+#     line = SPACE_NORMALIZER.sub(" ", line)
+#     line = line.strip()
+#     return line.split()
 
 
 def tokenize_list(line: str) -> List[str]:

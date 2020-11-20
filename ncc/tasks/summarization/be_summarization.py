@@ -28,6 +28,8 @@ from ncc.utils.tokenizer import tokenize_string
 from ncc.eval import eval_utils
 from ncc.utils import tokenizer
 from functools import lru_cache
+from ncc.utils.tokenizer import tokenize_string
+import torch
 
 EVAL_BLEU_ORDER = 4
 
@@ -307,3 +309,26 @@ class BESummarizationTask(NccTask):
         bleu, rouge_l, meteor = eval_utils.eval_accuracies(hypotheses, references, filename='pred.txt')
 
         return bleu, rouge_l, meteor
+
+    def encode_input(self, input, tokenize=tokenize_string):
+        if tokenize:
+            input = ''.join(char if str.isalnum(char) else ' ' for char in input)  # for python_wan dataset
+            input = tokenize_string(input)
+            print(input)
+        input = input[:self.args['task']['max_source_positions']]
+        input = torch.Tensor([self.src_dict.index(token) for token in input]).long()
+        input = {
+            'net_input': {
+                'src_tokens': input.unsqueeze(dim=0),
+                'src_lengths': torch.LongTensor([input.numel()]),
+            },
+        }
+        print(input['net_input']['src_lengths'])
+        return input
+
+    def decode_output(self, output):
+        output = output[0][0]['tokens']
+        output = self.tgt_dict.string(output)
+        if not str.endswith(output, "."):
+            output += "."
+        return output
