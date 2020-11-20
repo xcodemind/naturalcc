@@ -86,6 +86,32 @@ class RetrievalDictionary(Dictionary):
         sorted_bpe_counts = sorted(vocab.items(), key=lambda p: -p[1])[:bpe_vocab_size]
         return sorted_bpe_counts
 
+    def encode_line(
+        self,
+        line,
+        line_tokenizer,
+        add_if_not_exist=True,
+        consumer=None,
+        append_eos=True,
+        reverse_order=False,
+    ):
+        words = line_tokenizer(line) if line_tokenizer is not None else line
+        if reverse_order:
+            words = list(reversed(words))
+        ids = []
+        for i, word in enumerate(words):
+            if add_if_not_exist:
+                idx = self.add_symbol(word)
+            else:
+                idx = self.index(word)
+            if consumer is not None:
+                consumer(word, idx)
+            ids.extend(idx)
+        if append_eos:
+            ids.append(self.eos_index)
+        ids = torch.Tensor(ids).long()
+        return ids
+
     def bpe_tokenize(self, word: str) -> List[str]:
         """ Tokenizes inside an unknown token using BPE """
         end_idx = min([len(word), self.ngram_max])
@@ -108,9 +134,15 @@ class RetrievalDictionary(Dictionary):
         sw_tokens.append(self.eow_word)
         return sw_tokens
 
-    def bpe_index(self, word):
+    def index(self, word):
+        def _index(sym):
+            assert isinstance(sym, str)
+            if sym in self.indices:
+                return self.indices[sym]
+            return self.unk_index
+
         subtokens = self.bpe_tokenize(word)
-        subtoken_ids = [self.index(token) for token in subtokens]
+        subtoken_ids = [_index(token) for token in subtokens]
         return subtoken_ids
 
     @staticmethod
@@ -221,7 +253,7 @@ class RetrievalDictionary(Dictionary):
             if add_if_not_exist:
                 idx = self.add_symbol(word)
             else:
-                idx = self.bpe_index(word)
+                idx = self.index(word)
             if consumer is not None:
                 consumer(word, idx)
             ids.append(idx)

@@ -215,8 +215,7 @@ def single_main(args, init_distributed=False):
     task = tasks.setup_task(args)
 
     # 2. Load valid dataset (we load training data below, based on the latest checkpoint)
-    task.load_dataset(args['dataset']['valid_subset'], combine=False, epoch=1,
-                      )
+    task.load_dataset(args['dataset']['valid_subset'], combine=False, epoch=1)
 
     # 3. Build model and criterion
     model = task.build_model(args)

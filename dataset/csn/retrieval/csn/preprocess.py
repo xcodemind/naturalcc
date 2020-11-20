@@ -18,6 +18,7 @@ from ncc.data import (
     Dictionary,
     indexed_dataset,
 )
+from ncc.data.retrieval.retrieval_dictionary import RetrievalDictionary
 from ncc.data.retrieval.retrieval_binarizer import RetrievalBinarizer as Binarizer
 from ncc.utils.util_file import load_yaml
 from ncc import LOGGER
@@ -63,12 +64,10 @@ def main(args):
     def dict_path(lang):
         return dest_path(lang, "dict") + ".json"
 
-    target = not args['preprocess']['only_source']
+    def bpe_dict_path(lang):
+        return dest_path(lang + '.bpe', "dict") + ".json"
 
-    # if not args['preprocess']['srcdict'] and os.path.exists(dict_path(args['preprocess']['source_lang'])):
-    #     raise FileExistsError(dict_path(args['preprocess']['source_lang']))
-    # if target and not args['preprocess']['tgtdict'] and os.path.exists(dict_path(args['preprocess']['target_lang'])):
-    #     raise FileExistsError(dict_path(args['preprocess']['target_lang']))
+    target = not args['preprocess']['only_source']
 
     if args['preprocess']['srcdict']:
         src_dict = task.load_dictionary(args['preprocess']['srcdict'])
@@ -97,9 +96,16 @@ def main(args):
     else:
         tgt_dict = None
 
-    src_dict.save_json(dict_path(args['preprocess']['source_lang']))  # save spm dict to ncc.dictionary
-    if target and tgt_dict is not None:
-        tgt_dict.save_json(dict_path(args['preprocess']['target_lang']))
+    if args['preprocess']['source_bpe']:
+        src_dict_name = bpe_dict_path(args['preprocess']['source_lang'])
+    else:
+        src_dict_name = dict_path(args['preprocess']['source_lang'])
+    src_dict.save_json(src_dict_name)
+    if args['preprocess']['target_bpe']:
+        tgt_dict_name = bpe_dict_path(args['preprocess']['target_lang'])
+    else:
+        tgt_dict_name = dict_path(args['preprocess']['target_lang'])
+    tgt_dict.save_json(tgt_dict_name)
 
     # 2. ***************build dataset********************
     def make_binary_dataset(vocab: Dictionary, input_file, output_file, num_workers: int):
@@ -185,7 +191,7 @@ def main(args):
             )
         )
 
-    def make_dataset(vocab, input_prefix, output_prefix, lang, num_workers=1):
+    def make_dataset(vocab, input_prefix, output_prefix, lang, num_workers=1, is_bpe=False):
         if args['preprocess']['dataset_impl'] == "raw":
             in_file = file_name(input_prefix, lang)
             out_dir = args['preprocess']['destdir']
@@ -201,26 +207,26 @@ def main(args):
                 in_file = file_name(input_prefix, lang)
                 out_file = dest_path(output_prefix, lang)
             os.makedirs(os.path.dirname(out_file), exist_ok=True)
+            if is_bpe:
+                out_file += '.bpe'
             make_binary_dataset(vocab, in_file, out_file, num_workers)
 
-    def make_all(lang, vocab):
+    def make_all(lang, vocab, is_bpe=False):
         if args['preprocess']['trainpref']:
             make_dataset(vocab, args['preprocess']['trainpref'], "train", lang,
-                         num_workers=args['preprocess']['workers'])
+                         num_workers=args['preprocess']['workers'], is_bpe=is_bpe)
         if args['preprocess']['validpref']:
-            for k, validpref in enumerate(args['preprocess']['validpref'].split(",")):
-                outprefix = "valid{}".format(k) if k > 0 else "valid"
-                make_dataset(vocab, validpref, outprefix, lang, num_workers=args['preprocess']['workers'])
+            make_dataset(vocab, args['preprocess']['validpref'], "valid", lang,
+                         num_workers=args['preprocess']['workers'], is_bpe=is_bpe)
         if args['preprocess']['testpref']:
-            for k, testpref in enumerate(args['preprocess']['testpref'].split(",")):
-                outprefix = "test{}".format(k) if k > 0 else "test"
-                make_dataset(vocab, testpref, outprefix, lang, num_workers=args['preprocess']['workers'])
+            make_dataset(vocab, args['preprocess']['testpref'], "test", lang, num_workers=args['preprocess']['workers'],
+                         is_bpe=is_bpe)
 
-    make_all(args['preprocess']['source_lang'], src_dict)
-    make_all("code_tokens_wo_func", src_dict)  # func_name
+    make_all(args['preprocess']['source_lang'], src_dict, is_bpe=args['preprocess']['source_bpe'])
+    make_all("code_tokens_wo_func", src_dict, is_bpe=args['preprocess']['source_bpe'])  # func_name
     if target:
-        make_all(args['preprocess']['target_lang'], tgt_dict)
-        make_all("func_name", tgt_dict)  # func_name
+        make_all(args['preprocess']['target_lang'], tgt_dict, is_bpe=args['preprocess']['target_bpe'])
+        make_all("func_name", tgt_dict, is_bpe=args['preprocess']['target_bpe'])  # func_name
 
 
 def cli_main():

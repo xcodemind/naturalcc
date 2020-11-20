@@ -232,5 +232,5 @@ class CompletionTask(NccTask):
         return input
 
     def decode_output(self, output, k=5):
-        output = torch.softmax(output[0][0, -1, :], dim=-1)
+        output = torch.softmax(output[0][0, -1, :], dim=0)
         return output.topk(k=5)

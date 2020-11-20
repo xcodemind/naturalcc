@@ -43,6 +43,8 @@ def main(args, **unused_kwargs):
         torch.cuda.set_device(args['distributed_training']['device_id'])
 
     LOGGER.info(args)
+    # while evaluation, set fraction_using_func_name = 0, namely, not sample from func_name
+    args['task']['fraction_using_func_name'] = 0.
     use_cuda = torch.cuda.is_available() and not args['common']['cpu']
     task = tasks.setup_task(args)
 
@@ -75,7 +77,7 @@ def main(args, **unused_kwargs):
     itr = task.get_batch_iterator(
         dataset=dataset,
         max_tokens=args['dataset']['max_tokens'] or 36000,
-        max_sentences=args['dataset']['max_sentences'],
+        max_sentences=args['eval']['max_sentences'],
         max_positions=utils.resolve_max_positions(*[
             model.max_positions() for model in models
         ]),
@@ -106,28 +108,49 @@ def main(args, **unused_kwargs):
     assert code_reprs.shape == query_reprs.shape, (code_reprs.shape, query_reprs.shape)
     eval_size = len(code_reprs) if args['eval']['eval_size'] == -1 else args['eval']['eval_size']
 
-    MRR = []
-    for idx in range(len(query_reprs)):
-        if eval_size == -1:
-            batch_ids = range(len(query_reprs))
-            gt_idx = idx
-        else:
-            batch_ids = set(random.sample(range(len(query_reprs)), eval_size))
-            if idx not in batch_ids:
-                batch_ids = list(batch_ids)[:eval_size - 1] + [idx]
-                gt_idx = eval_size - 1
-            else:
-                batch_ids = list(batch_ids)
-                gt_idx = batch_ids.index(idx)
-        batch_code_reprs = torch.from_numpy(code_reprs[batch_ids, :]).cuda()
-        batch_query_reprs = torch.from_numpy(query_reprs[batch_ids, :]).cuda()
-        # similarity_scores = F.cosine_similarity(batch_code_reprs, batch_query_reprs)
-        logits = batch_query_reprs @ batch_code_reprs.t()
-        gt_sim = similarity_scores[gt_idx]
-        MRR.append(
-            (1 / (similarity_scores >= gt_sim).sum(dim=-1).float()).item()
-        )
-    print('mrr: {:.4f}'.format(sum(MRR) / len(MRR)))
+    k, MRR, topk_idx, topk_prob = 3, [], [], []
+    for idx in range(len(dataset) // eval_size):
+        code_emb = torch.from_numpy(code_reprs[idx:idx + eval_size, :]).cuda()
+        query_emb = torch.from_numpy(query_reprs[idx:idx + eval_size, :]).cuda()
+        logits = query_emb @ code_emb.t()
+
+        # src_emb_nrom = torch.norm(code_emb, dim=-1, keepdim=True) + 1e-10
+        # tgt_emb_nrom = torch.norm(query_emb, dim=-1, keepdim=True) + 1e-10
+        # logits = (query_emb / tgt_emb_nrom) @ (code_emb / src_emb_nrom).t()
+
+        correct_scores = logits.diag()
+        compared_scores = logits >= correct_scores.unsqueeze(dim=-1)
+        mrr = 1 / compared_scores.sum(dim=-1).float()
+        MRR.extend(mrr.tolist())
+        batch_topk_prob, batch_topk_idx = logits.softmax(dim=-1).topk(k)
+        batch_topk_idx = batch_topk_idx + idx * eval_size
+        topk_idx.extend(batch_topk_idx.tolist())
+        topk_prob.extend(batch_topk_prob.tolist())
+
+    if len(dataset) % eval_size:
+        code_emb = torch.from_numpy(code_reprs[-eval_size:, :]).cuda()
+        query_emb = torch.from_numpy(query_reprs[-eval_size:, :]).cuda()
+        logits = query_emb @ code_emb.t()
+
+        # src_emb_nrom = torch.norm(code_emb, dim=-1, keepdim=True) + 1e-10
+        # tgt_emb_nrom = torch.norm(query_emb, dim=-1, keepdim=True) + 1e-10
+        # logits = (query_emb / tgt_emb_nrom) @ (code_emb / src_emb_nrom).t()
+
+        correct_scores = logits.diag()
+        compared_scores = logits >= correct_scores.unsqueeze(dim=-1)
+        last_ids = len(code_reprs) % eval_size
+        mrr = 1 / compared_scores.sum(dim=-1).float()[-last_ids:]
+        MRR.extend(mrr.tolist())
+        batch_topk_prob, batch_topk_idx = logits[-last_ids:].softmax(dim=-1).topk(k)
+        batch_topk_idx = batch_topk_idx + len(code_reprs) - eval_size
+        topk_idx.extend(batch_topk_idx.tolist())
+        topk_prob.extend(batch_topk_prob.tolist())
+
+    print('mrr: {:.4f}'.format(np.mean(MRR)))
+
+    for idx, mrr in enumerate(MRR):
+        if mrr == 1.0 and topk_prob[idx][0] > 0.8:
+            print(np.asarray(topk_idx[idx]) + 1, [round(porb, 4) for porb in topk_prob[idx]])
 
 
 def cli_main():

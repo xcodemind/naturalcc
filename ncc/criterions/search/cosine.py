@@ -11,7 +11,7 @@ from ncc.criterions import NccCriterion, register_criterion
 
 
 @register_criterion('search_cosine')
-class SearchSoftmaxCriterion(NccCriterion):
+class SearchCosineCriterion(NccCriterion):
     def __init__(self, task, sentence_avg):
         super().__init__(task)
         self.sentence_avg = sentence_avg
@@ -38,15 +38,12 @@ class SearchSoftmaxCriterion(NccCriterion):
 
     def compute_loss(self, model, net_output, reduce=True):
         src_emb, tgt_emb = net_output  # B x T
-        logits = tgt_emb @ src_emb.t()
+        src_emb_nrom = torch.norm(src_emb, dim=-1, keepdim=True) + 1e-10
+        tgt_emb_nrom = torch.norm(tgt_emb, dim=-1, keepdim=True) + 1e-10
+        logits = (tgt_emb / tgt_emb_nrom) @ (src_emb / src_emb_nrom).t()
 
-        lprobs = model.get_normalized_probs(logits, log_probs=True)
-        target = torch.arange(logits.size(0)).long().to(logits.device)
-        loss = F.nll_loss(
-            lprobs,
-            target,
-            reduction='sum' if reduce else 'none',
-        )
+        neg_matrix = logits.new(logits.size(0)).fill_(-float('inf')).diag()
+        loss = torch.relu(1 - logits.diag() + torch.relu(logits + neg_matrix).max(dim=-1)[0]).mean()
         with torch.no_grad():
             correct_scores = logits.diag()
             compared_scores = logits >= correct_scores.unsqueeze(dim=-1)

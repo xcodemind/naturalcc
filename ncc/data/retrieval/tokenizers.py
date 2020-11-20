@@ -10,8 +10,9 @@ IDENTIFIER_TOKEN_REGEX = re.compile('[_a-zA-Z][_a-zA-Z0-9]*')
 def sub_tokenizer(tokens: str):
     """code from https://github.com/github/CodeSearchNet/blob/e792e1caea20fbd4fba439565fe20c10d4798435/src/encoders/seq_encoder.py#L84-L92"""
     tokens = ujson.loads(tokens)
-    tokens = [split_identifier_into_parts(tok) if IDENTIFIER_TOKEN_REGEX.match(tok) else tok for tok in tokens]
+    tokens = [split_identifier_into_parts(tok) if IDENTIFIER_TOKEN_REGEX.match(tok) else [tok] for tok in tokens]
     tokens = list(itertools.chain(*tokens))
+    tokens = [tok for tok in tokens if len(tok) > 0]
     return tokens
 
 

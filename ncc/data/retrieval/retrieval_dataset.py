@@ -21,7 +21,7 @@ def collate(samples, pad_idx):
         return data_utils.collate_tokens([s[key] for s in samples], pad_idx)
 
     def preprocess_input(key):
-        input = merge('source')
+        input = merge(key)
         input_mask = input.ne(pad_idx).float().to(input.device)
         input_len = input_mask.sum(-1, keepdim=True)
         return input, input_mask, input_len
@@ -106,9 +106,14 @@ class RetrievalDataset(NccDataset):
 
     def __getitem__(self, index):
         if random.uniform(0., 1.) < self.fraction_using_func_name:
-            # <code_tokens_wo_func_name, func_name>
-            src_item = self.src_aux[index]
-            tgt_item = self.tgt_aux[index]
+            if len(self.tgt_aux[index]) >= 12:
+                # <code_tokens_wo_func_name, func_name>
+                src_item = self.src_aux[index]
+                tgt_item = self.tgt_aux[index]
+            else:
+                # <code_tokens, docstring_tokens>
+                src_item = self.src[index]
+                tgt_item = self.tgt[index]
         else:
             # <code_tokens, docstring_tokens>
             src_item = self.src[index]

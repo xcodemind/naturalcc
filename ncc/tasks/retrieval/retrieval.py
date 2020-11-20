@@ -13,6 +13,7 @@ from ncc import LOGGER
 from ncc.logging import metrics
 from ncc.data.tools import data_utils
 from ncc.data.dictionary import Dictionary
+from ncc.data.retrieval.retrieval_dictionary import RetrievalDictionary
 from ncc.tasks import register_task
 from ncc.tasks.ncc_task import NccTask
 from ncc.utils.tokenizer import tokenize_string
@@ -97,6 +98,22 @@ class RetrievalTask(NccTask):
         # self.seed = args['common']['seed']
 
     @classmethod
+    def load_dictionary(cls, filename):
+        """Load the dictionary from the filename
+
+        Args:
+            filename (str): the filename
+        """
+        if filename.endswith('.txt'):
+            return Dictionary.load(filename)
+        else:
+            is_bpe = os.path.basename(filename).split('.')[-3] == 'bpe'
+            if is_bpe:
+                return RetrievalDictionary.load_json(filename)
+            else:
+                return Dictionary.load_json(filename)
+
+    @classmethod
     def setup_task(cls, args, **kwargs):
         paths = utils.split_paths(args['task']['data'])
         assert len(paths) > 0
@@ -130,6 +147,33 @@ class RetrievalTask(NccTask):
         for filename in filenames:
             Dictionary.add_token_to_dictionary(
                 filename, d, tokenize_func, workers
+            )
+
+        d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
+        return d
+
+    @classmethod
+    def build_bpe_dictionary(
+        cls, filenames, tokenize_func=tokenize_string,
+        workers=1, threshold=-1, nwords=10000, padding_factor=8
+    ):
+        """Build the dictionary
+
+        Args:
+            filenames (list): list of filenames
+            workers (int): number of concurrent workers
+            threshold (int): defines the minimum word count
+            nwords (int): defines the total number of words in the final dictionary,
+                including special symbols
+            padding_factor (int): can be used to pad the dictionary size to be a
+                multiple of 8, which is important on some hardware (e.g., Nvidia
+                Tensor Cores).
+        """
+        d = RetrievalDictionary()
+
+        for filename in filenames:
+            RetrievalDictionary.add_bpe_token_to_dictionary(
+                filename, d, nwords, tokenize_func, workers
             )
 
         d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
