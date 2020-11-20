@@ -65,7 +65,7 @@ def cli_main():
     ]
     # ground truth, or neural transformer
     gts = [
-        "a decorator to declare that only the first n arguments my be positional.",
+        "a decorator to declare that only the first n arguments my be positional .",
         "get the complex where the carve intersects the edge .",
         "returns an encoder for a message field .",
         "get radial path .",
