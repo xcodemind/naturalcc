@@ -63,6 +63,7 @@ def cli_main():
         "def aliased(element, alias=None, name=None, flat=False, adapt_on_names=False):\n\tif isinstance(element, expression.FromClause):\n\t\tif adapt_on_names:\n\t\t\traise sa_exc.ArgumentError('adapt_on_names\tonly\tapplies\tto\tORM\telements')\n\t\treturn element.alias(name, flat=flat)\n\telse:\n\t\treturn AliasedClass(element, alias=alias, flat=flat, name=name, adapt_on_names=adapt_on_names)\n",
         "def preserve_value(namespace, name):\n\tdef decorator(func):\n\t\tdef resetter_attr(saved_value_internal):\n\t\t\treturn setattr(namespace, name, saved_value_internal)\n\t\tdef resetter_no_attr(saved_value_internal):\n\t\t\tdel saved_value_internal\n\t\t\treturn delattr(namespace, name)\n\t\tdef wrapper(*args, **kwargs):\n\t\t\tsaved_value = None\n\t\t\ttry:\n\t\t\t\tsaved_value = getattr(namespace, name)\n\t\t\t\tresetter = resetter_attr\n\t\t\texcept AttributeError:\n\t\t\t\tresetter = resetter_no_attr\n\t\t\ttry:\n\t\t\t\treturn func(*args, **kwargs)\n\t\t\tfinally:\n\t\t\t\tresetter(saved_value)\n\t\twrapper.__name__ = func.__name__\n\t\twrapper.__doc__ = func.__doc__\n\t\treturn wrapper\n\treturn decorator\n",
     ]
+    # ground truth, or neural transformer
     gts = [
         "a decorator to declare that only the first n arguments my be positional.",
         "get the complex where the carve intersects the edge .",
@@ -75,6 +76,18 @@ def cli_main():
         "produce an alias of the given element .",
         "function decorator to wrap a function that sets a namespace item ."
     ]
+    # seq2seq = [
+    #     "a decorator to declare that the arguments passed in the arguments .",
+    #     "get the edge from the edge .",
+    #     "returns a string representation of a message .",
+    #     "get the path of a path .",
+    #     "compare version .",
+    #     "get the current thread .",
+    #     "return a dictionary of object .",
+    #     "sends a message to the admins .",
+    #     "return an element of an element .",
+    #     "decorator that defines a function that returns a string ."
+    # ]
 
     import argparse
     parser = argparse.ArgumentParser(description="Command Interface")
