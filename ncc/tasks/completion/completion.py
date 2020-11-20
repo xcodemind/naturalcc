@@ -17,7 +17,8 @@ from ncc.data.completion.seqrnn_dataset import SeqRNNDataset
 from ncc.data.completion.completion_dictionary import CompletionDictionary as Dictionary
 from ncc.utils import tokenizer
 from ncc.data import indexed_dataset
-import json
+import ujson
+import re
 
 
 def _load_dataset(path, impl, dict=None):
@@ -185,7 +186,8 @@ class CompletionTask(NccTask):
             if sum_logs('accuracy') > 0:  # ==0: no accuracy items in the logging outputs, it means the training stage
                 metrics.log_scalar('accuracy', sum_logs('accuracy'))
         if self.args['task']['eval_last_accuracy']:
-            if sum_logs('last_accuracy') > 0:  # ==0: no accuracy items in the logging outputs, it means the training stage
+            if sum_logs(
+                'last_accuracy') > 0:  # ==0: no accuracy items in the logging outputs, it means the training stage
                 metrics.log_scalar('last_accuracy', sum_logs('last_accuracy'))
         if self.args['task']['eval_mrr']:
             if sum_logs('mrr') > 0:
@@ -194,6 +196,9 @@ class CompletionTask(NccTask):
     def max_positions(self):
         """Return the max sentence length allowed by the task."""
         return self.args['task']['max_target_positions']
+
+    def build_generator(self, args):
+        return self.sequence_completor
 
     @property
     def target_dictionary(self):
@@ -211,3 +216,21 @@ class CompletionTask(NccTask):
             return Dictionary.load(filename)
         else:
             return Dictionary.load_json(filename)
+
+    def encode_input(self, input):
+        input = input.replace('lambda', ' ').replace('if', ' ').replace('is', ' ').replace('not', ' '). \
+            replace('return', ' ')
+        input = re.split(r'[\s|\.|)|(|,|:|\[|\]]+', input.strip())
+        input = [token for token in input if len(token) > 1]
+        input = [self.target_dictionary.index(token) for token in input]
+        input = torch.Tensor(input).long().unsqueeze(dim=0)
+        input = {
+            'net_input': {
+                'src_tokens': input,
+            },
+        }
+        return input
+
+    def decode_output(self, output, k=5):
+        output = torch.softmax(output[0][0, -1, :], dim=-1)
+        return output.topk(k=5)

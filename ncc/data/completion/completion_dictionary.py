@@ -60,7 +60,7 @@ class CompletionDictionary(Dictionary):
         word_list = [_tensor(words) for words in word_list]
         return word_list
 
-    def encode_line1(
+    def encode_string(
         self,
         line,
         line_tokenizer,

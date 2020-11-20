@@ -15,39 +15,7 @@ from ncc.utils import utils
 from ncc.utils.checkpoint_utils import load_checkpoint_to_cpu
 
 
-def load_state(model_path):
-    state = load_checkpoint_to_cpu(model_path, arg_overrides={})
-    args = state["args"]
-    task = tasks.setup_task(args)  # load src/tgt dicts
-    model = task.build_model(args)
-    model.load_state_dict(state["model"])
-    use_cuda = torch.cuda.is_available() and not args['common']['cpu']
-    if args['common']['fp16'] and use_cuda:
-        model.half()
-    if use_cuda:
-        torch.cuda.empty_cache()
-        torch.cuda.set_device(torch.cuda.device_count() - 1)
-        model.cuda()
-    model.eval()
-    del state
-    return args, task, model, use_cuda
-
-
-def main(model_path, input):
-    args, task, model, use_cuda = load_state(model_path)
-    generator = task.build_generator(args)
-    # encode input (and feed into gpu)
-    input = task.encode_input(input)
-    if use_cuda:
-        input = utils.move_to_cuda(input)
-    # feed input into model
-    output = generator.generate(models=[model], sample=input)
-    # decode
-    output = task.decode_output(output)
-    return output
-
-
-def cli_main():
+def code_summarization():
     # code summarization
     model_path = os.path.expanduser("~/.ncc/demo/summarization/seq2seq/python_wan.pt")
     model_path = os.path.expanduser("~/.ncc/demo/summarization/neural_transformer/python_wan.pt")
@@ -88,6 +56,144 @@ def cli_main():
     #     "return an element of an element .",
     #     "decorator that defines a function that returns a string ."
     # ]
+    return model_path, codes, gts
+
+
+def code_completion():
+    model_path = os.path.expanduser("~/.ncc/demo/completion/lstm/py150.pt")
+    codes = [
+        """def loads(s, encoding=None, cls=None, object_hook=None, parse_float=None,
+                parse_int=None, parse_constant=None, **kw):
+            if (cls is None and encoding is None and object_hook is None and
+                        parse_int is None and parse_float is None and
+                        parse_constant is None and not kw):
+                return _default_decoder.decode(s)
+            if cls is None:
+                cls = JSONDecoder
+            if object_hook is not None:
+                kw['object_hook'] = object_hook
+            if parse_float is not None:
+                kw['parse_float'] = parse_float
+            if parse_int is not None:
+                kw['parse_int'] = parse_int
+            if parse_constant is not None:
+                kw['parse_constant'] = parse_constant
+            return
+        """,
+        """
+        body_content = self._serialize.body(parameters, 'ServicePrincipalCreateParameters')
+        request = self._client.post(url, query_parameters)
+        response = self._client.send
+        """,
+        """
+        create_train_gen = lambda: data_loader.create_random_gen()
+        create_eval_train_gen = lambda: data_loader.create_fixed_gen("train")
+        create_eval_valid_gen = lambda: data_loader.create_fixed_gen("valid")
+        create_eval_test_gen = lambda:
+        """,
+        """
+        def build_model():
+            l0 = nn.layers.InputLayer((batch_size, data.num_classes))
+    
+            l0_size = nn.layers.InputLayer((batch_size, 52))
+            l1_size = nn.layers.DenseLayer(l0_size, num_units=80, W=nn_plankton.Orthogonal('relu'), b=nn.init.Constant(0.1))
+            l2_size = nn.layers.DenseLayer(l1_size, num_units=80, W=nn_plankton.Orthogonal('relu'), b=nn.init.Constant(0.1))
+            l3_size = nn.layers.DenseLayer(l2_size, num_units=data.num_classes, W=nn_plankton.Orthogonal(), b=nn.init.Constant(0.1), nonlinearity=None)
+    
+            l1 = nn_plankton.NonlinLayer(l0, T.log)
+            ltot = nn.layers.ElemwiseSumLayer([l1, l3_size])
+    
+            lout =  
+        """,
+        """
+        if self.query is not None:
+          oprot.writeFieldBegin('query', TType.STRING, 1)
+          oprot.writeString(self.query)
+          oprot.writeFieldEnd()
+        if self.configuration is not None:
+          oprot.writeFieldBegin('configuration', TType.LIST, 3)
+          oprot.writeListBegin(TType.STRING, len(self.configuration))
+          for iter6 in self.configuration:
+            oprot.writeString(iter6)
+          oprot.writeListEnd()
+          oprot.writeFieldEnd()
+        if self.hadoop_user is not None:
+          oprot.writeFieldBegin('hadoop_user', TType.STRING, 4)
+          oprot
+        """,
+        """
+        location = module.db_location
+        if location is not None:
+            childNode = ElementTree.SubElement(node, 'location')
+            self.getDao('location').toXML(location, childNode)
+        functions = module.db_functions
+        for function in functions:
+            childNode = ElementTree.SubElement(node, 'function')
+            self.getDao('function').toXML(function, childNode)
+        annotations = module.db_annotations
+        for annotation in annotations:
+            childNode = ElementTree.SubElement(node, 'annotation')
+            self.getDao('annotation').toXML(annotation, childNode)
+        portSpecs = module.db_portSpecs
+        for portSpec in portSpecs:
+        """,
+    ]
+
+    gts = [
+        """cls(encoding=encoding, **kw).decode(s)""",
+        """(request, header_parameters, body_content, **operation_config)""",
+        """data_loader.create_fixed_gen("test")""",
+        """nn_plankton.NonlinLayer(ltot, nonlinearity=T.nnet.softmax)""",
+        """
+        writeString(self.hadoop_user)
+        oprot.writeFieldEnd()
+        """,
+        """
+        childNode = ElementTree.SubElement(node, 'portSpec')
+        self.getDao('portSpec').toXML(portSpec, childNode)
+        """,
+    ]
+
+    return model_path, codes, gts
+
+
+def load_state(model_path):
+    state = load_checkpoint_to_cpu(model_path, arg_overrides={})
+    args = state["args"]
+    task = tasks.setup_task(args)  # load src/tgt dicts
+    model = task.build_model(args)
+    model.load_state_dict(state["model"])
+    use_cuda = torch.cuda.is_available() and not args['common']['cpu']
+    if args['common']['fp16'] and use_cuda:
+        model.half()
+    if use_cuda:
+        torch.cuda.empty_cache()
+        torch.cuda.set_device(torch.cuda.device_count() - 1)
+        model.cuda()
+    model.eval()
+    del state
+    return args, task, model, use_cuda
+
+
+def main(model_path, input):
+    args, task, model, use_cuda = load_state(model_path)
+    generator = task.build_generator(args)
+    # encode input (and feed into gpu)
+    input = task.encode_input(input)
+    if use_cuda:
+        input = utils.move_to_cuda(input)
+    # feed input into model
+    output = generator.generate(models=[model], sample=input)
+    # decode
+    # from ipdb import set_trace
+    # set_trace()
+    output = task.decode_output(output)
+    return output
+
+
+def cli_main():
+    # model_path, codes, gts = code_summarization()
+    model_path, codes, gts = code_completion()
 
     import argparse
     parser = argparse.ArgumentParser(description="Command Interface")

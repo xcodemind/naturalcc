@@ -36,6 +36,10 @@ class SequenceCompletor(object):
         return self._complete(model, sample, **kwargs)
 
     @torch.no_grad()
+    def generate(self, *args, **kwargs):
+        return self.complete(*args, **kwargs)
+
+    @torch.no_grad()
     def _complete(
         self,
         model,
@@ -79,4 +83,4 @@ class EnsembleModel(torch.nn.Module):
         if len(self.models) == 1:
             return self.models[0](src_tokens, **kwargs)
         for model in zip(self.models):
-           pass
+            pass
