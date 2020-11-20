@@ -385,7 +385,7 @@ class SummarizationTask(NccTask):
 
     def encode_input(self, input, tokenize=tokenize_string):
         if tokenize:
-            input = ''.join(char if str.isalnum(char) else ' ' for char in input)# for python_wan dataset
+            input = ''.join(char if str.isalnum(char) else ' ' for char in input)  # for python_wan dataset
             input = tokenize_string(input)
         input = input[:self.args['task']['max_source_positions'] - 1]
         input = [self.src_dict.index(token) for token in input] + [self.src_dict.eos()]
@@ -396,7 +396,6 @@ class SummarizationTask(NccTask):
                 'src_lengths': torch.LongTensor([input.numel()]),
             },
         }
-        print(input['net_input']['src_lengths'])
         return input
 
     def decode_output(self, output):
