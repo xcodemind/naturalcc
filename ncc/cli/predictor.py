@@ -48,6 +48,7 @@ def main(model_path, input):
     # from ipdb import set_trace
     # set_trace()
     output = task.decode_output(output)
+    del task, model  # to release memory in cpu/gpu
     return output
 
 
