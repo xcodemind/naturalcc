@@ -8,159 +8,18 @@
 Evaluate the perplexity of a trained language model.
 """
 import os
-import re
 import torch
 from ncc import (tasks, LOGGER)
 from ncc.utils import utils
+from ncc.utils.util_file import recursive_contractuser, recursive_expanduser
 from ncc.utils.checkpoint_utils import load_checkpoint_to_cpu
-
-
-def code_summarization():
-    # code summarization
-    model_path = os.path.expanduser("~/.ncc/demo/summarization/seq2seq/python_wan.pt")
-    model_path = os.path.expanduser("~/.ncc/demo/summarization/neural_transformer/python_wan.pt")
-    codes = [
-        "def positional(max_positional_args):\n\tdef positional_decorator(wrapped):\n\t\t@functools.wraps(wrapped)\n\t\tdef positional_wrapper(*args, **kwargs):\n\t\t\tif (len(args) > max_posi      tional_args):\n\t\t\t\tplural_s = ''\n\t\t\t\tif (max_positional_args != 1):\n\t\t\t\t\tplural_s = 's'\n\t\t\t\tmessage = ('%s()\ttakes\tat\tmost\t%d\tpositional\targument%s\t(%d\tgive      n)' % (wrapped.__name__, max_positional_args, plural_s, len(args)))\n\t\t\t\tif (positional_parameters_enforcement == POSITIONAL_EXCEPTION):\n\t\t\t\t\traise TypeError(message)\n\t\t\t      \telif (positional_parameters_enforcement == POSITIONAL_WARNING):\n\t\t\t\t\tlogger.warning(message)\n\t\t\t\telse:\n\t\t\t\t\tpass\n\t\t\treturn wrapped(*args, **kwargs)\n\t\treturn p      ositional_wrapper\n\tif isinstance(max_positional_args, six.integer_types):\n\t\treturn positional_decorator\n\telse:\n\t\t(args, _, _, defaults) = inspect.getargspec(max_positional_ar      gs)\n\t\treturn positional((len(args) - len(defaults)))(max_positional_args)\n",
-        "def getCarveIntersectionFromEdge(edge, vertexes, z):\n\tfirstVertex = vertexes[edge.vertexIndexes[0]]\n\tfirstVertexComplex = firstVertex.dropAxis(2)\n\tsecondVertex = vertexes[edge.v      ertexIndexes[1]]\n\tsecondVertexComplex = secondVertex.dropAxis(2)\n\tzMinusFirst = (z - firstVertex.z)\n\tup = (secondVertex.z - firstVertex.z)\n\treturn (((zMinusFirst * (secondVerte      xComplex - firstVertexComplex)) \/ up) + firstVertexComplex)\n",
-        "def MessageEncoder(field_number, is_repeated, is_packed):\n\ttag = TagBytes(field_number, wire_format.WIRETYPE_LENGTH_DELIMITED)\n\tlocal_EncodeVarint = _EncodeVarint\n\tassert (not i      s_packed)\n\tif is_repeated:\n\t\tdef EncodeRepeatedField(write, value):\n\t\t\tfor element in value:\n\t\t\t\twrite(tag)\n\t\t\t\tlocal_EncodeVarint(write, element.ByteSize())\n\t\t\t      \telement._InternalSerialize(write)\n\t\treturn EncodeRepeatedField\n\telse:\n\t\tdef EncodeField(write, value):\n\t\t\twrite(tag)\n\t\t\tlocal_EncodeVarint(write, value.ByteSize())\n\      t\t\treturn value._InternalSerialize(write)\n\t\treturn EncodeField\n",
-        "def getRadialPath(begin, center, end, path):\n\tbeginComplex = begin.dropAxis()\n\tendComplex = end.dropAxis()\n\tcenterComplex = center.dropAxis()\n\tbeginMinusCenterComplex = (beginComplex - centerComplex)\n\tendMinusCenterComplex = (endComplex - centerComplex)\n\tbeginMinusCenterComplexRadius = abs(beginMinusCenterComplex)\n\tendMinusCenterComplexRadius = abs(endMinusCenterComplex)\n\tif ((beginMinusCenterComplexRadius == 0.0) or (endMinusCenterComplexRadius == 0.0)):\n\t\treturn [begin]\n\tbeginMinusCenterComplex \/= beginMinusCenterComplexRadius\n\tendMinusCenterComplex \/= endMinusCenterComplexRadius\n\tangleDifference = euclidean.getAngleDifferenceByComplex(endMinusCenterComplex, beginMinusCenterComplex)\n\tradialPath = []\n\tfor point in path:\n\t\tweightEnd = point.x\n\t\tweightBegin = (1.0 - weightEnd)\n\t\tweightedRadius = ((beginMinusCenterComplexRadius * weightBegin) + ((endMinusCenterComplexRadius * weightEnd) * (1.0 + point.y)))\n\t\tradialComplex = ((weightedRadius * euclidean.getWiddershinsUnitPolar((angleDifference * point.x))) * beginMinusCenterComplex)\n\t\tpolygonPoint = (center + Vector3(radialComplex.real, radialComplex.imag, point.z))\n\t\tradialPath.append(polygonPoint)\n\treturn radialPath\n",
-        "def compare_package(version1, version2):\n\tdef normalize(v):\n\t\treturn [int(x) for x in re.sub('(\\\\.0+)*$', '', v).split('.')]\n\treturn cmp(normalize(version1), normalize(version2))\n",
-        "def _get_hub():\n\tglobal _threadlocal\n\ttry:\n\t\treturn _threadlocal.hub\n\texcept AttributeError:\n\t\tpass\n",
-        "@environmentfilter\ndef do_attr(environment, obj, name):\n\ttry:\n\t\tname = str(name)\n\texcept UnicodeError:\n\t\tpass\n\telse:\n\t\ttry:\n\t\t\tvalue = getattr(obj, name)\n\t\texcept AttributeError:\n\t\t\tpass\n\t\telse:\n\t\t\tif (environment.sandboxed and (not environment.is_safe_attribute(obj, name, value))):\n\t\t\t\treturn environment.unsafe_undefined(obj, name)\n\t\t\treturn value\n\treturn environment.undefined(obj=obj, name=name)\n",
-        "def mail_managers(subject, message, fail_silently=False, connection=None):\n\tif (not settings.MANAGERS):\n\t\treturn\n\tEmailMessage((u'%s%s' % (settings.EMAIL_SUBJECT_PREFIX, subject)), message, settings.SERVER_EMAIL, [a[1] for a in settings.MANAGERS], connection=connection).send(fail_silently=fail_silently)\n",
-        "def aliased(element, alias=None, name=None, flat=False, adapt_on_names=False):\n\tif isinstance(element, expression.FromClause):\n\t\tif adapt_on_names:\n\t\t\traise sa_exc.ArgumentError('adapt_on_names\tonly\tapplies\tto\tORM\telements')\n\t\treturn element.alias(name, flat=flat)\n\telse:\n\t\treturn AliasedClass(element, alias=alias, flat=flat, name=name, adapt_on_names=adapt_on_names)\n",
-        "def preserve_value(namespace, name):\n\tdef decorator(func):\n\t\tdef resetter_attr(saved_value_internal):\n\t\t\treturn setattr(namespace, name, saved_value_internal)\n\t\tdef resetter_no_attr(saved_value_internal):\n\t\t\tdel saved_value_internal\n\t\t\treturn delattr(namespace, name)\n\t\tdef wrapper(*args, **kwargs):\n\t\t\tsaved_value = None\n\t\t\ttry:\n\t\t\t\tsaved_value = getattr(namespace, name)\n\t\t\t\tresetter = resetter_attr\n\t\t\texcept AttributeError:\n\t\t\t\tresetter = resetter_no_attr\n\t\t\ttry:\n\t\t\t\treturn func(*args, **kwargs)\n\t\t\tfinally:\n\t\t\t\tresetter(saved_value)\n\t\twrapper.__name__ = func.__name__\n\t\twrapper.__doc__ = func.__doc__\n\t\treturn wrapper\n\treturn decorator\n",
-    ]
-    # ground truth, or neural transformer
-    gts = [
-        "a decorator to declare that only the first n arguments my be positional .",
-        "get the complex where the carve intersects the edge .",
-        "returns an encoder for a message field .",
-        "get radial path .",
-        "compare version packages .",
-        "return the hub for the current thread .",
-        "get an attribute of an object .",
-        "sends a message to the managers .",
-        "produce an alias of the given element .",
-        "function decorator to wrap a function that sets a namespace item ."
-    ]
-    # seq2seq = [
-    #     "a decorator to declare that the arguments passed in the arguments .",
-    #     "get the edge from the edge .",
-    #     "returns a string representation of a message .",
-    #     "get the path of a path .",
-    #     "compare version .",
-    #     "get the current thread .",
-    #     "return a dictionary of object .",
-    #     "sends a message to the admins .",
-    #     "return an element of an element .",
-    #     "decorator that defines a function that returns a string ."
-    # ]
-    return model_path, codes, gts
-
-
-def code_completion():
-    model_path = os.path.expanduser("~/.ncc/demo/completion/lstm/py150.pt")
-    codes = [
-        """def loads(s, encoding=None, cls=None, object_hook=None, parse_float=None,
-                parse_int=None, parse_constant=None, **kw):
-            if (cls is None and encoding is None and object_hook is None and
-                        parse_int is None and parse_float is None and
-                        parse_constant is None and not kw):
-                return _default_decoder.decode(s)
-            if cls is None:
-                cls = JSONDecoder
-            if object_hook is not None:
-                kw['object_hook'] = object_hook
-            if parse_float is not None:
-                kw['parse_float'] = parse_float
-            if parse_int is not None:
-                kw['parse_int'] = parse_int
-            if parse_constant is not None:
-                kw['parse_constant'] = parse_constant
-            return
-        """,
-        """
-        body_content = self._serialize.body(parameters, 'ServicePrincipalCreateParameters')
-        request = self._client.post(url, query_parameters)
-        response = self._client.send( request, header_parameters, body_content, operation_config)
-        """,
-        # """(request, header_parameters, body_content, **operation_config)""",
-        """
-        create_train_gen = lambda: data_loader.create_random_gen()
-        create_eval_train_gen = lambda: data_loader.create_fixed_gen("train")
-        create_eval_valid_gen = lambda: data_loader.create_fixed_gen("valid")
-        create_eval_test_gen = lambda: data_loader.create_fixed_gen
-        """,
-        """
-        def build_model():
-            l0 = nn.layers.InputLayer((batch_size, data.num_classes))
-    
-            l0_size = nn.layers.InputLayer((batch_size, 52))
-            l1_size = nn.layers.DenseLayer(l0_size, num_units=80, W=nn_plankton.Orthogonal('relu'), b=nn.init.Constant(0.1))
-            l2_size = nn.layers.DenseLayer(l1_size, num_units=80, W=nn_plankton.Orthogonal('relu'), b=nn.init.Constant(0.1))
-            l3_size = nn.layers.DenseLayer(l2_size, num_units=data.num_classes, W=nn_plankton.Orthogonal(), b=nn.init.Constant(0.1), nonlinearity=None)
-    
-            l1 = nn_plankton.NonlinLayer(l0, T.log)
-            ltot = nn.layers.ElemwiseSumLayer([l1, l3_size])
-    
-            lout =  
-        """,
-        """
-        if self.query is not None:
-          oprot.writeFieldBegin('query', TType.STRING, 1)
-          oprot.writeString(self.query)
-          oprot.writeFieldEnd()
-        if self.configuration is not None:
-          oprot.writeFieldBegin('configuration', TType.LIST, 3)
-          oprot.writeListBegin(TType.STRING, len(self.configuration))
-          for iter6 in self.configuration:
-            oprot.writeString(iter6)
-          oprot.writeListEnd()
-          oprot.writeFieldEnd()
-        if self.hadoop_user is not None:
-          oprot.writeFieldBegin('hadoop_user', TType.STRING, 4)
-          oprot
-        """,
-        """
-        location = module.db_location
-        if location is not None:
-            childNode = ElementTree.SubElement(node, 'location')
-            self.getDao('location').toXML(location, childNode)
-        functions = module.db_functions
-        for function in functions:
-            childNode = ElementTree.SubElement(node, 'function')
-            self.getDao('function').toXML(function, childNode)
-        annotations = module.db_annotations
-        for annotation in annotations:
-            childNode = ElementTree.SubElement(node, 'annotation')
-            self.getDao('annotation').toXML(annotation, childNode)
-        portSpecs = module.db_portSpecs
-        for portSpec in portSpecs:
-        """,
-    ]
-
-    gts = [
-        """cls(encoding=encoding, **kw).decode(s)""",
-        """(request, header_parameters, body_content, **operation_config)""",
-        """data_loader.create_fixed_gen("test")""",
-        """nn_plankton.NonlinLayer(ltot, nonlinearity=T.nnet.softmax)""",
-        """
-        writeString(self.hadoop_user)
-        oprot.writeFieldEnd()
-        """,
-        """
-        childNode = ElementTree.SubElement(node, 'portSpec')
-        self.getDao('portSpec').toXML(portSpec, childNode)
-        """,
-    ]
-
-    return model_path, codes, gts
 
 
 def load_state(model_path):
     state = load_checkpoint_to_cpu(model_path, arg_overrides={})
     args = state["args"]
+    args = recursive_contractuser(args)
+    args = recursive_expanduser(args)
     task = tasks.setup_task(args)  # load src/tgt dicts
     model = task.build_model(args)
     model.load_state_dict(state["model"])
@@ -189,38 +48,31 @@ def main(model_path, input):
     # from ipdb import set_trace
     # set_trace()
     output = task.decode_output(output)
-    # topk_prob, topk_idx = output
-    # output = [(task.target_dictionary[idx], idx, prob) for prob, idx in zip(topk_prob, topk_idx)]
-
     return output
 
 
 def cli_main():
-    # model_path, codes, gts = code_summarization()
-    # model_path, codes, gts = code_completion()
+    # modal_path = '~/.ncc/demo/summarization/neural_transformer/python_wan.pt'
+    # modal_path = '~/.ncc/demo/summarization/seq2seq/python_wan.pt'
+    # code = "def positional(max_positional_args):\n\tdef positional_decorator(wrapped):\n\t\t@functools.wraps(wrapped)\n\t\tdef positional_wrapper(*args, **kwargs):\n\t\t\tif (len(args) > max_posi      tional_args):\n\t\t\t\tplural_s = ''\n\t\t\t\tif (max_positional_args != 1):\n\t\t\t\t\tplural_s = 's'\n\t\t\t\tmessage = ('%s()\ttakes\tat\tmost\t%d\tpositional\targument%s\t(%d\tgive      n)' % (wrapped.__name__, max_positional_args, plural_s, len(args)))\n\t\t\t\tif (positional_parameters_enforcement == POSITIONAL_EXCEPTION):\n\t\t\t\t\traise TypeError(message)\n\t\t\t      \telif (positional_parameters_enforcement == POSITIONAL_WARNING):\n\t\t\t\t\tlogger.warning(message)\n\t\t\t\telse:\n\t\t\t\t\tpass\n\t\t\treturn wrapped(*args, **kwargs)\n\t\treturn p      ositional_wrapper\n\tif isinstance(max_positional_args, six.integer_types):\n\t\treturn positional_decorator\n\telse:\n\t\t(args, _, _, defaults) = inspect.getargspec(max_positional_ar      gs)\n\t\treturn positional((len(args) - len(defaults)))(max_positional_args)"
+    # ground truth: "a decorator to declare that only the first n arguments my be positional ."
+
+    modal_path = '~/.ncc/demo/completion/seqrnn/py150.pt'
+    code = "body_content = self._serialize.body(parameters, 'ServicePrincipalCreateParameters')\nrequest = self._client.post(url, query_parameters)\nresponse = self._client.send( request, header_parameters, body_content, operation_config)"
+    # ground truth: "(request, header_parameters, body_content, **operation_config)"
 
     import argparse
     parser = argparse.ArgumentParser(description="Command Interface")
-    parser.add_argument("--model", "-m", type=str, help="pytorch model path")
-    parser.add_argument("--input", "-i", type=str, help="model input")
+    parser.add_argument("--model", "-m", type=str, help="pytorch model path",
+                        default=modal_path)
+    parser.add_argument("--input", "-i", type=str, help="model input",
+                        default=code)
     args = parser.parse_args()
-
     args.model = os.path.expanduser(args.model)
 
     model_output = main(args.model, args.input)
     LOGGER.info(model_output)
 
-    # for code, gt in zip(codes, gts):
-    #     args.input = code
-    #     model_output = main(args.model, args.input)
-    #     print(f"==> code <==\n{code}\n==> gt <==\n{model_output}")
-    # LOGGER.info(f"==> gt <== {gt}")
-    # LOGGER.info(f"==> pr <== {model_output}")
-    # exit()
-
 
 if __name__ == '__main__':
-    """
-    python -m ncc.cli.predictor -m ~/.ncc/demo/summarization/neural_transformer/python_wan.pt -i "def positional(max_positional_args):\n\tdef positional_decorator(wrapped):\n\t\t@functools.wraps(wrapped)\n\t\tdef positional_wrapper(*args, **kwargs):\n\t\t\tif (len(args) > max_posi      tional_args):\n\t\t\t\tplural_s = ''\n\t\t\t\tif (max_positional_args != 1):\n\t\t\t\t\tplural_s = 's'\n\t\t\t\tmessage = ('%s()\ttakes\tat\tmost\t%d\tpositional\targument%s\t(%d\tgive      n)' % (wrapped.__name__, max_positional_args, plural_s, len(args)))\n\t\t\t\tif (positional_parameters_enforcement == POSITIONAL_EXCEPTION):\n\t\t\t\t\traise TypeError(message)\n\t\t\t      \telif (positional_parameters_enforcement == POSITIONAL_WARNING):\n\t\t\t\t\tlogger.warning(message)\n\t\t\t\telse:\n\t\t\t\t\tpass\n\t\t\treturn wrapped(*args, **kwargs)\n\t\treturn p      ositional_wrapper\n\tif isinstance(max_positional_args, six.integer_types):\n\t\treturn positional_decorator\n\telse:\n\t\t(args, _, _, defaults) = inspect.getargspec(max_positional_ar      gs)\n\t\treturn positional((len(args) - len(defaults)))(max_positional_args)\n"
-    """
     cli_main()

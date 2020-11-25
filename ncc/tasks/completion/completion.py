@@ -233,4 +233,12 @@ class CompletionTask(NccTask):
 
     def decode_output(self, output, k=5):
         output = torch.softmax(output[0][0, -1, :], dim=0)
-        return output.topk(k=5)
+        topk_prob, topk_idx = output.topk(k=10)
+
+        output = []
+        for prob, idx in zip(topk_prob, topk_idx):
+            token, prob = self.target_dictionary[idx], round(prob.item(), 5)
+            # if token == 'None':
+            #     continue
+            output.append((token, prob))
+        return output[:k]
