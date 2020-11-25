@@ -67,7 +67,10 @@ pip install -r requirements.txt
 
 #### 3) Install NCC
 ```shell script
+# build for cython
 python setup.py build_ext --inplace
+# install 
+pip install --editable ./
 ```
 
 
