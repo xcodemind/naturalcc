@@ -1,4 +1,4 @@
-# NaturalCC
+# NaturalCC *v0.4.0*
 NaturalCC is a sequence modeling toolkit that allows researchers and developers to train custom models for many software engineering tasks, e.g., code summarization, code retrieval and code clone detection. 
 Our vision is to bridge the gap between programming language and natural language via some machine learning techniques.
 
@@ -25,7 +25,7 @@ This copy of code is private now, please do not distribute it. Thanks.
     - [NeuralTransformer](run/summarization/neural_transformer/README.md) [\[pdf\]](https://arxiv.org/pdf/2005.00653.pdf)
 - [Code Retrieval](run/retrieval)
 - [Type Inference](run/type_prediction)
-- [Code Prediction](run/)
+- [Code Prediction](TBC)
 
 ## Dataset
 Currently, we have processed the following datasets:
