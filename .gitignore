@@ -19,5 +19,8 @@ ncc/data/tools/data_utils_fast.cpp
 *.cpython-37m-x86_64-linux-gnu.so
 predict.json
 
+dist
+ncc.egg-info
+
 # yang igore pattern
 awsome_readme_examples
