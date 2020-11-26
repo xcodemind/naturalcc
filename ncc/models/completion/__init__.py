@@ -1,2 +1,1 @@
-from .traverse_transformer import TraverseTransformerModel
 from .seqrnn import SeqRNNModel
