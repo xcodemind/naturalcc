@@ -11,14 +11,13 @@ import os
 import math
 import random
 import numpy as np
-from collections import namedtuple
 import torch
 from ncc import LOGGER
 from ncc import tasks
 from ncc.logging import meters
 from ncc.trainer.ncc_trainer import Trainer
 from ncc.utils import checkpoint_utils, distributed_utils
-from ncc.utils.util_file import load_yaml
+from ncc.utils.yaml import load_yaml
 from ncc.logging import metrics, progress_bar
 from ncc.utils import utils
 from ncc.utils.file_utils import remove_files
@@ -208,9 +207,6 @@ def single_main(args, init_distributed=False):
         checkpoint_utils.verify_checkpoint_directory(save_dir)
         remove_files(save_dir, 'pt')  # this code will remove pre-trained models
 
-    # Print args
-    LOGGER.info(args)
-
     # 1. Setup task, e.g., translation, language modeling, etc.
     task = tasks.setup_task(args)
 
@@ -294,7 +290,7 @@ def cli_main():
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing code_search_net dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        "--yaml_file", "-f", type=str, help="load {yaml_file}.yml for train",
+        "--yaml_file", "-f", type=str, help="load {yaml_file}.yml for train", default='config/python_wan.fp16'
     )
     args = parser.parse_args()
     yaml_file = os.path.join(os.path.dirname(__file__), '{}.yml'.format(args.yaml_file))

@@ -111,9 +111,7 @@ class Trainer(object):
         if self._wrapped_model is None:
             if self.args['distributed_training']['distributed_world_size'] > 1 and \
                 not self.args['optimization']['use_bmuf']:
-                self._wrapped_model = models.DistributedNccModel(
-                    self.args, self._model
-                )
+                self._wrapped_model = models.DistributedNccModel(self.args, self._model)
             else:
                 self._wrapped_model = self._model
         return self._wrapped_model

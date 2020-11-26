@@ -9,20 +9,14 @@ Evaluate the perplexity of a trained language model.
 """
 import os
 import sys
-from collections import namedtuple
-import math
 import torch
 from ncc import LOGGER
 from ncc import tasks
-from ncc.eval import bleu_scorer
-from ncc.eval import rouge_scorer
 from ncc.utils import checkpoint_utils
 from ncc.logging import progress_bar
 from ncc.utils import utils
-from ncc.utils.util_file import load_yaml
+from ncc.utils.yaml import load_yaml
 from ncc.logging.meters import StopwatchMeter, TimeMeter
-from collections import OrderedDict
-from tqdm import tqdm
 from ncc.eval import eval_utils
 
 

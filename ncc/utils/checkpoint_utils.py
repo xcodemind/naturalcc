@@ -16,7 +16,6 @@ from torch.serialization import default_restore_location
 from ncc.modules.code2vec.ncc_encoder import NccEncoder
 from ncc.modules.seq2seq.ncc_decoder import NccDecoder
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -88,21 +87,22 @@ def save_checkpoint(args, trainer, epoch_itr, val_loss):
         checkpoints = checkpoint_paths(
             args['checkpoint']['save_dir'], pattern=r"checkpoint_\d+_(\d+)\.pt"
         )
-        for old_chk in checkpoints[args['checkpoint']['keep_interval_updates'] :]:
+        for old_chk in checkpoints[args['checkpoint']['keep_interval_updates']:]:
             if os.path.lexists(old_chk):
                 os.remove(old_chk)
 
     if args['checkpoint']['keep_last_epochs'] > 0:
         # remove old epoch checkpoints; checkpoints are sorted in descending order
         checkpoints = checkpoint_paths(args['checkpoint']['save_dir'], pattern=r"checkpoint(\d+)\.pt")
-        for old_chk in checkpoints[args['checkpoint']['keep_last_epochs'] :]:
+        for old_chk in checkpoints[args['checkpoint']['keep_last_epochs']:]:
             if os.path.lexists(old_chk):
                 os.remove(old_chk)
 
     if args['checkpoint']['keep_best_checkpoints'] > 0:
         # only keep the best N checkpoints according to validation metric
         checkpoints = checkpoint_paths(
-            args['checkpoint']['save_dir'], pattern=r"checkpoint\.best_{}_(\d+\.?\d*)\.pt".format(args['checkpoint']['best_checkpoint_metric']))
+            args['checkpoint']['save_dir'],
+            pattern=r"checkpoint\.best_{}_(\d+\.?\d*)\.pt".format(args['checkpoint']['best_checkpoint_metric']))
         if not args['checkpoint']['maximize_best_checkpoint_metric']:
             checkpoints = checkpoints[::-1]
         for old_chk in checkpoints[args['checkpoint']['keep_best_checkpoints']:]:
@@ -265,23 +265,24 @@ def save_state(
     extra_state=None,
 ):
     from ncc.utils import utils
+    from ncc.utils.yaml import recursive_contractuser
 
     if optim_history is None:
         optim_history = []
     if extra_state is None:
         extra_state = {}
     state_dict = {
-        "args": args,
+        "args": recursive_contractuser(args),
         "model": model_state_dict if model_state_dict else {},
         "optimizer_history": optim_history
-        + [
-            {
-                "criterion_name": criterion.__class__.__name__,
-                "optimizer_name": optimizer.__class__.__name__,
-                "lr_scheduler_state": lr_scheduler.state_dict(),
-                "num_updates": num_updates,
-            }
-        ],
+                             + [
+                                 {
+                                     "criterion_name": criterion.__class__.__name__,
+                                     "optimizer_name": optimizer.__class__.__name__,
+                                     "lr_scheduler_state": lr_scheduler.state_dict(),
+                                     "num_updates": num_updates,
+                                 }
+                             ],
         "extra_state": extra_state,
     }
     if utils.has_parameters(criterion):
@@ -447,7 +448,7 @@ def prune_state_dict(state_dict, args):
                 new_state_key = (
                     layer_name[: substitution_match.start(1)]
                     + new_layer_number
-                    + layer_name[substitution_match.end(1) :]
+                    + layer_name[substitution_match.end(1):]
                 )
                 new_state_dict[new_state_key] = state_dict[layer_name]
 
@@ -486,7 +487,7 @@ def load_pretrained_component_from_model(
     for key in state["model"].keys():
         if key.startswith(component_type):
             # encoder.input_layers.0.0.weight --> input_layers.0.0.weight
-            component_subkey = key[len(component_type) + 1 :]
+            component_subkey = key[len(component_type) + 1:]
             component_state_dict[component_subkey] = state["model"][key]
     component.load_state_dict(component_state_dict, strict=True)
     return component

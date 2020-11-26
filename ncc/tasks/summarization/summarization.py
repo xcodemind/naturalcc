@@ -6,31 +6,21 @@
 import os
 import json
 import numpy as np
-from argparse import Namespace
 from ncc.logging import metrics
-import itertools
 from ncc import LOGGER
 from ncc.data.dictionary import Dictionary
 from ncc.data.ncc_dataset import NccDataset
 from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 from ncc.utils import utils
-from ncc.data import encoders
 from ncc.data import indexed_dataset
-from ncc.data.tools import data_utils
+from ncc.data.tokenizers.tokenizer_funcs import list_tokenizer
 from ncc.data.wrappers.append_token_dataset import AppendTokenDataset
 from ncc.data.wrappers.truncate_dataset import TruncateDataset
-from ncc.data.wrappers.strip_token_dataset import StripTokenDataset
-from ncc.data.concat_dataset import ConcatDataset
 from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
 from ncc.data.summarization.language_pair_dataset import LanguagePairDataset
-from ncc.data.summarization.path_dataset import PathDataset
-from ncc.data.summarization.bin_ast_dataset import BinaryASTDataset
-from ncc.utils.tokenizer import tokenize_string
 from ncc.eval import eval_utils
-from ncc.utils import tokenizer
 from functools import lru_cache
-from ncc.utils.tokenizer import tokenize_string
 import torch
 
 EVAL_BLEU_ORDER = 4
@@ -54,7 +44,7 @@ class IndexedRawTextDataset(NccDataset):
             for line in f:
                 self.lines.append(line.strip('\n'))
                 tokens = dictionary.encode_line(
-                    line, tokenizer.tokenize_list, add_if_not_exist=False,
+                    line, list_tokenizer, add_if_not_exist=False,
                     append_eos=self.append_eos, reverse_order=self.reverse_order,
                 ).long()
                 self.tokens_list.append(tokens)
@@ -206,7 +196,7 @@ class SummarizationTask(NccTask):
 
     @classmethod
     def build_dictionary(
-        cls, filenames, tokenize_func=tokenize_string,
+        cls, filenames, tokenize_func=None,
         workers=1, threshold=-1, nwords=-1, padding_factor=8
     ):
         """Build the dictionary
@@ -224,9 +214,7 @@ class SummarizationTask(NccTask):
         d = Dictionary()
 
         for filename in filenames:
-            Dictionary.add_token_to_dictionary(
-                filename, d, tokenize_func, workers
-            )
+            Dictionary.add_file_to_dictionary(filename, d, tokenize_func, num_workers=workers)
 
         d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
         return d
@@ -268,18 +256,11 @@ class SummarizationTask(NccTask):
                 'try --eval-bleu-detok=moses (or --eval-bleu-detok=space '
                 'to disable detokenization, e.g., when using sentencepiece)'
             )
-            # detok_args = json.loads(getattr(args, 'eval_bleu_detok_args', '{}') or '{}')
-            detok_args = json.loads(
-                args['task']['eval_bleu_detok_args'] if args['task']['eval_bleu_detok_args'] else '{}')
-            self.tokenizer = encoders.build_tokenizer(
-                dict(
-                    tokenizer=args['task']['eval_bleu_detok'] if args['task']['eval_bleu_detok'] else None,
-                    # getattr(args, 'eval_bleu_detok', None),
-                    **detok_args
-                ))
+            detok_args = json.loads(args['task']['eval_bleu_detok_args'] or '{}')
+            self.tokenizer = tokenizers.build_tokenizer(
+                dict(tokenizer=args['task']['eval_bleu_detok'], **detok_args)
+            )
             # The gen_args parameters have been set in the yml file
-            # gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
-            # self.sequence_generator = self.build_generator(Namespace(**gen_args))
             self.sequence_generator = self.build_generator(args)
 
         return model
@@ -331,12 +312,10 @@ class SummarizationTask(NccTask):
                 s = self.tokenizer.decode(s)
             return s
 
-        # gen_out = self.inference_step(generator, [model], sample, None)
         gen_out = self.sequence_generator.generate([model], sample)
         ids = sample['id'].tolist()
         hyps, refs = [], []
         for i in range(len(gen_out)):
-            # hyps.append(decode(gen_out[i][0]['tokens']))
             hyps.append(decode(utils.strip_eos(gen_out[i][0]['tokens'], self.tgt_dict.eos())))
             refs.append(decode(
                 utils.strip_pad(sample['target'][i], self.tgt_dict.pad()),
@@ -383,10 +362,10 @@ class SummarizationTask(NccTask):
 
         return bleu, rouge_l, meteor
 
-    def encode_input(self, input, tokenize=tokenize_string):
+    def encode_input(self, input, tokenize=None):
         if tokenize:
             input = ''.join(char if str.isalnum(char) else ' ' for char in input)  # for python_wan dataset
-            input = tokenize_string(input)
+            input = tokenize(input)
         input = input[:self.args['task']['max_source_positions'] - 1]
         input = [self.src_dict.index(token) for token in input] + [self.src_dict.eos()]
         input = torch.Tensor(input).long()  # [bsz, len]
