@@ -1,59 +1,161 @@
-# [CodeBert, Feng et. al.](https://arxiv.org/pdf/2002.08155.pdf)
+# Dataset: CodeSearchNet(feng)
 
-Data statistic about the cleaned dataset for code document generation is shown in this Table. We release the cleaned dataset in this [website](https://drive.google.com/open?id=1rd2Tc6oUWBo7JouwexW3ksQ0PaOhUr6h).
+The authors of [CodeBERT:
+A Pre-Trained Model for Programming and Natural Languages](https://arxiv.org/pdf/2002.08155.pdf) shared their [code and dataset](https://github.com/microsoft/CodeBERT). 
 
-| PL         | Training |  Dev   |  Test  |
-| :--------- | :------: | :----: | :----: |
-| Python     | 251,820  | 13,914 | 14,918 |
-| PHP        | 241,241  | 12,982 | 14,014 |
-| Go         | 167,288  | 7,325  | 8,122  |
-| Java       | 164,923  | 5,183  | 10,955 |
-| JavaScript |  58,025  | 3,885  | 3,291  |
-| Ruby       |  24,927  | 1,400  | 1,261  |
+<hr>
 
-The results on CodeSearchNet are shown in this Table:
-
-| Model       |   Ruby    | Javascript |    Go     |  Python   |   Java    |    PHP    |  Overall  |
-| ----------- | :-------: | :--------: | :-------: | :-------: | :-------: | :-------: | :-------: |
-| Seq2Seq     |   9.64    |   10.21    |   13.98   |   15.93   |   15.09   |   21.08   |   14.32   |
-| Transformer |   11.18   |   11.59    |   16.38   |   15.81   |   16.26   |   22.12   |   15.56   |
-| RoBERTa     |   11.17   |   11.90    |   17.72   |   18.14   |   16.47   |   24.02   |   16.57   |
-| CodeBERT    | **12.16** | **14.90**  | **18.07** | **19.06** | **17.65** | **25.16** | **17.83** |
-
-
-
-----------------------------------------------------------------------------------------------------
-
-**we recommend to run this repository on linux/macOS**
-
-### step 1. download csn_feng raw dataset (```~/.ncc/raw```)
-```
+# Step 1 
+Download pre-processed and raw (code_search_net_feng) dataset.
+```shell script
 bash dataset/csn_feng/download.sh
 ```
+Once run this command, you will have code_search_net_feng directory like
+```shell script
+~/.ncc/code_search_net_feng/raw
+├── code_search_net_feng.zip
+├── go
+│   ├── test.jsonl
+│   ├── train.jsonl
+│   └── valid.jsonl
+├── java
+│   ├── test.jsonl
+│   ├── train.jsonl
+│   └── valid.jsonl
+├── javascript
+│   ├── test.jsonl
+│   ├── train.jsonl
+│   └── valid.jsonl
+├── php
+│   ├── test.jsonl
+│   ├── train.jsonl
+│   └── valid.jsonl
+├── python
+│   ├── test.jsonl
+│   ├── train.jsonl
+│   └── valid.jsonl
+└── ruby
+    ├── test.jsonl
+    ├── train.jsonl
+    └── valid.jsonl
 
-### step 2. download parse files (```~/.ncc/libs```), and build them. 
+6 directories, 19 files
+
+```  
+
+# Step 2
+Flatten attributes of code into ```~/.ncc/code_search_net_feng/flatten/*```.
+```shell script
+python -m dataset.code_search_net_feng.flatten -l [langauge]
 ```
-python -m dataset.csn_feng.build -l [language] -b [library directory]
+Once run this command, you will have python_wan directory like
+```shell script
+~/.ncc/code_search_net_feng/flatten
+├── go
+│   ├── test.code
+│   ├── test.code_tokens
+│   ├── test.docstring
+│   ├── test.docstring_tokens
+│   ├── train.code
+│   ├── train.code_tokens
+│   ├── train.docstring
+│   ├── train.docstring_tokens
+│   ├── valid.code
+│   ├── valid.code_tokens
+│   ├── valid.docstring
+│   └── valid.docstring_tokens
+├── java
+│   ├── test.code
+│   ├── test.code_tokens
+│   ├── test.docstring
+│   ├── test.docstring_tokens
+│   ├── train.code
+│   ├── train.code_tokens
+│   ├── train.docstring
+│   ├── train.docstring_tokens
+│   ├── valid.code
+│   ├── valid.code_tokens
+│   ├── valid.docstring
+│   └── valid.docstring_tokens
+├── javascript
+│   ├── test.code
+│   ├── test.code_tokens
+│   ├── test.docstring
+│   ├── test.docstring_tokens
+│   ├── train.code
+│   ├── train.code_tokens
+│   ├── train.docstring
+│   ├── train.docstring_tokens
+│   ├── valid.code
+│   ├── valid.code_tokens
+│   ├── valid.docstring
+│   └── valid.docstring_tokens
+├── php
+│   ├── test.code
+│   ├── test.code_tokens
+│   ├── test.docstring
+│   ├── test.docstring_tokens
+│   ├── train.code
+│   ├── train.code_tokens
+│   ├── train.docstring
+│   ├── train.docstring_tokens
+│   ├── valid.code
+│   ├── valid.code_tokens
+│   ├── valid.docstring
+│   └── valid.docstring_tokens
+├── python
+│   ├── test.code
+│   ├── test.code_tokens
+│   ├── test.docstring
+│   ├── test.docstring_tokens
+│   ├── train.code
+│   ├── train.code_tokens
+│   ├── train.docstring
+│   ├── train.docstring_tokens
+│   ├── valid.code
+│   ├── valid.code_tokens
+│   ├── valid.docstring
+│   └── valid.docstring_tokens
+└── ruby
+    ├── test.code
+    ├── test.code_tokens
+    ├── test.docstring
+    ├── test.docstring_tokens
+    ├── train.code
+    ├── train.code_tokens
+    ├── train.docstring
+    ├── train.docstring_tokens
+    ├── valid.code
+    ├── valid.code_tokens
+    ├── valid.docstring
+    └── valid.docstring_tokens
+
+6 directories, 72 files
 ```
 
-### step 3. flatten attributes of code snippets into different files. For instance, flatten ruby's code_tokens into 
-```train/valid/test.code_tokens```.
+# Step 3
+Generating raw/bin data with multi-processing. 
+Before generating datasets, plz make sure [config file](./config/ruby.yml) is set correctly.  Here we use csn_feng_ruby as exmaple.
+```shell script
+# code_tokens/docstring_tokens
+python -m dataset.python_wan.preprocess -f config/ruby
 ```
-python -m dataset.csn_feng.flatten -l [language] -d [raw data directory] -f [flatten data directory] -a [data attributes] -c [cpu cores]
-```
+```shell script
+# bin data directory
+~/.ncc/code_search_net_feng/flatten/ruby
+├── test.code
+├── test.code_tokens
+├── test.docstring
+├── test.docstring_tokens
+├── train.code
+├── train.code_tokens
+├── train.docstring
+├── train.docstring_tokens
+├── valid.code
+├── valid.code_tokens
+├── valid.docstring
+└── valid.docstring_tokens
 
-### step 3(optional). extract features of data attributes. For instance, AST, binary-AST etc. of code.
-```
-python -m dataset.csn_feng.feature_extract -l [language] -f [flatten data directory] -r [refine data directory] -s [parse file] -a [data attributes] -c [cpu cores]
-```
- 
-### step 4. filter data containing invalid attributes.
-```
-python -m dataset.csn_feng.filter -l [language] -r [refined data directory] -f [filter data directory] -a [data attributes]
-```
+0 directories, 12 files
 
-### step 5. finalize dataset. change config/*.yml config 
 ```
-python -m dataset.csn_feng.tokenizatiton.individual -f [config yaml file]
-```
-
