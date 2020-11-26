@@ -1,0 +1,41 @@
+eval:
+  path: ~/.ncc/code_search_net/codebert/code_roberta/summarization/checkpoints/checkpoint_last.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  remove_bpe: ~ # ', nargs='?', const='@@ ', default=None, help='remove BPE tokens before scoring (can be set to sentencepiece)'
+  quiet: 1 # ', action='store_true', help='only print final scores'
+  results_path: ~ # ', metavar='RESDIR', type=str, default=None, help='path to save eval results (optional)"'
+  model_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override model args at generation '
+
+  beam: 5 # ', default=5, type=int, metavar='N', help='beam size')
+  nbest: 1 # ', default=1, type=int, metavar='N', help='number of hypotheses to output')
+  max_len_a: 0 #', default=0, type=float, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))
+  max_len_b: 200 #', default=200, type=int, metavar='N', help=('generate sequences of maximum length ax + b, where x is the source length'))
+  min_len: 1 # ', default=1, type=float, metavar='N', help=('minimum generation length'))
+  match_source_len: 0 #', default=False, action='store_true', help=('generations should match the source length'))
+  no_early_stop: 0 # ', action='store_true', help='deprecated')
+  unnormalized: 0 # ', action='store_true', help='compare unnormalized hypothesis scores')
+  no_beamable_mm: 0 # ', action='store_true', help='don\'t use BeamableMM in attention layers')
+  lenpen: 1 # ', default=1, type=float, help='length penalty: <1.0 favors shorter, >1.0 favors longer sentences')
+  unkpen: 0 # ', default=0, type=float, help='unknown word penalty: <0 produces more unks, >0 produces fewer')
+  replace_unk: ~ # ', nargs='?', const=True, default=None, help='perform unknown replacement (optionally with alignment dictionary)')
+  sacrebleu: 0 # ', action='store_true', help='score with sacrebleu')
+  score_reference: 0 # ', action='store_true', help='just score the reference translation')
+  prefix_size: 0 # ', default=0, type=int, metavar='PS', help='initialize generation by target prefix of given length')
+  no_repeat_ngram_size: 0 # ', default=0, type=int, metavar='N', help='ngram blocking such that this size ngram cannot be repeated in the generation')
+  sampling: 0 # ', action='store_true', help='sample hypotheses instead of using beam search')
+  sampling_topk: -1 # ', default=-1, type=int, metavar='PS', help='sample from top K likely next words instead of all words')
+  sampling_topp: -1 # ', default=-1.0, type=float, metavar='PS', help='sample from the smallest set whose cumulative probability mass exceeds p for next words')
+  temperature: 1. #', default=1., type=float, metavar='N', help='temperature for generation')
+  diverse_beam_groups: -1 # ', default=-1, type=int, metavar='N', help='number of groups for Diverse Beam Search')
+  diverse_beam_strength: 0.5 # ', default=0.5, type=float, metavar='N', help='strength of diversity penalty for Diverse Beam Search')
+  diversity_rate: -1.0 # ', default=-1.0, type=float, metavar='N', help='strength of diversity penalty for Diverse Siblings Search')
+  print_alignment: 0 # ', action='store_true', help='if set, uses attention feedback to compute and print alignment to source tokens')
+  print_step: 0 # ', action='store_true')
+  # arguments for iterative refinement generator
+  iter_decode_eos_penalty: 0.0 # ', default=0.0, type=float, metavar='N', help='if > 0.0, it penalized early-stopping in decoding.')
+  iter_decode_max_iter: 10 # ', default=10, type=int, metavar='N', help='maximum iterations for iterative refinement.')
+  iter_decode_force_max_iter: 0 #', action='store_true', help='if set, run exact the maximum number of iterations without early stop')
+  iter_decode_with_beam: 1 # ', default=1, type=int, metavar='N', help='if > 1, model will generate translations varying by the lengths.')
+  iter_decode_with_external_reranker: 0 # ', action='store_true', help='if set, the last checkpoint are assumed to be a reranker to rescore the translations'),
+  retain_iter_history: 0 # ', action='store_true', help='if set, decoding returns the whole history of iterative refinement')
+  # special decoding format for advanced decoding.
+  decoding_format: ~ # ', default=None, type=str, choices=['unigram', 'ensemble', 'vote', 'dp', 'bs'])

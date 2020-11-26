@@ -1,0 +1,7 @@
+http://learn2learn.net/
+做文档的框架：https://www.mkdocs.org/
+
+code generation: https://github.com/pcyin/tranX，这个工程也做了一个demo，挺不错。
+可以借鉴其AST处理部分。
+
+一个很好的nlp框架，实现了很多encoder，包括transformer，能做summarization。https://github.com/fastnlp/fastNLP

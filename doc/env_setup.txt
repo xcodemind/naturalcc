@@ -1,0 +1,14 @@
+# ubuntu18.04 安装 graphviz
+sudo add-apt-repository universe
+sudo apt update
+sudo apt install graphviz
+sudo apt-get install libgraphviz-dev pkg-config
+pip install pygraphviz
+pip install graphviz
+
+
+pytorch1.0 cuda10
+method 1:
+    conda install pytorch=1.0 torchvision cuda100 -c pytorch
+method 2:
+    pip install https://download.pytorch.org/whl/cu100/torch-1.0.1-cp37-cp37m-linux_x86_64.whl

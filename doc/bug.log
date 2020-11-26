@@ -1,0 +1,62 @@
+此文件纪录我们一起踩过的坑:)
+
+1. attn_type, pointer这两个参数可以搞定所有attn，pointer变种，去掉has_attn，no_attn_but_can_pointer，use_temporal, intra_decoder等参数。
+2. 去掉util_trainer.py里面的所有函数，prepare_data不是很懂。
+3. encoder_attention, decoder_attention两个函数是intra attention采用到的，不应该复制到codenn模型中，codenn用到的attention应该不是intra attention吧，应该是dot_product或者tree attention等经典attention才对。
+4. 调模型初始化方式和gradient_norm等参数，我感觉不应该太突出，简单调一下即可。如果我们的模型要靠调这两个参数来体现的话，那我们的模型是不够work的。所有模型统一初始化方式我觉得比较好。
+5. 不应该搞两个Decoder，Decoder_Attn，attention是在decoder中的一层。当attention设为1时候，过attention那一层即可。attention层的方式可以有很多种，例如dot product／intra_decoder等。
+6. 当dict文件行数和dict size不一致时，可能因为dict中有些token中间或者首尾有\n
+7. python 数据运行到第二个batch计算loss时，comment_proba和comment_target shape不一致，是因为其他数据comment都较短，
+python的comment较长，超过了opt里设置的 max_predict_length，所以设置更长的max_predict_length，同时计算loss前加了assert保证两者各种shape中前两维度乘积一致
+（除了comment_proba第三个维度，因为是voca size）
+8.调试有关cuda的 c++底层错误，在运行命令前加 CUDA_LAUNCH_BLOCKING=1  ，这样取消gpu异步，可以准确定位到出错的python代码
+-----------------------------------------
+在mmrcn-icse20.py开头处加上
+import sys
+sys.path.append(os.path.abspath('.'))
+print(sys.path)
+昨天讨论的import错误这样可以彻底解决，即使我们run的xx-run.py文件，其实运行的是mmrcn-icse20.py，所以我们在这个开始的时候把sys.path设置一下即可。
+设置后的sys.path:
+sys.path:  ['/data/wanyao/Dropbox/ghproj-titan/naturalcode/src', '/home/wanyao/anaconda3/envs/py37-1.2/lib/python37.zip', '/home/wanyao/anaconda3/envs/py37-1.2/lib/python3.7', '/home/wanyao/anaconda3/envs/py37-1.2/lib/python3.7/lib-dynload', '/home/wanyao/anaconda3/envs/py37-1.2/lib/python3.7/site-packages', '/data/wanyao/Dropbox/ghproj-titan/naturalcode']
+包括了naturalcode根目录 和naturalcode/src，所以此时所有包都可以这样调用from ncc.xxx import xxx
+最后发布开源代码的时候，install会自动配置这个path变量
+-----------------------------------------
+
+Cython error
+如果提示 "pip install --editable"，说明cython/cpp文件没有编译，需要在v3根目录运行
+所有奇怪的cuda错误，都是这个导致。
+"python setup.py build_ext --inplace"
+建议在单卡环境上编译
+
+-----------------------------------------
+
+data-mmap生成的代码问题较比严重，需要考虑继承的问题，不能只有有个encode_line, 在py150数据集处理时，能够明显感受到当前代码的局限性。希望后续remake时，考虑到这个不足
+
+# inplace
+input_weights *= kwargs['input_mask'].unsqueeze(dim=-1)  # B x T x 1
+# RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation: [torch.FloatTensor [16, 42, 1]], which is output 0 of SigmoidBackward, is at version 1; expected version 0 instead. Hint: enable anomaly detection to find the operation that failed to compute its gradient, with torch.autograd.set_detect_anomaly(True).
+fix: input_weights = input_weights * kwargs['input_mask'].unsqueeze(dim=-1)  # B x T x 1
+
+pathos.multiprocessing cpu利用率不高
+处理5w数据只有20%，处理5k能达到100%
+
+-----------------------------------------
+pytorch dataloader 加载error: open too many files
+```
+import torch.multiprocessing
+
+torch.multiprocessing.set_sharing_strategy('file_system')
+```
+
+
+-----------------------------------------
+install apex
+```
+git clone https://github.com/NVIDIA/apex.git
+cd apex
+pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" .
+```
+
+-----------------------------------------
+ImportError: Building module ncc.data.tools.data_utils_fast failed: ["distutils.errors.CompileError: command 'gcc' failed with exit status 1\n"]
+python setup.py build_ext --inplace
