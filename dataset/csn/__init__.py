@@ -5,7 +5,7 @@ from dataset import (
     HOSTNAME, USERNAME, DEFAULT_DIR, LIBS_DIR, LOGGER,
 )
 
-DATASET_NAME = 'python_wan'
+DATASET_NAME = 'code_search_net'
 DATASET_DIR = os.path.join(DEFAULT_DIR, DATASET_NAME)
 RAW_DATA_DIR = os.path.join(DATASET_DIR, 'raw')
 FLATTEN_DIR = os.path.join(DATASET_DIR, 'flatten')

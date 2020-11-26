@@ -12,15 +12,6 @@ FLATTEN_DIR = os.path.join(DATASET_DIR, 'flatten')
 REFINE_DIR = os.path.join(DATASET_DIR, 'refine')
 FILTER_DIR = os.path.join(DATASET_DIR, 'filter')
 
-_RETRIEVAL_RAW_DATA_DIR = os.path.join(RAW_DATA_DIR, 'retrieval')
-
-RETRIEVAL_RAW_DATA_DIR = {
-    'train': os.path.join(_RETRIEVAL_RAW_DATA_DIR, 'train_valid'),
-    'valid': os.path.join(_RETRIEVAL_RAW_DATA_DIR, 'train_valid'),
-    'test': _RETRIEVAL_RAW_DATA_DIR,
-}
-RETRIEVAL_SPLITTER = '<CODESPLIT>'
-
 LANGUAGES = ['ruby', 'python', 'java', 'go', 'php', 'javascript']
 MODES = ['train', 'valid', 'test']
 
