@@ -16,6 +16,7 @@ from ncc.utils import utils
 from ncc.data import (
     indexed_dataset, tokenizers
 )
+from ncc.data.tokenizers.tokenizer_funcs import _dpu_sub_tokenizer
 from ncc.data.tokenizers.tokenizer_funcs import list_tokenizer
 from ncc.data.wrappers.append_token_dataset import AppendTokenDataset
 from ncc.data.wrappers.truncate_dataset import TruncateDataset
@@ -364,7 +365,7 @@ class SummarizationTask(NccTask):
 
         return bleu, rouge_l, meteor
 
-    def encode_input(self, input, tokenize=None):
+    def encode_input(self, input, tokenize=_dpu_sub_tokenizer):
         if tokenize:
             input = ''.join(char if str.isalnum(char) else ' ' for char in input)  # for python_wan dataset
             input = tokenize(input)
