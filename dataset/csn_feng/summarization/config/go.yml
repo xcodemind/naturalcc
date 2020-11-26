@@ -3,16 +3,16 @@ preprocess:
   source_lang: code_tokens
   target_lang: docstring_tokens
   only_source: 0
-  trainpref: ~/.ncc/code_search_net_feng/flatten/ruby/train #", metavar="FP", default=None, help="train file prefix"
-  validpref: ~/.ncc/code_search_net_feng/flatten/ruby/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
-  testpref:  ~/.ncc/code_search_net_feng/flatten/ruby/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
+  trainpref: ~/.ncc/code_search_net_feng/flatten/go/train #", metavar="FP", default=None, help="train file prefix"
+  validpref: ~/.ncc/code_search_net_feng/flatten/go/valid #", metavar="FP", default=None, help="comma separated, valid file prefixes"
+  testpref:  ~/.ncc/code_search_net_feng/flatten/go/test  #", metavar="FP", default=None, help="comma separated, test file prefixes"
 
   # raw dataset
 #  dataset_impl: raw #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
-#  destdir: ~/.ncc/python_wan/summarization/data-raw #", metavar="DIR", default="data-bin", help="destination dir"
+#  destdir: ~/.ncc/go_wan/summarization/data-raw #", metavar="DIR", default="data-bin", help="destination dir"
   # bin dataset
   dataset_impl: mmap #', metavar='FORMAT', default='mmap', choices=get_available_dataset_impl(), help='output dataset implementation'
-  destdir: ~/.ncc/code_search_net_feng/summarization/ruby/data-mmap #", metavar="DIR", default="data-bin", help="destination dir"
+  destdir: ~/.ncc/code_search_net_feng/summarization/go/data-mmap #", metavar="DIR", default="data-bin", help="destination dir"
 
   only_train: 0 # if set false, generate dictionaries with additional validation datasets. e.g. neural-transformer
 
