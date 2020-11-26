@@ -8,15 +8,12 @@
 import os
 
 import torch
-import torch.nn.functional as F
 from ncc import LOGGER
 from ncc.logging import metrics
-from ncc.data.tools import data_utils
 from ncc.data.dictionary import Dictionary
 from ncc.data.retrieval.retrieval_dictionary import RetrievalDictionary
 from ncc.tasks import register_task
 from ncc.tasks.ncc_task import NccTask
-from ncc.utils.tokenizer import tokenize_string
 from ncc.data.retrieval.retrieval_dataset import RetrievalDataset
 from ncc.utils import utils
 from ncc.utils import path
@@ -127,7 +124,7 @@ class RetrievalTask(NccTask):
 
     @classmethod
     def build_dictionary(
-        cls, filenames, tokenize_func=tokenize_string,
+        cls, filenames, tokenize_func=None,
         workers=1, threshold=-1, nwords=-1, padding_factor=8
     ):
         """Build the dictionary
@@ -154,7 +151,7 @@ class RetrievalTask(NccTask):
 
     @classmethod
     def build_bpe_dictionary(
-        cls, filenames, tokenize_func=tokenize_string,
+        cls, filenames, tokenize_func=None,
         workers=1, threshold=-1, nwords=10000, padding_factor=8
     ):
         """Build the dictionary

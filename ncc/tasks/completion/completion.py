@@ -11,13 +11,9 @@ from ncc.logging import metrics
 from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 from ncc.utils import utils
-from ncc.data.tools import data_utils
-from ncc.data.completion.traverse_transformer_dataset import TraverseTransformerDataset
 from ncc.data.completion.seqrnn_dataset import SeqRNNDataset
 from ncc.data.completion.completion_dictionary import CompletionDictionary as Dictionary
-from ncc.utils import tokenizer
 from ncc.data import indexed_dataset
-import ujson
 import re
 
 
@@ -33,13 +29,6 @@ def _load_dataset(path, impl, dict=None):
 
 
 def load_token_dataset(data_path, split, tgt, tgt_dict, ext, dataset_impl, max_target_positions):
-    # target_path = os.path.join(data_path, '{}.tok'.format(split))
-    # tgt_dataset = data_utils.load_indexed_dataset(target_path, 'dfs', tgt_dict, dataset_impl)
-    #
-    # node_id_path = os.path.join(data_path, '{}.ids'.format(split))
-    # with open(node_id_path, 'r', encoding='utf-8') as f:
-    #     node_ids = [json.loads(ids_line) for ids_line in f]
-
     tgt_path = os.path.join(data_path, '{}.{}'.format(split, tgt))
     tgt_dataset = _load_dataset(tgt_path, dataset_impl)
     LOGGER.info('loaded {} examples from: {}'.format(len(tgt_dataset), tgt_path))
@@ -82,7 +71,7 @@ class CompletionTask(NccTask):
 
     @classmethod
     def build_dictionary(
-        cls, filenames, tokenize_func=tokenizer.tokenize_list,
+        cls, filenames, tokenize_func=None,
         workers=1, threshold=-1, nwords=-1, padding_factor=8
     ):
         """Build the dictionary
@@ -100,9 +89,7 @@ class CompletionTask(NccTask):
         d = Dictionary()
 
         for filename in filenames:
-            Dictionary.add_token_to_dictionary(
-                filename, d, tokenize_func, workers
-            )
+            Dictionary.add_file_to_dictionary(filename, d, tokenize_func, num_workers=workers)
 
         d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
         return d
@@ -122,14 +109,6 @@ class CompletionTask(NccTask):
                 data_path, split, self.args['task']['target_lang'], self.target_dictionary,
                 dataset_impl=self.args['dataset']['dataset_impl'], ext=self.args['task']['ext'],
                 max_target_positions=self.max_positions())
-        # elif self.args['model']['arch'] == 'traverse_transformer':
-        #     self.datasets[split] = load_traverse_dataset(data_path, split, self.target_dictionary,
-        #                                                  dataset_impl=self.args['dataset']['dataset_impl'],
-        #                                                  max_target_positions=self.max_positions())
-        # elif self.args['model']['arch'] == 'path_transformer':
-        #     self.datasets[split] = load_path_dataset(data_path, split, self.target_dictionary,
-        #                                              dataset_impl=self.args['dataset']['dataset_impl'],
-        #                                              max_target_positions=self.max_positions())
 
     def build_dataset_for_inference(self, src_tokens, src_lengths):
         return SeqRNNDataset(src_tokens, src_lengths, self.target_dictionary)  # TODO: bug
