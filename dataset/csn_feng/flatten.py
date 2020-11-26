@@ -66,7 +66,7 @@ if __name__ == '__main__':
     This script is to flatten attributes of code_search_net dataset
             Examples: 'code', 'code_tokens', 'docstring', 'docstring_tokens', 'func_name', 'original_string', 'index',
     """
-    parser = argparse.ArgumentParser(description="Download CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
+    parser = argparse.ArgumentParser(description="Flatten CodeSearchNet(feng) dataset(s)")
     parser.add_argument(
         "--language", "-l", default=LANGUAGES, type=str, nargs='+', help="languages constain [{}]".format(LANGUAGES),
     )
