@@ -204,7 +204,7 @@ def cli_main():
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        "--yaml_file", "-f", default='config/preprocess', type=str,
+        "--yaml_file", "-f", default='config/python', type=str,
         help="load {yaml_file}.yml for train",
     )
     args = parser.parse_args()

@@ -5,12 +5,8 @@
 
 from typing import *
 
-import re
-import os
 import torch
-import ujson
 from collections import Counter
-from dataset.csn.utils.util import normalize_program
 
 
 def safe_readline(f):

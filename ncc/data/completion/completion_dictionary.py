@@ -3,22 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import *
-
-import os
-import json
-from collections import Counter
-from multiprocessing import Pool
-import itertools
-
 import torch
-from ncc.data.tools.binarizer import safe_readline
-from ncc.data.tools import data_utils
-from ncc.data import constants
-from ncc.utils.file_io import PathManager
-from ncc.utils import tokenizer  # import tokenize_line
-import json
-from ncc.utils import py150_utils
 from ncc.data.dictionary import Dictionary
 
 
@@ -56,7 +41,7 @@ class CompletionDictionary(Dictionary):
                 ids[nwords] = self.eos_index
             return (ids, ext)
 
-        word_list = line_tokenizer(line) if line_tokenizer is not None else line
+        word_list = line_tokenizer(line) if line_tokenizer else line
         word_list = [_tensor(words) for words in word_list]
         return word_list
 
