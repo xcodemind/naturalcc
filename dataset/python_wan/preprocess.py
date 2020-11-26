@@ -8,12 +8,8 @@ Data pre-processing: build vocabularies and binarize training data.
 """
 from typing import Dict
 import os
-import ujson
 import shutil
-from collections import namedtuple
 from multiprocessing import Pool
-from ncc.utils.util_graph import (build_graph, tree2dgl)
-from ncc import tasks
 from collections import Counter
 from ncc.data import (
     Dictionary,
@@ -21,21 +17,10 @@ from ncc.data import (
 )
 from ncc.data.tools.binarizer import Binarizer
 from ncc.utils import tokenizer
-from ncc.utils.util_file import load_yaml
-from ncc import LOGGER
-from collections import OrderedDict
-
-"""
-binarize,
-(
-args,
-input_file,
-vocab,
-prefix,
-offsets[worker_id],
-offsets[worker_id + 1]
-),
-"""
+from ncc import (
+    LOGGER, tasks
+)
+from ncc.utils.yaml import load_yaml
 
 
 def binarize(args: Dict, filename: str, dict: Dictionary, in_file: str,
