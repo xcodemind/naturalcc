@@ -207,9 +207,6 @@ def single_main(args, init_distributed=False):
         checkpoint_utils.verify_checkpoint_directory(save_dir)
         remove_files(save_dir, 'pt')  # this code will remove pre-trained models
 
-    # Print args
-    LOGGER.info(args)
-
     # 1. Setup task, e.g., translation, language modeling, etc.
     task = tasks.setup_task(args)
 
