@@ -2,8 +2,6 @@ from typing import Optional
 import torch
 import torch.nn as nn
 from torch import Tensor
-from ncc.modules.roberta.layer_norm import LayerNorm
-
 
 import torch.nn.functional as F
 from ncc.utils import utils
@@ -39,7 +37,7 @@ class TransformerEncoderLayer(nn.Module):
                 dropout=args['model']['attention_dropout'],
             )
 
-        self.self_attn_layer_norm = nn.LayerNorm(self.embed_dim) # LayerNorm(self.embed_dim)
+        self.self_attn_layer_norm = nn.LayerNorm(self.embed_dim)  # LayerNorm(self.embed_dim)
         self.dropout = args['model']['dropout']
         self.activation_fn = utils.get_activation_fn(
             activation=args['model']['activation_fn']
@@ -51,7 +49,7 @@ class TransformerEncoderLayer(nn.Module):
         self.normalize_before = args['model']['encoder_normalize_before']
         self.fc1 = Linear(self.embed_dim, args['model']['encoder_ffn_embed_dim'])
         self.fc2 = Linear(args['model']['encoder_ffn_embed_dim'], self.embed_dim)
-        self.final_layer_norm = nn.LayerNorm(self.embed_dim) # LayerNorm(self.embed_dim)
+        self.final_layer_norm = nn.LayerNorm(self.embed_dim)  # LayerNorm(self.embed_dim)
 
     def forward(self, x, encoder_padding_mask, attn_mask: Optional[Tensor] = None):
         """
@@ -77,7 +75,7 @@ class TransformerEncoderLayer(nn.Module):
             x = self.self_attn_layer_norm(x)
 
         x, _ = self.self_attn(query=x, key=x, value=x, attn_mask=attn_mask,
-                              key_padding_mask=encoder_padding_mask)#[0]
+                              key_padding_mask=encoder_padding_mask)  # [0]
 
         x = F.dropout(x, p=self.dropout, training=self.training)
         x = residual + x

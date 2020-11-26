@@ -1,13 +1,12 @@
 import math
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 from ncc.modules.code2vec.neural_transformer.neural_transformer_encoder_layer import NeuralTransformerEncoderLayer
-from ncc.modules.roberta.layer_norm import LayerNorm
+from ncc.modules.layer_norm import LayerNorm
 from ncc.modules.code2vec.ncc_encoder import NccEncoder
-from ncc.modules.roberta.positional_embedding_bak import PositionalEmbedding
 from ncc.modules.code2vec.ncc_encoder import EncoderOut
 from ncc.modules.roberta.sinusoidal_positional_embedding import SinusoidalPositionalEmbedding
 from ncc.utils import utils

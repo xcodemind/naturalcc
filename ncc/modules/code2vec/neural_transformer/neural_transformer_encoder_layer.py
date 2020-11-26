@@ -2,7 +2,7 @@ from typing import Optional
 import torch
 import torch.nn as nn
 from torch import Tensor
-from ncc.modules.roberta.layer_norm import LayerNorm
+from ncc.modules.layer_norm import LayerNorm
 from ncc.modules.attention.relative_multihead_attention import RelativeMultiheadAttention
 
 import torch.nn.functional as F

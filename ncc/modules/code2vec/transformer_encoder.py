@@ -5,11 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 from ncc.modules.code2vec.transformer_encoder_layer import TransformerEncoderLayer
-from ncc.modules.roberta.layer_norm import LayerNorm
 from ncc.modules.code2vec.ncc_encoder import NccEncoder
-from ncc.modules.roberta.positional_embedding_bak import PositionalEmbedding
 from ncc.modules.code2vec.ncc_encoder import EncoderOut
-from ncc.modules.roberta.sinusoidal_positional_embedding import SinusoidalPositionalEmbedding
 from ncc.utils import utils
 from collections import OrderedDict
 
@@ -28,17 +25,17 @@ class TransformerEncoder(NccEncoder):
     """
 
     def __init__(
-            self,
-            args,
-            dictionary,
-            embed_tokens,
-            num_segments: int = 2,
-            offset_positions_by_padding: bool = False,  # True,
-            # apply_bert_init: bool = False,
-            # freeze_embeddings: bool = False,
-            # n_trans_layers_to_freeze: int = 0,
-            # export: bool = False,
-            traceable: bool = False,
+        self,
+        args,
+        dictionary,
+        embed_tokens,
+        num_segments: int = 2,
+        offset_positions_by_padding: bool = False,  # True,
+        # apply_bert_init: bool = False,
+        # freeze_embeddings: bool = False,
+        # n_trans_layers_to_freeze: int = 0,
+        # export: bool = False,
+        traceable: bool = False,
     ):
         super().__init__(dictionary)
         self.register_buffer("version", torch.Tensor([3]))
@@ -135,12 +132,12 @@ class TransformerEncoder(NccEncoder):
         return x, embed
 
     def forward(
-            self,
-            src_tokens: torch.Tensor,
-            src_lengths: torch.Tensor = None,
-            segment_labels: torch.Tensor = None,
-            last_state_only: bool = False,
-            positions: Optional[torch.Tensor] = None,
+        self,
+        src_tokens: torch.Tensor,
+        src_lengths: torch.Tensor = None,
+        segment_labels: torch.Tensor = None,
+        last_state_only: bool = False,
+        positions: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
 
         # compute padding mask. This is needed for multi-head attention
