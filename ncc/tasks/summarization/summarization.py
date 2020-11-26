@@ -13,7 +13,9 @@ from ncc.data.ncc_dataset import NccDataset
 from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 from ncc.utils import utils
-from ncc.data import indexed_dataset
+from ncc.data import (
+    indexed_dataset, tokenizers
+)
 from ncc.data.tokenizers.tokenizer_funcs import list_tokenizer
 from ncc.data.wrappers.append_token_dataset import AppendTokenDataset
 from ncc.data.wrappers.truncate_dataset import TruncateDataset

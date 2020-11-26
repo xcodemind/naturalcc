@@ -5,30 +5,20 @@
 
 import os
 import json
-import numpy as np
-from argparse import Namespace
 from ncc.logging import metrics
-import itertools
 from ncc import LOGGER
 from ncc.data.dictionary import Dictionary
-from ncc.data.ncc_dataset import NccDataset
 from ncc.tasks.ncc_task import NccTask
 from ncc.tasks import register_task
 from ncc.utils import utils
-from ncc.data import encoders
+from ncc.data import tokenizers
 from ncc.data import indexed_dataset
-from ncc.data.tools import data_utils
 from ncc.data.wrappers.append_token_dataset import AppendTokenDataset
 from ncc.data.wrappers.truncate_dataset import TruncateDataset
-from ncc.data.wrappers.strip_token_dataset import StripTokenDataset
-from ncc.data.concat_dataset import ConcatDataset
 from ncc.data.wrappers.prepend_token_dataset import PrependTokenDataset
 from ncc.data.summarization.be_language_pair_dataset import BELanguagePairDataset
-from ncc.utils.tokenizer import tokenize_string
 from ncc.eval import eval_utils
-from ncc.utils import tokenizer
-from functools import lru_cache
-from ncc.utils.tokenizer import tokenize_string
+
 import torch
 
 EVAL_BLEU_ORDER = 4
@@ -134,7 +124,7 @@ class BESummarizationTask(NccTask):
 
     @classmethod
     def build_dictionary(
-        cls, filenames, tokenize_func=tokenize_string,
+        cls, filenames, tokenize_func=None,
         workers=1, threshold=-1, nwords=-1, padding_factor=8
     ):
         """Build the dictionary
@@ -195,17 +185,10 @@ class BESummarizationTask(NccTask):
                 'try --eval-bleu-detok=moses (or --eval-bleu-detok=space '
                 'to disable detokenization, e.g., when using sentencepiece)'
             )
-            # detok_args = json.loads(getattr(args, 'eval_bleu_detok_args', '{}') or '{}')
-            detok_args = json.loads(
-                args['task']['eval_bleu_detok_args'] if args['task']['eval_bleu_detok_args'] else '{}')
-            self.tokenizer = encoders.build_tokenizer(
-                dict(
-                    tokenizer=args['task']['eval_bleu_detok'] if args['task']['eval_bleu_detok'] else None,
-                    # getattr(args, 'eval_bleu_detok', None),
-                    **detok_args
-                ))
-            # The gen_args parameters have been set in the yml file
-            # gen_args = json.loads(getattr(args, 'eval_bleu_args', '{}') or '{}')
+            detok_args = json.loads(args['task']['eval_bleu_detok_args'] or '{}')
+            self.tokenizer = tokenizers.build_tokenizer(
+                dict(tokenizer=args['task']['eval_bleu_detok'], **detok_args)
+            )
             # self.sequence_generator = self.build_generator(Namespace(**gen_args))
             self.sequence_generator = self.build_generator(args)
 
@@ -310,10 +293,10 @@ class BESummarizationTask(NccTask):
 
         return bleu, rouge_l, meteor
 
-    def encode_input(self, input, tokenize=tokenize_string):
+    def encode_input(self, input, tokenize=None):
         if tokenize:
             input = ''.join(char if str.isalnum(char) else ' ' for char in input)  # for python_wan dataset
-            input = tokenize_string(input)
+            input = tokenize(input)
         input = input[:self.args['task']['max_source_positions']]
         input = torch.Tensor([self.src_dict.index(token) for token in input]).long()
         input = {
