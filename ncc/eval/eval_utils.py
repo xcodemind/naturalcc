@@ -2,7 +2,7 @@ from third_party.pycocoevalcap.bleu import corpus_bleu
 from third_party.pycocoevalcap.rouge import Rouge
 from third_party.pycocoevalcap.meteor import Meteor
 from collections import OrderedDict, Counter
-import json
+import ujson
 
 
 def eval_accuracies(hypotheses, references, sources=None, filename=None, mode='dev'):

@@ -5,7 +5,6 @@
 
 import warnings
 import torch
-from ncc.utils import tokenizer
 from ncc.utils import utils
 from ncc.logging import metrics
 from ncc.data.tools import data_utils
@@ -13,6 +12,7 @@ from ncc.data import iterators
 from ncc.data.dictionary import Dictionary
 from ncc.data.ncc_dataset import NccDataset
 from ncc.eval import search
+from ncc.data.tokenizers import space_tokenizer
 
 
 class NccTask(object):
@@ -71,7 +71,7 @@ class NccTask(object):
         d = Dictionary()
         for filename in filenames:
             Dictionary.add_file_to_dictionary(
-                filename, d, tokenizer.tokenize_line, d.eos_word, workers
+                filename, d, space_tokenizer, d.eos_word, workers
             )
         d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
         return d
@@ -169,15 +169,6 @@ class NccTask(object):
         with data_utils.numpy_seed(seed):
             indices = dataset.ordered_indices()
 
-        # filter examples that are too large
-        # if max_positions is not None:
-        #     indices = data_utils.filter_by_size(
-        #         indices,
-        #         dataset,
-        #         max_positions,
-        #         raise_exception=(not ignore_invalid_inputs),
-        #     )
-
         # create mini-batches with given size constraints
         batch_sampler = data_utils.batch_by_size(
             indices,
@@ -216,11 +207,6 @@ class NccTask(object):
         # assert 0
         return models.build_model(args, config, self)
 
-    def build_config(self, args):
-        from ncc import config
-
-        return config.build_config(args, self)
-
     def build_criterion(self, args):
         """
         Build the :class:`~fairseq.criterions.NccCriterion` instance for
@@ -247,9 +233,9 @@ class NccTask(object):
         Returns:
             a :class:`~fairseq.criterions.NccCriterion` instance
         """
-        from ncc.data import tokenizer
+        from ncc.data import tokenizers
 
-        return tokenizer.build_tokenization(args, self)
+        return tokenizers.build_tokenization(args, self)
 
     def build_generator(self, args, extra_gen_cls_kwargs=None):
         if args['model']['arch'] in ['neural_transformer_summarization']:
@@ -380,11 +366,6 @@ class NccTask(object):
         from ncc.eval.sequence_completor import SequenceCompletor
 
         return SequenceCompletor()
-
-    def build_type_predictor(self, models, args):
-        from ncc.eval.type_predictor import TypePredictor
-
-        return TypePredictor()
 
     def train_step(
         self, sample, model, criterion, optimizer, update_num, ignore_grad=False

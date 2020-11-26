@@ -16,11 +16,11 @@ from ncc.data import (
     indexed_dataset,
 )
 from ncc.data.tools.binarizer import Binarizer
-from ncc.utils import tokenizer
 from ncc import (
     LOGGER, tasks
 )
 from ncc.utils.yaml import load_yaml
+from ncc.data.tokenizers.tokenizer_funcs import list_tokenizer
 
 
 def binarize(args: Dict, filename: str, dict: Dictionary, in_file: str,
@@ -32,7 +32,7 @@ def binarize(args: Dict, filename: str, dict: Dictionary, in_file: str,
     def consumer(tensor):
         ds.add_item(tensor)
 
-    res = Binarizer.binarize(filename, dict, consumer, tokenize=tokenizer.tokenize_list,
+    res = Binarizer.binarize(filename, dict, consumer, tokenize=list_tokenizer,
                              append_eos=append_eos, offset=offset, end=end)
     ds.finalize('{}.idx'.format(in_file))
     return res
@@ -88,7 +88,7 @@ def main(args):
                     [valid_path(args['preprocess']['source_lang']), valid_path(args['preprocess']['target_lang'])])
             src_dict = task.build_dictionary(
                 filenames,
-                tokenize_func=tokenizer.tokenize_list,
+                tokenize_func=list_tokenizer,
                 workers=args['preprocess']['workers'],
                 threshold=args['preprocess']['thresholdsrc'],
                 # set max len for joint dictionaries
@@ -108,7 +108,7 @@ def main(args):
                 filenames.append(valid_path(args['preprocess']['source_lang']))
             src_dict = task.build_dictionary(
                 filenames,
-                tokenize_func=tokenizer.tokenize_list,
+                tokenize_func=list_tokenizer,
                 workers=args['preprocess']['workers'],
                 threshold=args['preprocess']['thresholdsrc'],
                 nwords=args['preprocess']['nwordssrc'],
@@ -124,7 +124,7 @@ def main(args):
                     filenames.append(valid_path(args['preprocess']['target_lang']))
                 tgt_dict = task.build_dictionary(
                     filenames,
-                    tokenize_func=tokenizer.tokenize_list,
+                    tokenize_func=list_tokenizer,
                     workers=args['preprocess']['workers'],
                     threshold=args['preprocess']['thresholdsrc'],
                     nwords=args['preprocess']['nwordstgt'],
@@ -179,7 +179,7 @@ def main(args):
         merge_result(
             Binarizer.binarize(
                 input_file, vocab, lambda t: ds.add_item(t),
-                tokenize=tokenizer.tokenize_list, offset=0, end=offsets[1], append_eos=False,
+                tokenize=list_tokenizer, offset=0, end=offsets[1], append_eos=False,
             )
         )
         if num_workers > 1:
@@ -242,12 +242,12 @@ def cli_main():
     parser = argparse.ArgumentParser(
         description="Downloading/Decompressing CodeSearchNet dataset(s) or Tree-Sitter Library(ies)")
     parser.add_argument(
-        "--yaml_file", "-f", default='preprocess', type=str,
-        help="load {yaml_file}.yml for train",
+        "--yaml_file", "-f", type=str, help="load {yaml_file}.yml for train",
+        default='config/preprocess',
     )
     args = parser.parse_args()
     LOGGER.info(args)
-    yaml_file = os.path.join(os.path.dirname(__file__), 'config', '{}.yml'.format(args.yaml_file))
+    yaml_file = os.path.join(os.path.dirname(__file__), '{}.yml'.format(args.yaml_file))
     LOGGER.info('Load arguments in {}'.format(yaml_file))
     args = load_yaml(yaml_file)
     LOGGER.info(args)

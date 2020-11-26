@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from torch.nn import Module
 from ncc.utils.constants import *
+import torch.nn.functional as F
 
 
 class IntraAttention_Encoder(Module):
