@@ -292,7 +292,7 @@ def save_state(
             optimizer.state_dict()
         )
 
-    with PathManager.open(filename, "wb") as f:
+    with PathManager.open(os.path.expanduser(filename), "wb") as f:
         torch_persistent_save(state_dict, f)
 
 

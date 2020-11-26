@@ -11,14 +11,13 @@ import os
 import math
 import random
 import numpy as np
-from collections import namedtuple
 import torch
 from ncc import LOGGER
 from ncc import tasks
 from ncc.logging import meters
 from ncc.trainer.ncc_trainer import Trainer
 from ncc.utils import checkpoint_utils, distributed_utils
-from ncc.utils.util_file import load_yaml
+from ncc.utils.yaml import load_yaml
 from ncc.logging import metrics, progress_bar
 from ncc.utils import utils
 from ncc.utils.file_utils import remove_files
