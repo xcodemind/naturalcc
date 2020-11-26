@@ -2,7 +2,7 @@ from typing import Dict, List, Optional
 import torch
 import torch.nn as nn
 from torch import Tensor
-from ncc.modules.common.layer_norm import LayerNorm
+from ncc.modules.layer_norm import LayerNorm
 from ncc.modules.attention.relative_multihead_attention import RelativeMultiheadAttention
 import torch.nn.functional as F
 from ncc.utils import utils
