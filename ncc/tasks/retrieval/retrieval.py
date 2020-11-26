@@ -16,7 +16,6 @@ from ncc.tasks import register_task
 from ncc.tasks.ncc_task import NccTask
 from ncc.data.retrieval.retrieval_dataset import RetrievalDataset
 from ncc.utils import utils
-from ncc.utils import path
 
 from ncc.data.wrappers.truncate_dataset import TruncateDataset
 
@@ -116,10 +115,11 @@ class RetrievalTask(NccTask):
         assert len(paths) > 0
         if args['dataset']['joined_dictionary']:
             modalities = sorted(args['task']['source_lang'] + args['task']['target_lang'])
-            src_dict = tgt_dict = cls.load_dictionary(path.join(paths[0], '{}.dict.json'.format('_'.join(modalities))))
+            src_dict = tgt_dict = \
+                cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format('_'.join(modalities))))
         else:
-            src_dict = cls.load_dictionary(path.join(paths[0], '{}.dict.json'.format(args['task']['source_lang'])))
-            tgt_dict = cls.load_dictionary(path.join(paths[0], '{}.dict.json'.format(args['task']['target_lang'])))
+            src_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['source_lang'])))
+            tgt_dict = cls.load_dictionary(os.path.join(paths[0], '{}.dict.json'.format(args['task']['target_lang'])))
         return cls(args, src_dict, tgt_dict)
 
     @classmethod
