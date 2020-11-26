@@ -403,12 +403,12 @@ def load_embedding(embed_dict, vocab, embedding):
 
 
 def replace_unk(hypo_str, src_str, alignment, align_dict, unk):
-    from ncc.data import tokenizer
+    from ncc.data import tokenizers
 
     # Tokens are strings here
-    hypo_tokens = tokenizer.tokenize_line(hypo_str)
+    hypo_tokens = tokenizers.tokenize_line(hypo_str)
     # TODO: Very rare cases where the replacement is '<eos>' should be handled gracefully
-    src_tokens = tokenizer.tokenize_line(src_str) + ["<eos>"]
+    src_tokens = tokenizers.tokenize_line(src_str) + ["<eos>"]
     for i, ht in enumerate(hypo_tokens):
         if ht == unk:
             src_token = src_tokens[alignment[i]]
