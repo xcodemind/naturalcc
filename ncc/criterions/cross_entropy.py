@@ -30,15 +30,6 @@ class CrossEntropyCriterion(NccCriterion):
         loss, _ = self.compute_loss(model, net_output, sample, reduce=reduce)
         sample_size = sample['target'].size(0) if self.sentence_avg else sample['ntokens']
 
-        # scores = net_output[0]
-        # target = sample['target']
-        # ml_loss = F.cross_entropy(scores.view(-1, scores.size(2)), target.view(-1), reduction='none')
-        # ml_loss = ml_loss.view(*scores.size()[:-1])
-        # ml_loss = ml_loss.mul(target.ne(self.padding_idx).float())
-        # ml_loss = ml_loss.sum(1) #* kwargs['example_weights']
-        # loss = ml_loss.mean()
-        # sample_size = sample['target'].size(0) if self.sentence_avg else sample['ntokens']
-
         logging_output = {
             'loss': loss.data,
             'ntokens': sample['ntokens'],
