@@ -9,8 +9,14 @@ class NCCTokenizer(object):
     def __init__(self, *args, **kwargs):
         pass
 
-    def token(self, x: str) -> List[str]:
+    def tokenize(self, x: str) -> List[str]:
         pass
 
-    def decode(self, x: List[str]) -> str:
-        return ' '.join(x)
+    def detokenize(self, x: List[str]) -> str:
+        pass
+
+    def encode(self, x: str) -> str:
+        pass
+
+    def decode(self, x: str) -> str:
+        pass
