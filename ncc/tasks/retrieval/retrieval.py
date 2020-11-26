@@ -142,9 +142,7 @@ class RetrievalTask(NccTask):
         d = Dictionary()
 
         for filename in filenames:
-            Dictionary.add_token_to_dictionary(
-                filename, d, tokenize_func, workers
-            )
+            Dictionary.add_file_to_dictionary(filename, d, tokenize_func, num_workers=workers)
 
         d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
         return d
