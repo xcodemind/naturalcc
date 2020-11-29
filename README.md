@@ -2,12 +2,14 @@
 NaturalCC is a sequence modeling toolkit that allows researchers and developers to train custom models for many software engineering tasks, e.g., code summarization, code retrieval and code clone detection. 
 Our vision is to bridge the gap between programming language and natural language via some machine learning techniques.
 
-**This repo. is ongoing, and we are willing to invite you to join the repo and to develop it together.
-If you met bugs or problems during usage. Please, feel free to contact us.
-Or if you want to merge your work into this repo, pull your request please.**
+About us: [XCodeMind](https://xcodemind.github.io/team)
+NaturalCC demo page: [NCC demo](http://13.211.97.201:3000/)
 
+**This repository is an ongoing project and we are willing to invite you to join development.
+If you meet any bug or problem while using. Please, feel free to contact us and we will try our best to help you.
+On the other hand, if you want to merge your workflow into this project, please apply to push your request.**
 
-The project is inspired by [fairseq](https://github.com/pytorch/fairseq).
+The project is inspired by [fairseq](https://github.com/pytorch/fairseq). Thanks for its appearance.
 
 <p align="center">
     <img src="https://img.shields.io/badge/version-0.4.0-green" alt="Version">
