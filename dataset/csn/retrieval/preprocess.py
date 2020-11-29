@@ -210,10 +210,10 @@ def main(args):
         if args['preprocess']['trainpref']:
             make_dataset(vocab, args['preprocess']['trainpref'], "train", lang,
                          num_workers=args['preprocess']['workers'], is_bpe=is_bpe)
-        if args['preprocess']['validpref']:
+        if args['preprocess']['validpref'] and lang in ['code_tokens', 'docstring_tokens']:
             make_dataset(vocab, args['preprocess']['validpref'], "valid", lang,
                          num_workers=args['preprocess']['workers'], is_bpe=is_bpe)
-        if args['preprocess']['testpref']:
+        if args['preprocess']['testpref'] and lang in ['code_tokens', 'docstring_tokens']:
             make_dataset(vocab, args['preprocess']['testpref'], "test", lang, num_workers=args['preprocess']['workers'],
                          is_bpe=is_bpe)
 
