@@ -15,11 +15,12 @@ from ncc.data.retrieval.retrieval_dictionary import RetrievalDictionary
 from ncc.tasks import register_task
 from ncc.tasks.ncc_task import NccTask
 from ncc.data.retrieval.retrieval_dataset import RetrievalDataset
-from ncc.utils import utils
-
 from ncc.data.wrappers.truncate_dataset import TruncateDataset
-
+from ncc.utils import utils
 from ncc.data import indexed_dataset
+from ncc.data.tokenizers.tokenizer_funcs import _dpu_sub_tokenizer
+
+import itertools
 
 
 def _load_dataset(path, impl, dict=None):
@@ -56,6 +57,8 @@ def load_tokens_dataset(
             src_aux_max_tokens = src_max_tokens
         src_aux_dataset = TruncateDataset(src_aux_dataset, src_aux_max_tokens)
         LOGGER.info('loaded {} examples from: {}'.format(len(src_aux_dataset), src_aux_path))
+    else:
+        src_aux_dataset = None
 
     if tgt_aux is not None:
         tgt_aux_path = os.path.join(data_path, '{}.{}'.format(split, tgt_aux))
@@ -64,6 +67,8 @@ def load_tokens_dataset(
             tgt_aux_max_tokens = tgt_max_tokens
         tgt_aux_dataset = TruncateDataset(tgt_aux_dataset, tgt_aux_max_tokens)
         LOGGER.info('loaded {} examples from: {}'.format(len(tgt_aux_dataset), tgt_aux_path))
+    else:
+        tgt_aux_dataset = None
 
     return RetrievalDataset(
         src_dataset, src_dataset.sizes, src_dict,
@@ -185,7 +190,10 @@ class RetrievalTask(NccTask):
         data_path = paths[(epoch - 1) % len(paths)]
 
         src, tgt = self.args['task']['source_lang'], self.args['task']['target_lang']
-        src_aux, tgt_aux = self.args['task']['source_aux_lang'], self.args['task']['target_aux_lang']
+        if split == 'train':
+            src_aux, tgt_aux = self.args['task']['source_aux_lang'], self.args['task']['target_aux_lang']
+        else:
+            src_aux, tgt_aux = None, None
 
         if self.args['model']['arch'] in ['nbow', 'conv1d_res', 'birnn', 'self_attn']:
             self.datasets[split] = load_tokens_dataset(
@@ -198,6 +206,19 @@ class RetrievalTask(NccTask):
             )
         else:
             raise NotImplementedError
+
+    def load_search_dataset(self, split, epoch=1, ):
+        paths = utils.split_paths(self.args['task']['data'])
+        assert len(paths) > 0
+        data_path = paths[(epoch - 1) % len(paths)]
+
+        src = self.args['task']['source_lang']
+
+        src_path = os.path.join(data_path, '{}.{}'.format(split, src))
+        src_dataset = _load_dataset(src_path, self.args['dataset']['dataset_impl'])
+        src_dataset = TruncateDataset(src_dataset, self.args['dataset']['code_max_tokens'])
+
+        return src_dataset
 
     @property
     def source_dictionary(self):
@@ -256,3 +277,13 @@ class RetrievalTask(NccTask):
                     return sum(log.get(key, 0) for log in logging_outputs) / len(logging_outputs)
 
                 metrics.log_scalar('mrr', mean_logs('mrr'))
+
+    def encode_query_input(self, input, tokenize=_dpu_sub_tokenizer):
+        if tokenize:
+            input = ''.join(char if str.isalnum(char) else ' ' for char in input)
+            input = tokenize(input)
+        input = [self.tgt_dict.index(token) for token in input]
+        input = list(itertools.chain(*input))
+        input = input[:self.args['dataset']['query_max_tokens']]
+        input = torch.Tensor(input).long().unsqueeze(dim=0)  # [bsz, len]
+        return input

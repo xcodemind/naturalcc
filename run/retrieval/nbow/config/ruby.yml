@@ -34,7 +34,7 @@ dataset:
   max_tokens: ~ # type=int, metavar='N', help='maximum number of tokens in a batch'
   max_sentences: 1000 # '--batch-size', type=int, metavar='N', help='maximum number of sentences in a batch'
   code_max_tokens: 200 # type=int, if code_max_tokens>0 truncate code tokens to code_max_tokens; if code_max_tokens<=0, contain all code_tokens
-  query_max_tokens: 30 # type=int, if query_max_tokens>0 truncate query tokens to query_max_tokens; if query_max_tokens<=0, contain all query_tokens
+  query_max_tokens: 40 # type=int, if query_max_tokens>0 truncate query tokens to query_max_tokens; if query_max_tokens<=0, contain all query_tokens
 
   required_batch_size_multiple: 8 # default=8, type=int, metavar='N', help='batch size will be a multiplier of this value'
   #  dataset_impl: raw # choices=get_available_dataset_impl(), help='output dataset implementation'
@@ -95,7 +95,7 @@ task:
 
   source_aux_lang: code_tokens_wo_func
   target_aux_lang: func_name.bpe
-  fraction_using_func_name: 0.1 # 0.1 probability to chose func_name as docstring_tokens
+  fraction_using_func_name: 0.2 # 0.1 probability to chose func_name as docstring_tokens
 
   load_alignments: 0 #', action='store_true', help='load the binarized alignments'
   left_pad_source: 1 #', default='True', type=str, metavar='BOOL', help='pad the source on the left'
@@ -107,7 +107,7 @@ task:
 
 model:
   arch: nbow # '-a', default='fconv', metavar='ARCH', choices=ARCH_MODEL_REGISTRY.keys(), help='Model Architecture'
-  code_embed_dim: 300 # code embedding dim
+  code_embed_dim: 300 # code embedding dim; 300, mrr=0.2909; 512, mrr=0.2926
   query_embed_dim: 300 # query embedding dim
   activation_fn: tanh # choices=utils.get_available_activation_fns(), help='activation function to use'
   dropout: 0.5 # type=float, metavar='D', help='dropout probability'
@@ -166,6 +166,7 @@ checkpoint:
 
 eval:
   path: ~/.ncc/code_search_net/retrieval/ruby/data-mmap/nbow/checkpoints/checkpoint_best.pt # , metavar='FILE', help='path(s) to model file(s), colon separated'
+  code_file: ~/.ncc/code_search_net/flatten/ruby/test.code
   quiet: 1 # ', action='store_true', help='only print final scores'
   max_sentences: 1000 # evaluation batch size, because while evaluation, it will not cost much ram, we can increase the batch size
   model_overrides: '{}' # default="{}", type=str, metavar='DICT', help='a dictionary used to override model args at generation '

@@ -105,15 +105,17 @@ class RetrievalDataset(NccDataset):
         self.fraction_using_func_name = fraction_using_func_name
 
     def __getitem__(self, index):
-        if random.uniform(0., 1.) < self.fraction_using_func_name:
-            if len(self.tgt_aux[index]) >= 12:
-                # <code_tokens_wo_func_name, func_name>
-                src_item = self.src_aux[index]
-                tgt_item = self.tgt_aux[index]
-            else:
-                # <code_tokens, docstring_tokens>
-                src_item = self.src[index]
-                tgt_item = self.tgt[index]
+        if self.src_aux and self.tgt_aux and random.uniform(0., 1.) < self.fraction_using_func_name:
+            # if len(self.tgt_aux[index]) >= 12:
+            #     # <code_tokens_wo_func_name, func_name>
+            #     src_item = self.src_aux[index]
+            #     tgt_item = self.tgt_aux[index]
+            # else:
+            #     # <code_tokens, docstring_tokens>
+            #     src_item = self.src[index]
+            #     tgt_item = self.tgt[index]
+            src_item = self.src_aux[index]
+            tgt_item = self.tgt_aux[index]
         else:
             # <code_tokens, docstring_tokens>
             src_item = self.src[index]

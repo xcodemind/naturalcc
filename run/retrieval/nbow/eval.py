@@ -11,18 +11,13 @@ Evaluate the perplexity of a trained language model.
 """
 import os
 import numpy as np
-from collections import namedtuple
-import random
 import torch
-import torch.nn.functional as F
 from ncc import LOGGER
 from ncc import tasks
 from ncc.utils import checkpoint_utils
-from ncc.logging import metrics, progress_bar
+from ncc.logging import progress_bar
 from ncc.utils import utils
-from ncc.utils.util_file import load_yaml
-from ncc.logging.meters import StopwatchMeter
-from ncc.eval.com2cod_retrieval import Com2CodeRetrievalScorer
+from ncc.utils.yaml import load_yaml
 from scipy.spatial.distance import cdist
 
 
@@ -106,7 +101,7 @@ def main(args, **unused_kwargs):
     query_reprs = np.asarray(query_reprs, dtype=np.float32)
 
     assert code_reprs.shape == query_reprs.shape, (code_reprs.shape, query_reprs.shape)
-    eval_size = len(code_reprs) if args['eval']['eval_size'] == -1 else args['eval']['eval_size']
+    eval_size = len(code_reprs)  # if args['eval']['eval_size'] == -1 else args['eval']['eval_size']
 
     k, MRR, topk_idx, topk_prob = 3, [], [], []
     for idx in range(len(dataset) // eval_size):
@@ -148,9 +143,15 @@ def main(args, **unused_kwargs):
 
     print('mrr: {:.4f}'.format(np.mean(MRR)))
 
-    for idx, mrr in enumerate(MRR):
-        if mrr == 1.0 and topk_prob[idx][0] > 0.8:
-            print(np.asarray(topk_idx[idx]) + 1, [round(porb, 4) for porb in topk_prob[idx]])
+    # # case-study
+    # for idx, mrr in enumerate(MRR):
+    #     if mrr == 1.0 and topk_prob[idx][0] > 0.8 and topk_idx[idx][0] == idx:
+    #         code, query = dataset[idx]['source'], dataset[idx]['target']
+    #         code, query = task.src_dict.string(code), task.tgt_dict.string(query)
+    #         print(f'code >> {code}')
+    #         print(f'query >> {query}')
+    #         print(np.asarray(topk_idx[idx]) + 1, [round(porb, 4) for porb in topk_prob[idx]])
+    #         print()
 
 
 def cli_main():

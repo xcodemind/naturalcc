@@ -144,6 +144,43 @@ class RetrievalDictionary(Dictionary):
         subtoken_ids = [_index(token) for token in subtokens]
         return subtoken_ids
 
+    def string(self, tensor, bpe_symbol=None, escape_unk=False, trunc_eos=False):
+        """Helper for converting a tensor of token indices to a string.
+
+        Can optionally remove BPE symbols or escape <unk> words.
+        """
+        if torch.is_tensor(tensor) and tensor.dim() == 2:
+            return "\n".join(self.string(t, bpe_symbol, escape_unk, trunc_eos) for t in tensor)
+
+        def token_string(i):
+            if i == self.unk():
+                return self.unk_string(escape_unk)
+            else:
+                return self[i]
+
+        if hasattr(self, "bos_index"):
+            sent = []
+            for i in tensor:
+                if i == self.eos():
+                    break
+                elif i == self.sow() or i == self.eow():
+                    continue
+                elif (i != self.bos()):
+                    sent.append(token_string(i))
+            sent = " ".join(sent)
+        else:
+            sent = []
+            for i in tensor:
+                if i == self.eos():
+                    break
+                elif i == self.sow() or i == self.eow():
+                    continue
+                else:
+                    sent.append(token_string(i))
+            sent = " ".join(sent)
+
+        return data_utils.process_bpe_symbol(sent, bpe_symbol)
+
     @staticmethod
     def _add_sub_tok_to_dictionary_single_worker(
         filename: str, tokenize: Any,

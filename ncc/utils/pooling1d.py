@@ -29,7 +29,7 @@ def pooling1d(pooling1d):
         input_len: [B x 1]
         input_mask: [B x T]
         """
-        input_mask = -INF * (1 - kwargs['input_mask'])  # B x T
+        input_mask = -INF * (1 - kwargs['input_mask'].int()).type_as(input_emb)  # B x T
         input_mask = input_mask.unsqueeze(dim=-1)  # B x T x 1
         input_emb, _ = (input_emb + input_mask).max(dim=1)  # B x D
         return input_emb
