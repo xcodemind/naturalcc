@@ -68,7 +68,7 @@ cd apex
 pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" .
 ```
 
-#### 2) Install other prerequisites libraries
+#### 2) Install other prerequisite libraries
 ```shell script
 git clone https://github.com/xcodemind/naturalcc
 cd naturalcc
