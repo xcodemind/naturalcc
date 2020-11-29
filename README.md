@@ -6,9 +6,9 @@ About us: [XCodeMind](https://xcodemind.github.io/team)
 
 NaturalCC demo page: [NCC demo](http://13.211.97.201:3000/)
 
-**This repository is an ongoing project and we are willing to invite you to join development.
-If you meet any bug or problem while using. Please, feel free to contact us and we will try our best to help you.
-On the other hand, if you want to merge your workflow into this project, please apply to push your request.**
+**This repository is an ongoing project and we are willing to invite you to attend its development.
+If you meet any bug or problem while using, feel free to contact us and we will try our best to help you.
+On the other hand, if you want to merge your workflow into this project, please apply to push your requests.**
 
 The project is inspired by [fairseq](https://github.com/pytorch/fairseq). Thanks for its appearance.
 
@@ -20,7 +20,7 @@ The project is inspired by [fairseq](https://github.com/pytorch/fairseq). Thanks
 
 ## Features
 - mixed precision training
-- multi-gpus training
+- multi-gpu training
 - raw/bin data reading/writing
 
 ## Code Tasks
