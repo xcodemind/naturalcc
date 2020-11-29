@@ -3,6 +3,7 @@ NaturalCC is a sequence modeling toolkit that allows researchers and developers 
 Our vision is to bridge the gap between programming language and natural language via some machine learning techniques.
 
 About us: [XCodeMind](https://xcodemind.github.io/team)
+
 NaturalCC demo page: [NCC demo](http://13.211.97.201:3000/)
 
 **This repository is an ongoing project and we are willing to invite you to join development.
